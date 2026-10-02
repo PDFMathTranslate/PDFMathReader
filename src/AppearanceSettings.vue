@@ -6,7 +6,7 @@ const props=defineProps({appearance:String,accentColor:String,reduceMotion:Boole
 const emit=defineEmits(['update:appearance','update:accentColor','update:reduceMotion','update:reduceTransparency','update:reducePadding','update:uiLanguage']);
 const themes=[['light','appearance.light'],['dark','appearance.dark'],['system','appearance.auto']];
 const colors=[['system','appearance.system'],['#007aff','appearance.blue'],['#af52de','appearance.purple'],['#ff2d55','appearance.pink'],['#ff3b30','appearance.red'],['#ff9500','appearance.orange'],['#ffcc00','appearance.yellow'],['#34c759','appearance.green'],['#8e8e93','appearance.gray'],['#3d647a','appearance.slateBlue']];
-const uiLanguages=[['en','appearance.english'],['zh-CN','appearance.simplifiedChinese'],['ja','appearance.japanese']];
+const uiLanguages=[['en','appearance.english'],['zh-CN','appearance.simplifiedChinese'],['zh-TW','appearance.traditionalChinese'],['fr','appearance.french'],['es','appearance.spanish'],['ja','appearance.japanese'],['ko','appearance.korean']];
 watch(()=>props.uiLanguage,code=>setUILanguage(code),{immediate:true});
 function changeUILanguage(code){emit('update:uiLanguage',setUILanguage(code));}
 </script>

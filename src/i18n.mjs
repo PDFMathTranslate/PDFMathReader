@@ -1,6 +1,7 @@
 import {ref} from 'vue';
+import {extraMessages} from './locales-extra.mjs';
 
-export const SUPPORTED_UI_LANGUAGES = Object.freeze(['en', 'zh-CN', 'ja']);
+export const SUPPORTED_UI_LANGUAGES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'fr', 'es', 'ja', 'ko']);
 export const uiLanguage = ref('en');
 
 const messages = {
@@ -116,6 +117,8 @@ const messages = {
    installKernelWithUV: 'Install kernel with uv',
    translation: 'Translation',
    sourceLanguage: 'Source language',
+   promptFile: 'Prompt file',
+   systemPrompt: 'System prompt',
    automaticDetection: 'Automatic detection',
    translateInto: 'Translate into',
    translationLanguage: 'Translation language',
@@ -143,9 +146,9 @@ const messages = {
    ultraFast: 'Ultra fast',
    fast: 'Fast',
    precise: 'Precise',
-   pdfInspector: 'PDFMathTranslate PDFInspector',
-   pdfMathFast: 'PDFMathTranslate Legacy',
-   pdfMathPrecise: 'PDFMathTranslate Next',
+   pdfInspector: 'Inspector',
+   pdfMathFast: 'Legacy',
+   pdfMathPrecise: 'Next',
    busy: 'Busy',
    ready: 'Available',
    error: 'Installed with an error',
@@ -200,6 +203,10 @@ const messages = {
    english: 'English',
    simplifiedChinese: '简体中文',
    japanese: '日本語',
+   traditionalChinese: '繁體中文',
+   french: 'Français',
+   spanish: 'Español',
+   korean: '한국어',
   },
  },
  'zh-CN': {
@@ -314,6 +321,8 @@ const messages = {
    installKernelWithUV: '使用 uv 安装翻译内核',
    translation: '翻译',
    sourceLanguage: '源语言',
+   promptFile: '提示词文件',
+   systemPrompt: '系统提示词',
    automaticDetection: '自动检测',
    translateInto: '翻译为',
    translationLanguage: '翻译语言',
@@ -341,9 +350,9 @@ const messages = {
    ultraFast: '超快',
    fast: '快速',
    precise: '精确',
-   pdfInspector: 'PDFMathTranslate PDFInspector',
-   pdfMathFast: 'PDFMathTranslate Legacy',
-   pdfMathPrecise: 'PDFMathTranslate Next',
+   pdfInspector: 'Inspector',
+   pdfMathFast: 'Legacy',
+   pdfMathPrecise: 'Next',
    busy: '忙碌',
    ready: '可用',
    error: '已安装但存在错误',
@@ -398,6 +407,10 @@ const messages = {
    english: 'English',
    simplifiedChinese: '简体中文',
    japanese: '日本語',
+   traditionalChinese: '繁體中文',
+   french: 'Français',
+   spanish: 'Español',
+   korean: '한국어',
   },
  },
  ja: {
@@ -512,6 +525,8 @@ const messages = {
    installKernelWithUV: 'uv でカーネルをインストール',
    translation: '翻訳',
    sourceLanguage: '原言語',
+   promptFile: 'プロンプトファイル',
+   systemPrompt: 'システムプロンプト',
    automaticDetection: '自動検出',
    translateInto: '翻訳先',
    translationLanguage: '翻訳言語',
@@ -539,9 +554,9 @@ const messages = {
    ultraFast: '超高速',
    fast: '高速',
    precise: '高精度',
-   pdfInspector: 'PDFMathTranslate PDFInspector',
-   pdfMathFast: 'PDFMathTranslate Legacy',
-   pdfMathPrecise: 'PDFMathTranslate Next',
+   pdfInspector: 'Inspector',
+   pdfMathFast: 'Legacy',
+   pdfMathPrecise: 'Next',
    busy: '処理中',
    ready: '利用可能',
    error: 'インストール済みですがエラーがあります',
@@ -596,9 +611,22 @@ const messages = {
    english: 'English',
    simplifiedChinese: '简体中文',
    japanese: '日本語',
+   traditionalChinese: '繁體中文',
+   french: 'Français',
+   spanish: 'Español',
+   korean: '한국어',
   },
  },
 };
+
+Object.assign(messages,extraMessages);
+const translationLanguages={
+ en:{simplifiedChinese:'Simplified Chinese',traditionalChinese:'Traditional Chinese',english:'English',japanese:'Japanese',korean:'Korean',french:'French',german:'German',spanish:'Spanish'},
+ 'zh-CN':{simplifiedChinese:'简体中文',traditionalChinese:'繁体中文',english:'英语',japanese:'日语',korean:'韩语',french:'法语',german:'德语',spanish:'西班牙语'},
+ ja:{simplifiedChinese:'簡体字中国語',traditionalChinese:'繁体字中国語',english:'英語',japanese:'日本語',korean:'韓国語',french:'フランス語',german:'ドイツ語',spanish:'スペイン語'}
+};
+for(const [locale,languages] of Object.entries(translationLanguages))messages[locale].languages=languages;
+export const UI_MESSAGES=messages;
 
 function lookup(locale, key) {
  let value = messages[locale];

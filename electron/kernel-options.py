@@ -8,7 +8,10 @@ import sys
 
 
 SAFE_OPTIONS = {
-    "pdf_math_fast": {"vfont", "vchar"},
+    "pdf_math_fast": {
+        "debug", "vfont", "vchar", "lang_in", "prompt", "compatible",
+        "onnx", "backend", "config", "skip_subset_fonts", "ignore_cache",
+    },
     "pdf_math_precise": {
         "min_text_length",
         "custom_system_prompt",

@@ -1,5 +1,5 @@
 const SAFE_OPTION_IDS=Object.freeze({
- pdf_math_fast:Object.freeze(['vfont','vchar']),
+ pdf_math_fast:Object.freeze(['debug','vfont','vchar','lang_in','prompt','compatible','onnx','backend','config','skip_subset_fonts','ignore_cache']),
  pdf_math_precise:Object.freeze([
   'min_text_length','custom_system_prompt','no_auto_extract_glossary','primary_font_family',
   'formular_font_pattern','formular_char_pattern','split_short_lines','short_line_split_factor',
@@ -11,7 +11,7 @@ const SAFE_OPTION_IDS=Object.freeze({
 });
 
 const SAFE_OPTION_SETS=Object.fromEntries(Object.entries(SAFE_OPTION_IDS).map(([id,options])=>[id,new Set(options)]));
-const EFFECTIVE_DEFAULTS=Object.freeze({pdf_math_precise:Object.freeze({no_auto_extract_glossary:true})});
+const EFFECTIVE_DEFAULTS=Object.freeze({pdf_math_fast:Object.freeze({backend:'cpu',ignore_cache:true}),pdf_math_precise:Object.freeze({no_auto_extract_glossary:true})});
 const OPTION_RULES=Object.freeze({
  min_text_length:Object.freeze({min:0,integer:true}),
  short_line_split_factor:Object.freeze({min:0.1}),
@@ -52,7 +52,7 @@ function normalizeSchema(id,options){
   if(rule.min!==undefined)next.min=rule.min;
   if(rule.max!==undefined)next.max=rule.max;
   if(rule.integer)next.integer=true;
-  if(id==='pdf_math_precise'&&option.id==='no_auto_extract_glossary')next.default=true;
+  if(EFFECTIVE_DEFAULTS[id]&&Object.hasOwn(EFFECTIVE_DEFAULTS[id],option.id))next.default=EFFECTIVE_DEFAULTS[id][option.id];
   return next;
  });
 }
@@ -107,6 +107,7 @@ export function advancedOptionsToArgs(id,advancedOptions,options){
   const value=Object.hasOwn(overrides,option.id)?overrides[option.id]:effectiveOptionDefault(id,option);
   if(sameValue(value,effectiveOptionDefault(id,option),option.type)){
    if(option.type==='boolean'&&option.flagValue===effectiveOptionDefault(id,option))args.push(option.flag);
+   if(id==='pdf_math_fast'&&option.id==='backend')args.push(`${option.flag}=${String(value)}`);
    continue;
   }
   if(option.type==='boolean'){
@@ -120,5 +121,15 @@ export function advancedOptionsToArgs(id,advancedOptions,options){
 
 export function canonicalAdvancedOptions(id,advancedOptions,options){return validateAdvancedOptions(id,advancedOptions,options);}
 export function buildAdvancedArgs(id,advancedOptions,options){return advancedOptionsToArgs(id,advancedOptions,options);}
+
+// Default translation keeps the pre-Advanced startup path. Importing the
+// installed parser is only necessary when validating explicit overrides.
+export async function translationAdvancedArgs(id,advancedOptions={},loadSchema){
+ if(!isRecord(advancedOptions))throw new AdvancedOptionsError('advancedOptions must be an object.');
+ if(Object.keys(advancedOptions).length===0)return {overrides:{},args:id==='pdf_math_precise'?['--no-auto-extract-glossary']:[]};
+ const schema=await loadSchema();
+ if(schema.reason)throw Error(schema.reason);
+ return advancedOptionsToArgs(id,advancedOptions,schema.options);
+}
 
 export {SAFE_OPTION_IDS,EFFECTIVE_DEFAULTS,OPTION_RULES};

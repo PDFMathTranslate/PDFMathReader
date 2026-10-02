@@ -9,7 +9,7 @@ const DEFAULT_PREFERENCES={
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
  interactionMode:'comparison',
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ language:'Simplified Chinese',sourceLanguage:'English',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
  kernelAdvancedOptions:{},
  autoHideHeader:true,uiLanguage:'en'
 };
@@ -194,7 +194,7 @@ test('header visibility and UI language preferences persist and reject invalid v
   await preferences.save({autoHideHeader:false,uiLanguage:'zh-CN'});
   assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({autoHideHeader:false,uiLanguage:'zh-CN'}));
   assert.throws(()=>preferences.save({autoHideHeader:'yes'}),/Invalid auto-hide header preference/);
-  assert.throws(()=>preferences.save({uiLanguage:'fr'}),/Invalid UI language preference/);
+  assert.throws(()=>preferences.save({uiLanguage:'unsupported'}),/Invalid UI language preference/);
   assert.deepEqual(preferences.load(),withPreferences({autoHideHeader:false,uiLanguage:'zh-CN'}));
   await preferences.save({autoHideHeader:true,uiLanguage:'ja'});
   assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({autoHideHeader:true,uiLanguage:'ja'}));
@@ -215,4 +215,25 @@ test('interaction mode persists, rejects invalid values, and defaults legacy fil
   await writeFile(path,JSON.stringify({engine:'pdf_math_precise',fit:'manual'}));
   assert.equal((await createReaderPreferences(path)).load().interactionMode,'comparison');
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('source language migrates from Fast advanced settings and persists across kernels',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'reader-source-language-')),path=join(dir,'preferences.json');
+ try{
+  await writeFile(path,JSON.stringify({kernelAdvancedOptions:{pdf_math_fast:{lang_in:'fr',vfont:'math'}}}));
+  const preferences=await createReaderPreferences(path);
+  assert.equal(preferences.load().sourceLanguage,'French');
+  assert.deepEqual(preferences.load().kernelAdvancedOptions.pdf_math_fast,{vfont:'math'});
+  await preferences.save({sourceLanguage:'Japanese',engine:'pdf_math_precise'});
+  assert.equal((await createReaderPreferences(path)).load().sourceLanguage,'Japanese');
+  assert.throws(()=>preferences.save({sourceLanguage:'invalid'}),/Invalid source language/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('all seven interface languages survive save and reopen',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'reader-seven-locales-')),path=join(dir,'preferences.json');
+ try{for(const uiLanguage of ['en','zh-CN','zh-TW','fr','es','ja','ko']){
+  const preferences=await createReaderPreferences(path);await preferences.save({uiLanguage});
+  assert.equal((await createReaderPreferences(path)).load().uiLanguage,uiLanguage);
+ }}finally{await rm(dir,{recursive:true,force:true});}
 });

@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm,mkdir,stat,realpath} from 'node:fs/promises';
+import {mkdtemp,rm,mkdir,stat,realpath,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {createLimiter,createEngines,prepareKernelAssets} from './engines.mjs';
+import {createLimiter,createEngines,prepareKernelAssets,pythonResourcePath} from './engines.mjs';
 test('fresh kernel assets have valid targets and reuse existing shared models',async()=>{
  const root=await mkdtemp(join(tmpdir(),'kernel-assets-'));
  try{
@@ -25,3 +25,11 @@ test('missing math environments are unavailable, inspector has a queried version
  const e=createEngines({root,cacheDir:join(root,'cache')});
  try{assert.equal((await e.check('pdf_inspector')).available,true);assert.match((await e.check('pdf_inspector')).version,/^\d+\./);for(const id of ['pdf_math_fast','pdf_math_precise'])assert.equal((await e.check(id)).available,false);await assert.rejects(e.check('../other'));const c=new AbortController();c.abort();await assert.rejects(e.translate({signal:c.signal}),/Cancelled/);}finally{e.close();await rm(root,{recursive:true,force:true});}
 });
+
+ test('utility process resolves both Python helpers from the explicit application resources',async()=>{
+  const root=await mkdtemp(join(tmpdir(),'kernel-resources-'));
+  try{for(const name of ['kernel-options.py','kernel-worker.py']){
+   await writeFile(join(root,name),'# fixture');
+   assert.equal(pythonResourcePath(name,root),join(root,name));
+  }}finally{await rm(root,{recursive:true,force:true});}
+ });

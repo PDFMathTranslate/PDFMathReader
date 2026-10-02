@@ -5,13 +5,14 @@ import {t} from './i18n.mjs';
 
 const SUPPORTED_ENGINES=['pdf_math_fast','pdf_math_precise'];
 const INVALID=Symbol('invalid-advanced-value');
+const SERVICE_OPTIONS=['prompt','custom_system_prompt'];
 const props=defineProps({
  engine:{type:String,default:''},
  engineState:{type:Object,default:null},
  modelValue:{type:Object,default:()=>({})}
 });
 const emit=defineEmits(['update:modelValue']);
-const options=ref([]),busy=ref(false),message=ref('');
+const options=ref([]),busy=ref(false),message=ref(''),expanded=ref(false);
 let generation=0,requestController;
 const eligible=computed(()=>SUPPORTED_ENGINES.includes(props.engine));
 const values=computed(()=>{
@@ -20,6 +21,7 @@ const values=computed(()=>{
 });
 const schemaKey=computed(()=>JSON.stringify({
   engine:props.engine,
+  expanded:expanded.value,
   available:props.engineState?.available===true,
   installed:props.engineState?.installed===true,
   version:props.engineState?.version||'',
@@ -52,7 +54,7 @@ function normalize(option,value,{emptyToDefault=true}={}){
 }
 
 function sanitize(raw){
- const next={};
+ const next=Object.fromEntries(Object.entries(raw||{}).filter(([id])=>SERVICE_OPTIONS.includes(id)));
  for(const option of options.value){
   if(!Object.prototype.hasOwnProperty.call(raw||{},option.id))continue;
   const value=normalize(option,raw[option.id],{emptyToDefault:false});
@@ -72,7 +74,7 @@ function effectiveValue(option){
  return value===undefined||value===''?option.default:value;
 }
 
-const hasOverrides=computed(()=>Object.keys(sanitize(values.value)).length>0);
+const hasOverrides=computed(()=>Object.keys(sanitize(values.value)).some(id=>!SERVICE_OPTIONS.includes(id)));
 
 function emitValues(nextValues){
  const nextMap={...(props.modelValue&&typeof props.modelValue==='object'?props.modelValue:{})};
@@ -89,12 +91,12 @@ function update(option,value){
  emitValues(next);
 }
 
-function reset(){emitValues({});}
+function reset(){emitValues(Object.fromEntries(Object.entries(values.value).filter(([id])=>SERVICE_OPTIONS.includes(id))));}
 
 function normalizeSchema(raw){
  const seen=new Set(),next=[];
  for(const option of Array.isArray(raw)?raw:[]){
-  if(!option||typeof option.id!=='string'||!option.id||seen.has(option.id)||!['boolean','number','string'].includes(option.type))continue;
+  if(!option||typeof option.id!=='string'||!option.id||['lang_in','lang_out',...SERVICE_OPTIONS].includes(option.id)||seen.has(option.id)||!['boolean','number','string'].includes(option.type))continue;
   seen.add(option.id);
   next.push({
    id:option.id,
@@ -115,7 +117,7 @@ watch(schemaKey,async()=>{
  const token=++generation;
  requestController?.abort();
  options.value=[];message.value='';busy.value=false;
- if(!eligible.value)return;
+ if(!eligible.value||!expanded.value)return;
  if(!props.engineState?.available){message.value=props.engineState?.reason||'';return;}
  busy.value=true;
  const controller=new AbortController();requestController=controller;
@@ -134,11 +136,12 @@ watch(schemaKey,async()=>{
  }catch(error){if(token===generation&&error.name!=='AbortError')message.value=error.message;}
  finally{if(token===generation)busy.value=false;}
 },{immediate:true});
+watch(()=>props.engine,()=>{expanded.value=false;});
 onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=undefined;});
 </script>
 
 <template>
- <details v-if="eligible" :key="engine" class="settings-section advanced-settings">
+ <details v-if="eligible" :key="engine" class="settings-section advanced-settings" @toggle="expanded=$event.target.open">
   <summary>{{t('advanced.section')}}</summary>
   <div class="advanced-options">
    <p v-if="busy" class="muted" role="status">{{t('advanced.loading')}}</p>

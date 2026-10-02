@@ -21,7 +21,7 @@ try{
   assert.ok(names.includes(engine==='pdf_math_fast'?'vfont':'min_text_length'));
   if(engine==='pdf_math_precise'){assert.equal(schema.options.find(option=>option.id==='translate_table_text').default,true);assert.equal(schema.options.find(option=>option.id==='no_auto_extract_glossary').default,true);}
   const options=engine==='pdf_math_fast'?{vfont:'a^'}:{min_text_length:1,translate_table_text:false,primary_font_family:'serif'};
-  const request=advancedOptions=>fetch(server.origin+'/api/math-page?'+new URLSearchParams({engine,page:1,language:'French',threads:2,pageLimit:1}),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({documentId:id,advancedOptions})});
+  const request=(advancedOptions,sourceLanguage)=>fetch(server.origin+'/api/math-page?'+new URLSearchParams({engine,page:1,language:'French',threads:2,pageLimit:1}),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({documentId:id,advancedOptions,sourceLanguage})});
   const state=(await (await fetch(server.origin+'/api/engines')).json()).engines.find(item=>item.id===engine);
   const legacyKey=createHash('sha256').update(bytes).update(JSON.stringify({id:engine,version:state.version,page:1,language:'French',model:process.env.OPENAI_MODEL||'gpt-4.1-mini',prompt:2,layoutSchema:2})).digest('hex');
   const defaultResult=await request({});assert.equal(defaultResult.status,200);assert.equal(defaultResult.headers.get('X-Layout-Key'),legacyKey,'default options preserve legacy cache keys');
@@ -29,7 +29,8 @@ try{
   const before=calls,translated=await request(options);if(!translated.ok)throw Error(JSON.stringify(await translated.json()));const pdf=await PDFDocument.load(await translated.arrayBuffer());assert.equal(pdf.getPageCount(),1);assert.ok(calls>before);
   const beforeCache=calls;assert.equal((await request(options)).status,200);assert.equal(calls,beforeCache);
   const changed=engine==='pdf_math_fast'?{vfont:'b^'}:{...options,min_text_length:2};const fresh=await request(changed);if(!fresh.ok)throw Error(JSON.stringify(await fresh.json()));assert.ok(calls>beforeCache,'different advanced values must not reuse old translation cache');
-  result[engine]={options:schema.options.length,translated:true,rejectsUnknownBeforeProvider:true,cacheSeparatesOptions:true,legacyDefaultCacheKey:true};
+  const sourceChanged=await request({},'Japanese');if(!sourceChanged.ok)throw Error(await sourceChanged.text());assert.notEqual(sourceChanged.headers.get('X-Layout-Key'),legacyKey,'source language separates cached translations');
+  result[engine]={sourceLanguage:true,options:schema.options.length,translated:true,rejectsUnknownBeforeProvider:true,cacheSeparatesOptions:true,legacyDefaultCacheKey:true};
  }
  await writeFile('/tmp/pdfmathreader-advanced-integration.json',JSON.stringify(result,null,2));console.log(result);
 }finally{await server.close();await rm(root,{recursive:true,force:true});}

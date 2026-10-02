@@ -10,7 +10,7 @@ const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
  interactionMode:'comparison',
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ language:'Simplified Chinese',sourceLanguage:'English',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
  kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'en'
 });
 const KNOWN_KEYS=Object.freeze(Object.keys(DEFAULT_PREFERENCES));
@@ -60,19 +60,20 @@ const VALIDATORS={
  reduceTransparency:value=>typeof value==='boolean',
  reducePadding:value=>typeof value==='boolean',
  language:value=>LANGUAGE_OPTIONS.includes(value),
+ sourceLanguage:value=>LANGUAGE_OPTIONS.includes(value),
  concurrency:isValidConcurrency,
  pageConcurrency:isValidConcurrency,
  automatic:value=>typeof value==='boolean',
  layoutVisible:value=>typeof value==='boolean',
  kernelAdvancedOptions:isValidKernelAdvancedOptions,
  autoHideHeader:value=>typeof value==='boolean',
- uiLanguage:value=>['en','zh-CN','ja'].includes(value)
+ uiLanguage:value=>['en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value)
 };
 const VALIDATION_MESSAGES={
  translationMode:'Invalid translation mode',interactionMode:'Invalid interaction mode',direction:'Invalid layout direction',columns:'Invalid layout columns',
  engine:'Invalid translation kernel',appearance:'Invalid appearance',accentColor:'Invalid accent color',
  reduceMotion:'Invalid reduce motion preference',reduceTransparency:'Invalid reduce transparency preference',reducePadding:'Invalid reduce padding preference',
- language:'Invalid language preference',concurrency:'Invalid concurrency preference',
+ sourceLanguage:'Invalid source language preference',language:'Invalid language preference',concurrency:'Invalid concurrency preference',
  pageConcurrency:'Invalid page concurrency preference',automatic:'Invalid automatic translation preference',
  layoutVisible:'Invalid layout visibility preference',kernelAdvancedOptions:'Invalid kernel advanced options',
  autoHideHeader:'Invalid auto-hide header preference',
@@ -91,6 +92,8 @@ function upgrade(value){
  next.kernelAdvancedOptions=cloneKernelAdvancedOptions(DEFAULT_PREFERENCES.kernelAdvancedOptions);
  if(!isObject(value))return next;
  for(const key of KNOWN_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):value[key];
+ if(!VALIDATORS.sourceLanguage(value.sourceLanguage)){const codes=['zh','zh-TW','en','ja','ko','fr','de','es'];const index=codes.indexOf(value.kernelAdvancedOptions?.pdf_math_fast?.lang_in);if(index>=0)next.sourceLanguage=LANGUAGE_OPTIONS[index];}
+ if(next.kernelAdvancedOptions.pdf_math_fast)delete next.kernelAdvancedOptions.pdf_math_fast.lang_in;
  return next;
 }
 

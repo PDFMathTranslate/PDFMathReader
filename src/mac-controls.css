@@ -120,8 +120,8 @@
 .color-options{grid-template-columns:repeat(6,minmax(0,1fr))}
 @media(max-width:540px){.color-options{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
-/* Keep settings at 60% of its previous 560px width. */
-.settings:not(.paragraph-detail){width:min(336px,calc(100vw - 28px))}
+/* Expand settings to 120% of its previous 336px width. */
+.settings:not(.paragraph-detail){width:min(403.2px,calc(100vw - 28px))}
 .appearance-row,.appearance-effects{grid-template-columns:1fr}
 .appearance-options{justify-content:space-between;gap:12px}
 .appearance-preview{width:76px;height:56px}

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {advancedOptionsToArgs,decorateAdvancedOptions,validateAdvancedOptions} from './kernel-options.mjs';
+import {advancedOptionsToArgs,decorateAdvancedOptions,validateAdvancedOptions,translationAdvancedArgs} from './kernel-options.mjs';
 
 const fastOptions=[
  {id:'vfont',flag:'--vfont',type:'string',default:'',help:'font',label:'Vfont'},
@@ -71,8 +71,50 @@ test('advanced validation rejects unknown, mistyped, non-integer, and out-of-ran
  assert.throws(()=>validateAdvancedOptions('pdf_math_precise',{primary_font_family:'monospace'},schema),/invalid choice/);
 });
 
-test('fast options remain limited to the two parser options',()=>{
+test('fast formula options preserve parser metadata',()=>{
  const schema=decorateAdvancedOptions('pdf_math_fast',fastOptions);
  assert.deepEqual(schema.map(option=>option.id),['vfont','vchar']);
  assert.deepEqual(advancedOptionsToArgs('pdf_math_fast',{vfont:'a^'},schema).args,['--vfont=a^']);
+});
+
+ test('default translations do not wait for parser discovery or fail when it is unavailable',async()=>{
+  const unavailable=()=>{throw Error('parser unavailable');};
+  assert.deepEqual(await translationAdvancedArgs('pdf_math_precise',{},unavailable),{overrides:{},args:['--no-auto-extract-glossary']});
+  assert.deepEqual(await translationAdvancedArgs('pdf_math_fast',{},unavailable),{overrides:{},args:[]});
+ });
+ test('explicit translation overrides still load and validate installed parser metadata',async()=>{
+  let calls=0;const load=async()=>{calls++;return {options:fastOptions};};
+  assert.deepEqual(await translationAdvancedArgs('pdf_math_fast',{vfont:'a^'},load),{overrides:{vfont:'a^'},args:['--vfont=a^']});
+  await assert.rejects(translationAdvancedArgs('pdf_math_fast',{unknown:true},load),/Unknown advanced option/);
+  await assert.rejects(translationAdvancedArgs('pdf_math_fast',[],load),/must be an object/);
+  assert.equal(calls,2);
+ });
+
+
+test('Fast exposes upstream translation options and excludes GUI, routing and server options',()=>{
+ const extra=[
+  {id:'debug',flag:'--debug',type:'boolean',default:false,flagValue:true},
+  {id:'lang_in',flag:'--lang-in',type:'string',default:'en'},
+  {id:'prompt',flag:'--prompt',type:'string',default:null},
+  {id:'compatible',flag:'--compatible',type:'boolean',default:false,flagValue:true},
+  {id:'onnx',flag:'--onnx',type:'string',default:null},
+  {id:'backend',flag:'--backend',type:'string',default:'auto',choices:['auto','cpu','cuda','dml']},
+  {id:'config',flag:'--config',type:'string',default:null},
+  {id:'skip_subset_fonts',flag:'--skip-subset-fonts',type:'boolean',default:false,flagValue:true},
+  {id:'ignore_cache',flag:'--ignore-cache',type:'boolean',default:false,flagValue:true}
+ ];
+ const excluded=['interactive','share','authorized','serverport','flask','celery','mcp','sse','babeldoc','mode','files','pages','output','service','thread','lang_out','ultra_fast'];
+ const schema=decorateAdvancedOptions('pdf_math_fast',[...fastOptions,...extra,...excluded.map(id=>({id,type:'string',flag:'--'+id,default:''}))]);
+ assert.equal(schema.length,11);
+ assert.equal(schema.find(o=>o.id==='backend').default,'cpu');
+ assert.equal(schema.find(o=>o.id==='ignore_cache').default,true);
+ assert.deepEqual(advancedOptionsToArgs('pdf_math_fast',{},schema).args,['--backend=cpu','--ignore-cache']);
+ const {args,overrides}=advancedOptionsToArgs('pdf_math_fast',{backend:'auto',ignore_cache:false,lang_in:'ja',prompt:'/tmp/my prompt.txt',compatible:true,skip_subset_fonts:true,debug:true,onnx:'/tmp/model.onnx',config:'/tmp/config.json'},schema);
+ assert.ok(args.includes('--backend=auto'));
+ assert.ok(!args.includes('--ignore-cache'));
+ assert.ok(args.includes('--prompt=/tmp/my prompt.txt'));
+ for(const flag of ['--compatible','--skip-subset-fonts','--debug'])assert.ok(args.includes(flag));
+ assert.equal(overrides.ignore_cache,false);
+ assert.throws(()=>validateAdvancedOptions('pdf_math_fast',{backend:'metal'},schema),/invalid choice/);
+ for(const id of excluded)assert.throws(()=>validateAdvancedOptions('pdf_math_fast',{[id]:'x'},schema),/Unknown advanced option/);
 });

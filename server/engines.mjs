@@ -9,8 +9,10 @@ import {existsSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 import {PDFDocument} from 'pdf-lib';
-import {advancedOptionsToArgs,decorateAdvancedOptions} from './kernel-options.mjs';
+import {translationAdvancedArgs,decorateAdvancedOptions} from './kernel-options.mjs';
 const exec=promisify(execFile);
+
+export const LANGUAGE_CODES=Object.freeze({'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'});
 
 export const definitions={
  pdf_inspector:{label:'PDF Inspector',package:'@firecrawl/pdf-inspector'},
@@ -42,12 +44,12 @@ export async function findUv(){
  return {available:false,version:null,message:'uv was not found. Install uv and reopen the app.'};
 }
 
-function packagedOrLocalPythonResource(name){
- const packaged=typeof process.resourcesPath==='string'?join(process.resourcesPath,name):null;
+export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
+ const packaged=typeof resourcesPath==='string'?join(resourcesPath,name):null;
  return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
 }
 
-export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,onOutput}){
+export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput}){
  let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map();
  const envPath=id=>join(root,id);const python=id=>join(envPath(id),'bin/python');
 
@@ -94,9 +96,9 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
    try{
     home=await mkdtemp(join(optionsHomeRoot,'kernel-options-'));
     const isolatedTmp=join(home,'tmp');
-    const env={...process.env,HOME:home,TMPDIR:isolatedTmp,TMP:isolatedTmp,TEMP:isolatedTmp,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),PYTHONPYCACHEPREFIX:join(home,'pycache')};
+    const env={...process.env,HOME:home,TMPDIR:isolatedTmp,TMP:isolatedTmp,TEMP:isolatedTmp,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),PYTHONPYCACHEPREFIX:join(optionsHomeRoot,'kernel-options-pycache')};
     await mkdir(isolatedTmp,{recursive:true});
-    const {stdout}=await exec(python(id),[packagedOrLocalPythonResource('kernel-options.py'),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
+    const {stdout}=await exec(python(id),[pythonResourcePath('kernel-options.py',pythonResourcesPath),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
     const raw=JSON.parse(stdout.trim());
     return {id,options:decorateAdvancedOptions(id,raw)};
    }catch{return {id,options:[],reason:'Kernel advanced options could not be queried.'};}
@@ -113,26 +115,27 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   }
  }
 
- async function translate({id,bytes,documentHash,page,language,threads,model,proxy,signal,advancedOptions={}}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={}}){
   if(signal?.aborted)throw Error('Cancelled');
+  if(sourceLanguage!==undefined&&!Object.hasOwn(LANGUAGE_CODES,sourceLanguage))throw Error('Unsupported source language');
   const state=await check(id);if(!state.available)throw Error(state.reason);
-  const schema=await advanced(id,state);if(schema.reason)throw Error(schema.reason);
-  const {overrides,args:advancedArgs}=advancedOptionsToArgs(id,advancedOptions,schema.options);
+  const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,model,prompt:2,layoutSchema:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model,prompt:2,layoutSchema:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const cached=join(cacheDir,`${key}.pdf`);
   try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;return result;}catch{}
   await mkdir(root,{recursive:true});
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
-  const codes={'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'};
+  const codes=LANGUAGE_CODES;
   const lang=codes[language];if(!lang)throw Error('Unsupported language');
   const assetHome=join(runtimeHomeRoot,id,'home');const home=join(dir,'home');await prepareKernelAssets(assetHome,home);
   const env={...process.env,HOME:home,OPENAI_API_KEY:proxy.token,OPENAI_BASE_URL:proxy.url,OPENAI_MODEL:model,PDF2ZH_OPENAI_API_KEY:proxy.token,PDF2ZH_OPENAI_BASE_URL:proxy.url,PDF2ZH_OPENAI_MODEL:model};delete env.OPENAI_API_KEY_REAL;
   try{
-   const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,'--backend','cpu','--ignore-cache',...advancedArgs]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
+   const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,...(Object.keys(overrides).length?advancedArgs:['--backend','cpu','--ignore-cache'])]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
+   if(sourceLanguage)args.push('--lang-in',LANGUAGE_CODES[sourceLanguage]);
    await new Promise((resolve,reject)=>{
     if(signal?.aborted)return reject(Error('Cancelled'));
-    const child=spawn(python(id),[process.resourcesPath&&existsSync(join(process.resourcesPath,'kernel-worker.py'))?join(process.resourcesPath,'kernel-worker.py'):fileURLToPath(new URL('../electron/kernel-worker.py',import.meta.url)),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
+    const child=spawn(python(id),[pythonResourcePath('kernel-worker.py',pythonResourcesPath),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
     children.add(child);child.stderr.on('data',chunk=>onDiagnostic?.(String(chunk).replaceAll(proxy.token,'[redacted]')));
     const kill=()=>{try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}};const timer=setTimeout(kill,15*60*1000);signal?.addEventListener('abort',kill,{once:true});
     child.on('error',()=>reject(Error('Kernel could not start')));child.on('close',code=>{clearTimeout(timer);signal?.removeEventListener('abort',kill);children.delete(child);code===0?resolve():reject(Error(signal?.aborted?'Cancelled':'Kernel translation failed. Check its runtime assets and provider configuration.'));});
