@@ -17,7 +17,7 @@ import {readSystemPDF,validateSystemPDF,pdfLaunchPaths} from './documents.mjs';
 import {writeFile} from 'node:fs/promises';
 import {menuLabel} from './menu-i18n.mjs';
 import {createHaptics} from './haptics.mjs';
-import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction} from './window-chrome.mjs';
+import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction,serializeApplicationMenu,menuPathItems} from './window-chrome.mjs';
 import {appendPerformanceReport,loadPerformanceReports,memoryMetricToBytes,MAX_PERFORMANCE_REPORTS,sumMemoryMetrics,validatePerformanceReport,writePerformanceReports} from './performance-tracker.mjs';
 
 const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
@@ -53,9 +53,33 @@ else {
  const backgroundRenderSmoke=['resize','file-open'].includes(smoke);
  const focusedWindow=()=>BrowserWindow.getFocusedWindow()||[...windows.keys()].at(-1);
  const trustedWindow=event=>{const target=BrowserWindow.fromWebContents(event.sender),state=windows.get(target);if(!state||event.senderFrame!==target.webContents.mainFrame||new URL(event.senderFrame.url).origin!==state.backend.origin)throw Error('Window request rejected.');return target;};
- let rebuildMenu=()=>{};
- const updateMenu=window=>{const state=windows.get(window)?.preferences;if(!state)return;const menu=Menu.getApplicationMenu();menu.getMenuItemById('layout-'+(state.direction||'vertical')).checked=true;menu.getMenuItemById('layout-columns').enabled=state.direction!=='horizontal';menu.getMenuItemById('columns-'+(state.columns||1)).checked=true;};
+ const normalizeMenuPath=value=>{
+  const path=Array.isArray(value)?value:typeof value==='string'?[value]:null;
+  if(!path||path.length===0||path.length>32||!path.every(segment=>(Number.isSafeInteger(segment)&&segment>=0&&segment<=10000)||(typeof segment==='string'&&/^[\da-z][\da-z:._-]{0,127}$/i.test(segment))))throw Error('Invalid menu path.');
+  return path;
+ };
+ const activateMenuItem=(item,target)=>{
+  if(!item||item.visible===false)throw Error('Menu item not found.');
+  if(item.type==='separator'||item.enabled===false)throw Error('Menu item is not actionable.');
+  if(item.submenu?.items?.length&&!item.click)throw Error('Menu item opens a submenu.');
+  const authoredAction=menuActions.get(item.id);
+  if(authoredAction){authoredAction(item,target,undefined);return true;}
+  const role=String(item.role||''),contents=target?.webContents;
+  const normalizedRole=role.toLowerCase();
+  if(normalizedRole==='about'){app.showAboutPanel?.();return true;}
+  if(normalizedRole==='quit'){app.quit();return true;}
+  if(normalizedRole==='close'){target.close();return true;}
+  if(normalizedRole==='minimize'){target.minimize();return true;}
+  if(normalizedRole==='maximize'){target.isMaximized()?target.unmaximize():target.maximize();return true;}
+  if(normalizedRole==='togglefullscreen'){target.setFullScreen(!target.isFullScreen());return true;}
+  const roleMethod={copy:'copy',cut:'cut',paste:'paste',selectall:'selectAll',undo:'undo',redo:'redo',reload:'reload',forcereload:'reloadIgnoringCache'}[normalizedRole];
+  if(contents&&roleMethod&&typeof contents[roleMethod]==='function'){contents[roleMethod]();return true;}
+  throw Error('Menu item is not actionable.');
+ };
+ let rebuildMenu=()=>{},applicationMenu=null,menuActions=new Map();
+ const updateMenu=window=>{const state=windows.get(window)?.preferences;if(!state)return;const menu=applicationMenu||Menu.getApplicationMenu();if(!menu)return;const item=id=>menu.getMenuItemById(id),layout=item('layout-'+(state.direction||'vertical')),columns=item('columns-'+(state.columns||1)),columnMenu=item('layout-columns');if(layout)layout.checked=true;if(columnMenu)columnMenu.enabled=state.direction!=='horizontal';if(columns)columns.checked=true;};
  const updateWindowButtons=target=>{if(process.platform!=='darwin'||!target||target.isDestroyed())return;const visible=!target.isFullScreen()&&!windows.get(target)?.headerHidden;target.setWindowButtonVisibility(visible);if(visible)target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);};
+ const hideNativeMenuBar=target=>{if(process.platform!=='win32'||!target||target.isDestroyed())return;target.setAutoHideMenuBar?.(true);target.setMenuBarVisibility?.(false);};
  const windowActive=window=>!window.isMinimized()&&(backgroundRenderSmoke||window.isVisible());
  const stopPerformanceSampling=window=>{const state=windows.get(window);if(!state?.performance)return;if(state.performance.timer){clearInterval(state.performance.timer);state.performance.timer=null;}state.performance.samples=0;};
  const performanceMemory=value=>{const memory=memoryMetricToBytes(value);return {...memory,rssEstimateBytes:memory.workingSetBytes,workingSetKind:'rss-estimate',processPeakWorkingSetBytes:memory.peakWorkingSetBytes};};
@@ -94,6 +118,7 @@ else {
   let window;
   const backend=await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
   window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(smoke?['--preview-test-mode']:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+  hideNativeMenuBar(window);
   windows.set(window,{backend,documents:document?[document]:[],tickets:new Map(),preferences:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
   const fullscreenChanged=()=>{if(!window||window.isDestroyed())return;const full=window.isFullScreen();updateWindowButtons(window);window.webContents.send('window:fullscreen',full);};
   const activityChanged=()=>{if(!window||window.isDestroyed())return;window.webContents.send('activity:changed',windowActive(window));updatePerformanceSampling(window);};
@@ -106,7 +131,7 @@ else {
   for(const event of ['minimize','restore','hide','show'])window.on(event,activityChanged);
   window.webContents.setZoomFactor(1);
   window.webContents.setVisualZoomLevelLimits(1,1);
-  window.webContents.on('before-input-event',(event,input)=>{if(windows.get(window)?.preferences?.interactionMode==='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.copy();return;}if(windows.get(window)?.preferences?.interactionMode!=='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.send('reader:action','copy-paragraph');return;}const action=shortcutAction(process.platform,input);if(action==='page-previous'||action==='page-next')return;if(action==='close-window'){event.preventDefault();window.close();return;}if(action){event.preventDefault();window.webContents.send('reader:action',action);}});
+  window.webContents.on('before-input-event',(event,input)=>{if(windows.get(window)?.preferences?.interactionMode==='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.copy();return;}if(windows.get(window)?.preferences?.interactionMode!=='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.send('reader:action','copy-paragraph');return;}const action=shortcutAction(process.platform,input);if(action==='page-previous'||action==='page-next')return;if(action==='new-window'){event.preventDefault();void createWindow().catch(handleBackendFailure);return;}if(action==='toggle-fullscreen'){event.preventDefault();window.setFullScreen(!window.isFullScreen());return;}if(action==='close-window'){event.preventDefault();window.close();return;}if(action){event.preventDefault();window.webContents.send('reader:action',action);}});
   window.webContents.on('context-menu',(_event,params)=>{
    if(windows.get(window)?.preferences?.interactionMode!=='reading'||typeof params?.selectionText!=='string'||!params.selectionText.trim())return;
    const template=[{role:'copy'},{role:'selectAll'}];
@@ -121,7 +146,7 @@ else {
   ses.webRequest.onBeforeSendHeaders({urls:[`${backend.origin}/*`]},(details,reply)=>reply({requestHeaders:{...details.requestHeaders,'X-Preview-Token':token}}));
   window.webContents.setWindowOpenHandler(({url})=>{if(url==='https://github.com/PDFMathTranslate/PDFMathReader')void shell.openExternal(url);return {action:'deny'};});
   window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==backend.origin)event.preventDefault();});
-  window.once('ready-to-show',()=>{if(!['resize','file-open'].includes(smoke)){if(process.argv.includes('--background'))window.showInactive();else window.show();}updatePerformanceSampling(window);});
+  window.once('ready-to-show',()=>{hideNativeMenuBar(window);if(!['resize','file-open'].includes(smoke)){if(process.argv.includes('--background'))window.showInactive();else window.show();}updatePerformanceSampling(window);});
   window.on('focus',()=>{updateAppearance();updateMenu(window);});
   let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;void saveWindowReadingView(window).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
   window.on('closed',()=>{stopPerformanceSampling(window);windows.get(window)?.performance.peaks.clear();windows.delete(window);const closing=backend.close();closingBackends.add(closing);void closing.finally(()=>closingBackends.delete(closing));if(!windows.size)app.quit();});
@@ -131,14 +156,16 @@ else {
  app.on('second-instance',(_event,args,cwd)=>{const paths=pdfLaunchPaths(args.slice(1),cwd);if((!smoke||['file-open','multi-window'].includes(smoke))&&paths.length)enqueueFiles(paths);else {focusedWindow()?.show();focusedWindow()?.focus();}});
  app.whenReady().then(async()=>{
   if(process.platform==='darwin'&&!app.isPackaged&&!smoke)app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png',import.meta.url)));
-  const command=(label,accelerator,action)=>({label,accelerator,click:()=>focusedWindow()?.webContents.send('reader:action',action)});
+  const commandId=action=>`action-${String(action).replace(/[^a-z\d]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}`;
+  const command=(label,accelerator,action,id=commandId(action))=>({id,label,accelerator,click:(_item,target)=>{const receiver=target||focusedWindow();receiver?.webContents.send('reader:action',action);}});
   const accelerator=key=>commandAccelerator(process.platform,key);
   rebuildMenu=()=>{const template=[
-   {label:smoke?app.name:'PDFMathReader',submenu:[{role:'about'},command('Settings…',accelerator(','),'settings'),{type:'separator'},{role:'quit'}]},
-   {label:'File',submenu:[{label:'New Window',accelerator:accelerator('N'),click:()=>{void createWindow().catch(handleBackendFailure);}},command('Open PDF…',accelerator('O'),'open'),command('Open recents...',undefined,'recents'),command('Preference',undefined,'preferences'),{type:'separator'},command('Close Document',accelerator('W'),'close-document'),{label:'Close Window',accelerator:closeWindowAccelerator(process.platform),click:()=>focusedWindow()?.close()}]},{role:'editMenu'},
-   {label:'View',submenu:[command('Find…',accelerator('F'),'search'),command('Show Original / Translation',accelerator('R'),'translation'),command('Zoom In',accelerator('='),'zoom-in'),command('Zoom Out',accelerator('-'),'zoom-out'),command('Fit Width',undefined,'fit-width'),command('Fit Height',undefined,'fit-height'),command('Toggle Sidebar',accelerator('B'),'sidebar'),{type:'separator'},{label:'Layout',submenu:['vertical','horizontal'].map(direction=>({id:'layout-'+direction,label:direction==='vertical'?'Vertical':'Horizontal',type:'radio',checked:direction==='vertical',click:()=>focusedWindow()?.webContents.send('reader:action','layout:'+direction)}))},{label:'Pages per Row',id:'layout-columns',submenu:[1,2,4].map(columns=>({id:'columns-'+columns,label:({1:'One Side',2:'Two Sides',4:'Quad Side'})[columns],accelerator:accelerator(columns===4?3:columns),type:'radio',checked:columns===1,click:()=>focusedWindow()?.webContents.send('reader:action','columns:'+columns)}))},{type:'separator'},{role:'togglefullscreen'}]},
-   {label:'Go',submenu:[command('Previous Page',undefined,'page-previous'),command('Next Page',undefined,'page-next'),{type:'separator'},...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100')]},
-   {label:'Translation',submenu:[command('Choose Language…',accelerator('L'),'language'),command('Choose Kernel…',accelerator('K'),'kernel')]},{role:'windowMenu'}];const locale=preferences?.load?.().uiLanguage||'en';const localize=items=>items.map(item=>({...item,...item.label?{label:menuLabel(item.label,locale)}:{},...Array.isArray(item.submenu)?{submenu:localize(item.submenu)}:{}}));Menu.setApplicationMenu(Menu.buildFromTemplate(localize(template)));};rebuildMenu();
+   {id:'app-menu',label:smoke?app.name:'PDFMathReader',submenu:[{id:'app-about',role:'about'},command('Settings…',accelerator(','),'settings','app-settings'),{type:'separator'},{id:'app-quit',role:'quit'}]},
+   {id:'file-menu',label:'File',submenu:[{id:'file-new-window',label:'New Window',accelerator:accelerator('N'),click:()=>{void createWindow().catch(handleBackendFailure);}},command('Open PDF…',accelerator('O'),'open','file-open'),command('Open recents...',undefined,'recents','file-recents'),command('Preference',undefined,'preferences','file-preferences'),{type:'separator'},command('Close Document',accelerator('W'),'close-document','file-close-document'),{id:'file-close-window',label:'Close Window',accelerator:closeWindowAccelerator(process.platform),click:(_item,target)=>(target||focusedWindow())?.close()}]},
+   {id:'edit-menu',role:'editMenu'},
+   {id:'view-menu',label:'View',submenu:[command('Find…',accelerator('F'),'search','view-search'),command('Show Original / Translation',accelerator('R'),'translation','view-translation'),command('Zoom In',accelerator('='),'zoom-in','view-zoom-in'),command('Zoom Out',accelerator('-'),'zoom-out','view-zoom-out'),command('Fit Width',undefined,'fit-width','view-fit-width'),command('Fit Height',undefined,'fit-height','view-fit-height'),command('Toggle Sidebar',accelerator('B'),'sidebar','view-sidebar'),{type:'separator'},{id:'view-layout',label:'Layout',submenu:['vertical','horizontal'].map(direction=>({id:'layout-'+direction,label:direction==='vertical'?'Vertical':'Horizontal',type:'radio',checked:direction==='vertical',click:(_item,target)=>(target||focusedWindow())?.webContents.send('reader:action','layout:'+direction)}))},{label:'Pages per Row',id:'layout-columns',submenu:[1,2,4].map(columns=>({id:'columns-'+columns,label:({1:'One Side',2:'Two Sides',4:'Quad Side'})[columns],accelerator:accelerator(columns===4?3:columns),type:'radio',checked:columns===1,click:(_item,target)=>(target||focusedWindow())?.webContents.send('reader:action','columns:'+columns)}))},{type:'separator'},{id:'view-fullscreen',role:'togglefullscreen'}]},
+   {id:'go-menu',label:'Go',submenu:[command('Previous Page',undefined,'page-previous','go-previous'),command('Next Page',undefined,'page-next','go-next'),{type:'separator'},...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`,`go-percent-${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100','go-percent-100')]},
+   {id:'translation-menu',label:'Translation',submenu:[command('Choose Language…',accelerator('L'),'language','translation-language'),command('Choose Kernel…',accelerator('K'),'kernel','translation-kernel')]},...(process.platform==='win32'?[]:[{id:'window-menu',role:'windowMenu'}])];const locale=preferences?.load?.().uiLanguage||'en';const localize=items=>items.map(item=>({...item,...item.label?{label:menuLabel(item.label,locale)}:{},...Array.isArray(item.submenu)?{submenu:localize(item.submenu)}:{}}));const localized=localize(template),actions=new Map(),indexActions=items=>{for(const item of items){if(item.id&&typeof item.click==='function')actions.set(item.id,item.click);if(Array.isArray(item.submenu))indexActions(item.submenu);}};indexActions(localized);menuActions=actions;applicationMenu=Menu.buildFromTemplate(localized);Menu.setApplicationMenu(process.platform==='win32'?null:applicationMenu);if(process.platform==='win32')for(const target of windows.keys())hideNativeMenuBar(target);};rebuildMenu();
   const credentialOptions={path:join(app.getPath('userData'),'openai-key.enc'),safeStorage};
   if(['present','kernels','ux','animation','coverage','search','advanced'].includes(smoke))credentialOptions.environment=()=> 'local-smoke-placeholder';
   const credentialStore=await createCredentials(credentialOptions);
@@ -155,6 +182,15 @@ else {
    try{const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);return {...document,ticket};}catch{return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
   });
   ipcMain.handle('clipboard:write-text',async(event,text)=>{trustedWindow(event);if(typeof text!=='string'||text.length>1000000)throw Error('Invalid clipboard text');await clipboard.writeText(text);return true;});
+  ipcMain.handle('window:menu',event=>{const target=trustedWindow(event);updateMenu(target);return serializeApplicationMenu(applicationMenu);});
+  ipcMain.handle('window:menu-action',(event,path)=>{
+   const target=trustedWindow(event),items=menuPathItems(applicationMenu,normalizeMenuPath(path));
+   if(!items||items.some(item=>item.visible===false||item.enabled===false))throw Error('Menu item is disabled.');
+   activateMenuItem(items.at(-1),target);updateMenu(target);return true;
+  });
+  ipcMain.handle('window:minimize',event=>{const target=trustedWindow(event);target.minimize();return true;});
+  ipcMain.handle('window:maximize',event=>{const target=trustedWindow(event);if(target.isMaximized())target.unmaximize();else target.maximize();return target.isMaximized();});
+  ipcMain.handle('window:close',event=>{const target=trustedWindow(event);target.close();return true;});
   ipcMain.handle('window:header-hidden',(event,hidden)=>{const target=trustedWindow(event);if(typeof hidden!=='boolean')throw Error('Invalid header state');windows.get(target).headerHidden=hidden;updateWindowButtons(target);});
   ipcMain.handle('window:fullscreen',event=>{const window=trustedWindow(event);return window.isFullScreen();});
   ipcMain.handle('window:activity',event=>{const window=trustedWindow(event);return windowActive(window);});

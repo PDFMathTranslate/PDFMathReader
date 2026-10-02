@@ -1,7 +1,9 @@
 <script setup>
 import AppearanceSettings from './AppearanceSettings.vue';
 import AdvancedSettings from './AdvancedSettings.vue';
+import WindowsMenu from './WindowsMenu.vue';
 import {shortcutAction} from '../electron/window-chrome.mjs';
+import {menuLabel} from '../electron/menu-i18n.mjs';
 import {ref,shallowRef,reactive,computed,watch,nextTick,onMounted,onBeforeUnmount,markRaw} from 'vue';
 import {loadPDFRuntime} from './pdf-runtime.mjs';
 import {buildReaderLayout,visibleReaderWindow,buildThumbnailLayout,visibleThumbnailWindow} from './reader-layout.mjs';
@@ -111,11 +113,12 @@ async function copyHoveredParagraph(){
 }
 const selectedParagraph=ref(null);
 const autoHideHeader=ref(true),immersiveHeaderHidden=ref(false);let immersiveLastPosition=0,immersiveTravel=0,immersiveIntentUntil=0,immersiveLightsTimer;
+const windowsMenu=ref(),windowsMenuOpen=ref(false);
 function revealHeader(){immersiveHeaderHidden.value=false;immersiveTravel=0;}
 function immersiveIntent(event){if(!autoHideHeader.value||event.ctrlKey||event.metaKey)return;immersiveIntentUntil=performance.now()+1500;}
 function immersiveScroll(){const el=reader.value;if(!el)return;const position=direction.value==='horizontal'?el.scrollLeft:el.scrollTop,delta=position-immersiveLastPosition;immersiveLastPosition=position;
  if(!autoHideHeader.value){if(immersiveHeaderHidden.value)revealHeader();return;}
- if(!pages.value.length||loading.value||restoringView.value||fitResizing||pinching.value||settings.value||searchOpen.value||selectedParagraph.value||performance.now()>immersiveIntentUntil){immersiveTravel=0;return;}
+ if(!pages.value.length||loading.value||restoringView.value||fitResizing||pinching.value||settings.value||searchOpen.value||windowsMenuOpen.value||selectedParagraph.value||performance.now()>immersiveIntentUntil){immersiveTravel=0;return;}
  if(position<=2){revealHeader();return;}if(Math.abs(delta)<.5)return;
  immersiveTravel=Math.sign(delta)===Math.sign(immersiveTravel)?immersiveTravel+delta:delta;
  if(immersiveTravel>=18){immersiveHeaderHidden.value=true;immersiveTravel=0;}else if(immersiveTravel<=-6)revealHeader();
@@ -285,11 +288,13 @@ async function openSettings(target){selectedParagraph.value=null;settings.value=
 function chooseKernel(id){kernelFocusPending=!!kernelInput.value?.el?.contains(document.activeElement);engine.value=id;}
 function kernelKeys(e){const current=kernelOptions.findIndex(k=>k.id===engine.value);const index=e.key==='ArrowRight'?Math.min(2,current+1):e.key==='ArrowLeft'?Math.max(0,current-1):e.key==='Home'?0:e.key==='End'?2:null;if(index===null)return;e.preventDefault();if(engineBusy.value)return;kernelFocusPending=true;engine.value=kernelOptions[index].id;nextTick(()=>kernelInput.value?.el?.querySelector('.macvue-segment[data-state="on"]')?.focus());}
 function readerAction(action){if(action.startsWith('layout:'))direction.value=action.split(':')[1];else if(action.startsWith('columns:'))columns.value=Number(action.split(':')[1]);else if(action==='close-document')void closeDocument();else if(action==='recents'){if((pages.value.length||loading.value)&&window.previewWindow?.new)void window.previewWindow.new();else void closeDocument();}else if(action==='preferences')openSettings();else if(action==='copy-paragraph')void copyHoveredParagraph();else if(action==='search')void openSearch();else if(action==='open')fileInput.value?.click();else if(action==='translation'){if(!translationTaskProgress.value.busy)showTranslations.value=!showTranslations.value;}else if(action==='zoom-in')changeZoom(.1);else if(action==='zoom-out')changeZoom(-.1);else if(action==='page-previous'){if(pages.value.length)go(active.value-1);}else if(action==='page-next'){if(pages.value.length)go(active.value+1);}else if(action==='sidebar'){if(pages.value.length)toggleSidebar();}else if(action==='settings')settings.value?settings.value=false:openSettings();else if(action==='language'||action==='kernel')openSettings(action);else if(action==='fit-width')chooseFit('width');else if(action==='fit-height')chooseFit('height');else if(action.startsWith('percent:'))go(Math.max(1,Math.ceil(pages.value.length*Number(action.split(':')[1])/100)));}
-function dismissPopovers(){settings.value=false;selectedParagraph.value=null;kernelFocusPending=false;error.value='';}
+function dismissPopovers(){windowsMenu.value?.close();settings.value=false;selectedParagraph.value=null;kernelFocusPending=false;error.value='';}
 function outsidePopover(e){if(e.type==="focusin"&&kernelFocusPending&&engineBusy.value)return;if(e.target instanceof Element&&e.target.closest('.document-search,[data-popover-trigger],.settings,.error-banner,.macvue-pop-up-button-content'))return;dismissPopovers();}
 function popoverFocusOut(e){if(kernelFocusPending&&engineBusy.value)return;if(e.relatedTarget&&!e.currentTarget.contains(e.relatedTarget)&&!e.relatedTarget.closest?.('.macvue-pop-up-button-content'))dismissPopovers();}
 function editableTarget(target=document.activeElement){return !!target?.matches?.('input,textarea,select,[contenteditable="true"]')||target?.isContentEditable===true;}
 function keyboard(e){
+ if(e.defaultPrevented)return;
+ if(platform==='win32'&&e.key==='F10'){e.preventDefault();revealHeader();void windowsMenu.value?.toggle();return;}
  const editable=editableTarget(e.target)||editableTarget(document.activeElement);
  if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','PageDown','PageUp','Home','End',' '].includes(e.key)&&!editable)immersiveIntent(e);
  if(interactionMode.value==='comparison'&&(platform==='darwin'?e.metaKey:e.ctrlKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='c'){if(editable)return;e.preventDefault();void copyHoveredParagraph();return;}
@@ -303,7 +308,15 @@ function keyboard(e){
 
 const keyEntry=ref(''),keyBusy=ref(false),keyMessage=ref(''),keySource=ref('none'),keyStorageAvailable=ref(false),keyInvalid=ref(false);
 const desktopCredentials=window.previewCredentials;
+const desktopWindow=window.previewWindow;
 const platform=window.previewAppearance?.platform||(/Mac/i.test(navigator.platform)?'darwin':/Win/i.test(navigator.platform)?'win32':/Linux/i.test(navigator.platform)?'linux':'web');
+// Windows drag regions handle native movement and double-click maximize.
+// Keep a DOM fallback for header events outside native hit testing.
+function headerDoubleClick(event){
+ if(platform!=='win32'||!desktopWindow||immersiveHeaderHidden.value)return;
+ if(event.target.closest('button,input,select,a,fluent-button,.windows-menu,.windows-window-controls,.toolbar-actions'))return;
+ void desktopWindow.maximize();
+}
 function toolbarHint(description,key){return key?`${description} (${platform==='darwin'?'⌘'+key:'Ctrl+'+key})`:description;}
 const contentGlass=window.previewAppearance?.contentGlass===true;
 const engine=ref(localStorage.getItem('engine')||'pdf_inspector'),engineState=ref(null),uvState=ref(null),engineBusy=ref(false),pageConcurrency=ref(2),kernelAdvancedOptions=ref({pdf_math_fast:{},pdf_math_precise:{}});const parallelLevels=[1,2,4,12];
@@ -513,8 +526,13 @@ onBeforeUnmount(()=>{clearTimeout(immersiveLightsTimer);clearTimeout(copyToastTi
 <template>
  <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
   <div v-if="immersiveHeaderHidden" class="header-reveal-zone" @pointerenter="revealHeader" aria-hidden="true"></div>
-  <nav class="toolbar" :class="{'has-document':pages.length}" :aria-label="t('app.readerNavigation')" :inert="immersiveHeaderHidden" @focusin="revealHeader">
+  <nav class="toolbar" :class="{'has-document':pages.length}" :aria-label="t('app.readerNavigation')" :inert="immersiveHeaderHidden" @focusin="revealHeader" @dblclick="headerDoubleClick">
    <div v-if="platform==='darwin'" class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+   <div v-if="platform==='win32'&&desktopCredentials" class="windows-window-controls">
+    <button class="windows-close" :aria-label="menuLabel('Close Window',uiLanguage)" :title="menuLabel('Close Window',uiLanguage)" @click="desktopWindow.close()"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m1 1 10 10M11 1 1 11"/></svg></button>
+    <button :aria-label="menuLabel('Minimize',uiLanguage)" :title="menuLabel('Minimize',uiLanguage)" @click="desktopWindow.minimize()"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10"/></svg></button>
+   </div>
+   <WindowsMenu v-if="platform==='win32'&&desktopCredentials" ref="windowsMenu" @open="dismissPopovers();revealHeader();windowsMenuOpen=true" @close="windowsMenuOpen=false"/>
    <MacButton v-if="pages.length" class="icon-button" :title="toolbarHint(sidebar?t('toolbar.hidePageThumbnails'):t('toolbar.showPageThumbnails'),'B')" :aria-label="t('toolbar.toggleThumbnails')" :aria-expanded="sidebar" @click="toggleSidebar"><span class="system-icon" aria-hidden="true" data-symbol="sidebar.left" style="--symbol:url('/symbols/sidebar.left.png')"></span></MacButton>
    <div class="title"><strong :title="title">{{title}}</strong><span v-if="pages.length">{{t('toolbar.pageOf',{current:active,total:pages.length})}}</span></div>
    <div class="toolbar-actions">
@@ -524,7 +542,6 @@ onBeforeUnmount(()=>{clearTimeout(immersiveLightsTimer);clearTimeout(copyToastTi
     <MacButton v-if="pages.length" class="icon-button translation-toggle" :aria-label="t('toolbar.translation')" :disabled="translationTaskProgress.busy" :aria-busy="translationTaskProgress.busy" :title="translationTaskProgress.busy?t('toolbar.translating',{percent:translationTaskProgress.percent}):toolbarHint(showTranslations?t('toolbar.showOriginalText'):t('toolbar.showTranslatedText'),'R')" :aria-pressed="showTranslations" @click="showTranslations=!showTranslations"><svg v-if="translationTaskProgress.busy" class="translation-progress" viewBox="0 0 24 24" role="progressbar" :aria-label="t('toolbar.translationProgress')" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="translationTaskProgress.percent"><circle class="translation-progress-track" cx="12" cy="12" r="9"/><circle class="translation-progress-fill" cx="12" cy="12" r="9" pathLength="100" :stroke-dasharray="`${translationTaskProgress.percent} 100`"/></svg><span v-else class="system-icon" aria-hidden="true" data-symbol="character.book.closed" style="--symbol:url('/symbols/character.book.closed.png')"></span></MacButton>
     <MacButton v-if="pages.length" class="icon-button" data-popover-trigger :aria-label="t('toolbar.searchDocument')" :title="toolbarHint(t('toolbar.searchOriginalOrTranslatedText'),'F')" :aria-expanded="searchOpen" @click="searchOpen?closeSearch():openSearch()"><span class="system-icon" aria-hidden="true" data-symbol="magnifyingglass" style="--symbol:url('/symbols/magnifyingglass.png')"></span></MacButton><MacButton class="icon-button" data-popover-trigger :aria-label="t('toolbar.translationSettings')" :title="toolbarHint(t('toolbar.openTranslationSettings'),',')" @click="selectedParagraph=null;settings=!settings"><span class="system-icon" aria-hidden="true" data-symbol="gearshape" style="--symbol:url('/symbols/gearshape.png')"></span></MacButton>
    </div>
-
   </nav>
   <Transition name="settings-motion"><form v-if="searchOpen&&pages.length" class="document-search" role="search" @submit.prevent="nextSearch()"><MacSearchField ref="searchInput" v-model="searchQuery" :placeholder="showTranslations?t('search.searchTranslation'):t('search.searchOriginal')" :aria-label="t('search.documentText')" @keydown.enter.prevent="nextSearch($event.shiftKey?-1:1)"/><span class="search-count" role="status">{{searchFailure|| (searchBusy?t('search.searching'):searchQuery.trim()?(searchResults.length?`${searchIndex+1} / ${searchResults.length}`:t('search.noMatches')):'')}}</span><MacButton :aria-label="t('search.previousMatch')" :disabled="!searchResults.length" @click="nextSearch(-1)">↑</MacButton><MacButton :aria-label="t('search.nextMatch')" :disabled="!searchResults.length" @click="nextSearch(1)">↓</MacButton><MacButton :aria-label="t('search.close')" @click="closeSearch()">×</MacButton></form></Transition>
   <input ref="fileInput" type="file" accept="application/pdf,.pdf" hidden @change="importFile($event.target.files[0]);$event.target.value=''">

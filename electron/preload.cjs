@@ -24,7 +24,17 @@ contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callbac
 
 contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipcRenderer.invoke('preferences:load'),save:value=>ipcRenderer.invoke('preferences:save',value),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('preferences:changed',listener);return ()=>ipcRenderer.removeListener('preferences:changed',listener);}}));
 
-contextBridge.exposeInMainWorld('previewWindow',Object.freeze({new:()=>ipcRenderer.invoke('window:new'),fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),setHeaderHidden:hidden=>ipcRenderer.invoke('window:header-hidden',hidden),onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}}));
+contextBridge.exposeInMainWorld('previewWindow',Object.freeze({
+ new:()=>ipcRenderer.invoke('window:new'),
+ menu:()=>ipcRenderer.invoke('window:menu'),
+ menuAction:path=>ipcRenderer.invoke('window:menu-action',path),
+ minimize:()=>ipcRenderer.invoke('window:minimize'),
+ maximize:()=>ipcRenderer.invoke('window:maximize'),
+ close:()=>ipcRenderer.invoke('window:close'),
+ fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),
+ setHeaderHidden:hidden=>ipcRenderer.invoke('window:header-hidden',hidden),
+ onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}
+}));
 
 contextBridge.exposeInMainWorld('previewRecents',Object.freeze({list:()=>ipcRenderer.invoke('recents:list'),clear:()=>ipcRenderer.invoke('recents:clear'),open:id=>ipcRenderer.invoke('recents:open',id),openWindow:id=>ipcRenderer.invoke('recents:openWindow',id),preview:id=>ipcRenderer.invoke('recents:preview',id),setThumbnail:(id,thumbnail)=>ipcRenderer.invoke('recents:setThumbnail',{id,thumbnail}),setView:(id,view)=>ipcRenderer.invoke('recents:setView',{id,view}),remember:(file,ticket,thumbnail)=>ipcRenderer.invoke('recents:remember',ticket?{ticket,thumbnail}:{path:webUtils.getPathForFile(file),thumbnail})}));
 

@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction} from '../electron/window-chrome.mjs';
+import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction,serializeApplicationMenu,menuItemAtPath,menuPathItems} from '../electron/window-chrome.mjs';
 
 test('window chrome keeps the macOS inset and vibrancy policy exact',()=>{
  assert.deepEqual(windowChromeOptions('darwin'),{titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:24},vibrancy:'sidebar',visualEffectState:'active',backgroundColor:'#00000000'});
 });
 
-test('Windows and Linux use opaque native titlebars',()=>{
+test('Windows uses a frameless hidden menu bar while Linux keeps native chrome',()=>{
+ const windows=windowChromeOptions('win32');
+ assert.equal(windows.frame,false);
+ assert.equal(windows.autoHideMenuBar,true);
+ assert.match(windows.backgroundColor,/^#[\da-f]{6}$/i);
  for(const platform of ['win32','linux']){
   const options=windowChromeOptions(platform);
   assert.equal(options.titleBarStyle,undefined);
@@ -15,6 +19,8 @@ test('Windows and Linux use opaque native titlebars',()=>{
   assert.equal(options.visualEffectState,undefined);
   assert.match(options.backgroundColor,/^#[\da-f]{6}$/i);
  }
+ assert.equal(windowChromeOptions('linux').frame,undefined);
+ assert.equal(windowChromeOptions('linux').autoHideMenuBar,undefined);
 });
 
 test('accelerators and before-input shortcuts follow each platform',()=>{
@@ -27,6 +33,21 @@ test('accelerators and before-input shortcuts follow each platform',()=>{
  assert.equal(shortcutAction('win32',{type:'keyDown',key:'W',control:true,meta:false,alt:false,shift:false}),'close-document');
  assert.equal(shortcutAction('linux',{type:'keyDown',key:'W',control:true,meta:false,alt:false,shift:true}),'close-window');
  assert.equal(shortcutAction('linux',{type:'keyDown',key:'O',control:true,meta:false,alt:false,shift:false}),'open');
+ assert.equal(shortcutAction('win32',{type:'keyDown',key:'N',control:true,meta:false,alt:false,shift:false}),'new-window');
+ assert.equal(shortcutAction('win32',{type:'keyDown',key:'F11',control:false,meta:false,alt:false,shift:false}),'toggle-fullscreen');
 });
 
 test('page navigation supports dedicated keys and shift arrows on every platform',()=>{for(const platform of ['darwin','win32','linux'])for(const [key,shift,expected] of [['PageUp',false,'page-previous'],['PageDown',false,'page-next'],['ArrowUp',true,'page-previous'],['ArrowLeft',true,'page-previous'],['ArrowDown',true,'page-next'],['ArrowRight',true,'page-next']])assert.equal(shortcutAction(platform,{type:'keyDown',key,shift}),expected);assert.equal(shortcutAction('darwin',{type:'keyDown',key:'ArrowDown'}),null);});
+
+test('serialized menu entries expose numeric paths and preserve nested metadata',()=>{
+ const open={id:'file-open',label:'Open PDF…',type:'normal',enabled:true,checked:false,accelerator:'Ctrl+O'};
+ const menu={items:[{id:'file-menu',label:'File',type:'submenu',enabled:true,checked:false,accelerator:null,submenu:{items:[{type:'separator'},open]}}]};
+ const serialized=serializeApplicationMenu(menu);
+ assert.deepEqual(serialized[0].path,[0]);
+ assert.equal(serialized[0].id,'file-menu');
+ assert.deepEqual(serialized[0].submenu[0].path,[0,0]);
+ assert.equal(serialized[0].submenu[0].type,'separator');
+ assert.deepEqual(serialized[0].submenu[1],{path:[0,1],id:'file-open',label:'Open PDF…',type:'normal',enabled:true,checked:false,accelerator:'Ctrl+O'});
+ assert.equal(menuItemAtPath(menu,[0,1]),open);
+ assert.deepEqual(menuPathItems(menu,[0,1]),[menu.items[0],open]);
+});

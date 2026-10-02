@@ -1958,4 +1958,29 @@ body:has(.content-glass),.content-glass.app,.content-glass .workspace{background
 .kernel-traffic-light[data-status=ready]{background:#30a46c}
 .kernel-uv-version{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 
+/* Windows owns its chrome; the reading viewport extends beneath the header. */
+.desktop[data-platform="win32"] .toolbar{-webkit-app-region:drag;padding-inline:12px}
+.desktop[data-platform="win32"] .toolbar button,.desktop[data-platform="win32"] .toolbar fluent-button,.windows-menu{-webkit-app-region:no-drag}
+.desktop[data-platform="win32"] .workspace{margin-top:calc(-1 * var(--toolbar-height))}
+.desktop[data-platform="win32"] .reader{padding-top:calc(var(--toolbar-height) + var(--page-gutter));scroll-padding-top:var(--toolbar-height)}
+.desktop[data-platform="win32"] .sidebar{padding-top:var(--toolbar-height)}
+.desktop[data-platform="win32"].is-fullscreen .workspace{margin-top:0}
+.desktop[data-platform="win32"].immersive-header-hidden .toolbar{visibility:hidden;pointer-events:none;-webkit-app-region:no-drag}
+.windows-menu{position:relative;flex-shrink:0}
+.windows-menu-trigger,.windows-window-controls button{display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--text);cursor:default}
+.windows-menu-trigger{width:36px;height:36px;border-radius:4px}
+.windows-menu-trigger:hover,.windows-window-controls button:hover{background:var(--accent-soft)}
+.windows-menu-panel{position:absolute;top:calc(100% + 10px);left:0;z-index:60;min-width:280px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 90px);overflow:auto;padding:5px;border:1px solid var(--chrome-divider);border-radius:8px;background:var(--chrome-solid);box-shadow:var(--shadow-popover);-webkit-app-region:no-drag}
+.windows-menu-item,.windows-menu-back{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 10px;border:0;border-radius:4px;background:transparent;color:var(--text);text-align:left;font:inherit;white-space:nowrap}
+.windows-menu-item:hover,.windows-menu-item:focus-visible,.windows-menu-back:hover,.windows-menu-back:focus-visible{background:var(--accent-soft);outline:2px solid var(--accent);outline-offset:-2px}
+.windows-menu-item:disabled{opacity:.45;outline:none;background:transparent}
+.windows-menu-item small{margin-left:auto;color:var(--text-secondary)}
+.windows-menu-check{width:14px;flex-shrink:0}
+.windows-menu-separator{height:1px;background:var(--chrome-divider);margin:5px 8px}
+.windows-menu-back{font-weight:600;border-bottom:1px solid var(--chrome-divider)}
+.windows-window-controls{align-self:center;display:flex;flex-shrink:0;height:36px;-webkit-app-region:no-drag}
+.windows-window-controls button{width:36px;height:36px;border-radius:4px}
+.windows-window-controls svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1}
+.windows-window-controls .windows-close:hover{background:#c42b1c;color:white}
+
 }

@@ -1,5 +1,9 @@
 const menuMessages = {
  en: {
+  Menu: 'Menu',
+  'Menu unavailable': 'Menu unavailable',
+  Minimize: 'Minimize',
+  'Maximize / Restore': 'Maximize / Restore',
   File: 'File',
   'New Window': 'New Window',
   'Open PDF…': 'Open PDF…',
@@ -41,6 +45,10 @@ const menuMessages = {
   'Select All': 'Select All',
  },
  'zh-CN': {
+  Menu: '菜单',
+  'Menu unavailable': '菜单暂不可用',
+  Minimize: '最小化',
+  'Maximize / Restore': '最大化 / 还原',
   File: '文件',
   'New Window': '新建窗口',
   'Open PDF…': '打开 PDF…',
@@ -82,6 +90,10 @@ const menuMessages = {
   'Select All': '全选',
  },
  ja: {
+  Menu: 'メニュー',
+  'Menu unavailable': 'メニューを利用できません',
+  Minimize: '最小化',
+  'Maximize / Restore': '最大化 / 元に戻す',
   File: 'ファイル',
   'New Window': '新規ウインドウ',
   'Open PDF…': 'PDF を開く…',
