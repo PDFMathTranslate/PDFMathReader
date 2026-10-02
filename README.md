@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 4em; width: auto;">
+</p>
+
 # PDFMathReader (experimental)
 
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
@@ -106,7 +110,7 @@ Pages and thumbnail DOM nodes are virtualized. The reader renders visible pages 
 
 Each PDF is uploaded to its local backend once, then page requests use its document ID. PDF.js and layout analysis load on demand.
 
-Window resizing and sidebar changes use a captured view during the transition, then update the real page layout once. The desktop app records first-screen latency, scroll long tasks, sampled process memory peaks, and HTTP body bytes in `performance.json` (the latest 20 reports). Memory totals include shared processes and can double-count shared resident pages; HTTP counts exclude headers and external kernel/provider traffic.
+Window resizing and sidebar changes update page layout live, coalescing layout work per animation frame and limiting visible-page redraws to once per 100 ms. After 160 ms without a resize, buffered pages are refreshed. The desktop app records first-screen latency, scroll long tasks, sampled process memory peaks, and HTTP body bytes in `performance.json` (the latest 20 reports). Memory totals include shared processes and can double-count shared resident pages; HTTP counts exclude headers and external kernel/provider traffic.
 
 ## Architecture
 

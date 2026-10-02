@@ -113,7 +113,7 @@ export async function verifyBenchmark(window){
 
  async function ensureFitWidth(){
   window.webContents.send('reader:action','fit-width');
-  await waitFor('fit width',`document.querySelector('[aria-label="Fit width"]')?.getAttribute('aria-pressed')==='true'`,10_000);
+  await waitFor('fit width',`localStorage.getItem('readerFit')==='width'`,10_000);
   await pause(150);
  }
 
@@ -164,7 +164,7 @@ export async function verifyBenchmark(window){
  }
 
  async function finalCanvasAndFit(){
-  const value=await evaluate(`(()=>{const reader=document.querySelector('.reader'),readerBounds=reader?.getBoundingClientRect(),fit=document.querySelector('[aria-label="Fit width"]')?.getAttribute('aria-pressed')==='true',pages=[...document.querySelectorAll('.page')],canvas=pages.map(page=>page.querySelector('canvas')).find(candidate=>{if(!candidate||candidate.width<=0||candidate.height<=0)return false;const bounds=candidate.getBoundingClientRect();return !readerBounds||bounds.bottom>readerBounds.top&&bounds.top<readerBounds.bottom;}),style=reader?getComputedStyle(reader):null,available=reader&&style?reader.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight):0,activePage=pages.find(page=>Number(page.dataset.page)===window.previewRenderDiagnostics?.().readingView?.page),maxPageWidth=activePage?.getBoundingClientRect().width||0;let inkSamples=0;if(canvas){const width=Math.min(canvas.width,1024),height=Math.min(canvas.height,1024),data=canvas.getContext('2d').getImageData(0,0,width,height).data;for(let i=0;i<data.length;i+=64)if(data[i]<245||data[i+1]<245||data[i+2]<245){inkSamples++;break;}}return {canvas:{width:canvas?.width||0,height:canvas?.height||0},inkSamples,fitPressed:fit,available,maxPageWidth,widthDelta:Math.abs(maxPageWidth-available)};})()`);
+  const value=await evaluate(`(()=>{const reader=document.querySelector('.reader'),readerBounds=reader?.getBoundingClientRect(),fit=localStorage.getItem('readerFit')==='width',pages=[...document.querySelectorAll('.page')],canvas=pages.map(page=>page.querySelector('canvas')).find(candidate=>{if(!candidate||candidate.width<=0||candidate.height<=0)return false;const bounds=candidate.getBoundingClientRect();return !readerBounds||bounds.bottom>readerBounds.top&&bounds.top<readerBounds.bottom;}),style=reader?getComputedStyle(reader):null,available=reader&&style?reader.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight):0,activePage=pages.find(page=>Number(page.dataset.page)===window.previewRenderDiagnostics?.().readingView?.page),maxPageWidth=activePage?.getBoundingClientRect().width||0;let inkSamples=0;if(canvas){const width=Math.min(canvas.width,1024),height=Math.min(canvas.height,1024),data=canvas.getContext('2d').getImageData(0,0,width,height).data;for(let i=0;i<data.length;i+=64)if(data[i]<245||data[i+1]<245||data[i+2]<245){inkSamples++;break;}}return {canvas:{width:canvas?.width||0,height:canvas?.height||0},inkSamples,fitPressed:fit,available,maxPageWidth,widthDelta:Math.abs(maxPageWidth-available)};})()`);
   assert.ok(value.canvas.width>0&&value.canvas.height>0,'final page canvas is empty');
   assert.ok(value.inkSamples>0,'final page canvas is blank');
   assert.equal(value.fitPressed,true,'final view is not in fit-width mode');

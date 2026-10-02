@@ -1342,11 +1342,11 @@ textarea:focus-visible,
 }
 
 .empty .primary {
-  margin-top: 3px;
+  margin-top: 0;
 }
 
 .empty > button:not(.primary) {
-  padding: 4px 7px;
+  padding: 0 7px;
   color: var(--accent);
   background: transparent;
   border-radius: 5px;
@@ -1698,7 +1698,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 .page-caption.progress,.settings .progress{color:var(--text-secondary)}
 .page-caption.warning,.settings .warning{color:#d47a00}.page-caption.error,.settings .error{color:var(--danger)}
 .page-caption button{margin-left:8px;padding:0 4px;min-height:0;height:16px;line-height:16px;color:inherit;background:transparent;font-size:11px}
-.fit-button[aria-pressed=true]{color:var(--accent)}
 .kernel-setting{margin:18px 0;display:flex;flex-direction:column;gap:8px}
 :is(.kernel-switcher,.translation-mode-switcher){position:relative;display:grid;grid-template-columns:repeat(3,1fr);padding:3px;border-radius:8px;background:var(--chrome-hover);border:1px solid var(--chrome-border)}
 :is(.kernel-switcher,.translation-mode-switcher)::before{content:'';position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:5px;background:var(--chrome-raised);box-shadow:0 1px 3px #0002;transform:translateX(calc(var(--selected)*100%));transition:transform 180ms var(--motion-ease)}
@@ -1775,13 +1774,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 .recent-documents{width:min(760px,calc(100vw - 100px));max-width:100%;min-width:0;margin-top:28px;text-align:left}
 .recent-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .empty .recent-heading h2{font-size:14px;margin:0;color:var(--text-secondary)}
-.recent-heading button{font-size:12px;padding:4px 10px}
-.recent-gallery{display:flex;gap:18px;overflow-x:auto;padding:4px 4px 14px;scroll-snap-type:x proximity}
-.recent-document{display:flex;align-items:center;justify-content:center;flex:0 0 150px;height:200px;padding:8px;background:var(--chrome);border:1px solid var(--chrome-border);border-radius:10px;box-shadow:none;scroll-snap-align:start;transition:background .15s,border-color .15s}
+.recent-heading button{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 14px;border:1px solid var(--chrome-border);border-radius:var(--radius-sm);background:var(--chrome);color:var(--text);box-shadow:inset 0 .5px 0 #ffffff45,0 1px 2px #00000015;font-size:13px;font-weight:600;line-height:1.2;transition:background-color var(--motion-duration) var(--motion-ease),box-shadow var(--motion-duration) var(--motion-ease),transform var(--motion-duration) var(--motion-ease)}
+.recent-heading button:hover{background:var(--chrome-raised);box-shadow:inset 0 .5px 0 #ffffff45,0 2px 4px #00000020}
+.recent-heading button:active{background:var(--chrome-pressed);box-shadow:inset 0 1px 2px #00000020;transform:translateY(1px)}
+.recent-gallery{display:flex;align-items:flex-end;gap:18px;overflow-x:auto;padding:4px 4px 14px;scroll-snap-type:x proximity}
+.recent-document{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:max-content;height:auto;padding:8px;background:var(--chrome);border:1px solid var(--chrome-border);border-radius:10px;box-shadow:none;scroll-snap-align:start;transition:background .15s,border-color .15s}
 .recent-document:hover{background:var(--chrome-raised);border-color:var(--accent)}
 .recent-document:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.recent-document img{display:block;max-width:100%;max-height:100%;object-fit:contain;background:white;box-shadow:0 2px 8px #00000018;pointer-events:none}
-.recent-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;color:var(--text-secondary);font-size:11px;text-align:center}
+.recent-document img{display:block;width:auto;height:182px;max-width:none;max-height:none;flex-shrink:0;object-fit:contain;background:white;box-shadow:0 2px 8px #00000018;pointer-events:none}
+.recent-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:132px;height:182px;color:var(--text-secondary);font-size:11px;text-align:center}
 .recent-placeholder .system-icon{width:30px;height:38px}
 .recent-placeholder.is-loading{background:linear-gradient(110deg,transparent 30%,#ffffff50 50%,transparent 70%);background-size:200% 100%;animation:recent-preview-loading 1.6s ease-in-out infinite}
 @keyframes recent-preview-loading{to{background-position:-200% 0}}
@@ -1868,3 +1869,24 @@ body:has(.content-glass),.content-glass.app,.content-glass .workspace{background
 
 /* Fit changes and their scroll anchor must use the same final geometry. */
 .reader[data-fitting] .page,.reader[data-fitting] .page>canvas,.reader[data-fitting] .paragraph{transition:none!important}
+
+.empty .startup-description{max-width:100%;font-size:12px;font-weight:400;color:var(--text-secondary);line-height:1.5;margin:0}
+
+/* Hover feedback stays separate from PDF text geometry. */
+.paragraph.math:hover{background:color-mix(in srgb,var(--accent) 4%,transparent)}
+.paragraph{transition:width 180ms var(--motion-ease),height 180ms var(--motion-ease),left 180ms var(--motion-ease),top 180ms var(--motion-ease),background-color 140ms ease}
+.reader-hover-hint{position:fixed;z-index:100;pointer-events:none;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border:1px solid var(--chrome-border);border-radius:9px;background:color-mix(in srgb,var(--chrome-solid) 72%,transparent);backdrop-filter:blur(12px);color:var(--text-secondary);box-shadow:0 3px 12px #00000012;font-size:12px;line-height:1.4;text-align:center}
+.reader-hover-hint.above{transform:translate(-50%,-100%)}
+.reader-hint-enter-active,.reader-hint-leave-active{transition:opacity 140ms ease}
+.reader-hint-enter-from,.reader-hint-leave-to{opacity:0}
+@media(prefers-reduced-motion:reduce){.reader-hint-enter-active,.reader-hint-leave-active{transition:none}}
+
+/* Resize geometry follows the live viewport without an interpolated screenshot. */
+.page-wrap,.page,.page>canvas,.paragraph{transition-property:background-color,color,border-color,box-shadow}
+/* Give paragraph hover highlights breathing room without moving PDF content. */
+.paragraph.math{overflow:visible}
+.paragraph.math:hover,.paragraph.math:focus-visible{background:transparent}
+.paragraph.math::before{content:'';position:absolute;inset:-8px;border-radius:6px;background:color-mix(in srgb,var(--accent) 4%,transparent);opacity:0;pointer-events:none;transition:opacity 140ms ease}
+.paragraph.math:hover::before,.paragraph.math:focus-visible::before{opacity:1}
+.paragraph.math.outlined{outline-offset:8px}
+@media(prefers-reduced-motion:reduce){.paragraph.math::before{transition:none}}

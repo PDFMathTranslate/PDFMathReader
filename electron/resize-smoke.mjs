@@ -5,7 +5,8 @@ import {writeFile} from 'node:fs/promises';
 export async function verifyResize(window){
  const evaluate=code=>window.webContents.executeJavaScript(code),pause=ms=>new Promise(r=>setTimeout(r,ms));
  async function wait(code){for(let i=0;i<100;i++){if(await evaluate(code))return;await pause(50);}throw Error('Resize assertion timed out: '+code);}
- await wait(`!!document.querySelector('[aria-label="Open PDF"]')`);
+ await wait(`!!document.querySelector('.empty .primary')`);
+ assert.equal(await evaluate(`document.querySelector('[aria-label="Open PDF"]')`),null);
  assert.equal(await evaluate(`document.querySelectorAll('[aria-label="Zoom"],[aria-label="Zoom in"],[aria-label="Zoom out"],[aria-label="Fit width"],[aria-label="Fit height"]').length`),0);
  const fixture=await PDFDocument.create();for(let i=0;i<4;i++)fixture.addPage([612,792]).drawRectangle({x:250,y:340,width:100,height:100});const encoded=Buffer.from(await fixture.save()).toString('base64');
  await evaluate(`(()=>{const d=new DataTransfer();d.items.add(new File([Uint8Array.from(atob(${JSON.stringify(encoded)}),c=>c.charCodeAt(0))],'Portrait and landscape.pdf',{type:'application/pdf'}));const input=document.querySelector('input[type=file]');input.files=d.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);

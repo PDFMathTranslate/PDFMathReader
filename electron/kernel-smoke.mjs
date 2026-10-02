@@ -5,6 +5,7 @@ export async function verifyKernelUI(window){
  async function wait(code){for(let i=0;i<900;i++){if(await evaluate(code))return;await new Promise(r=>setTimeout(r,100));}console.log('UI wait timed out:',code.slice(0,200));console.log(await evaluate(`JSON.stringify({toggle:document.querySelector('.translation-toggle')?.getAttribute('aria-pressed'),canvas:[document.querySelector('.page canvas')?.width,document.querySelector('.page canvas')?.height],difference:window.fixtureDifference?.(),error:document.querySelector('.error')?.textContent})`));await writeFile('/tmp/preview-toggle-failure.png',(await window.webContents.capturePage()).toPNG());throw Error('Kernel UI timed out');}
 
  async function canvasSettled(translated){let stable=0,previous;for(let i=0;i<900;i++){const state=await evaluate(`(()=>{const c=document.querySelector('.page canvas'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let j=0;j<d.length;j+=4)if(d[j]<200&&d[j+1]<200&&d[j+2]<200)ink++;return {pressed:document.querySelector('.translation-toggle').getAttribute('aria-pressed'),difference:window.fixtureDifference(),ink};})()`);const valid=state.pressed===String(translated)&&state.ink>1000&&(translated?state.difference>1:state.difference<1);const current=JSON.stringify(state);stable=valid&&current===previous?stable+1:0;previous=current;if(stable>=4)return state.difference;await new Promise(r=>setTimeout(r,100));}throw Error('Stable full-page toggle did not complete');}
+ await evaluate(`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).startsWith('/api/math-layout/')&&response.ok){const layout=await response.json();layout.paragraphs.push({id:'unchanged-table-header',text:'UNCHANGED TABLE AND HEADER',translation:'UNCHANGED TABLE AND HEADER',fontSize:12,sourceBox:{x:100,y:10,width:400,height:700},translatedBox:{x:100,y:10,width:400,height:702}});return new Response(JSON.stringify(layout),{status:200,headers:{'Content-Type':'application/json'}});}return response;};})()`);
  await wait(`!!document.querySelector('[aria-label="Translation settings"]')`);
  window.focus();await new Promise(r=>setTimeout(r,250));
  await evaluate(`(()=>{const b=document.querySelector('[aria-label="Translation settings"]');b.focus();b.click();})()`);
@@ -27,6 +28,9 @@ export async function verifyKernelUI(window){
  await evaluate(`document.querySelector('.settings input[type="checkbox"]').click();document.querySelector('[aria-label="Close settings"]').click()`);
  const result={};
  for(const id of ['pdf_math_fast','pdf_math_precise']){console.log('UI checking',id);
+  await evaluate(`document.querySelector('.thumb[aria-label="Go to page 1"]').click()`);
+  await wait(`document.querySelector('.reader').scrollTop<100`);
+  await new Promise(r=>setTimeout(r,300));
   await evaluate(`window.fixtureStalls=[];window.fixtureLast=performance.now();window.fixtureHeartbeat=setInterval(()=>{const now=performance.now();window.fixtureStalls.push(now-window.fixtureLast);window.fixtureLast=now;},16);true`);
   window.focus();await new Promise(r=>setTimeout(r,250));
  await evaluate(`(()=>{const b=document.querySelector('[aria-label="Translation settings"]');b.focus();b.click();})()`);
@@ -36,6 +40,7 @@ export async function verifyKernelUI(window){
   await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
   await wait(`document.querySelector('.thumb small')?.innerText==='Translated'&&!document.querySelector('.page-caption')?.innerText.includes('Translating')&&document.querySelector('.page canvas').toDataURL()!==${JSON.stringify(original)}`);
   await canvasSettled(true);
+  assert.equal(await evaluate(`!!document.querySelector('[aria-label="Toggle paragraph: UNCHANGED TABLE AND HEADER"]')`),false,'unchanged merged table/header must not create a page-spanning hit target');
   await wait(`document.querySelectorAll('.paragraph.math').length>0`);
   await evaluate(`document.querySelector('.paragraph.math[data-translation-changed="true"]').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}))`);
   await wait(`(()=>{const c=document.querySelector('.paragraph.math .math-region');return !!c&&c.width>0&&c.height>0;})()`);

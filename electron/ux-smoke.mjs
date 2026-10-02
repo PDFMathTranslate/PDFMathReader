@@ -5,6 +5,7 @@ import {writeFile,mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 export async function verifyUX(window,recents){
+ const fitMenu=mode=>Menu.getApplicationMenu().items.find(i=>i.label==='View').submenu.items.find(i=>i.label==='Fit '+(mode==='width'?'Width':'Height')).click();
  const actions=[];const evaluate=async code=>{actions.push(code.slice(0,180));if(actions.length>8)actions.shift();try{return await window.webContents.executeJavaScript(code);}catch(error){console.log('UX action failed:',code.slice(0,180),JSON.stringify(actions));throw error;}};
  const pause=ms=>new Promise(r=>setTimeout(r,ms));
  async function wait(code){for(let i=0;i<150;i++){if(await evaluate(code))return;await pause(100);}console.log(await evaluate(`JSON.stringify({sidebar:document.querySelector('[aria-label="Toggle thumbnails"]')?.getAttribute('aria-expanded'),sidebarClass:document.querySelector('.sidebar')?.className,focused:document.activeElement?.getAttribute('aria-label'),settings:!!document.querySelector('.settings'),page:document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')})`));await writeFile('/tmp/preview-reader-ux-failure.png',(await window.webContents.capturePage()).toPNG());throw Error('UX check timed out: '+code);}
@@ -44,7 +45,7 @@ export async function verifyUX(window,recents){
  assert.equal(fixtureState.totalPages,20);
  assert.ok(fixtureState.mountedThumbnails<20);
  assert.equal(await evaluate(`!!document.querySelector('[aria-label="Toggle thumbnails"]')&&!!document.querySelector('.sidebar')`),true);
- await wait(`document.querySelector('[aria-label="Fit width"]').getAttribute('aria-pressed')==='true'`);
+ await wait(`localStorage.getItem('readerFit')==='width'`);
  await pause(500);
  const width=await evaluate(`document.querySelector('.page').getBoundingClientRect().width`);
  assert.ok(width>600);const windowZoom=window.webContents.getZoomFactor();
@@ -56,12 +57,12 @@ export async function verifyUX(window,recents){
  const pinch=await evaluate(`(()=>{const p=document.querySelector('.page').getBoundingClientRect();return {x:p.left+p.width*.55,y:p.top+250*p.width/${anchor.width},width:p.width,toolbar:document.querySelector('.toolbar').getBoundingClientRect().height};})()`);
  assert.ok(pinch.width>anchor.width*1.1);assert.ok(Math.abs(pinch.x-anchor.x)<3);assert.ok(Math.abs(pinch.y-anchor.y)<3);assert.equal(pinch.toolbar,anchor.toolbar);assert.equal(window.webContents.getZoomFactor(),windowZoom);
  await wait(`!document.querySelector('.reader.pinching')`);
- await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ fitMenu('width');await pause(300);
  window.webContents.debugger.attach('1.3');
  try{await window.webContents.debugger.sendCommand('Input.synthesizePinchGesture',{x:anchor.x,y:anchor.y,scaleFactor:1.2,relativeSpeed:800,gestureSourceType:'mouse'});}finally{window.webContents.debugger.detach();}
  await wait(`document.querySelector('.page').getBoundingClientRect().width>${anchor.width*1.1}`);assert.equal(window.webContents.getZoomFactor(),windowZoom);
  await wait(`!document.querySelector('.reader.pinching')`);
- await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ fitMenu('width');await pause(300);
  const translated=await evaluate(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')`);
  await shortcut('r');await wait(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')!==${JSON.stringify(translated)}`);
  await shortcut('r');await wait(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')===${JSON.stringify(translated)}`);
@@ -71,10 +72,10 @@ export async function verifyUX(window,recents){
  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.kernel-switcher button')).map(b=>b.textContent)`),['Ultra fast','Fast','Precise']);
  await shortcut('RIGHT',[]);await wait(`document.querySelector('.kernel-switcher [aria-checked=true]').textContent==='Fast'`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);
  await shortcut('RIGHT',[]);await wait(`document.querySelector('.kernel-switcher [aria-checked=true]').textContent==='Precise'`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);
- await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();document.querySelector('[aria-label="Fit height"]').click();true`);
- await wait(`localStorage.getItem('readerFit')==='height'&&document.querySelector('[aria-label="Fit height"]').getAttribute('aria-pressed')==='true'`);
+ await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);fitMenu('height');
+ await wait(`localStorage.getItem('readerFit')==='height'`);
  await pause(300);assert.ok(await evaluate(`document.querySelector('.page').getBoundingClientRect().height<document.querySelector('.reader').clientHeight`));
- await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ fitMenu('width');await pause(300);
  await shortcut('5');await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 10'`);
  await shortcut('0');await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 20'`);
  await wait(`!!document.querySelector('[aria-label="Page navigator"]')`);
@@ -97,8 +98,8 @@ export async function verifyUX(window,recents){
  await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();(()=>{const r=document.querySelector('.reader'),p=document.querySelector('[data-page="13"]');r.scrollTop+=p.getBoundingClientRect().top-r.getBoundingClientRect().top-30;})();true`);await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 13'`);await shortcut(',');await wait(`!!document.querySelector('.settings>button')`);await evaluate(`Array.from(document.querySelectorAll('.settings>button')).find(b=>b.textContent==='Translate current page').click();true`);
  await wait(`!!document.querySelector('.page-caption.error')`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-caption.error')).color`),'rgb(217, 45, 32)');assert.ok(await evaluate(`document.querySelector('.page-caption.error').title.includes('rate limit')`));await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);
  const menu=Menu.getApplicationMenu();assert.ok(menu.items[0].submenu.items.some(i=>i.role==='quit'));assert.ok(menu.items.find(i=>i.label==='View').submenu.items.every(i=>!['reload','resetZoom','zoomIn','zoomOut'].includes(i.role)));const fileMenu=menu.items.find(i=>i.label==='File'),closeDocumentMenu=fileMenu?.submenu.items.find(i=>i.label==='Close Document');assert.equal(closeDocumentMenu?.accelerator,'Command+W');
- await evaluate(`document.querySelector('[aria-label="Fit height"]').click();true`);await writeFile('/tmp/preview-reader-ux.png',(await window.webContents.capturePage()).toPNG());
- await window.webContents.reload();await wait(`!!document.querySelector('[aria-label="Open Portrait and landscape.pdf"]')`);await evaluate(`document.querySelector('[aria-label="Open Portrait and landscape.pdf"]').click();true`);await wait(`document.querySelector('[aria-label="Fit height"]')?.getAttribute('aria-pressed')==='true'`);
+ fitMenu('height');await writeFile('/tmp/preview-reader-ux.png',(await window.webContents.capturePage()).toPNG());
+ await window.webContents.reload();await wait(`!!document.querySelector('[aria-label="Open Portrait and landscape.pdf"]')`);await evaluate(`document.querySelector('[aria-label="Open Portrait and landscape.pdf"]').click();true`);await wait(`localStorage.getItem('readerFit')==='height'`);
  await shortcut(',');await wait(`!!document.querySelector('.translation-mode-switcher')`);
  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.translation-mode-switcher button')).map(b=>b.textContent)`),['完整翻译','降低翻译请求']);
  await evaluate(`document.querySelector('.translation-mode-switcher button').click();true`);

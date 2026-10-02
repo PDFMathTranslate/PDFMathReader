@@ -1,3 +1,4 @@
+import {Menu} from 'electron';
 import assert from 'node:assert/strict';
 import {PDFDocument} from 'pdf-lib';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
@@ -13,7 +14,7 @@ export async function verifyFitWidth(window,recents){
   await window.webContents.reload();await wait(`!!document.querySelector('[data-recent-id="${id}"]')`);
   await evaluate(`document.querySelector('[data-recent-id="${id}"]').click();true`);
   await wait(`window.previewRenderDiagnostics()?.totalPages===4&&!window.previewRenderDiagnostics().opening`);
-  window.webContents.send('reader:action','fit-width');await pause(500);
+  assert.equal(await evaluate(`document.querySelectorAll('.fit-button').length`),0);Menu.getApplicationMenu().items.find(i=>i.label==='View').submenu.items.find(i=>i.label==='Fit Width').click();await pause(500);
   const state=()=>evaluate(`(()=>{const d=window.previewRenderDiagnostics(),r=document.querySelector('.reader'),s=getComputedStyle(r),p=document.querySelector('.page[data-page="'+d.readingView.page+'"]');return {view:d.readingView,width:p.getBoundingClientRect().width,left:p.getBoundingClientRect().left-(r.getBoundingClientRect().left+parseFloat(s.paddingLeft)),available:r.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)};})()`);
   const wide=await state();assert.equal(wide.view.page,1);assert.ok(Math.abs(wide.width-wide.available)<2);
   // Scroll into the narrower page with a known page-relative reading anchor.
