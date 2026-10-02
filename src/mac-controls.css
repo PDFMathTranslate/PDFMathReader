@@ -156,3 +156,8 @@
 .reading-interaction .page{user-select:text}
 .settings [aria-label="Interaction mode"]{width:100%}
 .settings [aria-label="Interaction mode"]>.macvue-segment{flex:1;min-width:0;font-size:13px}
+
+/* Continuous pages use the same zero spacing in CSS and virtual geometry. */
+:root[data-reduce-padding="true"] .app:not(.startup-page) .reader{--page-gutter:0px;padding:0;scroll-padding:0}
+:root[data-reduce-padding="true"] .page-layout{gap:0;padding:0}
+:root[data-reduce-padding="true"] .page{border:0;box-shadow:none}

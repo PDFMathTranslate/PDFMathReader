@@ -1,13 +1,13 @@
 const firstAfter=(items,value,end)=>{let low=0,high=items.length;while(low<high){const middle=(low+high)>>>1;if(end(items[middle])<=value)low=middle+1;else high=middle;}return low;};
-export function buildReaderLayout(pages,scale=1,direction='vertical',columns=1,gap=24){
+export function buildReaderLayout(pages,scale=1,direction='vertical',columns=1,gap=24,border=2){
  const count=direction==='horizontal'?1:columns,rows=[],frames=[],columnWidths=Array(count).fill(0);
- if(direction==='vertical')for(let i=0;i<pages.length;i++)columnWidths[i%count]=Math.max(columnWidths[i%count],pages[i].width*scale+2);
+ if(direction==='vertical')for(let i=0;i<pages.length;i++)columnWidths[i%count]=Math.max(columnWidths[i%count],pages[i].width*scale+border);
  const xs=columnWidths.map((_,i)=>columnWidths.slice(0,i).reduce((sum,w)=>sum+w+gap,0));
- let offset=0;const height=direction==='horizontal'?pages.reduce((max,p)=>Math.max(max,p.height*scale+2),0):0;
+ let offset=0;const height=direction==='horizontal'?pages.reduce((max,p)=>Math.max(max,p.height*scale+border),0):0;
  for(let start=0;start<pages.length;start+=count){
-  const group=pages.slice(start,start+count),extent=direction==='horizontal'?group[0].width*scale+2:Math.max(...group.map(p=>p.height*scale+2));
+  const group=pages.slice(start,start+count),extent=direction==='horizontal'?group[0].width*scale+border:Math.max(...group.map(p=>p.height*scale+border));
   const row={start,end:start+group.length,offset,extent};rows.push(row);
-  for(let i=0;i<group.length;i++){const p=group[i],width=p.width*scale+2,h=p.height*scale+2;frames.push({number:p.number,row:rows.length-1,x:direction==='horizontal'?offset:xs[i],y:direction==='horizontal'?(height-h)/2:offset,width,height:h});}
+  for(let i=0;i<group.length;i++){const p=group[i],width=p.width*scale+border,h=p.height*scale+border;frames.push({number:p.number,row:rows.length-1,x:direction==='horizontal'?offset:xs[i],y:direction==='horizontal'?(height-h)/2:offset,width,height:h});}
   offset+=extent+gap;
  }
  const length=rows.length?offset-gap:0;

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {clipboard,ClipboardItem,Menu} from 'electron';
 import {writeFile} from 'node:fs/promises';
 export async function verifySearch(window){
- const evaluate=code=>window.webContents.executeJavaScript(code),pause=ms=>new Promise(r=>setTimeout(r,ms));
+ window.webContents.on('console-message',event=>{if(event.level==='error')console.error('Renderer smoke:',event.message);});
+ const evaluate=async code=>{try{return await window.webContents.executeJavaScript(code);}catch(e){throw Error('Smoke script failed: '+code.slice(0,140)+' / '+e.message);}},pause=ms=>new Promise(r=>setTimeout(r,ms));
  async function wait(code){for(let n=0;n<400;n++){if(await evaluate(code))return;await pause(50);}throw Error('Search UI timed out: '+code);}
  window.show();window.focus();await pause(300);
  await evaluate(`document.querySelector('button[aria-label="Translation settings"]').click()`);
@@ -63,12 +64,12 @@ export async function verifySearch(window){
   await evaluate(`[...document.querySelectorAll('[aria-label="Interaction mode"] button')].find(b=>b.textContent==='Reading mode').click()`);
   await wait(`(async()=> (await window.previewPreferences.load()).interactionMode==='reading')()`);
   await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
-  await wait(`!![...document.querySelectorAll('.reading-text-layer span')].find(e=>e.textContent.trim())`);
+  await wait(`!![...document.querySelectorAll('.reading-paragraph .paragraph-text')].find(e=>e.textContent.includes('Mock translated'))`);
   assert.equal(await evaluate(`!!document.querySelector('.paragraph')`),false,'Reading mode has no paragraph hover or toggle targets');
   await pause(1900);
   const selectReading=async selector=>evaluate(`(()=>{const el=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim());const range=document.createRange();range.selectNodeContents(el);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);return selection.toString();})()`);
   const selected=await selectReading('.reading-paragraph .paragraph-text');
-  assert.equal(selected,'Mock translated paragraph');
+  assert.equal(selected,'Mock translated paragraph');window.focus();window.webContents.focus();await evaluate(`document.activeElement?.blur()`);await clipboard.writeText('reading-copy-test');
   window.webContents.sendInputEvent({type:'keyDown',keyCode:'C',modifiers:['meta']});window.webContents.sendInputEvent({type:'keyUp',keyCode:'C',modifiers:['meta']});await pause(150);
   assert.equal(await clipboard.readText(),selected);
   assert.equal(await evaluate(`!!document.querySelector('.copy-toast')`),false,'Reading copy uses native selection without paragraph toast');

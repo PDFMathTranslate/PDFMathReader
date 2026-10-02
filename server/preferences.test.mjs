@@ -8,7 +8,7 @@ import {createReaderPreferences} from '../electron/preferences.mjs';
 const DEFAULT_PREFERENCES={
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
  interactionMode:'comparison',
- appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,
+ appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
  language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false
 };
 
@@ -54,7 +54,7 @@ test('appearance preferences persist and survive layout-only saves',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'appearance-preferences-'));
  try{
   const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
-  await preferences.save({fit:'width',zoom:1,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true});
+  await preferences.save({fit:'width',zoom:1,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,reducePadding:true});
   await preferences.save({fit:'height',zoom:.8,direction:'horizontal',columns:2});
   assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({fit:'height',zoom:.8,direction:'horizontal',columns:2,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true}));
   await preferences.save({appearance:'light',accentColor:'system',reduceMotion:false,reduceTransparency:false});
