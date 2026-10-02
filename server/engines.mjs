@@ -9,6 +9,7 @@ import {existsSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 import {PDFDocument} from 'pdf-lib';
+import {advancedOptionsToArgs,decorateAdvancedOptions} from './kernel-options.mjs';
 const exec=promisify(execFile);
 
 export const definitions={
@@ -41,8 +42,13 @@ export async function findUv(){
  return {available:false,version:null,message:'uv was not found. Install uv and reopen the app.'};
 }
 
+function packagedOrLocalPythonResource(name){
+ const packaged=typeof process.resourcesPath==='string'?join(process.resourcesPath,name):null;
+ return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
+}
+
 export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,onOutput}){
- let uv;const installing=new Map(),children=new Set();
+ let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map();
  const envPath=id=>join(root,id);const python=id=>join(envPath(id),'bin/python');
 
  async function check(id){
@@ -75,11 +81,45 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   installing.set(id,task);try{return await task;}finally{installing.delete(id);}
  }
 
- async function translate({id,bytes,documentHash,page,language,threads,model,proxy,signal}){
+ async function advanced(id,knownState){
+  if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');
+  if(id==='pdf_inspector')return {id,options:[]};
+  const state=knownState||await check(id);
+  if(!state.available)return {id,options:[],reason:state.reason};
+  const cacheKey=`${id}:${state.version}`;
+  if(advancedMetadata.has(cacheKey))return advancedMetadata.get(cacheKey);
+  const task=(async()=>{
+   const optionsHomeRoot=runtimeHomeRoot||root;await mkdir(optionsHomeRoot,{recursive:true});
+   let home;
+   try{
+    home=await mkdtemp(join(optionsHomeRoot,'kernel-options-'));
+    const isolatedTmp=join(home,'tmp');
+    const env={...process.env,HOME:home,TMPDIR:isolatedTmp,TMP:isolatedTmp,TEMP:isolatedTmp,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),PYTHONPYCACHEPREFIX:join(home,'pycache')};
+    await mkdir(isolatedTmp,{recursive:true});
+    const {stdout}=await exec(python(id),[packagedOrLocalPythonResource('kernel-options.py'),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
+    const raw=JSON.parse(stdout.trim());
+    return {id,options:decorateAdvancedOptions(id,raw)};
+   }catch{return {id,options:[],reason:'Kernel advanced options could not be queried.'};}
+   finally{if(home)await rm(home,{recursive:true,force:true});}
+  })();
+  advancedMetadata.set(cacheKey,task);
+  try{
+   const result=await task;
+   if(result.reason)advancedMetadata.delete(cacheKey);
+   return result;
+  }catch{
+   advancedMetadata.delete(cacheKey);
+   return {id,options:[],reason:'Kernel advanced options could not be queried.'};
+  }
+ }
+
+ async function translate({id,bytes,documentHash,page,language,threads,model,proxy,signal,advancedOptions={}}){
   if(signal?.aborted)throw Error('Cancelled');
   const state=await check(id);if(!state.available)throw Error(state.reason);
+  const schema=await advanced(id,state);if(schema.reason)throw Error(schema.reason);
+  const {overrides,args:advancedArgs}=advancedOptionsToArgs(id,advancedOptions,schema.options);
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,model,prompt:2,layoutSchema:2})).digest('hex');
+  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,model,prompt:2,layoutSchema:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const cached=join(cacheDir,`${key}.pdf`);
   try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;return result;}catch{}
   await mkdir(root,{recursive:true});
@@ -89,7 +129,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   const assetHome=join(runtimeHomeRoot,id,'home');const home=join(dir,'home');await prepareKernelAssets(assetHome,home);
   const env={...process.env,HOME:home,OPENAI_API_KEY:proxy.token,OPENAI_BASE_URL:proxy.url,OPENAI_MODEL:model,PDF2ZH_OPENAI_API_KEY:proxy.token,PDF2ZH_OPENAI_BASE_URL:proxy.url,PDF2ZH_OPENAI_MODEL:model};delete env.OPENAI_API_KEY_REAL;
   try{
-   const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,'--backend','cpu','--ignore-cache']:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--no-auto-extract-glossary','--watermark-output-mode','no_watermark'];
+   const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,'--backend','cpu','--ignore-cache',...advancedArgs]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
    await new Promise((resolve,reject)=>{
     if(signal?.aborted)return reject(Error('Cancelled'));
     const child=spawn(python(id),[process.resourcesPath&&existsSync(join(process.resourcesPath,'kernel-worker.py'))?join(process.resourcesPath,'kernel-worker.py'):fileURLToPath(new URL('../electron/kernel-worker.py',import.meta.url)),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
@@ -104,5 +144,5 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   }finally{await rm(dir,{recursive:true,force:true});}
  }
 
- return {layout:async key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(cacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUv(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
+ return {layout:async key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(cacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUv(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
 }

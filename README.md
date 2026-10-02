@@ -83,7 +83,9 @@ macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows u
 | Fast | PDFMathTranslate | Translated PDF pages with formula preservation |
 | Precise | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
 
-Choose a target language in Settings. **完整翻译** translates the entire document; **降低翻译请求** translates the current page and up to two pages on either side as you read. Configure 1–4 parallel pages and 1–8 translation requests; defaults are 2 pages and 4 requests.
+Choose a target language in Settings. **完整翻译** translates the entire document; **降低翻译请求** translates the current page and up to two pages on either side as you read. Configure 1–12 parallel pages and 1–12 translation requests; defaults are 2 pages and 4 requests.
+
+With Fast or Precise selected, **Advanced** appears in Settings and starts collapsed. Its controls are generated from the installed kernel's supported options; each mode saves its own values. Changes restart translation with a separate cache entry. **Restore defaults** resets only the selected mode.
 
 The interface language is changed separately under **Appearance → Interface language**. Changing it updates reader labels and menus without changing the language used for document translation. Additional system-level copy and broader accessibility coverage remain pending UX work.
 

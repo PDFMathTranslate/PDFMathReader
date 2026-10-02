@@ -4,7 +4,7 @@ import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
 const runtimeElectron=['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','preload.cjs'];
-const runtimeServer=['index.mjs','documents.mjs','engines.mjs','layout.mjs','layout-extraction.mjs','performance.mjs'];
+const runtimeServer=['index.mjs','documents.mjs','engines.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
  try{path=dirname(require.resolve(name+'/package.json'));}catch{
@@ -39,6 +39,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  for(const file of runtimeElectron)await cp(join(root,'electron',file),join(stage,'electron',file));
  for(const file of runtimeServer)await cp(join(root,'server',file),join(stage,'server',file));
  await cp(join(root,'electron/kernel-worker.py'),join(stage,'electron/kernel-worker.py'));
+ await cp(join(root,'electron/kernel-options.py'),join(stage,'electron/kernel-options.py'));
  if(test)for(const file of await readdir(join(root,'electron')))if(file==='smoke.mjs'||file.endsWith('-smoke.mjs'))await cp(join(root,'electron',file),join(stage,'electron',file));
  const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['express','@firecrawl/pdf-inspector'];
  if(test&&!names.includes('pdf-lib'))names.push('pdf-lib');

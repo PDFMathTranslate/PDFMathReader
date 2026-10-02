@@ -9,7 +9,7 @@ test('interface language defaults to English, falls back safely and interpolates
  assert.equal(setUILanguage('unsupported'),'en');
 });
 test('visible interface translation keys resolve in every supported language',async()=>{
- const sources=await Promise.all(['App.vue','AppearanceSettings.vue'].map(name=>readFile(new URL('../src/'+name,import.meta.url),'utf8')));
+ const sources=await Promise.all(['App.vue','AppearanceSettings.vue','AdvancedSettings.vue'].map(name=>readFile(new URL('../src/'+name,import.meta.url),'utf8')));
  const keys=new Set(sources.flatMap(source=>[...source.matchAll(/\bt\(['"]([^'"]+)['"]/g)].map(match=>match[1])));
  for(const locale of SUPPORTED_UI_LANGUAGES){setUILanguage(locale);for(const key of keys)assert.notEqual(t(key),key,`${locale}: ${key}`);}
  setUILanguage('en');

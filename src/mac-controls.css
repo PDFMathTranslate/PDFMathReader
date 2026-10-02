@@ -175,3 +175,18 @@
 .scrub-input.alt-scrub{cursor:ew-resize}
 .toolbar input.zoom-popup{width:70px;min-width:70px;padding:5px 7px;text-align:center;border:0;border-radius:6px;background:var(--chrome-hover);color:var(--text);font-size:13px;line-height:1.4}
 .toolbar input.zoom-popup:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+.advanced-settings>summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+.advanced-settings>summary::-webkit-details-marker{display:none}
+.advanced-settings>summary::before{content:'›';font-size:20px;font-weight:400;line-height:1;transition:transform 140ms ease}
+.advanced-settings[open]>summary::before{transform:rotate(90deg)}
+.advanced-options{margin-top:16px}
+.advanced-option{padding:12px 0;border-bottom:1px solid var(--chrome-border)}
+.advanced-option:first-of-type{padding-top:0}
+.settings .advanced-option label{margin:0;display:block;font-size:13px;min-width:0}
+.advanced-option .setting-row{gap:16px}
+.advanced-option p{font-size:13px;margin:6px 0 0;line-height:1.4}
+.advanced-option input[type=number]{width:80px;flex:none;min-width:0;padding:4px 8px}
+.advanced-option .macvue-text-field{width:100%;margin-top:6px}
+.advanced-options>.macvue-button{margin-top:12px}
+.advanced-option>.macvue-field{width:100%;margin-top:6px}

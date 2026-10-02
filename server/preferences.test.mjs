@@ -10,6 +10,7 @@ const DEFAULT_PREFERENCES={
  interactionMode:'comparison',
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
  language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ kernelAdvancedOptions:{},
  autoHideHeader:true,uiLanguage:'en'
 };
 
@@ -125,6 +126,62 @@ test('new settings survive reopening',async()=>{
   await preferences.save({language:'Korean',concurrency:12,pageConcurrency:12,automatic:false,layoutVisible:true});
   await preferences.flush();
   assert.deepEqual((await createReaderPreferences(path)).load(),expected);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('kernel advanced options persist across a new app instance',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kernel-advanced-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const kernelAdvancedOptions={pdf_math_fast:{option_dest:'fast',threads:2},pdf_math_precise:{option_dest:'precise',use_cache:true}};
+  await preferences.save({kernelAdvancedOptions});
+  const reopened=(await createReaderPreferences(path)).load();
+  assert.deepEqual(reopened.kernelAdvancedOptions,kernelAdvancedOptions);
+  assert.notEqual(reopened.kernelAdvancedOptions.pdf_math_fast,reopened.kernelAdvancedOptions.pdf_math_precise);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('invalid nested kernel advanced options are rejected without changing state',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kernel-advanced-invalid-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const withProto=JSON.parse('{"pdf_math_fast":{"__proto__":true}}');
+  const invalid=[
+   null,[],{pdf_inspector:{}},{pdf_math_fast:null},{pdf_math_fast:[]},{pdf_math_fast:{Bad:1}},
+   {pdf_math_fast:{_bad:1}},{pdf_math_fast:{constructor:1}},{pdf_math_fast:{prototype:1}},withProto,
+   {pdf_math_fast:{option_dest:NaN}},{pdf_math_fast:{option_dest:Infinity}},{pdf_math_fast:{option_dest:{}}},
+   {pdf_math_fast:{option_dest:'x'.repeat(4001)}}
+  ];
+  for(const kernelAdvancedOptions of invalid)assert.throws(()=>preferences.save({kernelAdvancedOptions}),/Invalid kernel advanced options/);
+  assert.deepEqual(preferences.load(),withPreferences());
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('kernel advanced option maps are isolated from save and load mutations',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kernel-advanced-mutation-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const kernelAdvancedOptions={pdf_math_fast:{option_dest:'fast'},pdf_math_precise:{option_dest:'precise'}};
+  await preferences.save({kernelAdvancedOptions});
+  kernelAdvancedOptions.pdf_math_fast.option_dest='changed';
+  kernelAdvancedOptions.pdf_math_precise.injected=true;
+  const loaded=preferences.load();
+  assert.deepEqual(loaded.kernelAdvancedOptions,{pdf_math_fast:{option_dest:'fast'},pdf_math_precise:{option_dest:'precise'}});
+  loaded.kernelAdvancedOptions.pdf_math_fast.option_dest='changed';
+  loaded.kernelAdvancedOptions.pdf_math_precise.injected=true;
+  assert.deepEqual(preferences.load().kernelAdvancedOptions,{pdf_math_fast:{option_dest:'fast'},pdf_math_precise:{option_dest:'precise'}});
+  assert.deepEqual((await createReaderPreferences(path)).load().kernelAdvancedOptions,{pdf_math_fast:{option_dest:'fast'},pdf_math_precise:{option_dest:'precise'}});
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('unrelated saves merge defaults while preserving current kernel maps',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kernel-advanced-partial-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const kernelAdvancedOptions={pdf_math_fast:{option_dest:'fast'},pdf_math_precise:{option_dest:'precise'}};
+  await preferences.save({kernelAdvancedOptions,autoHideHeader:false,uiLanguage:'zh-CN'});
+  await preferences.save({fit:'height',zoom:.8});
+  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({fit:'height',zoom:.8,kernelAdvancedOptions,autoHideHeader:false,uiLanguage:'zh-CN'}));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
