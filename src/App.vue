@@ -323,6 +323,7 @@ function headerDoubleClick(event){
 }
 function toolbarHint(description,key){return key?`${description} (${platform==='darwin'?'⌘'+key:'Ctrl+'+key})`:description;}
 const contentGlass=window.previewAppearance?.contentGlass===true;
+const windowsGlass=window.previewAppearance?.windowsGlass===true;
 const engine=ref(localStorage.getItem('engine')||'pdf_inspector'),engineState=ref(null),uvState=ref(null),engineBusy=ref(false),pageConcurrency=ref(2),kernelAdvancedOptions=ref({pdf_math_fast:{},pdf_math_precise:{}});const parallelLevels=[1,2,4,12];
 const parallelLabels=computed(()=>[t('parallel.off'),' ',t('parallel.medium'),t('parallel.more')]);
 const parallelPagesStep=computed({get:()=>parallelLevels.indexOf(pageConcurrency.value),set:index=>{pageConcurrency.value=parallelLevels[index];}});
@@ -528,7 +529,7 @@ onBeforeUnmount(()=>{clearTimeout(immersiveLightsTimer);clearTimeout(copyToastTi
 </script>
 
 <template>
- <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
+ <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'windows-glass':windowsGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
   <div v-if="immersiveHeaderHidden" class="header-reveal-zone" @pointerenter="revealHeader" aria-hidden="true"></div>
   <nav class="toolbar" :class="{'has-document':pages.length}" :aria-label="t('app.readerNavigation')" :inert="immersiveHeaderHidden" @focusin="revealHeader" @dblclick="headerDoubleClick">
    <div v-if="platform==='darwin'" class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div>

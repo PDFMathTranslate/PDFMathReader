@@ -2,7 +2,8 @@ import {app,BrowserWindow,dialog,Menu,ipcMain,shell,clipboard,safeStorage,system
 import {randomBytes} from 'node:crypto';
 import {join} from 'node:path';
 import {mkdtempSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {tmpdir,release} from 'node:os';
+const windowsBuild=process.platform==='win32'?Number(release().split('.')[2]):0;
 const smoke=process.argv.find(a=>a.startsWith('--smoke-test='))?.split('=')[1];
 if(smoke&&app.isPackaged&&!process.execPath.includes('PDFMathReader Tests.app'))throw Error('Mock tests require the isolated test application.');
 if(smoke){
@@ -42,11 +43,16 @@ else {
   return result;
  };
  const setWindowVibrancy=(target,reduceTransparency)=>{
+  if(process.platform==='win32'&&windowsBuild>=22621){
+   target.setBackgroundMaterial(reduceTransparency?'none':'acrylic');
+   target.setBackgroundColor(reduceTransparency?'#f7f7f9':'#00000000');
+   return;
+  }
   if(process.platform!=='darwin'||typeof target?.setVibrancy!=='function')return;
   try{target.setVibrancy(reduceTransparency?null:windowChromeOptions('darwin').vibrancy);}catch{}
  };
  const chromeOptions=()=>{
-  const options=windowChromeOptions(process.platform);
+  const options=windowChromeOptions(process.platform,{windowsBuild,reduceTransparency:!!preferences?.load?.().reduceTransparency});
   if(process.platform==='darwin'&&preferences?.load?.().reduceTransparency)delete options.vibrancy;
   return options;
  };
@@ -117,7 +123,7 @@ else {
  async function createWindow(document){
   let window;
   const backend=await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
-  window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(smoke?['--preview-test-mode']:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+  window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(process.platform==='win32'&&windowsBuild>=22621?['--preview-windows-glass']:[]),...(smoke?['--preview-test-mode']:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   hideNativeMenuBar(window);
   windows.set(window,{backend,documents:document?[document]:[],tickets:new Map(),preferences:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
   const fullscreenChanged=()=>{if(!window||window.isDestroyed())return;const full=window.isFullScreen();updateWindowButtons(window);window.webContents.send('window:fullscreen',full);};

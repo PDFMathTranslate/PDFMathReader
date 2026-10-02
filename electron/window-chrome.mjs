@@ -13,8 +13,9 @@ const WINDOWS_WINDOW_CHROME = Object.freeze({frame:false,autoHideMenuBar:true,ba
 const NATIVE_WINDOW_CHROME = Object.freeze({backgroundColor:'#f7f7f9'});
 const SHORTCUT_ACTIONS=Object.freeze({f:'search',w:'close-document',o:'open',n:'new-window',r:'translation',b:'sidebar',',':'settings',l:'language',k:'kernel','+':'zoom-in','=':'zoom-in','-':'zoom-out'});
 
-export function windowChromeOptions(platform){
+export function windowChromeOptions(platform,{windowsBuild=0,reduceTransparency=false}={}){
  if(platform==='darwin')return {...MACOS_WINDOW_CHROME,trafficLightPosition:{...MACOS_WINDOW_CHROME.trafficLightPosition}};
+ if(platform==='win32'&&windowsBuild>=22621&&!reduceTransparency)return {...WINDOWS_WINDOW_CHROME,backgroundMaterial:'acrylic',backgroundColor:'#00000000'};
  return platform==='win32'?{...WINDOWS_WINDOW_CHROME}:{...NATIVE_WINDOW_CHROME};
 }
 

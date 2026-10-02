@@ -1845,6 +1845,23 @@ body:has(.content-glass),.content-glass.app,.content-glass .workspace{background
   box-shadow: none;
 }
 .desktop[data-platform="win32"] .toolbar .title {font-weight: 600;}
+/* Acrylic tint also blurs reader content on Windows without native backdrops. */
+.desktop[data-platform="win32"] .toolbar {
+  background: color-mix(in srgb,var(--chrome-solid) 72%,transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
+.desktop.windows-glass .workspace {background:transparent}
+.desktop.windows-glass .reader {background:linear-gradient(to bottom,transparent var(--toolbar-height),var(--reader) var(--toolbar-height))}
+.desktop.windows-glass .sidebar {background:linear-gradient(to bottom,transparent var(--toolbar-height),var(--chrome-solid) var(--toolbar-height))}
+.reduced-transparency .desktop[data-platform="win32"] .toolbar,
+[data-reduced-transparency="true"] .desktop[data-platform="win32"] .toolbar {
+  background:var(--chrome-solid);backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+@media(prefers-reduced-transparency:reduce){
+ .desktop[data-platform="win32"] .toolbar {background:var(--chrome-solid);backdrop-filter:none;-webkit-backdrop-filter:none}
+}
 .desktop[data-platform="linux"] .toolbar {padding-inline: 12px;}
 .desktop[data-platform="linux"] .toolbar .icon-button {border-radius: 8px;}
 .desktop:is([data-platform="win32"],[data-platform="linux"]) .toolbar .system-icon {width: 20px; height: 20px;}

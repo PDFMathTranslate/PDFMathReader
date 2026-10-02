@@ -23,6 +23,14 @@ test('Windows uses a frameless hidden menu bar while Linux keeps native chrome',
  assert.equal(windowChromeOptions('linux').autoHideMenuBar,undefined);
 });
 
+test('Windows Acrylic requires a supported build and respects reduced transparency',()=>{
+ assert.equal(windowChromeOptions('win32',{windowsBuild:22621}).backgroundMaterial,'acrylic');
+ assert.equal(windowChromeOptions('win32',{windowsBuild:22621}).backgroundColor,'#00000000');
+ assert.equal(windowChromeOptions('win32',{windowsBuild:19045}).backgroundMaterial,undefined);
+ assert.equal(windowChromeOptions('win32',{windowsBuild:22621,reduceTransparency:true}).backgroundMaterial,undefined);
+ assert.equal(windowChromeOptions('linux',{windowsBuild:22621}).backgroundMaterial,undefined);
+});
+
 test('accelerators and before-input shortcuts follow each platform',()=>{
  assert.equal(commandAccelerator('darwin','W'),'Command+W');
  assert.equal(commandAccelerator('linux','W'),'CommandOrControl+W');
