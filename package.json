@@ -21,7 +21,8 @@
     "@electron/packager": "^20.3.0",
     "electron": "^44.5.1",
     "vite": "^7.1.0",
-    "@vitejs/plugin-vue": "^6.0.0"
+    "@vitejs/plugin-vue": "^6.0.0",
+    "esbuild": "^0.28.2"
   },
   "version": "0.1.0",
   "description": "Local PDF reader with paragraph translation",

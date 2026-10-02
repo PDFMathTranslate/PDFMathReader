@@ -1,0 +1,42 @@
+{
+  "unit": "bytes excluding symbolic-link aliases",
+  "baseline": {
+    "appBytes": 427325776,
+    "resourcesBytes": 127645872,
+    "frameworkBytes": 299637104
+  },
+  "stages": [
+    {
+      "phase": "whitelist",
+      "bytes": 118136979
+    },
+    {
+      "phase": "pdf",
+      "bytes": 65985194
+    },
+    {
+      "phase": "skia",
+      "bytes": 37905612
+    },
+    {
+      "phase": "dependencies",
+      "bytes": 20902521
+    },
+    {
+      "phase": "bundle",
+      "bytes": 16870715
+    }
+  ],
+  "production": {
+    "phase": "bundle",
+    "test": false,
+    "stagedBytes": 16886489,
+    "appBytes": 318308244
+  },
+  "installed": {
+    "appBytes": 318322532,
+    "resourcesBytes": 18642998,
+    "frameworkBytes": 299637104
+  },
+  "zipBytes": 135291851
+}

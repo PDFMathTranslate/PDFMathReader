@@ -13,7 +13,7 @@ Currently tested on macOS. Windows and Linux have platform-specific window and t
 - Open multiple PDFs in separate windows, each with its own reading position, translation work, and backend process. Closing one window leaves the others running.
 - Browse recent PDFs in a thumbnail gallery from **File → Open recents...**. Reopening a document restores its page, scroll position, zoom, layout, sidebar, and original/translation view.
 - Open the existing settings panel through **File → Preference** or **Settings…**.
-- Switch individual detected regions between original and translation in place: click with **Ultra fast**, or double-click with **Fast** and **Precise**.
+- Switch individual detected regions between original and translation in place: single-click with **Ultra fast**, **Fast**, or **Precise**.
 - Read large documents with virtualized pages and thumbnails, bounded rendering caches, and independent rendering, layout analysis, and translation.
 
 ## Quick start
@@ -79,7 +79,7 @@ macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows u
 
 Choose a target language in Settings. **完整翻译** translates the entire document; **降低翻译请求** translates the current page and up to two pages on either side as you read. Configure 1–4 parallel pages and 1–8 translation requests; defaults are 2 pages and 4 requests.
 
-The toolbar translation control switches between original and translated content. With **Ultra fast**, click a paragraph to toggle its original and translation. With math kernels, double-click a detected paragraph to toggle its content in place. Enable **Show paragraph boundaries** to see detected regions. Retry a failed current page from Settings.
+The toolbar translation control switches between original and translated content. With any kernel, single-click a detected paragraph to toggle its original and translation in place. Enable **Show paragraph boundaries** to see detected regions. Retry a failed current page from Settings.
 
 Rendering, layout detection, and translation run independently, and results appear as paragraphs or pages finish. Changing the document, language, or kernel cancels outdated work. Minimizing or hiding a window pauses rendering and reading-mode work; full-document translation continues.
 

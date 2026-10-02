@@ -1,4 +1,12 @@
 import {packager} from '@electron/packager';
+import {stageApplication,directoryBytes} from './production-stage.mjs';
+import {resolve} from 'node:path';
+import {writeFile,rm,readFile} from 'node:fs/promises';
 const test=process.argv.includes('--test');
-const paths=await packager({dir:'.',name:test?'PDFMathReader Tests':'PDFMathReader',appBundleId:test?'local.previewtranslate.tests':'local.previewtranslate.reader',appVersion:'0.1.0',icon:'electron/AppIcon.icns',extraResource:['electron/kernel-worker.py'],extendInfo:test?{}:{CFBundleDocumentTypes:[{CFBundleTypeName:'PDF Document',CFBundleTypeRole:'Viewer',LSHandlerRank:'Alternate',LSItemContentTypes:['com.adobe.pdf'],CFBundleTypeExtensions:['pdf']}]},platform:'darwin',arch:'arm64',out:test?'/tmp/preview-test-build':'release',overwrite:true,asar:{unpack:'**/*.node'},ignore:[/^\/release(?:\/|$)/,/^\/\.cache(?:\/|$)/,/^\/\.env(?:\.|$)/,/^\/src(?:\/|$)/,/^\/public(?:\/|$)/,/^\/preview\.png$/,/^\/.*\.test\.mjs$/]});
+const root=process.cwd(),phase=process.argv.find(arg=>arg.startsWith('--stage='))?.slice(8)||'bundle';
+const {stage}=await stageApplication({root,phase,test});
+const stagedBytes=await directoryBytes(stage);
+const paths=await packager({dir:stage,electronVersion:JSON.parse(await readFile(resolve(root,'node_modules/electron/package.json'),'utf8')).version,prune:false,name:test?'PDFMathReader Tests':'PDFMathReader',appBundleId:test?'local.previewtranslate.tests':'local.previewtranslate.reader',appVersion:'0.1.0',icon:resolve(root,'electron/AppIcon.icns'),extraResource:[resolve(root,'electron/kernel-worker.py')],extendInfo:test?{}:{CFBundleDocumentTypes:[{CFBundleTypeName:'PDF Document',CFBundleTypeRole:'Viewer',LSHandlerRank:'Alternate',LSItemContentTypes:['com.adobe.pdf'],CFBundleTypeExtensions:['pdf']}]},platform:'darwin',arch:'arm64',out:test?'/tmp/pdfmathreader-slim-test-build':resolve(root,'release'),overwrite:true,asar:{unpack:'**/*.node'},ignore:[/^\/release(?:\/|$)/,/^\/\.cache(?:\/|$)/,/^\/\.env(?:\.|$)/,/^\/src(?:\/|$)/,/^\/public(?:\/|$)/,/^\/preview\.png$/,/^\/.*\.test\.mjs$/]});
+for(const path of paths)await writeFile(resolve(path,'package-size.json'),JSON.stringify({phase,test,stagedBytes,appBytes:await directoryBytes(resolve(path,(test?'PDFMathReader Tests':'PDFMathReader')+'.app'))},null,2));
+await rm(stage,{recursive:true,force:true});
 console.log(paths.join('\n'));

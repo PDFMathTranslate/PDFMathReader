@@ -67,7 +67,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   if(signal?.aborted)throw Error('Cancelled');
   const state=await check(id);if(!state.available)throw Error(state.reason);
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,model,prompt:2})).digest('hex');
+  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,model,prompt:2,layoutSchema:2})).digest('hex');
   const cached=join(cacheDir,`${key}.pdf`);
   try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;return result;}catch{}
   await mkdir(root,{recursive:true});

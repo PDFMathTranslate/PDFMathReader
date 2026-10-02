@@ -37,9 +37,9 @@ export async function verifyKernelUI(window){
   await wait(`document.querySelector('.thumb small')?.innerText==='Translated'&&!document.querySelector('.page-caption')?.innerText.includes('Translating')&&document.querySelector('.page canvas').toDataURL()!==${JSON.stringify(original)}`);
   await canvasSettled(true);
   await wait(`document.querySelectorAll('.paragraph.math').length>0`);
-  await evaluate(`document.querySelector('.paragraph.math[data-translation-changed="true"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true,detail:2}))`);
+  await evaluate(`document.querySelector('.paragraph.math[data-translation-changed="true"]').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}))`);
   await wait(`(()=>{const c=document.querySelector('.paragraph.math .math-region');return !!c&&c.width>0&&c.height>0;})()`);
-  await evaluate(`document.querySelector('.paragraph.math[data-translation-changed="true"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true,detail:2}))`);
+  await evaluate(`document.querySelector('.paragraph.math[data-translation-changed="true"]').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}))`);
   await wait(`!document.querySelector('.paragraph.math .math-region')`);
   window.focus();await new Promise(r=>setTimeout(r,250));
  await evaluate(`(()=>{const b=document.querySelector('[aria-label="Translation settings"]');b.focus();b.click();})()`);

@@ -7,6 +7,17 @@ import sys
 from pathlib import Path
 import pymupdf
 
+def layout_box(values, source_page, kind):
+    # Fast's interpreter applies its CropBox/rotation CTM before layout.
+    # Its coordinates are already in the visible page's bottom-left frame.
+    # Applying the raw PDF transform again subtracts the CropBox twice.
+    if kind == "pdf_math_fast":
+        matrix = pymupdf.Matrix(1, 0, 0, -1, 0, source_page.rect.height)
+    else:
+        matrix = source_page.transformation_matrix * source_page.rotation_matrix
+    rect = pymupdf.Rect(*values) * matrix
+    return {"x": rect.x0, "y": rect.y0, "width": max(1, rect.width), "height": max(1, rect.height)}
+
 def main(capture_only=False):
     if capture_only:
         kind, sidecar, selected, input_path, args = json.loads(os.environ["PREVIEW_CAPTURE_CONTEXT"])
@@ -18,8 +29,7 @@ def main(capture_only=False):
     records = []
     
     def box(values):
-        rect = pymupdf.Rect(*values) * source_page.transformation_matrix * source_page.rotation_matrix
-        return {"x": rect.x0, "y": rect.y0, "width": max(1, rect.width), "height": max(1, rect.height)}
+        return layout_box(values, source_page, kind)
     
     if kind == "pdf_math_fast":
         from pdf2zh.converter import TranslateConverter
