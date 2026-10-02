@@ -77,7 +77,7 @@ export async function verifySearch(window){
  try{
   await evaluate(`document.activeElement?.blur();[...document.querySelectorAll('.paragraph')].find(b=>b.getAttribute('aria-label')?.includes('Mock translated paragraph')).dispatchEvent(new PointerEvent('pointerenter'));`);
   window.webContents.sendInputEvent({type:'keyDown',keyCode:'C',modifiers:['meta']});window.webContents.sendInputEvent({type:'keyUp',keyCode:'C',modifiers:['meta']});
-  await wait(`document.querySelector('.copy-toast')?.textContent==='已复制段落'`);
+  await wait(`document.querySelector('.copy-toast')?.textContent==='Paragraph copied'`);
   assert.equal(await clipboard.readText(),'Mock translated paragraph');
   await evaluate(`[...document.querySelectorAll('.paragraph')].find(b=>b.getAttribute('aria-label')?.includes('Mock translated paragraph')).dispatchEvent(new PointerEvent('pointerleave'));`);
   console.log('Hovered paragraph Cmd+C and clipboard contents passed.');
@@ -125,5 +125,6 @@ export async function verifySearch(window){
  await evaluate(`document.querySelector('[aria-label="Close search"]').click()`);
  await wait(`!document.querySelector('.document-search')&&!document.querySelector('.search-highlight')`);
  window.webContents.send('reader:action','search');await wait(`!!document.querySelector('.document-search')`);
- console.log('Search passed: translated matches, original matches, mode isolation, visible coordinate highlight, close and Find action.');window.close();
+ console.log('Search passed: translated matches, original matches, mode isolation, visible coordinate highlight, close and Find action.');
+ await (await import('./experience-smoke.mjs')).verifyExperience(window);window.close();
 }

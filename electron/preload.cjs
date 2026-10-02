@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('previewCredentials',Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
- platform:process.platform,
+ platform:process.argv.includes('--preview-test-mode')&&process.argv.includes('--preview-ui-platform=win32')?'win32':process.platform,
  contentGlass:process.platform==='darwin',
  current:()=>ipcRenderer.invoke('appearance:current'),
  onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('appearance:changed',listener);return ()=>ipcRenderer.removeListener('appearance:changed',listener);}
@@ -46,3 +46,5 @@ contextBridge.exposeInMainWorld('previewResize',Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('previewClipboard',Object.freeze({writeText:text=>ipcRenderer.invoke('clipboard:write-text',text)}));
+
+contextBridge.exposeInMainWorld('previewHaptics',Object.freeze({tick:()=>ipcRenderer.invoke('haptics:tick')}));

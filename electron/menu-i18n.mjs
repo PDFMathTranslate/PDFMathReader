@@ -1,0 +1,153 @@
+const menuMessages = {
+ en: {
+  File: 'File',
+  'New Window': 'New Window',
+  'Open PDF…': 'Open PDF…',
+  'Open recents...': 'Open recents...',
+  Preference: 'Preference',
+  'Close Document': 'Close Document',
+  'Close Window': 'Close Window',
+  View: 'View',
+  'Find…': 'Find…',
+  'Show Original / Translation': 'Show Original / Translation',
+  'Zoom In': 'Zoom In',
+  'Zoom Out': 'Zoom Out',
+  'Fit Width': 'Fit Width',
+  'Fit Height': 'Fit Height',
+  'Toggle Sidebar': 'Toggle Sidebar',
+  Layout: 'Layout',
+  Vertical: 'Vertical',
+  Horizontal: 'Horizontal',
+  'Pages per Row': 'Pages per Row',
+  'One Side': 'One Side',
+  'Two Sides': 'Two Sides',
+  'Quad Side': 'Quad Side',
+  Go: 'Go',
+  'Previous Page': 'Previous Page',
+  'Next Page': 'Next Page',
+  Translation: 'Translation',
+  'Choose Language…': 'Choose Language…',
+  'Choose Kernel…': 'Choose Kernel…',
+  'Settings…': 'Settings…',
+  'Look Up Selection': 'Look Up Selection',
+  Edit: 'Edit',
+  Window: 'Window',
+  'Toggle Full Screen': 'Toggle Full Screen',
+  Undo: 'Undo',
+  Redo: 'Redo',
+  Cut: 'Cut',
+  Copy: 'Copy',
+  Paste: 'Paste',
+  'Select All': 'Select All',
+ },
+ 'zh-CN': {
+  File: '文件',
+  'New Window': '新建窗口',
+  'Open PDF…': '打开 PDF…',
+  'Open recents...': '打开最近文档…',
+  Preference: '偏好设置',
+  'Close Document': '关闭文档',
+  'Close Window': '关闭窗口',
+  View: '显示',
+  'Find…': '查找…',
+  'Show Original / Translation': '显示原文 / 译文',
+  'Zoom In': '放大',
+  'Zoom Out': '缩小',
+  'Fit Width': '适合宽度',
+  'Fit Height': '适合高度',
+  'Toggle Sidebar': '切换侧边栏',
+  Layout: '布局',
+  Vertical: '垂直',
+  Horizontal: '水平',
+  'Pages per Row': '每行页数',
+  'One Side': '单页',
+  'Two Sides': '双页',
+  'Quad Side': '四页',
+  Go: '前往',
+  'Previous Page': '上一页',
+  'Next Page': '下一页',
+  Translation: '翻译',
+  'Choose Language…': '选择语言…',
+  'Choose Kernel…': '选择内核…',
+  'Settings…': '设置…',
+  'Look Up Selection': '查询所选内容',
+  Edit: '编辑',
+  Window: '窗口',
+  'Toggle Full Screen': '切换全屏',
+  Undo: '撤销',
+  Redo: '重做',
+  Cut: '剪切',
+  Copy: '拷贝',
+  Paste: '粘贴',
+  'Select All': '全选',
+ },
+ ja: {
+  File: 'ファイル',
+  'New Window': '新規ウインドウ',
+  'Open PDF…': 'PDF を開く…',
+  'Open recents...': '最近の文書を開く…',
+  Preference: '環境設定',
+  'Close Document': '文書を閉じる',
+  'Close Window': 'ウインドウを閉じる',
+  View: '表示',
+  'Find…': '検索…',
+  'Show Original / Translation': '原文 / 翻訳を表示',
+  'Zoom In': '拡大',
+  'Zoom Out': '縮小',
+  'Fit Width': '幅に合わせる',
+  'Fit Height': '高さに合わせる',
+  'Toggle Sidebar': 'サイドバーを切り替え',
+  Layout: 'レイアウト',
+  Vertical: '縦',
+  Horizontal: '横',
+  'Pages per Row': '1 行あたりのページ数',
+  'One Side': '1 ページ',
+  'Two Sides': '2 ページ',
+  'Quad Side': '4 ページ',
+  Go: '移動',
+  'Previous Page': '前のページ',
+  'Next Page': '次のページ',
+  Translation: '翻訳',
+  'Choose Language…': '言語を選択…',
+  'Choose Kernel…': 'カーネルを選択…',
+  'Settings…': '設定…',
+  'Look Up Selection': '選択範囲を調べる',
+  Edit: '編集',
+  Window: 'ウインドウ',
+  'Toggle Full Screen': 'フルスクリーンを切り替え',
+  Undo: '取り消す',
+  Redo: 'やり直す',
+  Cut: 'カット',
+  Copy: 'コピー',
+  Paste: 'ペースト',
+  'Select All': 'すべてを選択',
+ },
+};
+
+const supportedLocales = new Set(Object.keys(menuMessages));
+const properName = /^PDFMathReader(?: Tests)?$/;
+const goToPattern = /^Go to (\d+)%$/;
+const aboutPattern = /^About (PDFMathReader(?: Tests)?)$/;
+const quitPattern = /^Quit (PDFMathReader(?: Tests)?)$/;
+const goToLabel = {
+ en: percent => `Go to ${percent}%`,
+ 'zh-CN': percent => `前往 ${percent}%`,
+ ja: percent => `${percent}%へ移動`,
+};
+
+function localeMessages(locale) {
+ return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
+}
+
+export function menuLabel(label, locale = 'en') {
+ if (typeof label !== 'string' || properName.test(label)) return label;
+ const code = supportedLocales.has(locale) ? locale : 'en';
+ const messages = localeMessages(code);
+ const match = label.match(goToPattern);
+ if (match) return (goToLabel[code]||goToLabel.en)(match[1]);
+ const about = label.match(aboutPattern);
+ if (about) return code==='zh-CN' ? `关于 ${about[1]}` : code==='ja' ? `${about[1]} について` : `About ${about[1]}`;
+ const quit = label.match(quitPattern);
+ if (quit) return code==='zh-CN' ? `退出 ${quit[1]}` : code==='ja' ? `${quit[1]}を終了` : `Quit ${quit[1]}`;
+ return messages[label]||menuMessages.en[label]||label;
+}

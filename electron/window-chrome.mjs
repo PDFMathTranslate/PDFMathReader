@@ -19,6 +19,7 @@ export function closeWindowAccelerator(platform){return platform==='darwin'?'Ctr
 export function shortcutAction(platform,input){
  if(!input||input.type!=='keyDown')return null;
  const key=String(input.key||'').toLowerCase();
+ if(!input.meta&&!input.control&&!input.alt){if(key==='pageup'||input.shift&&['arrowup','arrowleft'].includes(key))return 'page-previous';if(key==='pagedown'||input.shift&&['arrowdown','arrowright'].includes(key))return 'page-next';}
  if(platform==='darwin'){
   if(key==='w'&&input.control&&!input.meta&&!input.alt&&!input.shift)return 'close-window';
   if(!input.meta||input.control||input.alt)return null;

@@ -6,7 +6,8 @@ const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
  interactionMode:'comparison',
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false
+ language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ autoHideHeader:true,uiLanguage:'en'
 });
 const KNOWN_KEYS=Object.freeze(Object.keys(DEFAULT_PREFERENCES));
 const KNOWN_KEY_SET=new Set(KNOWN_KEYS);
@@ -33,7 +34,9 @@ const VALIDATORS={
  concurrency:isValidConcurrency,
  pageConcurrency:isValidConcurrency,
  automatic:value=>typeof value==='boolean',
- layoutVisible:value=>typeof value==='boolean'
+ layoutVisible:value=>typeof value==='boolean',
+ autoHideHeader:value=>typeof value==='boolean',
+ uiLanguage:value=>['en','zh-CN','ja'].includes(value)
 };
 const VALIDATION_MESSAGES={
  translationMode:'Invalid translation mode',interactionMode:'Invalid interaction mode',direction:'Invalid layout direction',columns:'Invalid layout columns',
@@ -41,7 +44,8 @@ const VALIDATION_MESSAGES={
  reduceMotion:'Invalid reduce motion preference',reduceTransparency:'Invalid reduce transparency preference',reducePadding:'Invalid reduce padding preference',
  language:'Invalid language preference',concurrency:'Invalid concurrency preference',
  pageConcurrency:'Invalid page concurrency preference',automatic:'Invalid automatic translation preference',
- layoutVisible:'Invalid layout visibility preference'
+ layoutVisible:'Invalid layout visibility preference',autoHideHeader:'Invalid auto-hide header preference',
+ uiLanguage:'Invalid UI language preference'
 };
 
 function copyUnknown(value){

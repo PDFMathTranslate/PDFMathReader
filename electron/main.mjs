@@ -15,9 +15,12 @@ import {createReaderPreferences} from './preferences.mjs';
 import {fileURLToPath} from 'node:url';
 import {readSystemPDF,validateSystemPDF,pdfLaunchPaths} from './documents.mjs';
 import {writeFile} from 'node:fs/promises';
+import {menuLabel} from './menu-i18n.mjs';
+import {createHaptics} from './haptics.mjs';
 import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction} from './window-chrome.mjs';
 import {appendPerformanceReport,loadPerformanceReports,memoryMetricToBytes,MAX_PERFORMANCE_REPORTS,sumMemoryMetrics,validatePerformanceReport,writePerformanceReports} from './performance-tracker.mjs';
 
+const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
 const pendingFiles=[];
 function enqueueFiles(paths){for(const path of paths)if(!pendingFiles.includes(path))pendingFiles.push(path);if(paths.length)notifyDocuments();}
 let notifyDocuments=()=>{};
@@ -28,7 +31,7 @@ if(!app.requestSingleInstanceLock())app.quit();
 else {
  let backend,window,credentials,preferences,recents;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
  const WINDOW_LOCAL_PREFERENCES=['engine','direction','columns','fit','zoom','translationMode'];
- const SETTINGS_PREFERENCES=['interactionMode','language','concurrency','pageConcurrency','automatic','layoutVisible'];
+ const SETTINGS_PREFERENCES=['interactionMode','language','concurrency','pageConcurrency','automatic','layoutVisible','autoHideHeader','uiLanguage'];
  const APPEARANCE_PREFERENCES=['appearance','accentColor','reduceMotion','reduceTransparency','reducePadding'];
  const preferenceSnapshot=state=>Object.fromEntries(APPEARANCE_PREFERENCES.map(key=>[key,state?.[key]]));
  const samePreferences=(left,right)=>APPEARANCE_PREFERENCES.every(key=>left[key]===right[key]);
@@ -50,6 +53,7 @@ else {
  const backgroundRenderSmoke=['resize','file-open'].includes(smoke);
  const focusedWindow=()=>BrowserWindow.getFocusedWindow()||[...windows.keys()].at(-1);
  const trustedWindow=event=>{const target=BrowserWindow.fromWebContents(event.sender),state=windows.get(target);if(!state||event.senderFrame!==target.webContents.mainFrame||new URL(event.senderFrame.url).origin!==state.backend.origin)throw Error('Window request rejected.');return target;};
+ let rebuildMenu=()=>{};
  const updateMenu=window=>{const state=windows.get(window)?.preferences;if(!state)return;const menu=Menu.getApplicationMenu();menu.getMenuItemById('layout-'+(state.direction||'vertical')).checked=true;menu.getMenuItemById('layout-columns').enabled=state.direction!=='horizontal';menu.getMenuItemById('columns-'+(state.columns||1)).checked=true;};
  const updateWindowButtons=target=>{if(process.platform!=='darwin'||!target||target.isDestroyed())return;const visible=!target.isFullScreen()&&!windows.get(target)?.headerHidden;target.setWindowButtonVisibility(visible);if(visible)target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);};
  const windowActive=window=>!window.isMinimized()&&(backgroundRenderSmoke||window.isVisible());
@@ -89,7 +93,7 @@ else {
  async function createWindow(document){
   let window;
   const backend=await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
-  window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(smoke?['--preview-test-mode']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+  window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(smoke?['--preview-test-mode']:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   windows.set(window,{backend,documents:document?[document]:[],tickets:new Map(),preferences:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
   const fullscreenChanged=()=>{if(!window||window.isDestroyed())return;const full=window.isFullScreen();updateWindowButtons(window);window.webContents.send('window:fullscreen',full);};
   const activityChanged=()=>{if(!window||window.isDestroyed())return;window.webContents.send('activity:changed',windowActive(window));updatePerformanceSampling(window);};
@@ -102,7 +106,7 @@ else {
   for(const event of ['minimize','restore','hide','show'])window.on(event,activityChanged);
   window.webContents.setZoomFactor(1);
   window.webContents.setVisualZoomLevelLimits(1,1);
-  window.webContents.on('before-input-event',(event,input)=>{if(windows.get(window)?.preferences?.interactionMode==='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.copy();return;}if(windows.get(window)?.preferences?.interactionMode!=='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.send('reader:action','copy-paragraph');return;}const action=shortcutAction(process.platform,input);if(action==='close-window'){event.preventDefault();window.close();return;}if(action){event.preventDefault();window.webContents.send('reader:action',action);}});
+  window.webContents.on('before-input-event',(event,input)=>{if(windows.get(window)?.preferences?.interactionMode==='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.copy();return;}if(windows.get(window)?.preferences?.interactionMode!=='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.send('reader:action','copy-paragraph');return;}const action=shortcutAction(process.platform,input);if(action==='page-previous'||action==='page-next')return;if(action==='close-window'){event.preventDefault();window.close();return;}if(action){event.preventDefault();window.webContents.send('reader:action',action);}});
   window.webContents.on('context-menu',(_event,params)=>{
    if(windows.get(window)?.preferences?.interactionMode!=='reading'||typeof params?.selectionText!=='string'||!params.selectionText.trim())return;
    const template=[{role:'copy'},{role:'selectAll'}];
@@ -129,12 +133,12 @@ else {
   if(process.platform==='darwin'&&!app.isPackaged&&!smoke)app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png',import.meta.url)));
   const command=(label,accelerator,action)=>({label,accelerator,click:()=>focusedWindow()?.webContents.send('reader:action',action)});
   const accelerator=key=>commandAccelerator(process.platform,key);
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
+  rebuildMenu=()=>{const template=[
    {label:smoke?app.name:'PDFMathReader',submenu:[{role:'about'},command('Settings…',accelerator(','),'settings'),{type:'separator'},{role:'quit'}]},
    {label:'File',submenu:[{label:'New Window',accelerator:accelerator('N'),click:()=>{void createWindow().catch(handleBackendFailure);}},command('Open PDF…',accelerator('O'),'open'),command('Open recents...',undefined,'recents'),command('Preference',undefined,'preferences'),{type:'separator'},command('Close Document',accelerator('W'),'close-document'),{label:'Close Window',accelerator:closeWindowAccelerator(process.platform),click:()=>focusedWindow()?.close()}]},{role:'editMenu'},
    {label:'View',submenu:[command('Find…',accelerator('F'),'search'),command('Show Original / Translation',accelerator('R'),'translation'),command('Zoom In',accelerator('='),'zoom-in'),command('Zoom Out',accelerator('-'),'zoom-out'),command('Fit Width',undefined,'fit-width'),command('Fit Height',undefined,'fit-height'),command('Toggle Sidebar',accelerator('B'),'sidebar'),{type:'separator'},{label:'Layout',submenu:['vertical','horizontal'].map(direction=>({id:'layout-'+direction,label:direction==='vertical'?'Vertical':'Horizontal',type:'radio',checked:direction==='vertical',click:()=>focusedWindow()?.webContents.send('reader:action','layout:'+direction)}))},{label:'Pages per Row',id:'layout-columns',submenu:[1,2,4].map(columns=>({id:'columns-'+columns,label:({1:'One Side',2:'Two Sides',4:'Quad Side'})[columns],accelerator:accelerator(columns===4?3:columns),type:'radio',checked:columns===1,click:()=>focusedWindow()?.webContents.send('reader:action','columns:'+columns)}))},{type:'separator'},{role:'togglefullscreen'}]},
-   {label:'Go',submenu:[...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100')]},
-   {label:'Translation',submenu:[command('Choose Language…',accelerator('L'),'language'),command('Choose Kernel…',accelerator('K'),'kernel')]},{role:'windowMenu'}]));
+   {label:'Go',submenu:[command('Previous Page',undefined,'page-previous'),command('Next Page',undefined,'page-next'),{type:'separator'},...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100')]},
+   {label:'Translation',submenu:[command('Choose Language…',accelerator('L'),'language'),command('Choose Kernel…',accelerator('K'),'kernel')]},{role:'windowMenu'}];const locale=preferences?.load?.().uiLanguage||'en';const localize=items=>items.map(item=>({...item,...item.label?{label:menuLabel(item.label,locale)}:{},...Array.isArray(item.submenu)?{submenu:localize(item.submenu)}:{}}));Menu.setApplicationMenu(Menu.buildFromTemplate(localize(template)));};rebuildMenu();
   const credentialOptions={path:join(app.getPath('userData'),'openai-key.enc'),safeStorage};
   if(['present','kernels','ux','animation','coverage','search'].includes(smoke))credentialOptions.environment=()=> 'local-smoke-placeholder';
   const credentialStore=await createCredentials(credentialOptions);
@@ -179,6 +183,7 @@ else {
    }
    const dataUrl=`data:image/png;base64,${png.toString('base64')}`;if(Buffer.byteLength(dataUrl,'utf8')>maxDataUrlBytes)throw Error('Resize capture exceeds the 10 MiB limit.');return {width:size.width,height:size.height,dataUrl};
   });
+  ipcMain.handle('haptics:tick',event=>{const window=trustedWindow(event);if(!window.isFocused())return false;return haptics.tick();});
   ipcMain.handle('appearance:current',event=>{
    const window=trustedWindow(event);
    return appearance();
@@ -194,12 +199,12 @@ else {
    return action==='save'?credentials.save(value):credentials.clear();
   });
   preferences=await createReaderPreferences(join(app.getPath('userData'),'reader-preferences.json'));
-  nativeTheme.themeSource=preferences.load().appearance;
+  nativeTheme.themeSource=preferences.load().appearance;rebuildMenu();
   for(const action of ['load','save'])ipcMain.handle(`preferences:${action}`,async(event,value)=>{
    const window=trustedWindow(event);
    if(action==='load')return windows.get(window).preferences;
    const previous=preferences.load(),write=preferences.save(value),next=preferences.load();
-   nativeTheme.themeSource=next.appearance;
+   nativeTheme.themeSource=next.appearance;if(previous.uiLanguage!==next.uiLanguage)rebuildMenu();
    for(const [target,state] of windows){
     state.preferences=mergeWindowPreferences(next,state.preferences,value,target===window);
     setWindowVibrancy(target,state.preferences.reduceTransparency);
@@ -224,7 +229,7 @@ else {
   ipcMain.handle('documents:open',async(event,value)=>{trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await createWindow(value.path);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await createWindow({name:value.name,bytes:value.bytes});}return true;});
   ipcMain.handle('window:new',async event=>{trustedWindow(event);await createWindow();});
   window=await createWindow(pendingFiles.shift());backend=windows.get(window).backend;documentsReady=true;await deliverPendingFiles();
-  if(smoke){const checks=await import('./smoke.mjs');if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
+  if(smoke){const checks=await import('./smoke.mjs');if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
  }).catch(async error=>{if(smoke){await backend?.close();console.error('Desktop smoke failed:',error.stack||error.message);if(smoke==='file-open')await writeFile('/tmp/preview-system-open-result.json',JSON.stringify({passed:false,error:error.message}));app.exit(1);return;}dialog.showErrorBox('PDFMathReader',`The local reader could not start.\n\n${error?.message||'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`);app.quit();});
  app.on('before-quit',event=>{
   if(!backend || quitting)return;

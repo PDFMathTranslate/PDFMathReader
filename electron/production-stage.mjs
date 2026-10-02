@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
-const runtimeElectron=['main.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','preload.cjs'];
+const runtimeElectron=['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','preload.cjs'];
 const runtimeServer=['index.mjs','documents.mjs','engines.mjs','layout.mjs','layout-extraction.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
@@ -43,7 +43,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['express','@firecrawl/pdf-inspector'];
  if(test&&!names.includes('pdf-lib'))names.push('pdf-lib');
  const copied=await copyDependencies(root,stage,names);
- const browserLicenses=['@macvue/core','reka-ui','vue','@vue/shared','@vue/reactivity','@vue/runtime-core','@vue/runtime-dom','pdfjs-dist'];
+ const browserLicenses=['@fluentui/web-components','@fluentui/tokens','tslib','@macvue/core','reka-ui','vue','@vue/shared','@vue/reactivity','@vue/runtime-core','@vue/runtime-dom','pdfjs-dist'];
  for(const name of browserLicenses){const source=await packageDirectory(name,root);const target=join(stage,'licenses',name);await mkdir(target,{recursive:true});for(const file of await readdir(source))if(/^(licen[sc]e|copying|notice)(\.|$)/i.test(file))await cp(join(source,file),join(target,file));}
  if(['pdf','skia','dependencies'].includes(phase)){
   const {rm}=await import('node:fs/promises');if(phase!=='dependencies')await rm(join(stage,'node_modules/pdfjs-dist'),{recursive:true,force:true});
@@ -60,7 +60,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
   });
   // Smoke imports remain external so the same production bundle can be exercised in a test-only package.
   await build({...common,entryPoints:[join(root,'electron/main.mjs')],outfile:join(stage,'electron/main.mjs'),plugins:[{name:'smoke-modules',setup(build){build.onResolve({filter:/\.\/(?:smoke|.*-smoke)\.mjs$/},args=>({path:args.path,external:true}));}}]});
-  const {rm}=await import('node:fs/promises');for(const file of runtimeElectron)if(!test&&!['main.mjs','backend-process.mjs','preload.cjs'].includes(file))await rm(join(stage,'electron',file));
+  const {rm}=await import('node:fs/promises');for(const file of runtimeElectron)if(!test&&!['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','preload.cjs'].includes(file))await rm(join(stage,'electron',file));
   for(const file of runtimeServer)if(file!=='index.mjs')await rm(join(stage,'server',file));
  }
  await writeFile(join(stage,'package.json'),JSON.stringify({name:metadata.name,version:metadata.version,description:metadata.description,private:true,type:'module',main:'electron/main.mjs',dependencies:Object.fromEntries(names.map(name=>[name,metadata.dependencies[name]]))},null,2));

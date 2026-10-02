@@ -28,3 +28,5 @@ test('accelerators and before-input shortcuts follow each platform',()=>{
  assert.equal(shortcutAction('linux',{type:'keyDown',key:'W',control:true,meta:false,alt:false,shift:true}),'close-window');
  assert.equal(shortcutAction('linux',{type:'keyDown',key:'O',control:true,meta:false,alt:false,shift:false}),'open');
 });
+
+test('page navigation supports dedicated keys and shift arrows on every platform',()=>{for(const platform of ['darwin','win32','linux'])for(const [key,shift,expected] of [['PageUp',false,'page-previous'],['PageDown',false,'page-next'],['ArrowUp',true,'page-previous'],['ArrowLeft',true,'page-previous'],['ArrowDown',true,'page-next'],['ArrowRight',true,'page-next']])assert.equal(shortcutAction(platform,{type:'keyDown',key,shift}),expected);assert.equal(shortcutAction('darwin',{type:'keyDown',key:'ArrowDown'}),null);});

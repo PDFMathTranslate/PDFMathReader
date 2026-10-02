@@ -17,6 +17,7 @@ Currently tested on macOS. Windows and Linux have platform-specific window and t
 - Open multiple PDFs in separate windows, each with its own reading position, translation work, and backend process. Closing one window leaves the others running.
 - Browse recent PDFs in a thumbnail gallery from **File → Open recents...**. Reopening a document restores its page, scroll position, zoom, layout, sidebar, and original/translation view.
 - Open the existing settings panel through **File → Preference** or **Settings…**.
+- Switch the interface language in **Settings… → Appearance → Interface language** between English, 简体中文, and 日本語. This setting is separate from the document's translation language.
 - Switch individual detected regions between original and translation in place: single-click with **Ultra fast**, **Fast**, or **Precise**.
 - Read large documents with virtualized pages and thumbnails, bounded rendering caches, and independent rendering, layout analysis, and translation.
 
@@ -83,6 +84,8 @@ macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows u
 | Precise | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
 
 Choose a target language in Settings. **完整翻译** translates the entire document; **降低翻译请求** translates the current page and up to two pages on either side as you read. Configure 1–4 parallel pages and 1–8 translation requests; defaults are 2 pages and 4 requests.
+
+The interface language is changed separately under **Appearance → Interface language**. Changing it updates reader labels and menus without changing the language used for document translation. Additional system-level copy and broader accessibility coverage remain pending UX work.
 
 The toolbar translation control switches between original and translated content. With any kernel, single-click a detected paragraph to toggle its original and translation in place. Enable **Show paragraph boundaries** to see detected regions. Retry a failed current page from Settings.
 

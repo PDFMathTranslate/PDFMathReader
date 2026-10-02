@@ -9,7 +9,8 @@ const DEFAULT_PREFERENCES={
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
  interactionMode:'comparison',
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false
+ language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ autoHideHeader:true,uiLanguage:'en'
 };
 
 const withPreferences=(overrides={},unknown={})=>({...DEFAULT_PREFERENCES,...overrides,...unknown});
@@ -124,6 +125,22 @@ test('new settings survive reopening',async()=>{
   await preferences.save({language:'Korean',concurrency:12,pageConcurrency:12,automatic:false,layoutVisible:true});
   await preferences.flush();
   assert.deepEqual((await createReaderPreferences(path)).load(),expected);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('header visibility and UI language preferences persist and reject invalid values',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'header-language-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  assert.equal(preferences.load().autoHideHeader,true);
+  assert.equal(preferences.load().uiLanguage,'en');
+  await preferences.save({autoHideHeader:false,uiLanguage:'zh-CN'});
+  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({autoHideHeader:false,uiLanguage:'zh-CN'}));
+  assert.throws(()=>preferences.save({autoHideHeader:'yes'}),/Invalid auto-hide header preference/);
+  assert.throws(()=>preferences.save({uiLanguage:'fr'}),/Invalid UI language preference/);
+  assert.deepEqual(preferences.load(),withPreferences({autoHideHeader:false,uiLanguage:'zh-CN'}));
+  await preferences.save({autoHideHeader:true,uiLanguage:'ja'});
+  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({autoHideHeader:true,uiLanguage:'ja'}));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
