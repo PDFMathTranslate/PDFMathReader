@@ -1,0 +1,1212 @@
+{
+  "schemaVersion": 1,
+  "label": "optimized",
+  "fixture": {
+    "name": "Portrait and landscape.pdf",
+    "pageCount": 1000,
+    "bytes": 3100238
+  },
+  "fixtureBytes": 3100238,
+  "reports": [
+    {
+      "schemaVersion": 1,
+      "openedAt": "2026-10-02T11:00:04.981Z",
+      "fileBytes": 3100238,
+      "pageCount": 1000,
+      "firstScreenMs": 192.39999999850988,
+      "stages": {
+        "fileRead": 3.600000001490116,
+        "upload": 15.100000001490116,
+        "pdfReady": 90.30000000074506,
+        "pageGeometry": 122.19999999925494,
+        "recentHistory": 122.60000000149012,
+        "restoreView": 132.30000000074506
+      },
+      "scrollLongTasks": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0,
+        "samples": []
+      },
+      "memory": {
+        "schemaVersion": 1,
+        "sampledAtMs": 1790938809905,
+        "scope": {
+          "rendererPid": 54237,
+          "backendPid": 54232,
+          "mainPid": 54110,
+          "gpuPids": [
+            54229
+          ]
+        },
+        "scoped": {
+          "renderer": {
+            "workingSetBytes": 385384448,
+            "peakWorkingSetBytes": 401833984,
+            "rssEstimateBytes": 385384448,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 401833984
+          },
+          "backend": {
+            "workingSetBytes": 135872512,
+            "peakWorkingSetBytes": 138870784,
+            "rssEstimateBytes": 135872512,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 138969088
+          },
+          "total": {
+            "workingSetBytes": 521256960,
+            "peakWorkingSetBytes": 537706496,
+            "processPeakWorkingSetBytes": 540803072,
+            "rssEstimateBytes": 521256960,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "shared": {
+          "main": {
+            "workingSetBytes": 483753984,
+            "peakWorkingSetBytes": 484655104,
+            "rssEstimateBytes": 483753984,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 485425152
+          },
+          "gpu": [
+            {
+              "workingSetBytes": 123895808,
+              "peakWorkingSetBytes": 200294400,
+              "rssEstimateBytes": 123895808,
+              "workingSetKind": "rss-estimate",
+              "processPeakWorkingSetBytes": 209240064
+            }
+          ],
+          "total": {
+            "workingSetBytes": 607649792,
+            "peakWorkingSetBytes": 684949504,
+            "processPeakWorkingSetBytes": 694665216,
+            "rssEstimateBytes": 607649792,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "aggregate": {
+          "workingSetBytes": 1128906752,
+          "peakWorkingSetBytes": 1222606848,
+          "processPeakWorkingSetBytes": 1235468288,
+          "rssEstimateBytes": 1128906752,
+          "workingSetKind": "rss-estimate"
+        }
+      },
+      "transport": {
+        "schemaVersion": 1,
+        "requests": 23,
+        "requestBodyBytes": 3122618,
+        "responseBodyBytes": 1777858,
+        "layout": {
+          "requests": 5,
+          "totalDurationMs": 1026.3499170000007,
+          "maxDurationMs": 211.219333,
+          "lastDurationMs": 199.2382080000002
+        },
+        "nativeExtraction": {
+          "requests": 3,
+          "totalDurationMs": 592.4136250000004,
+          "maxDurationMs": 204.03779200000008,
+          "lastDurationMs": 192.6326670000003
+        },
+        "uploadBytes": 3100238,
+        "scope": "since-document-open",
+        "timingScope": "window-session"
+      },
+      "resize": {
+        "count": 3,
+        "layoutCommits": 3,
+        "snapshotTransitions": 3,
+        "frames": 93,
+        "frameP95Ms": 9.299999999999272,
+        "frameMaxMs": 9.300000000000182,
+        "snapshotClassSeen": true,
+        "layoutFrozenClassSeen": true
+      },
+      "benchmark": {
+        "open": 1,
+        "scroll": {
+          "frames": 120,
+          "p95Ms": 9.300000000000182,
+          "maxMs": 16.59999999999991,
+          "durationsMs": [
+            0.6020000000000891,
+            16.59999999999991,
+            8.299999999999955,
+            7.5,
+            9.200000000000045,
+            7.7000000000000455,
+            9,
+            8.299999999999955,
+            8.299999999999955,
+            8.299999999999955,
+            8.400000000000091,
+            8.400000000000091,
+            8.299999999999955,
+            8.299999999999955,
+            8.299999999999955,
+            8.299999999999955,
+            8.400000000000091,
+            8.299999999999955,
+            8.400000000000091,
+            8.299999999999955,
+            8.299999999999955,
+            8.399999999999864,
+            8.300000000000182,
+            7.400000000000091,
+            9.400000000000091,
+            7.299999999999727,
+            9.300000000000182,
+            8.299999999999727,
+            7.400000000000091,
+            9.300000000000182,
+            8.199999999999818,
+            8.400000000000091,
+            8.400000000000091,
+            8.199999999999818,
+            8.400000000000091,
+            8.400000000000091,
+            7.400000000000091,
+            8.599999999999909,
+            8.900000000000091,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.400000000000091,
+            8.199999999999818,
+            8.400000000000091,
+            7.5,
+            8.400000000000091,
+            8.199999999999818,
+            8.300000000000182,
+            9.199999999999818,
+            8.400000000000091,
+            8.400000000000091,
+            8.299999999999727,
+            7.600000000000364,
+            9.199999999999818,
+            8.099999999999909,
+            8.400000000000091,
+            8.300000000000182,
+            8.299999999999727,
+            8.200000000000273,
+            8.5,
+            8.399999999999636,
+            8.300000000000182,
+            8.400000000000091,
+            8.199999999999818,
+            8.400000000000091,
+            8.400000000000091,
+            8.199999999999818,
+            8.400000000000091,
+            8.099999999999909,
+            8.599999999999909,
+            8,
+            8.600000000000364,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            7.399999999999636,
+            9.300000000000182,
+            8.300000000000182,
+            7.5,
+            9.199999999999818,
+            8.300000000000182,
+            8,
+            8.699999999999818,
+            8.300000000000182,
+            8.399999999999636,
+            7.400000000000091,
+            9.300000000000182,
+            8.199999999999818,
+            8.400000000000091,
+            7.5,
+            9.199999999999818,
+            8.300000000000182,
+            8.300000000000182,
+            7.399999999999636,
+            9,
+            7.800000000000182,
+            8.199999999999818,
+            8.400000000000091,
+            8.300000000000182,
+            9.299999999999727,
+            7.400000000000091,
+            9.200000000000273,
+            8.399999999999636,
+            8.300000000000182,
+            7.900000000000091,
+            8.799999999999727,
+            8.200000000000273,
+            8.400000000000091,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.299999999999727,
+            8.400000000000091,
+            8.400000000000091,
+            8.199999999999818,
+            8.099999999999909
+          ]
+        },
+        "sidebar": [
+          {
+            "before": "true",
+            "after": "false"
+          },
+          {
+            "before": "false",
+            "after": "true"
+          }
+        ],
+        "resize": {
+          "frames": 93,
+          "layoutChanges": 1,
+          "frameP95Ms": 9.299999999999272,
+          "frameMaxMs": 9.300000000000182,
+          "snapshotClassSeen": true,
+          "allSnapshotsReady": true,
+          "layoutFrozenClassSeen": true,
+          "samples": [
+            {
+              "timestamp": 3656.1,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "981.579px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 19,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 3664.5,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "981.579px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 19,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 3672.8,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "981.579px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 19,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 3681.2,
+              "width": 760,
+              "height": 540,
+              "layoutWidth": "981.579px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 19,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 4397.8,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 25,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 4406.2,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 25,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 4414.1,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 25,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 4421.9,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 25,
+              "canvasReady": true
+            }
+          ]
+        },
+        "metrics": {
+          "pageFramesStart": 5,
+          "pageFramesAfterScroll": 5,
+          "pageFramesBeforeResize": 19,
+          "pageFramesEnd": 25,
+          "pageFramesDelta": 20,
+          "scrollPageFramesDelta": 0,
+          "resizePageFramesDelta": 6,
+          "resizeLayoutCommits": 3,
+          "burstLayoutCommits": 1,
+          "burstLayoutChanges": 1
+        },
+        "finalCanvas": {
+          "canvas": {
+            "width": 938,
+            "height": 1320
+          },
+          "inkSamples": 1,
+          "fitPressed": true,
+          "available": 662,
+          "maxPageWidth": 662,
+          "widthDelta": 0
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "openedAt": "2026-10-02T11:00:10.126Z",
+      "fileBytes": 3100238,
+      "pageCount": 1000,
+      "firstScreenMs": 136.60000000149012,
+      "stages": {
+        "fileRead": 5,
+        "upload": 16.800000000745058,
+        "pdfReady": 65.80000000074506,
+        "pageGeometry": 99.5,
+        "recentHistory": 99.80000000074506,
+        "restoreView": 104.80000000074506
+      },
+      "scrollLongTasks": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0,
+        "samples": []
+      },
+      "memory": {
+        "schemaVersion": 1,
+        "sampledAtMs": 1790938814881,
+        "scope": {
+          "rendererPid": 54237,
+          "backendPid": 54232,
+          "mainPid": 54110,
+          "gpuPids": [
+            54229
+          ]
+        },
+        "scoped": {
+          "renderer": {
+            "workingSetBytes": 478920704,
+            "peakWorkingSetBytes": 487964672,
+            "rssEstimateBytes": 478920704,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 495157248
+          },
+          "backend": {
+            "workingSetBytes": 141197312,
+            "peakWorkingSetBytes": 143589376,
+            "rssEstimateBytes": 141197312,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 144424960
+          },
+          "total": {
+            "workingSetBytes": 620118016,
+            "peakWorkingSetBytes": 629243904,
+            "processPeakWorkingSetBytes": 639582208,
+            "rssEstimateBytes": 620118016,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "shared": {
+          "main": {
+            "workingSetBytes": 521584640,
+            "peakWorkingSetBytes": 539295744,
+            "rssEstimateBytes": 521584640,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 539983872
+          },
+          "gpu": [
+            {
+              "workingSetBytes": 124272640,
+              "peakWorkingSetBytes": 177602560,
+              "rssEstimateBytes": 124272640,
+              "workingSetKind": "rss-estimate",
+              "processPeakWorkingSetBytes": 209240064
+            }
+          ],
+          "total": {
+            "workingSetBytes": 645857280,
+            "peakWorkingSetBytes": 716488704,
+            "processPeakWorkingSetBytes": 749223936,
+            "rssEstimateBytes": 645857280,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "aggregate": {
+          "workingSetBytes": 1265975296,
+          "peakWorkingSetBytes": 1345732608,
+          "processPeakWorkingSetBytes": 1388806144,
+          "rssEstimateBytes": 1265975296,
+          "workingSetKind": "rss-estimate"
+        }
+      },
+      "transport": {
+        "schemaVersion": 1,
+        "requests": 21,
+        "requestBodyBytes": 3122618,
+        "responseBodyBytes": 40437,
+        "layout": {
+          "requests": 10,
+          "totalDurationMs": 2096.9773749999995,
+          "maxDurationMs": 219.0560000000005,
+          "lastDurationMs": 215.050874999999
+        },
+        "nativeExtraction": {
+          "requests": 6,
+          "totalDurationMs": 1216.288208000002,
+          "maxDurationMs": 212.87220800000068,
+          "lastDurationMs": 208.45358300000044
+        },
+        "uploadBytes": 3100238,
+        "scope": "since-document-open",
+        "timingScope": "window-session"
+      },
+      "resize": {
+        "count": 3,
+        "layoutCommits": 3,
+        "snapshotTransitions": 3,
+        "frames": 93,
+        "frameP95Ms": 9.299999999999272,
+        "frameMaxMs": 9.399999999999636,
+        "snapshotClassSeen": true,
+        "layoutFrozenClassSeen": true
+      },
+      "benchmark": {
+        "open": 2,
+        "scroll": {
+          "frames": 120,
+          "p95Ms": 8.900000000000546,
+          "maxMs": 9.199999999999818,
+          "durationsMs": [
+            8.400000000000546,
+            8.300000000000182,
+            8.399999999999636,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.199999999999818,
+            8.5,
+            8.300000000000182,
+            8.300000000000182,
+            8.199999999999818,
+            8.5,
+            7.699999999999818,
+            9,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.199999999999818,
+            8.5,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            7.799999999999272,
+            8.700000000000728,
+            8.599999999999454,
+            8.300000000000182,
+            7.800000000000182,
+            8.899999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.200000000000728,
+            8.299999999999272,
+            8.400000000000546,
+            7.599999999999454,
+            9.100000000000364,
+            8.300000000000182,
+            8.300000000000182,
+            7.599999999999454,
+            9.100000000000364,
+            7.5,
+            9.199999999999818,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.399999999999636,
+            8.200000000000728,
+            8.399999999999636,
+            8.399999999999636,
+            8.300000000000182,
+            7.800000000000182,
+            8.899999999999636,
+            8.200000000000728,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            7.5,
+            9.100000000000364,
+            8.399999999999636,
+            7.699999999999818,
+            8.900000000000546,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.200000000000728,
+            8.399999999999636,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.199999999999818,
+            8.400000000000546,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.300000000000182,
+            7.899999999999636,
+            8.700000000000728,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.300000000000182,
+            8.399999999999636,
+            8.200000000000728,
+            8.399999999999636,
+            8.399999999999636,
+            8.300000000000182
+          ]
+        },
+        "sidebar": [
+          {
+            "before": "true",
+            "after": "false"
+          },
+          {
+            "before": "false",
+            "after": "true"
+          }
+        ],
+        "resize": {
+          "frames": 93,
+          "layoutChanges": 0,
+          "frameP95Ms": 9.299999999999272,
+          "frameMaxMs": 9.399999999999636,
+          "snapshotClassSeen": true,
+          "allSnapshotsReady": true,
+          "layoutFrozenClassSeen": true,
+          "samples": [
+            {
+              "timestamp": 8622.8,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 8631.1,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 8639.4,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 8647.4,
+              "width": 760,
+              "height": 540,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 9364.5,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 9371.9,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": true,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 9381.2,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 43,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 9389.5,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 43,
+              "canvasReady": true
+            }
+          ]
+        },
+        "metrics": {
+          "pageFramesStart": 30,
+          "pageFramesAfterScroll": 30,
+          "pageFramesBeforeResize": 43,
+          "pageFramesEnd": 43,
+          "pageFramesDelta": 13,
+          "scrollPageFramesDelta": 0,
+          "resizePageFramesDelta": 0,
+          "resizeLayoutCommits": 3,
+          "burstLayoutCommits": 1,
+          "burstLayoutChanges": 0
+        },
+        "finalCanvas": {
+          "canvas": {
+            "width": 938,
+            "height": 1320
+          },
+          "inkSamples": 1,
+          "fitPressed": true,
+          "available": 662,
+          "maxPageWidth": 662,
+          "widthDelta": 0
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "openedAt": "2026-10-02T11:00:15.085Z",
+      "fileBytes": 3100238,
+      "pageCount": 1000,
+      "firstScreenMs": 143.40000000223517,
+      "stages": {
+        "fileRead": 8.100000001490116,
+        "upload": 21,
+        "pdfReady": 70.90000000223517,
+        "pageGeometry": 103.60000000149012,
+        "recentHistory": 103.80000000074506,
+        "restoreView": 108.10000000149012
+      },
+      "scrollLongTasks": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0,
+        "samples": []
+      },
+      "memory": {
+        "schemaVersion": 1,
+        "sampledAtMs": 1790938819842,
+        "scope": {
+          "rendererPid": 54237,
+          "backendPid": 54232,
+          "mainPid": 54110,
+          "gpuPids": [
+            54229
+          ]
+        },
+        "scoped": {
+          "renderer": {
+            "workingSetBytes": 506757120,
+            "peakWorkingSetBytes": 526909440,
+            "rssEstimateBytes": 506757120,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 533086208
+          },
+          "backend": {
+            "workingSetBytes": 140050432,
+            "peakWorkingSetBytes": 144277504,
+            "rssEstimateBytes": 140050432,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 144736256
+          },
+          "total": {
+            "workingSetBytes": 646807552,
+            "peakWorkingSetBytes": 668565504,
+            "processPeakWorkingSetBytes": 677822464,
+            "rssEstimateBytes": 646807552,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "shared": {
+          "main": {
+            "workingSetBytes": 337330176,
+            "peakWorkingSetBytes": 494534656,
+            "rssEstimateBytes": 337330176,
+            "workingSetKind": "rss-estimate",
+            "processPeakWorkingSetBytes": 539983872
+          },
+          "gpu": [
+            {
+              "workingSetBytes": 119144448,
+              "peakWorkingSetBytes": 169492480,
+              "rssEstimateBytes": 119144448,
+              "workingSetKind": "rss-estimate",
+              "processPeakWorkingSetBytes": 209240064
+            }
+          ],
+          "total": {
+            "workingSetBytes": 456474624,
+            "peakWorkingSetBytes": 626409472,
+            "processPeakWorkingSetBytes": 749223936,
+            "rssEstimateBytes": 456474624,
+            "workingSetKind": "rss-estimate"
+          }
+        },
+        "aggregate": {
+          "workingSetBytes": 1103282176,
+          "peakWorkingSetBytes": 1245478912,
+          "processPeakWorkingSetBytes": 1427046400,
+          "rssEstimateBytes": 1103282176,
+          "workingSetKind": "rss-estimate"
+        }
+      },
+      "transport": {
+        "schemaVersion": 1,
+        "requests": 24,
+        "requestBodyBytes": 3138929,
+        "responseBodyBytes": 49591,
+        "layout": {
+          "requests": 16,
+          "totalDurationMs": 3181.6078739999984,
+          "maxDurationMs": 219.0560000000005,
+          "lastDurationMs": 183.8646659999995
+        },
+        "nativeExtraction": {
+          "requests": 10,
+          "totalDurationMs": 1914.7989580000014,
+          "maxDurationMs": 212.87220800000068,
+          "lastDurationMs": 178.42183300000033
+        },
+        "uploadBytes": 3100238,
+        "scope": "since-document-open",
+        "timingScope": "window-session"
+      },
+      "resize": {
+        "count": 3,
+        "layoutCommits": 3,
+        "snapshotTransitions": 3,
+        "frames": 93,
+        "frameP95Ms": 9.300000000001091,
+        "frameMaxMs": 9.399999999999636,
+        "snapshotClassSeen": true,
+        "layoutFrozenClassSeen": true
+      },
+      "benchmark": {
+        "open": 3,
+        "scroll": {
+          "frames": 120,
+          "p95Ms": 9.300000000001091,
+          "maxMs": 16.80000000000109,
+          "durationsMs": [
+            16.80000000000109,
+            8.100000000000364,
+            8.399999999999636,
+            8.399999999999636,
+            8.299999999999272,
+            8.400000000001455,
+            8.299999999999272,
+            8.299999999999272,
+            8.200000000000728,
+            8.5,
+            8.299999999999272,
+            8.300000000001091,
+            8.399999999999636,
+            8.299999999999272,
+            8.300000000001091,
+            8.399999999999636,
+            8.299999999999272,
+            8.300000000001091,
+            7.5,
+            9.299999999999272,
+            8.200000000000728,
+            8.399999999999636,
+            8.299999999999272,
+            8.300000000001091,
+            7.399999999999636,
+            8.399999999999636,
+            9.200000000000728,
+            8.299999999999272,
+            7.600000000000364,
+            8.5,
+            9,
+            7.399999999999636,
+            9.200000000000728,
+            7.5,
+            8.299999999999272,
+            9.200000000000728,
+            7.600000000000364,
+            9.099999999998545,
+            8.300000000001091,
+            8.399999999999636,
+            8.299999999999272,
+            8.300000000001091,
+            8.299999999999272,
+            8.5,
+            7.300000000001091,
+            9.299999999999272,
+            8.299999999999272,
+            8.300000000001091,
+            8.399999999999636,
+            8.299999999999272,
+            8.300000000001091,
+            8.299999999999272,
+            7.899999999999636,
+            7.900000000001455,
+            9.399999999999636,
+            7.299999999999272,
+            9.200000000000728,
+            7.399999999999636,
+            9.399999999999636,
+            7.300000000001091,
+            8.399999999999636,
+            9.299999999999272,
+            8.300000000001091,
+            7.299999999999272,
+            9.299999999999272,
+            7.5,
+            9.200000000000728,
+            8.299999999999272,
+            8.300000000001091,
+            7.399999999999636,
+            9.399999999999636,
+            7.300000000001091,
+            9.299999999999272,
+            8.299999999999272,
+            8,
+            8.700000000000728,
+            7.399999999999636,
+            8.300000000001091,
+            9.399999999999636,
+            8.199999999998909,
+            8.300000000001091,
+            8.399999999999636,
+            7.5,
+            9.200000000000728,
+            7.399999999999636,
+            8.299999999999272,
+            8.399999999999636,
+            9.200000000000728,
+            8.299999999999272,
+            7.700000000000728,
+            8.600000000000364,
+            8.5,
+            8.5,
+            8.399999999999636,
+            8.299999999999272,
+            7.400000000001455,
+            9.199999999998909,
+            7.600000000000364,
+            9.100000000000364,
+            8.299999999999272,
+            7.600000000000364,
+            9.100000000000364,
+            8.299999999999272,
+            8.5,
+            7.300000000001091,
+            9.199999999998909,
+            8.399999999999636,
+            7.5,
+            9.300000000001091,
+            7.399999999999636,
+            8.299999999999272,
+            9.200000000000728,
+            8.299999999999272,
+            7.400000000001455,
+            8.799999999999272,
+            8.899999999999636,
+            8.200000000000728,
+            8.299999999999272,
+            8.399999999999636
+          ]
+        },
+        "sidebar": [
+          {
+            "before": "true",
+            "after": "false"
+          },
+          {
+            "before": "false",
+            "after": "true"
+          }
+        ],
+        "resize": {
+          "frames": 93,
+          "layoutChanges": 0,
+          "frameP95Ms": 9.300000000001091,
+          "frameMaxMs": 9.399999999999636,
+          "snapshotClassSeen": true,
+          "allSnapshotsReady": true,
+          "layoutFrozenClassSeen": true,
+          "samples": [
+            {
+              "timestamp": 13589.5,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 13596.9,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 13606.2,
+              "width": 720,
+              "height": 500,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 13614.4,
+              "width": 760,
+              "height": 540,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": true,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 14330.9,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 14339.5,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 14346.9,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            },
+            {
+              "timestamp": 14355.3,
+              "width": 900,
+              "height": 620,
+              "layoutWidth": "689.789px",
+              "snapshot": false,
+              "snapshotReady": true,
+              "frozen": false,
+              "pageFrames": 61,
+              "canvasReady": true
+            }
+          ]
+        },
+        "metrics": {
+          "pageFramesStart": 48,
+          "pageFramesAfterScroll": 48,
+          "pageFramesBeforeResize": 61,
+          "pageFramesEnd": 61,
+          "pageFramesDelta": 13,
+          "scrollPageFramesDelta": 0,
+          "resizePageFramesDelta": 0,
+          "resizeLayoutCommits": 3,
+          "burstLayoutCommits": 1,
+          "burstLayoutChanges": 0
+        },
+        "finalCanvas": {
+          "canvas": {
+            "width": 938,
+            "height": 1320
+          },
+          "inkSamples": 1,
+          "fitPressed": true,
+          "available": 662,
+          "maxPageWidth": 662,
+          "widthDelta": 0
+        }
+      }
+    }
+  ],
+  "medians": {
+    "firstScreenMs": 143.40000000223517,
+    "stages": {
+      "fileRead": 5,
+      "upload": 16.800000000745058,
+      "pdfReady": 70.90000000223517,
+      "pageGeometry": 103.60000000149012,
+      "recentHistory": 103.80000000074506,
+      "restoreView": 108.10000000149012
+    },
+    "scrollLongTasks": {
+      "count": 0,
+      "totalMs": 0,
+      "maxMs": 0
+    },
+    "resize": {
+      "count": 3,
+      "layoutCommits": 3,
+      "snapshotTransitions": 3,
+      "frames": 93,
+      "frameP95Ms": 9.299999999999272,
+      "frameMaxMs": 9.399999999999636
+    },
+    "metrics": {
+      "pageFramesStart": 30,
+      "pageFramesAfterScroll": 30,
+      "pageFramesBeforeResize": 43,
+      "pageFramesEnd": 43,
+      "pageFramesDelta": 13,
+      "scrollPageFramesDelta": 0,
+      "resizePageFramesDelta": 0,
+      "resizeLayoutCommits": 3,
+      "burstLayoutCommits": 1,
+      "burstLayoutChanges": 0
+    }
+  },
+  "scroll": {
+    "frames": 120,
+    "p95Ms": 9.299999999999272,
+    "maxMs": 16.80000000000109
+  },
+  "scrollFrameP95Ms": 9.299999999999272,
+  "scrollFrameMaxMs": 16.80000000000109,
+  "resizeFrames": [
+    93,
+    93,
+    93
+  ],
+  "resize": {
+    "bursts": 20,
+    "frames": [
+      93,
+      93,
+      93
+    ],
+    "p95Ms": 9.299999999999272,
+    "maxMs": 9.399999999999636,
+    "snapshotClassSeen": true,
+    "layoutFrozenClassSeen": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "pdf-math-reader",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.mjs",
+    "build": "vite build",
+    "test": "node --test server/*.test.mjs",
+    "desktop": "npm run build && electron .",
+    "package:mac": "npm run icons:mac && npm run build && node electron/package.mjs",
+    "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols"
+  },
+  "dependencies": {
+    "@firecrawl/pdf-inspector": "latest",
+    "express": "^5.1.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.5.1",
+    "vite": "^7.1.0",
+    "@vitejs/plugin-vue": "^6.0.0"
+  },
+  "version": "0.1.0",
+  "description": "Local PDF reader with paragraph translation",
+  "main": "electron/main.mjs"
+}

@@ -1,0 +1,46 @@
+const {contextBridge,ipcRenderer,webUtils}=require('electron');
+contextBridge.exposeInMainWorld('previewCredentials',Object.freeze({
+ status:()=>ipcRenderer.invoke('credentials:status'),
+ save:key=>ipcRenderer.invoke('credentials:save',key),
+ clear:()=>ipcRenderer.invoke('credentials:clear')
+}));
+
+contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
+ platform:process.platform,
+ contentGlass:process.platform==='darwin',
+ current:()=>ipcRenderer.invoke('appearance:current'),
+ onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('appearance:changed',listener);return ()=>ipcRenderer.removeListener('appearance:changed',listener);}
+}));
+
+contextBridge.exposeInMainWorld('previewDocuments',Object.freeze({
+ next:()=>ipcRenderer.invoke('documents:next'),
+ open:async file=>{const path=webUtils.getPathForFile(file);return ipcRenderer.invoke('documents:open',path?{path}:{name:file.name,bytes:new Uint8Array(await file.arrayBuffer())});},
+ onAvailable:callback=>{const listener=()=>callback();ipcRenderer.on('documents:available',listener);return ()=>ipcRenderer.removeListener('documents:available',listener);}
+}));
+
+contextBridge.exposeInMainWorld('previewTestMode',process.argv.includes('--preview-test-mode'));
+
+contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callback=>{const listener=(_event,action)=>callback(action);ipcRenderer.on('reader:action',listener);return ()=>ipcRenderer.removeListener('reader:action',listener);}}));
+
+contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipcRenderer.invoke('preferences:load'),save:value=>ipcRenderer.invoke('preferences:save',value)}));
+
+contextBridge.exposeInMainWorld('previewWindow',Object.freeze({new:()=>ipcRenderer.invoke('window:new'),fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}}));
+
+contextBridge.exposeInMainWorld('previewRecents',Object.freeze({list:()=>ipcRenderer.invoke('recents:list'),clear:()=>ipcRenderer.invoke('recents:clear'),open:id=>ipcRenderer.invoke('recents:open',id),openWindow:id=>ipcRenderer.invoke('recents:openWindow',id),preview:id=>ipcRenderer.invoke('recents:preview',id),setThumbnail:(id,thumbnail)=>ipcRenderer.invoke('recents:setThumbnail',{id,thumbnail}),setView:(id,view)=>ipcRenderer.invoke('recents:setView',{id,view}),remember:(file,ticket,thumbnail)=>ipcRenderer.invoke('recents:remember',ticket?{ticket,thumbnail}:{path:webUtils.getPathForFile(file),thumbnail})}));
+
+contextBridge.exposeInMainWorld('previewActivity',Object.freeze({current:()=>ipcRenderer.invoke('window:activity'),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('activity:changed',listener);return ()=>ipcRenderer.removeListener('activity:changed',listener);}}));
+
+contextBridge.exposeInMainWorld('previewRenderInBackground',process.argv.includes('--preview-background-render'));
+
+contextBridge.exposeInMainWorld('previewPerformance',Object.freeze({
+ sample:()=>ipcRenderer.invoke('previewPerformance:sample'),
+ reset:()=>ipcRenderer.invoke('previewPerformance:reset'),
+ end:()=>ipcRenderer.invoke('previewPerformance:end'),
+ save:report=>ipcRenderer.invoke('previewPerformance:save',report)
+}));
+
+contextBridge.exposeInMainWorld('previewResize',Object.freeze({
+ capture:bounds=>ipcRenderer.invoke('previewResize:capture',bounds),
+ onStart:callback=>{const listener=()=>callback();ipcRenderer.on('window:resize-start',listener);return ()=>ipcRenderer.removeListener('window:resize-start',listener);},
+ onEnd:callback=>{const listener=()=>callback();ipcRenderer.on('window:resize-end',listener);return ()=>ipcRenderer.removeListener('window:resize-end',listener);}
+}));

@@ -1,0 +1,4 @@
+import {packager} from '@electron/packager';
+const test=process.argv.includes('--test');
+const paths=await packager({dir:'.',name:test?'PDFMathReader Tests':'PDFMathReader',appBundleId:test?'local.previewtranslate.tests':'local.previewtranslate.reader',appVersion:'0.1.0',icon:'electron/AppIcon.icns',extraResource:['electron/kernel-worker.py'],extendInfo:test?{}:{CFBundleDocumentTypes:[{CFBundleTypeName:'PDF Document',CFBundleTypeRole:'Viewer',LSHandlerRank:'Alternate',LSItemContentTypes:['com.adobe.pdf'],CFBundleTypeExtensions:['pdf']}]},platform:'darwin',arch:'arm64',out:test?'/tmp/preview-test-build':'release',overwrite:true,asar:{unpack:'**/*.node'},ignore:[/^\/release(?:\/|$)/,/^\/\.cache(?:\/|$)/,/^\/\.env(?:\.|$)/,/^\/src(?:\/|$)/,/^\/public(?:\/|$)/,/^\/preview\.png$/,/^\/.*\.test\.mjs$/]});
+console.log(paths.join('\n'));

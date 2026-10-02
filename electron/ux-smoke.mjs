@@ -1,0 +1,123 @@
+import assert from 'node:assert/strict';
+import {Menu} from 'electron';
+import {PDFDocument,StandardFonts} from 'pdf-lib';
+import {writeFile,mkdtemp,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+export async function verifyUX(window,recents){
+ const actions=[];const evaluate=async code=>{actions.push(code.slice(0,180));if(actions.length>8)actions.shift();try{return await window.webContents.executeJavaScript(code);}catch(error){console.log('UX action failed:',code.slice(0,180),JSON.stringify(actions));throw error;}};
+ const pause=ms=>new Promise(r=>setTimeout(r,ms));
+ async function wait(code){for(let i=0;i<150;i++){if(await evaluate(code))return;await pause(100);}console.log(await evaluate(`JSON.stringify({sidebar:document.querySelector('[aria-label="Toggle thumbnails"]')?.getAttribute('aria-expanded'),sidebarClass:document.querySelector('.sidebar')?.className,focused:document.activeElement?.getAttribute('aria-label'),settings:!!document.querySelector('.settings'),page:document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')})`));await writeFile('/tmp/preview-reader-ux-failure.png',(await window.webContents.capturePage()).toPNG());throw Error('UX check timed out: '+code);}
+ async function assertVirtualDOM(label){
+  const report=await evaluate(`(()=>{const d=window.previewRenderDiagnostics?.(),pages=[...document.querySelectorAll('.page')],thumbs=[...document.querySelectorAll('.thumb')],list=document.querySelector('.thumbnail-list'),bounds=list?.getBoundingClientRect();return {d,pageDOM:pages.length,pageIds:pages.map(page=>Number(page.dataset.page)),thumbnailDOM:thumbs.length,thumbnailOutsideBuffer:bounds?thumbs.some(thumb=>{const rect=thumb.getBoundingClientRect();return rect.bottom<bounds.top-201||rect.top>bounds.bottom+201;}):false};})()`);
+  assert.ok(report?.d,`${label}: render diagnostics unavailable`);
+  assert.equal(report.pageDOM,report.d.mountedPages,`${label}: page DOM count disagrees with diagnostics`);
+  assert.equal(report.pageDOM,report.d.window.length,`${label}: page DOM must equal the render window`);
+  assert.deepEqual([...report.pageIds].sort((a,b)=>a-b),[...new Set(report.d.window)].sort((a,b)=>a-b),`${label}: page DOM escaped the render window`);
+  assert.ok(report.pageDOM<60,`${label}: mounted page DOM is ${report.pageDOM}`);
+  assert.equal(report.thumbnailDOM,report.d.mountedThumbnails,`${label}: thumbnail DOM count disagrees with diagnostics`);
+  assert.equal(report.thumbnailOutsideBuffer,false,`${label}: thumbnail DOM escaped the sidebar plus 200 px buffer`);
+  assert.ok(report.pageDOM+report.thumbnailDOM<=80,`${label}: page and thumbnail DOM is ${report.pageDOM+report.thumbnailDOM}`);
+  return report.d;
+ }
+ async function shortcut(key,modifiers=['meta']){window.focus();await pause(50);window.webContents.sendInputEvent({type:'keyDown',keyCode:key,modifiers});window.webContents.sendInputEvent({type:'keyUp',keyCode:key,modifiers});await pause(100);}
+ async function assertStartPage(){await wait(`document.title==='PDFMathReader'&&document.querySelector('.title strong')?.textContent==='PDFMathReader'&&!!document.querySelector('.empty')&&!document.querySelector('.page')&&!document.querySelector('[aria-label="Toggle thumbnails"]')&&!document.querySelector('.sidebar')`);assert.equal(window.isDestroyed(),false);}
+ await wait(`!!document.querySelector('[aria-label="Translation settings"]')`);
+ assert.equal(await evaluate(`!!document.querySelector('.empty')&&document.querySelector('[aria-label="Toggle thumbnails"]')===null&&document.querySelector('.sidebar')===null`),true);
+ await shortcut(',');await wait(`!!document.querySelector('.settings input[type="checkbox"]')`);
+ await evaluate(`document.querySelector('.settings input[type="checkbox"]').focus();true`);assert.equal(await evaluate(`!!document.querySelector('.settings')`),true);
+ await evaluate(`document.querySelector('[aria-label="Open PDF"]').focus();true`);await wait(`!document.querySelector('.settings')`);
+ await shortcut(',');await wait(`!!document.querySelector('.settings')`);
+ await evaluate(`document.querySelector('.reader').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));true`);await wait(`!document.querySelector('.settings')`);
+ await shortcut(',');await wait(`!!document.querySelector('.settings')`);
+ await evaluate(`window.dispatchEvent(new Event('blur'));true`);await wait(`!document.querySelector('.settings')`);
+ await shortcut(',');await wait(`!!document.querySelector('.settings')`);
+ await shortcut('Escape',[]);await wait(`!document.querySelector('.settings')`);
+ await shortcut(',');await wait(`!!document.querySelector('.settings')`);
+ await evaluate(`document.querySelector('.settings input[type="checkbox"]').click();document.querySelector('[aria-label="Close settings"]')?.click();true`);
+ const fixture=await PDFDocument.create(),font=await fixture.embedFont(StandardFonts.Helvetica);
+ for(let i=1;i<=20;i++){const p=fixture.addPage([612,792]);if(i!==20)p.drawText('Synthetic reader shortcut fixture '+i,{x:50,y:730,font,size:18});}
+ const fixtureBytes=await fixture.save(),fixtureDirectory=await mkdtemp(join(tmpdir(),'pdfmathreader-close-')),fixturePath=join(fixtureDirectory,'Portrait and landscape.pdf');await writeFile(fixturePath,fixtureBytes);await recents.remember(fixturePath);const base64=Buffer.from(fixtureBytes).toString('base64');
+ await evaluate(`(()=>{const b=Uint8Array.from(atob(${JSON.stringify(base64)}),c=>c.charCodeAt(0));const d=new DataTransfer();d.items.add(new File([b],'Portrait and landscape.pdf',{type:'application/pdf'}));const input=document.querySelector('input[type=file]');input.files=d.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+ await wait(`(()=>{const d=window.previewRenderDiagnostics?.();return d?.totalPages===20&&d.mountedPages===d.window.length&&d.mountedThumbnails===document.querySelectorAll('.thumb').length&&Array.from(document.querySelectorAll('.page canvas')).some(c=>c.width>0);})()`);
+ const fixtureState=await assertVirtualDOM('20-page fixture');
+ assert.equal(fixtureState.totalPages,20);
+ assert.ok(fixtureState.mountedThumbnails<20);
+ assert.equal(await evaluate(`!!document.querySelector('[aria-label="Toggle thumbnails"]')&&!!document.querySelector('.sidebar')`),true);
+ await wait(`document.querySelector('[aria-label="Fit width"]').getAttribute('aria-pressed')==='true'`);
+ await pause(500);
+ const width=await evaluate(`document.querySelector('.page').getBoundingClientRect().width`);
+ assert.ok(width>600);const windowZoom=window.webContents.getZoomFactor();
+ await shortcut('=', ['meta','shift']);await wait(`document.querySelector('.page').getBoundingClientRect().width>${width+30}`);assert.equal(window.webContents.getZoomFactor(),windowZoom);
+ await shortcut('-');await wait(`Math.abs(document.querySelector('.page').getBoundingClientRect().width-${width})<2`);
+ const anchor=await evaluate(`(()=>{const p=document.querySelector('.page').getBoundingClientRect();return {x:p.left+p.width*.55,y:p.top+250,width:p.width,toolbar:document.querySelector('.toolbar').getBoundingClientRect().height};})()`);
+ await evaluate(`document.querySelector('.reader').dispatchEvent(new WheelEvent('wheel',{ctrlKey:true,deltaY:-20,clientX:${anchor.x},clientY:${anchor.y},bubbles:true,cancelable:true}));true`);
+ await pause(70);
+ const pinch=await evaluate(`(()=>{const p=document.querySelector('.page').getBoundingClientRect();return {x:p.left+p.width*.55,y:p.top+250*p.width/${anchor.width},width:p.width,toolbar:document.querySelector('.toolbar').getBoundingClientRect().height};})()`);
+ assert.ok(pinch.width>anchor.width*1.1);assert.ok(Math.abs(pinch.x-anchor.x)<3);assert.ok(Math.abs(pinch.y-anchor.y)<3);assert.equal(pinch.toolbar,anchor.toolbar);assert.equal(window.webContents.getZoomFactor(),windowZoom);
+ await wait(`!document.querySelector('.reader.pinching')`);
+ await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ window.webContents.debugger.attach('1.3');
+ try{await window.webContents.debugger.sendCommand('Input.synthesizePinchGesture',{x:anchor.x,y:anchor.y,scaleFactor:1.2,relativeSpeed:800,gestureSourceType:'mouse'});}finally{window.webContents.debugger.detach();}
+ await wait(`document.querySelector('.page').getBoundingClientRect().width>${anchor.width*1.1}`);assert.equal(window.webContents.getZoomFactor(),windowZoom);
+ await wait(`!document.querySelector('.reader.pinching')`);
+ await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ const translated=await evaluate(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')`);
+ await shortcut('r');await wait(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')!==${JSON.stringify(translated)}`);
+ await shortcut('r');await wait(`document.querySelector('.translation-toggle').getAttribute('aria-pressed')===${JSON.stringify(translated)}`);
+ await shortcut('b');await wait(`!document.querySelector('.sidebar')`);await shortcut('b');await wait(`!!document.querySelector('.sidebar canvas')&&document.querySelector('.sidebar canvas').width>0`);
+ await shortcut('l');await wait(`document.activeElement?.getAttribute('aria-label')==='Translation language'`);await shortcut('ESC',[]);
+ await shortcut('k');await wait(`document.activeElement?.getAttribute('role')==='radio'`);
+ assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.kernel-switcher button')).map(b=>b.textContent)`),['Ultra fast','Fast','Precise']);
+ await shortcut('RIGHT',[]);await wait(`document.querySelector('.kernel-switcher [aria-checked=true]').textContent==='Fast'`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);
+ await shortcut('RIGHT',[]);await wait(`document.querySelector('.kernel-switcher [aria-checked=true]').textContent==='Precise'`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);
+ await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();document.querySelector('[aria-label="Fit height"]').click();true`);
+ await wait(`localStorage.getItem('readerFit')==='height'&&document.querySelector('[aria-label="Fit height"]').getAttribute('aria-pressed')==='true'`);
+ await pause(300);assert.ok(await evaluate(`document.querySelector('.page').getBoundingClientRect().height<document.querySelector('.reader').clientHeight`));
+ await evaluate(`document.querySelector('[aria-label="Fit width"]').click();true`);await pause(300);
+ await shortcut('5');await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 10'`);
+ await shortcut('0');await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 20'`);
+ await wait(`!!document.querySelector('[aria-label="Page navigator"]')`);
+ await evaluate(`document.querySelector('[aria-label="Page number"]').focus();true`);await pause(1300);assert.ok(await evaluate(`!!document.querySelector('[aria-label="Page navigator"]')`));
+ await evaluate(`(()=>{const input=document.querySelector('[aria-label="Page number"]');input.value='3';input.dispatchEvent(new Event('input',{bubbles:true}));input.closest('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));})()`);
+ await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 3'`);
+ await evaluate(`document.querySelector('[aria-label="Next page"]').click();true`);await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 4'`);
+ await evaluate(`document.querySelector('[aria-label="Previous page"]').click();true`);await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 3'`);
+ await evaluate(`document.activeElement.blur();true`);await pause(1600);assert.equal(await evaluate(`!!document.querySelector('[aria-label="Page navigator"]')`),false);
+ assert.equal(await evaluate(`document.querySelector('.title span').textContent`),'PDF reader');assert.equal(await evaluate(`Array.from(document.querySelectorAll('.page-caption')).some(e=>/^\\d+/.test(e.textContent))`),false);
+ await evaluate(`document.querySelector('input[type=file]').addEventListener('click',e=>{e.preventDefault();window.fixtureOpenClicked=true;},{once:true});true`);await shortcut('o');assert.equal(await evaluate('window.fixtureOpenClicked'),true);
+
+ await shortcut('k');await wait(`!!document.querySelector('.kernel-switcher button')`);await evaluate(`document.querySelector('.kernel-switcher button').click();true`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);
+ await evaluate(`Array.from(document.querySelectorAll('.settings>button')).find(b=>b.textContent==='Translate current page').click();true`);
+ await wait(`!!document.querySelector('.page-caption.progress')`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-caption.progress')).color`),'rgb(104, 104, 109)');
+ await wait(`!document.querySelector('.page-caption.progress')`);await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);
+ await shortcut('0');await shortcut(',');await wait(`!!document.querySelector('.settings>button')`);await evaluate(`Array.from(document.querySelectorAll('.settings>button')).find(b=>b.textContent==='Translate current page').click();true`);
+ await wait(`!!document.querySelector('.page-caption.warning')`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-caption.warning')).color`),'rgb(212, 122, 0)');assert.ok(await evaluate(`document.querySelector('.page-caption.warning').title.includes('OCR')`));
+ await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);await shortcut('6');await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 12'`);await shortcut(',');await wait(`!!document.querySelector('.settings>button')`);
+ await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();(()=>{const r=document.querySelector('.reader'),p=document.querySelector('[data-page="13"]');r.scrollTop+=p.getBoundingClientRect().top-r.getBoundingClientRect().top-30;})();true`);await wait(`document.querySelector('.thumb[aria-current=page]')?.getAttribute('aria-label')==='Go to page 13'`);await shortcut(',');await wait(`!!document.querySelector('.settings>button')`);await evaluate(`Array.from(document.querySelectorAll('.settings>button')).find(b=>b.textContent==='Translate current page').click();true`);
+ await wait(`!!document.querySelector('.page-caption.error')`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-caption.error')).color`),'rgb(217, 45, 32)');assert.ok(await evaluate(`document.querySelector('.page-caption.error').title.includes('rate limit')`));await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);
+ const menu=Menu.getApplicationMenu();assert.ok(menu.items[0].submenu.items.some(i=>i.role==='quit'));assert.ok(menu.items.find(i=>i.label==='View').submenu.items.every(i=>!['reload','resetZoom','zoomIn','zoomOut'].includes(i.role)));const fileMenu=menu.items.find(i=>i.label==='File'),closeDocumentMenu=fileMenu?.submenu.items.find(i=>i.label==='Close Document');assert.equal(closeDocumentMenu?.accelerator,'Command+W');
+ await evaluate(`document.querySelector('[aria-label="Fit height"]').click();true`);await writeFile('/tmp/preview-reader-ux.png',(await window.webContents.capturePage()).toPNG());
+ await window.webContents.reload();await wait(`!!document.querySelector('[aria-label="Open Portrait and landscape.pdf"]')`);await evaluate(`document.querySelector('[aria-label="Open Portrait and landscape.pdf"]').click();true`);await wait(`document.querySelector('[aria-label="Fit height"]')?.getAttribute('aria-pressed')==='true'`);
+ await shortcut(',');await wait(`!!document.querySelector('.translation-mode-switcher')`);
+ assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.translation-mode-switcher button')).map(b=>b.textContent)`),['完整翻译','降低翻译请求']);
+ await evaluate(`document.querySelector('.translation-mode-switcher button').click();true`);
+ await wait(`window.previewRenderDiagnostics?.().translatedPages>=17`);
+ const translatedState=await assertVirtualDOM('full translation');
+ assert.ok(translatedState.translatedPages>=17,'full translation did not translate at least 17 pages');
+ assert.equal(await evaluate(`(()=>{const d=window.previewRenderDiagnostics?.(),badges=[...document.querySelectorAll('.thumb small')].filter(s=>getComputedStyle(s).visibility==='visible');return badges.every(s=>{const number=Number(s.closest('.thumb')?.getAttribute('aria-label')?.match(/(\\d+)$/)?.[1]);return s.textContent.trim()==='Translated'&&number>=1&&number<=d.totalPages;})&&badges.length<=d.translatedPages;})()`),true,'visible thumbnail translation badges are invalid');
+ assert.equal(await evaluate(`(async()=> (await window.previewPreferences.load()).translationMode)()`),'full');
+ // Translation can move focus and dismiss the settings popover while we wait.
+ await evaluate(`if(!document.querySelector('.translation-mode-switcher'))document.querySelector('[aria-label="Translation settings"]').click();true`);
+ await wait(`!!document.querySelector('.translation-mode-switcher button:last-child')`);
+ await evaluate(`document.querySelector('.translation-mode-switcher button:last-child').click();true`);
+ assert.equal(await evaluate(`document.querySelector('.translation-mode-switcher [aria-checked=true]').textContent`),'降低翻译请求');
+ await wait(`localStorage.getItem('translationMode')==='reading'`);
+ await evaluate(`document.querySelector('[aria-label="Close settings"]')?.click();true`);
+ await shortcut(',');await wait(`!!document.querySelector('.settings input[type="checkbox"]')`);await evaluate(`(()=>{const input=document.querySelector('.settings input[type="checkbox"]');if(input.checked)input.click();document.querySelector('[aria-label="Close settings"]')?.click();return true;})()`);
+ window.webContents.send('reader:action','percent:65');await wait(`(()=>{const d=window.previewRenderDiagnostics?.(),page=document.querySelector('.page[data-page="13"]'),canvas=page?.querySelector('canvas');return d?.readingView?.page===13&&d.window.includes(13)&&!!canvas&&canvas.width>0;})()`);await shortcut(',');await wait(`!!document.querySelector('.settings>button')`);await evaluate(`Array.from(document.querySelectorAll('.settings>button')).find(b=>/Translate current page|Retry current page/.test(b.textContent)).click();true`);await wait(`!!document.querySelector('.page-caption.progress')`);
+ await shortcut('W',['meta']);await assertStartPage();assert.equal(window.isDestroyed(),false);await pause(800);await assertStartPage();
+ assert.equal(await evaluate(`document.querySelector('[aria-label="Open Portrait and landscape.pdf"]')!==null`),true);await evaluate(`document.querySelector('[aria-label="Open Portrait and landscape.pdf"]').click();true`);await wait(`(()=>{const d=window.previewRenderDiagnostics?.();return d?.totalPages===20&&d.mountedPages===d.window.length&&Array.from(document.querySelectorAll('.page canvas')).some(c=>c.width>0)&&document.title==='TEST — Portrait and landscape.pdf';})()`);await assertVirtualDOM('reopened 20-page fixture');assert.equal(await evaluate(`!!document.querySelector('[aria-label="Toggle thumbnails"]')&&!!document.querySelector('.sidebar')`),true);
+ const reopenedFileMenu=Menu.getApplicationMenu().items.find(i=>i.label==='File'),reopenedCloseMenu=reopenedFileMenu?.submenu.items.find(i=>i.label==='Close Document');assert.equal(reopenedCloseMenu?.accelerator,'Command+W');reopenedCloseMenu.click();await assertStartPage();await shortcut('W',['meta']);await assertStartPage();await shortcut('W',['meta']);await assertStartPage();await writeFile('/tmp/preview-reader-ux-start.png',(await window.webContents.capturePage()).toPNG());
+ const result={translationModeSwitcher:true,fullDocumentQueue:true,translationModePersisted:true,pinchZoom:true,pinchAnchorStable:true,chromiumGesturePipeline:true,popoverFocusDismissal:true,escapeDismissal:true,nativeShortcuts:true,documentZoomOnly:true,percentNavigation:true,navigatorFocusAndAutoHide:true,fitPreferenceSurvivesReload:true,kernelSwitcherAndFocus:true,pageChromeNumbersRemoved:true,quitMenu:true,statusColorsAndHoverDetails:true,startupSidebarAbsent:true,fixtureSidebarPresent:true,nativeCloseDocument:true,staleTranslationCannotRestore:true,recentDocumentReopens:true,fileMenuCloseDocument:true,repeatedStartShortcutPreservesWindow:true,startPageScreenshot:true,mockOnly:true};await writeFile('/tmp/preview-reader-ux.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));await rm(fixtureDirectory,{recursive:true,force:true});window.close();
+}
