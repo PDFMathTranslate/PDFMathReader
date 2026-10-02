@@ -138,9 +138,9 @@
 .paragraph.outlined{outline-offset:8px}
 @media(prefers-reduced-motion:reduce){.paragraph::before{transition:none}}
 
-/* Fade chrome without resizing the reading viewport or its page canvases. */
-.toolbar{transition:opacity 180ms ease}
-.immersive-header-hidden .toolbar{opacity:0;pointer-events:none;-webkit-app-region:no-drag}
+/* Slide chrome without resizing the reading viewport or its page canvases. */
+.toolbar{transform:none;transition:transform 180ms ease}
+.immersive-header-hidden .toolbar{transform:translateY(-100%);pointer-events:none;-webkit-app-region:no-drag}
 .header-reveal-zone{position:fixed;inset:0 0 auto;height:12px;z-index:35;-webkit-app-region:no-drag}
 @media(prefers-reduced-motion:reduce){.toolbar{transition:none}}
 
@@ -161,3 +161,11 @@
 :root[data-reduce-padding="true"] .app:not(.startup-page) .reader{--page-gutter:0px;padding:0;scroll-padding:0}
 :root[data-reduce-padding="true"] .page-layout{gap:0;padding:0}
 :root[data-reduce-padding="true"] .page{border:0;box-shadow:none}
+
+/* Crossfade theme snapshots without reflowing document pages. */
+::view-transition-old(root){animation:appearance-fade-out 220ms ease both;mix-blend-mode:normal}
+::view-transition-new(root){animation:appearance-fade-in 220ms ease both;mix-blend-mode:normal}
+@keyframes appearance-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes appearance-fade-in{from{opacity:0}to{opacity:1}}
+:root[data-reduce-motion=true]::view-transition-old(root),:root[data-reduce-motion=true]::view-transition-new(root){animation:none}
+@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}

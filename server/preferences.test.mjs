@@ -56,7 +56,7 @@ test('appearance preferences persist and survive layout-only saves',async()=>{
   const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
   await preferences.save({fit:'width',zoom:1,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,reducePadding:true});
   await preferences.save({fit:'height',zoom:.8,direction:'horizontal',columns:2});
-  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({fit:'height',zoom:.8,direction:'horizontal',columns:2,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true}));
+  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({fit:'height',zoom:.8,direction:'horizontal',columns:2,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,reducePadding:true}));
   await preferences.save({appearance:'light',accentColor:'system',reduceMotion:false,reduceTransparency:false});
   const updated=preferences.load();
   assert.equal(updated.appearance,'light');

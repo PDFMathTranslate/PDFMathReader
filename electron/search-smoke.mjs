@@ -6,19 +6,30 @@ export async function verifySearch(window){
  const evaluate=async code=>{try{return await window.webContents.executeJavaScript(code);}catch(e){throw Error('Smoke script failed: '+code.slice(0,140)+' / '+e.message);}},pause=ms=>new Promise(r=>setTimeout(r,ms));
  async function wait(code){for(let n=0;n<400;n++){if(await evaluate(code))return;await pause(50);}throw Error('Search UI timed out: '+code);}
  window.show();window.focus();await pause(300);
+ const originalBounds=window.getBounds();
+ await evaluate(`(()=>{const section=document.createElement('section');section.id='recent-layout-check';section.className='recent-documents';section.innerHTML='<div class="recent-heading"><h2>Recent documents</h2></div><div class="recent-gallery">'+Array.from({length:5},()=>'<button class="recent-document" style="width:200px;height:182px"></button>').join('')+'</div>';document.querySelector('.empty').append(section);})()`);
+ window.setSize(1400,1000);await pause(300);
+ assert.equal(await evaluate(`(()=>{const g=document.querySelector('#recent-layout-check .recent-gallery');return g.scrollWidth<=g.clientWidth+1;})()`),true);
+ window.setSize(800,1000);await pause(300);
+ assert.equal(await evaluate(`(()=>{const g=document.querySelector('#recent-layout-check .recent-gallery');return g.scrollWidth>g.clientWidth&&g.getBoundingClientRect().right<=innerWidth;})()`),true);
+ await evaluate(`document.querySelector('#recent-layout-check').remove()`);window.setBounds(originalBounds);await pause(300);
+ console.log('Recent gallery passed: five complete cards in wide windows and bounded scrolling in narrow windows.');
+
  await evaluate(`document.querySelector('button[aria-label="Translation settings"]').click()`);
  await wait(`!!document.querySelector('.appearance-choice')`);
+ assert.equal(await evaluate(`getComputedStyle(document.documentElement,'::view-transition-new(root)').animationName`),'appearance-fade-in');
  await evaluate(`document.querySelectorAll('.appearance-choice')[1].click()`);
  await wait(`document.documentElement.dataset.appearance==='dark'`);
  await wait(`(async()=> (await window.previewPreferences.load()).appearance==='dark')()`);
- await evaluate(`document.querySelector('[aria-label="Purple accent color"]').click();document.querySelector('[aria-labelledby="reduce-motion-label"]').click();document.querySelector('[aria-labelledby="reduce-transparency-label"]').click()`);
+ await evaluate(`document.querySelector('[aria-label="Purple accent color"]').click();document.querySelector('[aria-labelledby="reduce-motion-label"]').click();document.querySelector('[aria-labelledby="reduce-transparency-label"]').click();document.querySelector('[aria-labelledby="reduce-padding-label"]').click()`);
  await wait(`document.documentElement.dataset.reduceMotion==='true'&&document.documentElement.dataset.reduceTransparency==='true'&&document.documentElement.style.getPropertyValue('--accent')==='#af52de'`);
+ await wait(`(async()=>{const p=await window.previewPreferences.load();return p.reduceMotion&&p.reduceTransparency&&p.reducePadding&&p.accentColor==='#af52de';})()`);await pause(300);
  await evaluate(`(()=>{const input=document.querySelector('[aria-label="Custom accent color"]');input.value='#13579b';input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
  await wait(`(async()=> (await window.previewPreferences.load()).accentColor==='#13579b')()`);
  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.settings')).backdropFilter`),'none');
- await wait(`(async()=>{const p=await window.previewPreferences.load();return p.reduceMotion&&p.reduceTransparency&&p.accentColor==='#13579b';})()`);
+ await wait(`(async()=>{const p=await window.previewPreferences.load();return p.reduceMotion&&p.reduceTransparency&&p.reducePadding&&p.accentColor==='#13579b';})()`);
  await evaluate(`document.querySelector('.settings').scrollTop=document.querySelector('.appearance-section').offsetTop-60`);await pause(250);await writeFile('/tmp/pdfmathreader-appearance-dark.png',(await window.webContents.capturePage()).toPNG());
- await evaluate(`document.querySelectorAll('.appearance-choice')[2].click();document.querySelector('[aria-label="System accent color"]').click();document.querySelector('[aria-labelledby="reduce-motion-label"]').click();document.querySelector('[aria-labelledby="reduce-transparency-label"]').click();document.querySelector('[aria-label="Close settings"]').click()`);
+ await evaluate(`document.querySelectorAll('.appearance-choice')[2].click();document.querySelector('[aria-label="System accent color"]').click();document.querySelector('[aria-labelledby="reduce-motion-label"]').click();document.querySelector('[aria-labelledby="reduce-transparency-label"]').click();document.querySelector('[aria-labelledby="reduce-padding-label"]').click();document.querySelector('[aria-label="Close settings"]').click()`);
  await evaluate(`document.querySelector('button[aria-label="Translation settings"]').click()`);await pause(300);await evaluate(`document.querySelector('.settings').scrollTop=document.querySelector('.appearance-section').offsetTop-60`);await pause(300);await writeFile('/tmp/pdfmathreader-appearance.png',(await window.webContents.capturePage()).toPNG());await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
  console.log('Appearance controls passed: dark theme, custom accent selection, effects, persistence, opaque materials.');
  await evaluate(`(async()=>window.previewPreferences.save({...await window.previewPreferences.load(),language:'Japanese',concurrency:8,pageConcurrency:3,automatic:false,layoutVisible:true}))()`);
@@ -36,15 +47,26 @@ export async function verifySearch(window){
  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Try a sample document').click()`);
  await wait(`document.querySelector('.thumb small')?.textContent==='Translated'&&!!document.querySelector('[aria-label="Search document"]')`);
  assert.equal(await evaluate(`!!document.querySelector('.toolbar [aria-label="Open PDF"]')`),false);
+ await evaluate(`document.querySelector('button[aria-label="Translation settings"]').click()`);
+ await wait(`!!document.querySelector('[aria-labelledby="reduce-padding-label"]')`);
+ await evaluate(`document.querySelector('[aria-labelledby="reduce-padding-label"]').click()`);
+ await wait(`document.documentElement.dataset.reducePadding==='true'&&getComputedStyle(document.querySelector('.reader')).padding==='0px'`);
+ assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page')).borderLeftWidth`),'0px');
+ assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-layout')).gap`),'0px');
+ await evaluate(`document.querySelector('[aria-labelledby="reduce-padding-label"]').click();document.querySelector('[aria-label="Close settings"]').click()`);
+ await wait(`document.documentElement.dataset.reducePadding==='false'`);
+
  await pause(500);
  for(const [direction,axis] of [['vertical','scrollTop'],['horizontal','scrollLeft']]){
   window.webContents.send('reader:action','layout:'+direction);await pause(500);
   await evaluate(`(()=>{const r=document.querySelector('.reader');r.${axis}=0;})()`);await pause(100);
   await evaluate(`(()=>{const r=document.querySelector('.reader');r.dispatchEvent(new WheelEvent('wheel',{bubbles:true,deltaY:120,deltaX:120}));r.${axis}=120;})()`);
   await wait(`document.querySelector('.app').classList.contains('immersive-header-hidden')`);await pause(220);
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.toolbar')).opacity`),'0');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.toolbar')).opacity`),'1');
+  assert.equal(await evaluate(`document.querySelector('.toolbar').getBoundingClientRect().bottom<=1`),true);
   await evaluate(`(()=>{const r=document.querySelector('.reader');r.dispatchEvent(new WheelEvent('wheel',{bubbles:true,deltaY:-60,deltaX:-60}));r.${axis}=60;})()`);
-  await wait(`!document.querySelector('.app').classList.contains('immersive-header-hidden')`);await pause(100);
+  await wait(`!document.querySelector('.app').classList.contains('immersive-header-hidden')`);await pause(220);
+  assert.equal(await evaluate(`Math.abs(document.querySelector('.toolbar').getBoundingClientRect().top)<1`),true);
   if(process.platform==='darwin')assert.deepEqual(window.getWindowButtonPosition(),{x:18,y:24},'native traffic lights retain their centered inset after revealing the header');
  }
  window.webContents.send('reader:action','layout:vertical');await pause(500);await evaluate(`document.querySelector('.reader').scrollTop=0`);

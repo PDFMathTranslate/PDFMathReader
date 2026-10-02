@@ -1772,8 +1772,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 .page-layout.horizontal .page-wrap{align-self:center}
 .page-layout .page-wrap{margin:0;align-self:start}
 
+ .empty{width:100%;box-sizing:border-box;grid-template-columns:minmax(0,1fr)}
  .empty.has-recents{margin-block:auto;padding-block:24px;min-height:0}
-.recent-documents{width:min(760px,calc(100vw - 100px));max-width:100%;min-width:0;margin-top:28px;text-align:left}
+.recent-documents{width:max-content;max-width:100%;min-width:0;margin-top:28px;text-align:left}
 .recent-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .empty .recent-heading h2{font-size:14px;margin:0;color:var(--text-secondary)}
 .recent-heading button{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 14px;border:1px solid var(--chrome-border);border-radius:var(--radius-sm);background:var(--chrome);color:var(--text);box-shadow:inset 0 .5px 0 #ffffff45,0 1px 2px #00000015;font-size:13px;font-weight:600;line-height:1.2;transition:background-color var(--motion-duration) var(--motion-ease),box-shadow var(--motion-duration) var(--motion-ease),transform var(--motion-duration) var(--motion-ease)}
