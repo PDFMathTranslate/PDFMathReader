@@ -14,7 +14,7 @@ test('credential override, reload, clearing and secure-storage failure',async()=
   assert.equal(JSON.stringify(c.status()).includes('synthetic-saved'),false);
   const reload=await createCredentials({path,safeStorage:storage,platform:'darwin',environment:()=>''});
   assert.equal(reload.getKey(),'synthetic-saved');
-  await c.clear();assert.equal(c.getKey(),'synthetic-env');await assert.rejects(readFile(path));
+  await c.clear();assert.equal(c.getKey(),'');assert.equal(c.status().keySource,'none');const clearedReload=await createCredentials({path,safeStorage:storage,platform:'darwin',environment:()=> 'synthetic-env'});assert.equal(clearedReload.getKey(),'');await clearedReload.save('replacement');assert.equal(clearedReload.getKey(),'replacement');await clearedReload.clear();await assert.rejects(readFile(path));
   const unavailable=await createCredentials({path,safeStorage:{isEncryptionAvailable:()=>false},platform:'darwin',environment:()=>''});
   await assert.rejects(unavailable.save('synthetic'),/unavailable/);await assert.rejects(readFile(path));
   assert.equal(unavailable.status().keySource,'none');

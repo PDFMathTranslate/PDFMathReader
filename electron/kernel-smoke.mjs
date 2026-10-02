@@ -9,7 +9,7 @@ export async function verifyKernelUI(window){
  await wait(`!!document.querySelector('[aria-label="Translation settings"]')`);
  window.focus();await new Promise(r=>setTimeout(r,250));
  await evaluate(`(()=>{const b=document.querySelector('[aria-label="Translation settings"]');b.focus();b.click();})()`);
- await wait(`!!document.querySelector('.settings input[type="checkbox"]')&&document.querySelector('.settings').innerText.includes('Available ·')`);
+ await wait(`!!document.querySelector('.settings input[type="checkbox"]')&&document.querySelector('.kernel-traffic-light')?.dataset.status==='ready'`);
  await evaluate(`document.querySelector('.settings input[type="checkbox"]').click();(()=>{const s=Array.from(document.querySelectorAll('.settings select')).find(s=>s.options[0]?.text==='Simplified Chinese');s.value='French';s.dispatchEvent(new Event('change',{bubbles:true}));})();document.querySelector('[aria-label="Close settings"]').click()`);
  await new Promise(resolve=>setTimeout(resolve,100));
  await evaluate(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Try a sample document').click()`);
@@ -36,7 +36,7 @@ export async function verifyKernelUI(window){
  await evaluate(`(()=>{const b=document.querySelector('[aria-label="Translation settings"]');b.focus();b.click();})()`);
   await wait(`!!document.querySelector('.kernel-switcher button')`);
   await evaluate(`(()=>{const button=Array.from(document.querySelectorAll('.kernel-switcher button')).find(b=>b.textContent===${JSON.stringify(id==='pdf_math_fast'?'Fast':'Precise')});button.focus();button.click();})()`);
-  await wait(`document.querySelector('.settings')?.innerText.includes('Available ·')&&!document.querySelector('.kernel-switcher button')?.disabled`);
+  await wait(`document.querySelector('.kernel-traffic-light')?.dataset.status==='ready'&&!document.querySelector('.kernel-switcher button')?.disabled`);
   await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
   await wait(`document.querySelector('.thumb small')?.innerText==='Translated'&&!document.querySelector('.page-caption')?.innerText.includes('Translating')&&document.querySelector('.page canvas').toDataURL()!==${JSON.stringify(original)}`);
   await canvasSettled(true);

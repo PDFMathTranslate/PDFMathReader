@@ -2,7 +2,7 @@ import {loadPDFRuntime} from './pdf-runtime.mjs';
 export const revealDuration=520;
 const segmenter=new Intl.Segmenter(undefined,{granularity:'grapheme'});
 export const characters=text=>Array.from(segmenter.segment(text),item=>item.segment);
-export const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const reducedMotion=()=>document.documentElement.dataset.reduceMotion==='true'||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const intersects=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
 export function snapshot(canvas){if(!canvas?.width)return null;const copy=document.createElement('canvas');copy.width=canvas.width;copy.height=canvas.height;copy.getContext('2d').drawImage(canvas,0,0);return copy;}
 // Reveal crops of the rendered PDF: its typography and formula glyphs stay native.

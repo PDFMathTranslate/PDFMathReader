@@ -70,6 +70,7 @@ npm run build
 - Navigate with thumbnails, change zoom, fit width or height, scroll vertically or horizontally, and choose one, two, or four pages per row.
 - Resume recent documents from the start page or the File menu gallery. Reading state is saved for each document.
 - Use **⌘N** for a new window, **⌘O** to open a PDF, **⌘W** to close the current document, and **Ctrl+W** to close its window on macOS. On Windows and Linux, use **Ctrl+N**, **Ctrl+O**, **Ctrl+W**, and **Ctrl+Shift+W**, respectively.
+- Use **⌘1**, **⌘2**, and **⌘3** for One Side, Two Sides, and Quad Side. **⌘⇧1–9** jumps to 10–90%; **⌘⇧0** jumps to the end.
 
 macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows uses a native title bar and menu with a Segoe UI toolbar. Linux uses desktop-managed window decorations, system fonts, and an opaque toolbar. Other reader shortcuts use Ctrl in place of Command on Windows and Linux.
 

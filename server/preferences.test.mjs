@@ -1,9 +1,144 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createReaderPreferences} from '../electron/preferences.mjs';
-test('fit preferences survive a new app instance and reject invalid data',async()=>{const dir=await mkdtemp(join(tmpdir(),'reader-preferences-'));try{const path=join(dir,'reader.json'),first=await createReaderPreferences(path);assert.equal(first.load().fit,'width');await Promise.all([first.save({fit:'manual',zoom:1.4}),first.save({fit:'height',zoom:.8,translationMode:'reading'})]);const reopened=await createReaderPreferences(path);assert.deepEqual(reopened.load(),{engine:'pdf_inspector',fit:'height',zoom:.8,translationMode:'reading',direction:'vertical',columns:1});await reopened.save({fit:'height',zoom:.8,translationMode:'full'});assert.equal((await createReaderPreferences(path)).load().translationMode,'full');await reopened.save({engine:'pdf_inspector',fit:'height',zoom:.8,translationMode:'reading',direction:'vertical',columns:1});await reopened.save({fit:'width',zoom:1,direction:'horizontal',columns:4});assert.equal((await createReaderPreferences(path)).load().direction,'horizontal');assert.equal((await createReaderPreferences(path)).load().columns,4);await reopened.save({fit:'height',zoom:.8,translationMode:'reading'});assert.throws(()=>reopened.save({fit:'width',zoom:1,columns:3}));assert.throws(()=>reopened.save({fit:'window',zoom:100}));assert.deepEqual(reopened.load(),{engine:'pdf_inspector',fit:'height',zoom:.8,translationMode:'reading',direction:'vertical',columns:1});}finally{await rm(dir,{recursive:true,force:true});}});
 
-test('kernel survives reopening and legacy window saves without reverting the selection',async()=>{const dir=await mkdtemp(join(tmpdir(),'kernel-preferences-'));try{const path=join(dir,'reader.json');const first=await createReaderPreferences(path);for(const engine of ['pdf_math_fast','pdf_math_precise','pdf_inspector']){await first.save({fit:'width',zoom:1,engine});await first.save({fit:'height',zoom:.8});assert.equal((await createReaderPreferences(path)).load().engine,engine);}assert.throws(()=>first.save({fit:'width',zoom:1,engine:'invalid'}));assert.equal(first.load().engine,'pdf_inspector');}finally{await rm(dir,{recursive:true,force:true});}});
+const DEFAULT_PREFERENCES={
+ engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
+ interactionMode:'comparison',
+ appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,
+ language:'Simplified Chinese',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false
+};
+
+const withPreferences=(overrides={},unknown={})=>({...DEFAULT_PREFERENCES,...overrides,...unknown});
+
+test('fit preferences survive a new app instance and reject invalid data',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'reader-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),first=await createReaderPreferences(path);
+  assert.equal(first.load().fit,'width');
+  await Promise.all([first.save({fit:'manual',zoom:1.4}),first.save({fit:'height',zoom:.8,translationMode:'reading'})]);
+  const reopened=await createReaderPreferences(path);
+  assert.deepEqual(reopened.load(),withPreferences({fit:'height',zoom:.8}));
+  await reopened.save({translationMode:'full'});
+  assert.equal((await createReaderPreferences(path)).load().translationMode,'full');
+  await reopened.save({engine:'pdf_inspector',translationMode:'reading',direction:'vertical',columns:1});
+  await reopened.save({fit:'width',zoom:1,direction:'horizontal',columns:4});
+  const layout=(await createReaderPreferences(path)).load();
+  assert.equal(layout.direction,'horizontal');
+  assert.equal(layout.columns,4);
+  await reopened.save({fit:'height',zoom:.8,translationMode:'reading'});
+  assert.throws(()=>reopened.save({fit:'width',zoom:1,columns:3}));
+  assert.throws(()=>reopened.save({fit:'window',zoom:100}));
+  assert.deepEqual(reopened.load(),withPreferences({fit:'height',zoom:.8,direction:'horizontal',columns:4}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('kernel survives reopening and legacy window saves without reverting the selection',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'kernel-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),first=await createReaderPreferences(path);
+  for(const engine of ['pdf_math_fast','pdf_math_precise','pdf_inspector']){
+   await first.save({fit:'width',zoom:1,engine});
+   await first.save({fit:'height',zoom:.8});
+   assert.equal((await createReaderPreferences(path)).load().engine,engine);
+  }
+  assert.throws(()=>first.save({engine:'invalid'}));
+  assert.equal(first.load().engine,'pdf_inspector');
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('appearance preferences persist and survive layout-only saves',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'appearance-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  await preferences.save({fit:'width',zoom:1,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true});
+  await preferences.save({fit:'height',zoom:.8,direction:'horizontal',columns:2});
+  assert.deepEqual((await createReaderPreferences(path)).load(),withPreferences({fit:'height',zoom:.8,direction:'horizontal',columns:2,appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true}));
+  await preferences.save({appearance:'light',accentColor:'system',reduceMotion:false,reduceTransparency:false});
+  const updated=preferences.load();
+  assert.equal(updated.appearance,'light');
+  assert.equal(updated.accentColor,'system');
+  assert.throws(()=>preferences.save({appearance:'sepia'}));
+  assert.throws(()=>preferences.save({accentColor:'#abcd'}));
+  assert.throws(()=>preferences.save({reduceMotion:'yes'}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('legacy JSON upgrades new settings without discarding valid fields or unknown keys',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'legacy-preferences-'));
+ try{
+  const path=join(dir,'reader.json');
+  await writeFile(path,JSON.stringify({
+   engine:'pdf_math_precise',direction:'horizontal',columns:2,fit:'manual',zoom:1.5,translationMode:'full',
+   appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,
+   futureSetting:{revision:3}
+  }));
+  const preferences=await createReaderPreferences(path);
+  assert.deepEqual(preferences.load(),withPreferences({engine:'pdf_math_precise',direction:'horizontal',columns:2,fit:'manual',zoom:1.5,translationMode:'full',appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true},{futureSetting:{revision:3}}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('invalid loaded fields fall back independently while other fields remain valid',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'invalid-upgrade-preferences-'));
+ try{
+  const path=join(dir,'reader.json');
+  await writeFile(path,JSON.stringify({
+   engine:'pdf_math_fast',direction:'horizontal',columns:4,fit:'manual',zoom:1.8,translationMode:'full',
+   appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,
+   language:'Esperanto',concurrency:9,pageConcurrency:7,automatic:false,layoutVisible:true,
+   futureSetting:'keep-me'
+  }));
+  const preferences=await createReaderPreferences(path);
+  assert.deepEqual(preferences.load(),withPreferences({engine:'pdf_math_fast',direction:'horizontal',columns:4,fit:'manual',zoom:1.8,translationMode:'full',appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,concurrency:9,pageConcurrency:7,automatic:false,layoutVisible:true},{futureSetting:'keep-me'}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('partial saves keep every current setting and unknown key',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'partial-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const initial=withPreferences({engine:'pdf_math_precise',direction:'horizontal',columns:4,fit:'manual',zoom:1.8,translationMode:'full',appearance:'dark',accentColor:'#a1B2c3',reduceMotion:true,reduceTransparency:true,language:'Japanese',concurrency:11,pageConcurrency:8,automatic:false,layoutVisible:true},{futureSetting:{revision:3}});
+  await preferences.save(initial);
+  const beforeInvalid=preferences.load();
+  assert.throws(()=>preferences.save({language:'Esperanto'}));
+  assert.deepEqual(preferences.load(),beforeInvalid);
+  assert.deepEqual((await createReaderPreferences(path)).load(),beforeInvalid);
+  await preferences.save({fit:'width',zoom:1});
+  assert.deepEqual(preferences.load(),{...initial,fit:'width',zoom:1});
+  await preferences.save({language:'French',pageConcurrency:3});
+  const expected={...initial,fit:'width',zoom:1,language:'French',pageConcurrency:3};
+  assert.deepEqual(preferences.load(),expected);
+  await preferences.flush();
+  assert.deepEqual((await createReaderPreferences(path)).load(),expected);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('new settings survive reopening',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'new-settings-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  const expected=withPreferences({language:'Korean',concurrency:12,pageConcurrency:12,automatic:false,layoutVisible:true});
+  await preferences.save({language:'Korean',concurrency:12,pageConcurrency:12,automatic:false,layoutVisible:true});
+  await preferences.flush();
+  assert.deepEqual((await createReaderPreferences(path)).load(),expected);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('interaction mode persists, rejects invalid values, and defaults legacy files to comparison',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'interaction-mode-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  assert.equal(preferences.load().interactionMode,'comparison');
+  await preferences.save({interactionMode:'reading'});
+  assert.equal((await createReaderPreferences(path)).load().interactionMode,'reading');
+  assert.throws(()=>preferences.save({interactionMode:'invalid'}),/Invalid interaction mode/);
+  assert.equal(preferences.load().interactionMode,'reading');
+  await writeFile(path,JSON.stringify({engine:'pdf_math_precise',fit:'manual',interactionMode:'invalid'}));
+  assert.equal((await createReaderPreferences(path)).load().interactionMode,'comparison');
+  await writeFile(path,JSON.stringify({engine:'pdf_math_precise',fit:'manual'}));
+  assert.equal((await createReaderPreferences(path)).load().interactionMode,'comparison');
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

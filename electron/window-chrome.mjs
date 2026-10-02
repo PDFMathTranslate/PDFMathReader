@@ -7,7 +7,7 @@ const MACOS_WINDOW_CHROME = Object.freeze({
  backgroundColor:'#00000000'
 });
 const NATIVE_WINDOW_CHROME = Object.freeze({backgroundColor:'#f7f7f9'});
-const SHORTCUT_ACTIONS=Object.freeze({w:'close-document',o:'open',r:'translation',b:'sidebar',',':'settings',l:'language',k:'kernel','+':'zoom-in','=':'zoom-in','-':'zoom-out'});
+const SHORTCUT_ACTIONS=Object.freeze({f:'search',w:'close-document',o:'open',r:'translation',b:'sidebar',',':'settings',l:'language',k:'kernel','+':'zoom-in','=':'zoom-in','-':'zoom-out'});
 
 export function windowChromeOptions(platform){
  return platform==='darwin'?{...MACOS_WINDOW_CHROME,trafficLightPosition:{...MACOS_WINDOW_CHROME.trafficLightPosition}}:{...NATIVE_WINDOW_CHROME};
@@ -26,5 +26,7 @@ export function shortcutAction(platform,input){
   if(key==='w'&&input.control&&!input.meta&&!input.alt&&input.shift)return 'close-window';
   if(!input.control||input.meta||input.alt)return null;
  }
- return SHORTCUT_ACTIONS[key]||(/^\d$/.test(key)?'percent:'+(key==='0'?100:Number(key)*10):null);
+ const digit=/^Digit[0-9]$/.test(input.code||'')?input.code.slice(-1):/^\d$/.test(key)?key:null;
+ if(digit!==null)return input.shift?'percent:'+(digit==='0'?100:Number(digit)*10):({'1':'columns:1','2':'columns:2','3':'columns:4'}[digit]||null);
+ return SHORTCUT_ACTIONS[key]||null;
 }

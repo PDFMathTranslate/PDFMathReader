@@ -19,8 +19,19 @@ export const definitions={
 
 export function createLimiter(max=4){
  let active=0;const waiting=[];
- return {setMax(n){max=Math.max(1,Math.min(8,Number(n)||4));drain();},run(fn){return new Promise((resolve,reject)=>{waiting.push({fn,resolve,reject});drain();});}};
+ return {setMax(n){max=Math.max(1,Math.min(12,Number(n)||4));drain();},run(fn){return new Promise((resolve,reject)=>{waiting.push({fn,resolve,reject});drain();});}};
  function drain(){while(active<max&&waiting.length){const job=waiting.shift();active++;Promise.resolve().then(job.fn).then(job.resolve,job.reject).finally(()=>{active--;drain();});}}
+}
+
+export async function prepareKernelAssets(assetHome,home,sharedCache=join(homedir(),'.cache','babeldoc')){
+ const cache=join(home,'.cache','babeldoc');await mkdir(cache,{recursive:true});
+ for(const kind of ['fonts','models','tiktoken','cmap']){
+  const owned=join(assetHome,'.cache','babeldoc',kind);
+  const existing=join(sharedCache,kind);
+  const assets=existsSync(owned)?owned:existsSync(existing)?existing:owned;
+  await mkdir(assets,{recursive:true});
+  await symlink(assets,join(cache,kind),'dir');
+ }
 }
 
 export async function findUv(){
@@ -36,14 +47,15 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
 
  async function check(id){
   if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');
-  if(id==='pdf_inspector')return {id,label:definitions[id].label,available:true,version:require('@firecrawl/pdf-inspector/package.json').version};
+  if(id==='pdf_inspector')return {id,label:definitions[id].label,installed:true,available:true,version:require('@firecrawl/pdf-inspector/package.json').version};
+  const installed=existsSync(envPath(id));
   if(!uv)uv=await findUv();
-  if(!uv.available)return {id,label:definitions[id].label,available:false,reason:uv.message};
+  if(!uv.available)return {id,label:definitions[id].label,installed,available:false,reason:uv.message};
   try{
    const {stdout}=await exec(python(id),['-c',`import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id==='pdf_math_fast'?'pdf2zh':'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}'))`],{timeout:15000});
    const version=stdout.trim();if(!/^\d+\.\d+/.test(version))throw Error();
-   return {id,label:definitions[id].label,available:true,version};
-  }catch{return {id,label:definitions[id].label,available:false,reason:installing.has(id)?'Installing…':'Kernel environment is not installed or its version cannot be queried.'};}
+   return {id,label:definitions[id].label,installed:true,available:true,version};
+  }catch{return {id,label:definitions[id].label,installed,available:false,reason:installing.has(id)?'Installing…':'Kernel environment is not installed or its version cannot be queried.'};}
  }
 
  async function install(id){
@@ -74,8 +86,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,onDiagnostic,o
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
   const codes={'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'};
   const lang=codes[language];if(!lang)throw Error('Unsupported language');
-  const assetHome=join(runtimeHomeRoot,id,'home');const home=join(dir,'home');await mkdir(join(home,'.cache','babeldoc'),{recursive:true});
-  for(const kind of ['fonts','models','tiktoken']){const assets=join(assetHome,'.cache','babeldoc',kind);await symlink(assets,join(home,'.cache','babeldoc',kind),'dir');}
+  const assetHome=join(runtimeHomeRoot,id,'home');const home=join(dir,'home');await prepareKernelAssets(assetHome,home);
   const env={...process.env,HOME:home,OPENAI_API_KEY:proxy.token,OPENAI_BASE_URL:proxy.url,OPENAI_MODEL:model,PDF2ZH_OPENAI_API_KEY:proxy.token,PDF2ZH_OPENAI_BASE_URL:proxy.url,PDF2ZH_OPENAI_MODEL:model};delete env.OPENAI_API_KEY_REAL;
   try{
    const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,'--backend','cpu','--ignore-cache']:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--no-auto-extract-glossary','--watermark-output-mode','no_watermark'];

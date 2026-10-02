@@ -54,7 +54,7 @@ export async function verify(window,backend,token,mode,credentials){
   await wait(`!document.querySelector('.paragraph').classList.contains('translated')`);
  }else {
   await window.webContents.executeJavaScript(`document.querySelector('[aria-label="Translation settings"]').click()`);
-  await wait(`document.body.innerText.includes('Effective key: No key configured')`);
+  await wait(`document.querySelector('[aria-label="OpenAI API key"]')?.placeholder==='请提供您的 key'`);
   await window.webContents.executeJavaScript(`document.querySelector('[aria-label="Close settings"]').click()`);
  }
 
@@ -64,7 +64,7 @@ export async function verify(window,backend,token,mode,credentials){
  assert.equal(await window.webContents.executeJavaScript(`document.querySelector('[aria-label="OpenAI API key"]').type`),'password');
  const synthetic='sk-local-synthetic-settings-test';
  await window.webContents.executeJavaScript(`(()=>{const input=document.querySelector('[aria-label="OpenAI API key"]');input.value=${JSON.stringify(synthetic)};input.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.settings form').requestSubmit();})()`);
- await wait(`document.body.innerText.includes('Effective key: Saved in this app')`);
+ await wait(`document.querySelector('[aria-label="OpenAI API key"]')?.placeholder==='使用用户保存的 key'`);
  assert.equal(credentials.getKey(),synthetic);
  assert.equal(await window.webContents.executeJavaScript(`document.querySelector('[aria-label="OpenAI API key"]').value`),'');
  const encryptedPath=join(app.getPath('userData'),'openai-key.enc');
@@ -74,9 +74,9 @@ export async function verify(window,backend,token,mode,credentials){
  assert.equal(reloaded.getKey(),synthetic);
  const updated=await (await fetch(`${backend.origin}/api/config`,{headers})).json();
  assert.equal(updated.keySource,'saved');assert.equal(JSON.stringify(updated).includes(synthetic),false);
- await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Clear saved key').click()`);
- await wait(`document.body.innerText.includes('Effective key: ${mode==='present'?'Shell environment':'No key configured'}')`);
- assert.equal(credentials.status().keySource,mode==='present'?'environment':'none');
+ await window.webContents.executeJavaScript(`document.querySelector('[aria-label="清除 API key"]').click()`);
+ await wait(`document.querySelector('[aria-label="OpenAI API key"]')?.placeholder==='请提供您的 key'`);
+ assert.equal(credentials.status().keySource,'none');
  await assert.rejects(readFile(encryptedPath));
  await window.webContents.executeJavaScript(`document.querySelector('[aria-label="Close settings"]').click()`);
  assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('header').length`),0);

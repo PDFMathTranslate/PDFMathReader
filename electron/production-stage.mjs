@@ -7,7 +7,12 @@ const runtimeElectron=['main.mjs','backend-process.mjs','backend-service.mjs','c
 const runtimeServer=['index.mjs','documents.mjs','engines.mjs','layout.mjs','layout-extraction.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
- try{path=dirname(require.resolve(name+'/package.json'));}catch{path=dirname(require.resolve(name));}
+ try{path=dirname(require.resolve(name+'/package.json'));}catch{
+  try{path=dirname(require.resolve(name));}catch{
+   for(const directory of require.resolve.paths(name)||[]){const candidate=join(directory,name);try{if(JSON.parse(await readFile(join(candidate,'package.json'),'utf8')).name===name){path=candidate;break;}}catch{}}
+   if(!path)throw Error('Cannot locate '+name);
+  }
+ }
  for(;;){try{const metadata=JSON.parse(await readFile(join(path,'package.json'),'utf8'));if(metadata.name===name)return path;}catch{}const next=dirname(path);if(next===path)throw Error('Cannot locate '+name);path=next;}
 }
 async function copyDependencies(root,stage,names){
@@ -38,7 +43,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['express','@firecrawl/pdf-inspector'];
  if(test&&!names.includes('pdf-lib'))names.push('pdf-lib');
  const copied=await copyDependencies(root,stage,names);
- const browserLicenses=['vue','@vue/shared','@vue/reactivity','@vue/runtime-core','@vue/runtime-dom','pdfjs-dist'];
+ const browserLicenses=['@macvue/core','reka-ui','vue','@vue/shared','@vue/reactivity','@vue/runtime-core','@vue/runtime-dom','pdfjs-dist'];
  for(const name of browserLicenses){const source=await packageDirectory(name,root);const target=join(stage,'licenses',name);await mkdir(target,{recursive:true});for(const file of await readdir(source))if(/^(licen[sc]e|copying|notice)(\.|$)/i.test(file))await cp(join(source,file),join(target,file));}
  if(['pdf','skia','dependencies'].includes(phase)){
   const {rm}=await import('node:fs/promises');if(phase!=='dependencies')await rm(join(stage,'node_modules/pdfjs-dist'),{recursive:true,force:true});

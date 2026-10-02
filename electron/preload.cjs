@@ -22,9 +22,9 @@ contextBridge.exposeInMainWorld('previewTestMode',process.argv.includes('--previ
 
 contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callback=>{const listener=(_event,action)=>callback(action);ipcRenderer.on('reader:action',listener);return ()=>ipcRenderer.removeListener('reader:action',listener);}}));
 
-contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipcRenderer.invoke('preferences:load'),save:value=>ipcRenderer.invoke('preferences:save',value)}));
+contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipcRenderer.invoke('preferences:load'),save:value=>ipcRenderer.invoke('preferences:save',value),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('preferences:changed',listener);return ()=>ipcRenderer.removeListener('preferences:changed',listener);}}));
 
-contextBridge.exposeInMainWorld('previewWindow',Object.freeze({new:()=>ipcRenderer.invoke('window:new'),fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}}));
+contextBridge.exposeInMainWorld('previewWindow',Object.freeze({new:()=>ipcRenderer.invoke('window:new'),fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),setHeaderHidden:hidden=>ipcRenderer.invoke('window:header-hidden',hidden),onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}}));
 
 contextBridge.exposeInMainWorld('previewRecents',Object.freeze({list:()=>ipcRenderer.invoke('recents:list'),clear:()=>ipcRenderer.invoke('recents:clear'),open:id=>ipcRenderer.invoke('recents:open',id),openWindow:id=>ipcRenderer.invoke('recents:openWindow',id),preview:id=>ipcRenderer.invoke('recents:preview',id),setThumbnail:(id,thumbnail)=>ipcRenderer.invoke('recents:setThumbnail',{id,thumbnail}),setView:(id,view)=>ipcRenderer.invoke('recents:setView',{id,view}),remember:(file,ticket,thumbnail)=>ipcRenderer.invoke('recents:remember',ticket?{ticket,thumbnail}:{path:webUtils.getPathForFile(file),thumbnail})}));
 
@@ -44,3 +44,5 @@ contextBridge.exposeInMainWorld('previewResize',Object.freeze({
  onStart:callback=>{const listener=()=>callback();ipcRenderer.on('window:resize-start',listener);return ()=>ipcRenderer.removeListener('window:resize-start',listener);},
  onEnd:callback=>{const listener=()=>callback();ipcRenderer.on('window:resize-end',listener);return ()=>ipcRenderer.removeListener('window:resize-end',listener);}
 }));
+
+contextBridge.exposeInMainWorld('previewClipboard',Object.freeze({writeText:text=>ipcRenderer.invoke('clipboard:write-text',text)}));
