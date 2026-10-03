@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - '**'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,7 +12,7 @@ permissions:
 jobs:
   compile:
     # For multi-commit pushes, evaluate the newest commit's message.
-    if: startsWith(github.event.head_commit.message, 'fix') || startsWith(github.event.head_commit.message, 'feat')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'fix') || startsWith(github.event.head_commit.message, 'feat')
     name: Compile ${{ matrix.platform }} ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
@@ -22,9 +23,28 @@ jobs:
           - runner: macos-15
             platform: darwin
             arch: arm64
+            electron: ''
+          - runner: macos-15-intel
+            platform: darwin
+            arch: x64
+            electron: ''
           - runner: windows-2022
             platform: win32
             arch: x64
+            electron: ''
+          - runner: windows-2022
+            platform: win32
+            arch: ia32
+            # Electron 43 is the last release series with 32-bit binaries.
+            electron: '43.4.1'
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+            electron: ''
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: armv7l
+            electron: '43.4.1'
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -33,19 +53,22 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Test PDF extraction without native architecture bindings
+        if: matrix.arch == 'ia32' || matrix.arch == 'armv7l' || (matrix.platform == 'darwin' && matrix.arch == 'x64')
+        run: node --test server/pdf-extractor.test.mjs
       - name: Generate macOS icons and symbols
         if: matrix.platform == 'darwin'
         run: npm run icons:mac
       - name: Build frontend
         run: npm run build
       - name: Package Electron app without signing credentials
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned
-      - name: Archive macOS app
-        if: matrix.platform == 'darwin'
-        run: tar -czf release/PDFMathReader-darwin-arm64.tar.gz -C release PDFMathReader-darwin-arm64
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --electron-version=${{ matrix.electron }} --unsigned
+      - name: Archive Unix app
+        if: matrix.platform != 'win32'
+        run: tar -czf release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz -C release PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}
       - name: Archive Windows app
         if: matrix.platform == 'win32'
-        run: Compress-Archive -Path release/PDFMathReader-win32-x64 -DestinationPath release/PDFMathReader-win32-x64.zip
+        run: Compress-Archive -Path release/PDFMathReader-win32-${{ matrix.arch }} -DestinationPath release/PDFMathReader-win32-${{ matrix.arch }}.zip
       - name: Upload compiled app
         uses: actions/upload-artifact@v6
         with:

@@ -10,11 +10,7 @@ import {createDocumentStore,isDocumentId,MAX_DOCUMENT_BYTES} from './documents.m
 import {createPerformanceTracker} from './performance.mjs';
 import {createLayoutExtraction} from './layout-extraction.mjs';
 import {selectTranslationProvider,createTranslationProvider,freeTranslationPrompt} from './translation-provider.mjs';
-let inspector;
-async function extractTextWithPositionsAsync(...args){
- inspector??=await import('@firecrawl/pdf-inspector');
- return inspector.extractTextWithPositionsAsync(...args);
-}
+import {extractTextWithPositionsAsync} from './pdf-extractor.mjs';
 export async function startServer({port=5173,development=true,cacheDir=resolve('.cache/translations'),token,diagnostics=false,kernelDiagnostic,kernelTiming,pythonResourcesPath,providerFetch=globalThis.fetch,enginesRoot=join(cacheDir,'..','engines'),runtimeHomeRoot=enginesRoot,findUvImpl,execImpl,getApiKey=()=>process.env.OPENAI_API_KEY,keyStatus=()=>({keySource:process.env.OPENAI_API_KEY?'environment':'none'})}={}) {
 const app=express();
 let freeServiceNoticeIssued=false;const sessionId=randomBytes(16).toString('hex');const providerClient=createTranslationProvider(providerFetch);
