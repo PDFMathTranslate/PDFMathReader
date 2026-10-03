@@ -1,0 +1,57 @@
+name: Electron compile
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    # For multi-commit pushes, evaluate the newest commit's message.
+    if: startsWith(github.event.head_commit.message, 'fix') || startsWith(github.event.head_commit.message, 'feat')
+    name: Compile ${{ matrix.platform }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            platform: darwin
+            arch: arm64
+          - runner: windows-2022
+            platform: win32
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate macOS icons and symbols
+        if: matrix.platform == 'darwin'
+        run: npm run icons:mac
+      - name: Build frontend
+        run: npm run build
+      - name: Package Electron app without signing credentials
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned
+      - name: Archive macOS app
+        if: matrix.platform == 'darwin'
+        run: tar -czf release/PDFMathReader-darwin-arm64.tar.gz -C release PDFMathReader-darwin-arm64
+      - name: Archive Windows app
+        if: matrix.platform == 'win32'
+        run: Compress-Archive -Path release/PDFMathReader-win32-x64 -DestinationPath release/PDFMathReader-win32-x64.zip
+      - name: Upload compiled app
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          retention-days: 7
