@@ -151,3 +151,5 @@ PDF の描画とレイアウト解析はローカルで行います。翻訳で�
 PDFMathReader は GNU Affero General Public License, version 3 に基づいてライセンスされています。全文は [LICENSE](../LICENSE) を参照してください。
 
 PDFMathTranslate と PDFMathTranslate-next も AGPL-3.0 プロジェクトです。ランタイムへのインストールでは、上流プロジェクトのライセンスファイルが保持され、その他の依存関係にはそれぞれのライセンスが適用されます。
+
+ご支援いただいた [OpenAI](https://openai.com/)、[Anthropic](https://www.anthropic.com/)、[Warp](https://www.warp.dev/)、[Immersive Translate](https://immersivetranslate.com/)、[SiliconFlow](https://siliconflow.cn/) に心より感謝いたします。
