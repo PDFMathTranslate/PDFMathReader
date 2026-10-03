@@ -1,13 +1,13 @@
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
 
 # <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader (experimental)
-[![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 
 
+  [![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 
   <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
     <img src="https://img.shields.io/badge/contributions-welcome-green"></a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>  
-    
+
 Read scientific documents in any language, with realtime translation, on any platform. Powered by PDFMathTranslate.
 
 <img src="doc/demo.gif" alt="Demo" width="100%">
