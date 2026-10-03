@@ -142,7 +142,7 @@ function immersiveScroll(){const el=reader.value;if(!el)return;const position=di
  if(immersiveTravel>=18){immersiveHeaderHidden.value=true;immersiveTravel=0;}else if(immersiveTravel<=-6)revealHeader();
 }
 function immersivePointer(event){if(!autoHideHeader.value||event.clientY<=12)revealHeader();}
-watch(autoHideHeader,enabled=>{if(!enabled){clearTimeout(immersiveLightsTimer);revealHeader();void window.previewWindow?.setHeaderHidden?.(false);}});
+watch(autoHideHeader,enabled=>{if(!enabled){clearTimeout(immersiveLightsTimer);revealHeader();void window.previewWindow?.setHeaderHidden?.(false);}nextTick(()=>resizeFit(true));});
 watch(immersiveHeaderHidden,hidden=>{clearTimeout(immersiveLightsTimer);if(!autoHideHeader.value){if(hidden)immersiveHeaderHidden.value=false;void window.previewWindow?.setHeaderHidden?.(false);return;}if(hidden)immersiveLightsTimer=setTimeout(()=>window.previewWindow?.setHeaderHidden?.(true),180);else void window.previewWindow?.setHeaderHidden?.(false);});
 
 
@@ -585,7 +585,7 @@ onBeforeUnmount(()=>{documentMotionController?.abort();clearTimeout(immersiveLig
 </script>
 
 <template>
- <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'windows-glass':windowsGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
+ <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'windows-glass':windowsGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'horizontal-immersive':pages.length&&direction==='horizontal'&&autoHideHeader,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
   <div v-if="immersiveHeaderHidden" class="header-reveal-zone" @pointerenter="revealHeader" aria-hidden="true"></div>
   <nav class="toolbar" :class="{'has-document':pages.length}" :aria-label="t('app.readerNavigation')" :inert="immersiveHeaderHidden" @focusin="revealHeader" @dblclick="headerDoubleClick">
    <div v-if="platform==='darwin'" class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div>

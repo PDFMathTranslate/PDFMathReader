@@ -2011,6 +2011,10 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .desktop[data-platform="win32"] .sidebar{padding-top:var(--toolbar-height)}
 .desktop[data-platform="win32"].is-fullscreen .workspace{margin-top:0}
 .desktop[data-platform="win32"].immersive-header-hidden .toolbar{visibility:hidden;pointer-events:none;-webkit-app-region:no-drag}
+/* Fit horizontal pages to the reading height, including the area beneath auto-hidden chrome.
+   Keep that geometry stable when the header is revealed over the document. */
+.app.horizontal-immersive .workspace{margin-top:calc(-1 * var(--toolbar-height))}
+.app.horizontal-immersive .reader{padding-top:var(--page-gutter);scroll-padding-top:0}
 .windows-menu{position:relative;flex-shrink:0}
 .windows-menu-trigger,.windows-window-controls button{display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--text);cursor:default}
 .windows-menu-trigger{width:36px;height:36px;border-radius:4px}
