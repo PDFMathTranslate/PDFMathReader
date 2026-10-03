@@ -4,18 +4,29 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - '**/*.md'
+      - 'doc/**'
+      - '!doc/icon.png'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: electron-compile-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   compile:
     # For multi-commit pushes, evaluate the newest commit's message.
     if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'fix') || startsWith(github.event.head_commit.message, 'feat')
-    name: Compile ${{ matrix.platform }} ${{ matrix.arch }}
+    name: Compile ${{ matrix.platform }} ${{ matrix.arch }} ${{ matrix.extra-arch }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
+    env:
+      # Packaging downloads the target binary; npm only needs Electron metadata.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -23,53 +34,86 @@ jobs:
           - runner: macos-15
             platform: darwin
             arch: arm64
-            electron: ''
+            extra-arch: ''
           - runner: macos-15-intel
             platform: darwin
             arch: x64
-            electron: ''
+            extra-arch: ''
           - runner: windows-2022
             platform: win32
             arch: x64
-            electron: ''
-          - runner: windows-2022
-            platform: win32
-            arch: ia32
-            # Electron 43 is the last release series with 32-bit binaries.
-            electron: '43.4.1'
+            extra-arch: ia32
           - runner: ubuntu-24.04
             platform: linux
             arch: x64
-            electron: ''
-          - runner: ubuntu-24.04
-            platform: linux
-            arch: armv7l
-            electron: '43.4.1'
+            extra-arch: armv7l
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
+        id: node
         with:
           node-version: '22'
           cache: npm
+      # Native dependencies require the same host OS, CPU and exact Node version.
+      # No partial restores: changed lockfiles always require npm ci.
+      - name: Restore installed dependencies
+        uses: actions/cache@v4
+        id: dependencies
+        with:
+          path: node_modules
+          key: modules-v1-${{ matrix.runner }}-${{ runner.arch }}-${{ steps.node.outputs.node-version }}-${{ hashFiles('package.json', 'package-lock.json') }}
       - name: Install dependencies
-        run: npm ci
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/Library/Caches/electron
+            ~/AppData/Local/electron/Cache
+          key: electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-${{ hashFiles('package-lock.json', '.github/workflows/electron-build.yml') }}
+          restore-keys: |
+            electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-
       - name: Test PDF extraction without native architecture bindings
-        if: matrix.arch == 'ia32' || matrix.arch == 'armv7l' || (matrix.platform == 'darwin' && matrix.arch == 'x64')
+        if: matrix.extra-arch != '' || (matrix.platform == 'darwin' && matrix.arch == 'x64')
         run: node --test server/pdf-extractor.test.mjs
-      - name: Generate macOS icons and symbols
+      - name: Cache macOS icons and symbols
         if: matrix.platform == 'darwin'
+        uses: actions/cache@v4
+        id: icons
+        with:
+          path: |
+            electron/AppIcon.icns
+            electron/AppIcon.ico
+            electron/AppIcon.png
+            public/symbols
+          key: icons-v1-${{ matrix.runner }}-${{ hashFiles('doc/icon.png', 'electron/generate-icon.mjs', 'electron/export-symbols.swift', '.github/workflows/electron-build.yml') }}
+      - name: Generate macOS icons and symbols
+        if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
         run: npm run icons:mac
+      # Both architectures share this host installation and frontend build.
       - name: Build frontend
         run: npm run build
-      - name: Package Electron app without signing credentials
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --electron-version=${{ matrix.electron }} --unsigned
-      - name: Archive Unix app
+      - name: Package primary architecture
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned
+      - name: Package secondary architecture
+        if: matrix.extra-arch != ''
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned
+      - name: Archive Unix apps
         if: matrix.platform != 'win32'
-        run: tar -czf release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz -C release PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}
-      - name: Archive Windows app
+        shell: bash
+        run: |
+          for app in release/PDFMathReader-${{ matrix.platform }}-*; do
+            tar -czf "$app.tar.gz" -C release "$(basename "$app")"
+          done
+      - name: Archive Windows apps
         if: matrix.platform == 'win32'
-        run: Compress-Archive -Path release/PDFMathReader-win32-${{ matrix.arch }} -DestinationPath release/PDFMathReader-win32-${{ matrix.arch }}.zip
-      - name: Upload compiled app
+        run: |
+          Get-ChildItem release -Directory -Filter 'PDFMathReader-win32-*' | ForEach-Object {
+            Compress-Archive -LiteralPath $_.FullName -DestinationPath "$($_.FullName).zip"
+          }
+      - name: Upload primary app
         uses: actions/upload-artifact@v6
         with:
           name: PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}
@@ -77,4 +121,16 @@ jobs:
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.zip
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Upload secondary app
+        if: matrix.extra-arch != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}
+          path: |
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}.tar.gz
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}.zip
+          if-no-files-found: error
+          compression-level: 0
           retention-days: 7
