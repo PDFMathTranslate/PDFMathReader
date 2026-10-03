@@ -36,6 +36,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  const metadata=JSON.parse(await readFile(join(root,'package.json'),'utf8'));
  await mkdir(join(stage,'electron'),{recursive:true});await mkdir(join(stage,'server'),{recursive:true});
  await cp(join(root,'dist'),join(stage,'dist'),{recursive:true});
+ await cp(join(root,'electron/AppIcon.png'),join(stage,'electron/AppIcon.png'));
  for(const file of runtimeElectron)await cp(join(root,'electron',file),join(stage,'electron',file));
  for(const file of runtimeServer)await cp(join(root,'server',file),join(stage,'server',file));
  await cp(join(root,'electron/kernel-worker.py'),join(stage,'electron/kernel-worker.py'));

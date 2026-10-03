@@ -6,6 +6,8 @@ import {join} from 'node:path';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {startServer} from './index.mjs';
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {advancedOptionsToArgs} from './kernel-options.mjs';
 const root=await mkdtemp(join(tmpdir(),'pdfmathreader-advanced-'));
 let calls=0;
 const server=await startServer({port:0,development:false,cacheDir:join(root,'cache'),runtimeHomeRoot:join(root,'home'),enginesRoot:join(homedir(),'Library/Application Support/PDFMathReader/engines'),getApiKey:()=> 'simulation-only',providerFetch:async()=>{calls++;return new Response(JSON.stringify({id:'mock',object:'chat.completion',choices:[{index:0,finish_reason:'stop',message:{role:'assistant',content:'Texte traduit pour vérifier les options avancées.'}}],usage:{prompt_tokens:1,completion_tokens:1,total_tokens:2}}),{headers:{'Content-Type':'application/json'}});}});
@@ -18,6 +20,14 @@ try{
  for(const engine of ['pdf_math_fast','pdf_math_precise']){
   const response=await fetch(server.origin+'/api/engines/'+engine+'/advanced');assert.equal(response.status,200);const schema=await response.json();assert.ok(schema.options.length>= (engine==='pdf_math_fast'?2:20));
   const names=schema.options.map(option=>option.id);
+  if(engine==='pdf_math_fast'){
+   const values={debug:true,vfont:'Test Font.*',vchar:'[0-9]',lang_in:'ja',prompt:'/tmp/test prompt.txt',compatible:true,onnx:'/tmp/test model.onnx',backend:'auto',config:'/tmp/test config.json',skip_subset_fonts:true,ignore_cache:false};
+   const {args}=advancedOptionsToArgs(engine,values,schema.options);
+   const python=join(homedir(),'Library/Application Support/PDFMathReader/engines',engine,'bin/python');
+   const code='import json,sys\nfrom pdf2zh.pdf2zh import create_parser\na=create_parser().parse_args(sys.argv[2:])\nprint(json.dumps({k:getattr(a,k) for k in json.loads(sys.argv[1])}))';
+   const parsed=JSON.parse(execFileSync(python,['-c',code,JSON.stringify(Object.keys(values)),'/tmp/test input.pdf',...args],{encoding:'utf8'}));
+   assert.deepEqual(parsed,values,'all Fast advanced fields reach the installed parser unchanged');
+  }
   assert.ok(names.includes(engine==='pdf_math_fast'?'vfont':'min_text_length'));
   if(engine==='pdf_math_precise'){assert.equal(schema.options.find(option=>option.id==='translate_table_text').default,true);assert.equal(schema.options.find(option=>option.id==='no_auto_extract_glossary').default,true);}
   const options=engine==='pdf_math_fast'?{vfont:'a^'}:{min_text_length:1,translate_table_text:false,primary_font_family:'serif'};

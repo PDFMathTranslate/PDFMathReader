@@ -8,7 +8,8 @@
     "test": "node --test server/*.test.mjs",
     "desktop": "npm run build && electron .",
     "package:mac": "npm run icons:mac && npm run build && node electron/package.mjs",
-    "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols"
+    "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols",
+    "package:win": "npm run build && node electron/package.mjs --platform=win32 --arch=x64"
   },
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",
