@@ -801,6 +801,29 @@ textarea:focus-visible,
   background-clip: padding-box;
 }
 
+/* Use the transparent custom track instead of Windows' native scrollbar surface.
+   Non-auto standard properties override the ::-webkit-scrollbar rules in Chromium. */
+.desktop[data-platform="win32"] .reader {
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+
+[data-appearance="dark"] .desktop[data-platform="win32"] .reader::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.27);
+}
+
+[data-appearance="dark"] .desktop[data-platform="win32"] .reader::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.desktop[data-platform="win32"] .reader:not([data-scrolling])::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+.desktop[data-platform="win32"] .reader::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .reader-content,
 .reader-inner,
 .pages {

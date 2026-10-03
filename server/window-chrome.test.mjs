@@ -47,6 +47,19 @@ test('accelerators and before-input shortcuts follow each platform',()=>{
 
 test('page navigation supports dedicated keys and shift arrows on every platform',()=>{for(const platform of ['darwin','win32','linux'])for(const [key,shift,expected] of [['PageUp',false,'page-previous'],['PageDown',false,'page-next'],['ArrowUp',true,'page-previous'],['ArrowLeft',true,'page-previous'],['ArrowDown',true,'page-next'],['ArrowRight',true,'page-next']])assert.equal(shortcutAction(platform,{type:'keyDown',key,shift}),expected);assert.equal(shortcutAction('darwin',{type:'keyDown',key:'ArrowDown'}),null);});
 
+test('fit shortcuts preserve shifted percentage navigation on every platform',()=>{
+ for(const platform of ['darwin','win32','linux']){
+  const modifier=platform==='darwin'?{meta:true}:{control:true};
+  for(const [digit,action] of [['0','fit-width'],['9','fit-height']]){
+   const input={type:'keyDown',key:digit,code:'Digit'+digit,...modifier};
+   assert.equal(shortcutAction(platform,input),action);
+   assert.equal(shortcutAction(platform,{...input,shift:true}),'percent:'+(digit==='0'?100:90));
+   assert.equal(shortcutAction(platform,{...input,alt:true}),null);
+   assert.equal(shortcutAction(platform,{type:'keyDown',key:digit}),null);
+  }
+ }
+});
+
 test('serialized menu entries expose numeric paths and preserve nested metadata',()=>{
  const open={id:'file-open',label:'Open PDF…',type:'normal',enabled:true,checked:false,accelerator:'Ctrl+O'};
  const menu={items:[{id:'file-menu',label:'File',type:'submenu',enabled:true,checked:false,accelerator:null,submenu:{items:[{type:'separator'},open]}}]};

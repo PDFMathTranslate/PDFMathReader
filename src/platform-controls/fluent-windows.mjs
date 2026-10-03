@@ -514,6 +514,8 @@ export const MacSegmentedControl = defineComponent({
   emits: ['update:modelValue'],
   setup(props, {attrs, emit, slots, expose}) {
     const element = ref(null);
+    let syncing = false;
+    let clicking = false;
     const localValue = ref(props.defaultValue ?? (props.type === 'multiple' ? [] : ''));
     const currentValue = () => props.modelValue === undefined ? localValue.value : props.modelValue;
     const selected = (value) => props.type === 'multiple'
@@ -529,11 +531,21 @@ export const MacSegmentedControl = defineComponent({
         tab.dataset.state = selected(value) ? 'on' : 'off';
       });
       const active = tabs.find((tab) => tab.dataset.state === 'on' && !tab.disabled);
-      if (active && root.activeid !== active.id) root.activeid = active.id;
+      if (active && root.activeid !== active.id) {
+        syncing = true;
+        try { root.activeid = active.id; } finally { syncing = false; }
+      }
     };
     const change = (event) => {
       const root = element.value;
       const active = root?.activetab || event.detail;
+      // Fluent also emits change during connection, setTabs and activeid
+      // synchronization. Those events must never overwrite the Vue model.
+      if (syncing) return;
+      if (!root?.isConnected || props.disabled || (!clicking && document.activeElement !== active)) {
+        nextTick(sync);
+        return;
+      }
       const value = active?.dataset?.segmentValue ?? active?.getAttribute?.('value');
       if (value === undefined) return;
       let next = value;
@@ -560,6 +572,7 @@ export const MacSegmentedControl = defineComponent({
       disabled: booleanAttribute(props.disabled),
       'aria-disabled': props.disabled ? 'true' : undefined,
       name: props.name,
+      onClickCapture: () => { clicking = true; queueMicrotask(() => { clicking = false; }); },
     }, 'onChange', change), slots.default?.());
   },
 });

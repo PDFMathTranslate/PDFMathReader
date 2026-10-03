@@ -40,6 +40,10 @@
 .desktop[data-platform="win32"] .toolbar>.toolbar-actions { flex:0 0 auto; }
 .desktop[data-platform="win32"] .toolbar>.title { flex:1 1 0%;min-width:0; }
 .desktop[data-platform="win32"] .toolbar .icon-button.macvue-button { min-width:30px;max-width:30px;min-height:30px;flex-shrink:0; }
+/* Match the menu to the adjacent Fluent icon button's layout box. */
+.desktop[data-platform="win32"] .toolbar>.windows-menu { width:30px; }
+.desktop[data-platform="win32"] .windows-menu-trigger { box-sizing:border-box;width:30px;min-width:30px;max-width:30px;height:30px;padding:0;margin:0; }
+.desktop[data-platform="win32"] .toolbar>.icon-button { margin:0; }
 
 /* Fluent tabs use an underline, while MacVue assumes white text on a fill. */
 .desktop[data-platform="win32"] .settings fluent-tablist.macvue-segmented { height:auto;min-height:36px;align-items:stretch; }

@@ -95,6 +95,6 @@ export function shortcutAction(platform,input){
   if(!input.control||input.meta||input.alt)return null;
  }
  const digit=/^Digit[0-9]$/.test(input.code||'')?input.code.slice(-1):/^\d$/.test(key)?key:null;
- if(digit!==null)return input.shift?'percent:'+(digit==='0'?100:Number(digit)*10):({'1':'columns:1','2':'columns:2','3':'columns:4'}[digit]||null);
+ if(digit!==null)return input.shift?'percent:'+(digit==='0'?100:Number(digit)*10):({'0':'fit-width','9':'fit-height','1':'columns:1','2':'columns:2','3':'columns:4'}[digit]||null);
  return SHORTCUT_ACTIONS[key]||null;
 }
