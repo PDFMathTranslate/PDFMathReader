@@ -49,9 +49,9 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
  return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
 }
 
-export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput,findUvImpl=findUv,execImpl=exec}){
+export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
  const runExec=execImpl;
- let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map();
+ let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map();
  const envPath=id=>join(root,id);const python=id=>join(envPath(id),'bin/python');
 
  async function check(id){
@@ -63,8 +63,8 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   try{
    const {stdout}=await runExec(python(id),['-c',`import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id==='pdf_math_fast'?'pdf2zh':'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}'))`],{timeout:15000});
    const version=stdout.trim();if(!/^\d+\.\d+/.test(version))throw Error();
-   return {id,label:definitions[id].label,installed:true,available:true,version};
-  }catch{return {id,label:definitions[id].label,installed,available:false,reason:installing.has(id)?'Installing…':'Kernel environment is not installed or its version cannot be queried.'};}
+   const state={id,label:definitions[id].label,installed:true,available:true,version};knownStates.set(id,{state,at:performance.now()});return state;
+  }catch{knownStates.delete(id);return {id,label:definitions[id].label,installed,available:false,reason:installing.has(id)?'Installing…':'Kernel environment is not installed or its version cannot be queried.'};}
  }
 
  async function install(id,{reinstall=false,source='release'}={}){
@@ -75,6 +75,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
    uv=await findUvImpl();if(!uv.available)throw Error(uv.message);
    await mkdir(root,{recursive:true});
    const env={...process.env,UV_CACHE_DIR:join(root,'uv-cache')};
+   knownStates.delete(id);
    try{
     if(!state.available)await runExec(uv.path,['venv','--allow-existing','--python','3.12',envPath(id)],{env,timeout:300000,maxBuffer:1024*1024});
     const pipArgs=['pip','install',...(reinstall===true?['--upgrade','--reinstall',...(source==='git'?['--refresh']:[])]:[]),'--python',python(id),reinstall===true?(source==='git'?definitions[id].gitSpec:definitions[id].updateSpec):definitions[id].spec];
@@ -118,15 +119,21 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   }
  }
 
- async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={}}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},onPageTiming}){
+  const emitTiming=report=>{onTiming?.(report);onPageTiming?.(report);};
+  const started=performance.now(),stages={};let checkpoint=started;
+  const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
   if(signal?.aborted)throw Error('Cancelled');
   if(sourceLanguage!==undefined&&!Object.hasOwn(LANGUAGE_CODES,sourceLanguage))throw Error('Unsupported source language');
-  const state=await check(id);if(!state.available)throw Error(state.reason);
+  const known=knownStates.get(id);
+  const state=known&&performance.now()-known.at<30000&&!installing.has(id)?known.state:await check(id);if(!state.available)throw Error(state.reason);
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
+  step('environmentAndOptions');
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model,prompt:2,layoutSchema:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model,prompt:2,layoutSchema:id==='pdf_math_fast'?3:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const cached=join(cacheDir,`${key}.pdf`);
-  try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;return result;}catch{}
+  try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;step('cacheLookup');emitTiming({engine:id,cached:true,totalMs:performance.now()-started,stages});return result;}catch{}
+  step('cacheLookup');
   await mkdir(root,{recursive:true});
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
   const codes=LANGUAGE_CODES;
@@ -136,6 +143,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   try{
    const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,...(Object.keys(overrides).length?advancedArgs:['--backend','cpu','--ignore-cache'])]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
    if(sourceLanguage)args.push('--lang-in',LANGUAGE_CODES[sourceLanguage]);
+   step('prepareInput');
    await new Promise((resolve,reject)=>{
     if(signal?.aborted)return reject(Error('Cancelled'));
     const child=spawn(python(id),[pythonResourcePath('kernel-worker.py',pythonResourcesPath),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
@@ -143,10 +151,12 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
     const kill=()=>{try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}};const timer=setTimeout(kill,15*60*1000);signal?.addEventListener('abort',kill,{once:true});
     child.on('error',()=>reject(Error('Kernel could not start')));child.on('close',code=>{clearTimeout(timer);signal?.removeEventListener('abort',kill);children.delete(child);code===0?resolve():reject(Error(signal?.aborted?'Cancelled':'Kernel translation failed. Check its runtime assets and provider configuration.'));});
    });
+   step('kernelProcess');
+   let worker;try{worker=JSON.parse(await readFile(join(dir,'layout.json.timing.json'),'utf8'));}catch{}
    const names=await readdir(dir);const output=names.find(n=>/mono.*\.pdf$/i.test(n)||/\.mono\.pdf$/i.test(n));if(!output)throw Error('Kernel did not produce a translated PDF');
    const raw=await readFile(join(dir,output));await onOutput?.(raw,id);const document=await PDFDocument.load(raw);const index=document.getPageCount()===1?0:page-1;if(index>=document.getPageCount())throw Error('Kernel returned an unexpected page count');
    const one=await PDFDocument.create();const [selected]=await one.copyPages(document,[index]);one.addPage(selected);const result=Buffer.from(await one.save());const metadata=JSON.parse(await readFile(join(dir,'layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Kernel returned invalid layout');
-   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);result.layoutKey=key;return result;
+   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);result.layoutKey=key;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
   }finally{await rm(dir,{recursive:true,force:true});}
  }
 

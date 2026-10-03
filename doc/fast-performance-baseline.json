@@ -1,0 +1,120 @@
+{
+  "pages": 30,
+  "delayMs": 200,
+  "timings": [
+    {
+      "page": 1,
+      "wallMs": 6171.289375,
+      "providerCalls": 6,
+      "providerAggregateMs": 1219.0384159999999,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 6135.062083,
+      "stages": {
+        "environmentAndOptions": 70.66687499999998,
+        "cacheLookup": 0.5828750000000014,
+        "prepareInput": 2.1656659999999874,
+        "kernelProcess": 6046.366834,
+        "outputAndCache": 15.272415999999794
+      },
+      "worker": {
+        "imports": 578.3070000034058,
+        "model_and_cli_setup": 402.65983299468644,
+        "font_setup": 30.661334007163532,
+        "document_open": 3.602124997996725,
+        "font_resources": 1336.5110000013374,
+        "working_copy_save": 6.139666002127342,
+        "paragraph_parse": 13.96516599925235,
+        "translation": 532.4100839934545,
+        "typesetting": 6.0443750116974115,
+        "page_processing": 1106.8299999897135,
+        "apply_patches": 0.4982090031262487,
+        "bilingual_assembly": 3.934207998099737,
+        "font_subset": 2244.294500007527,
+        "pdf_serialize": 3.6046250024810433,
+        "output_write": 0.6479169969679788,
+        "workerTotal": 5775.871083998936
+      }
+    },
+    {
+      "page": 15,
+      "wallMs": 6205.738042,
+      "providerCalls": 6,
+      "providerAggregateMs": 1207.1452489999992,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 6194.693249999999,
+      "stages": {
+        "environmentAndOptions": 62.79454199999964,
+        "cacheLookup": 0.21554099999957543,
+        "prepareInput": 2.129959000000781,
+        "kernelProcess": 6117.982125,
+        "outputAndCache": 11.564290999998775
+      },
+      "worker": {
+        "imports": 570.104958009324,
+        "model_and_cli_setup": 396.71166699554306,
+        "font_setup": 31.767874999786727,
+        "document_open": 3.9460419939132407,
+        "font_resources": 1343.5954160086112,
+        "working_copy_save": 5.060458992375061,
+        "paragraph_parse": 14.701457999763079,
+        "translation": 520.7203750032932,
+        "typesetting": 4.757709000841714,
+        "page_processing": 1150.8790829975624,
+        "apply_patches": 0.29075000202283263,
+        "bilingual_assembly": 3.5910830047214404,
+        "font_subset": 2264.336292006192,
+        "pdf_serialize": 3.495624987408519,
+        "output_write": 0.5880420067114756,
+        "workerTotal": 5837.839707994135
+      }
+    },
+    {
+      "page": 30,
+      "wallMs": 6219.410874999998,
+      "providerCalls": 6,
+      "providerAggregateMs": 1210.4520840000005,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 6211.516792000002,
+      "stages": {
+        "environmentAndOptions": 66.11183300000084,
+        "cacheLookup": 0.3146249999990687,
+        "prepareInput": 2.2480840000007447,
+        "kernelProcess": 6132.756165999999,
+        "outputAndCache": 10.076000000000931
+      },
+      "worker": {
+        "imports": 569.0400419989601,
+        "model_and_cli_setup": 400.3545420127921,
+        "font_setup": 31.087332987226546,
+        "document_open": 3.516374999890104,
+        "font_resources": 1341.5693749993807,
+        "working_copy_save": 4.697542011854239,
+        "paragraph_parse": 15.101540993782692,
+        "translation": 543.312750000041,
+        "typesetting": 6.6799159976653755,
+        "page_processing": 1177.8055409959052,
+        "apply_patches": 0.4720419965451583,
+        "bilingual_assembly": 4.328167007770389,
+        "font_subset": 2264.006415993208,
+        "pdf_serialize": 3.6782090028282255,
+        "output_write": 0.6678749923594296,
+        "workerTotal": 5858.532458005357
+      }
+    },
+    {
+      "page": 1,
+      "wallMs": 70.15475000000151,
+      "providerCalls": 0,
+      "providerAggregateMs": 0,
+      "engine": "pdf_math_fast",
+      "cached": true,
+      "totalMs": 65.8816250000018,
+      "stages": {
+        "environmentAndOptions": 64.71875
+      }
+    }
+  ]
+}

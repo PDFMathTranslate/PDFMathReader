@@ -1,0 +1,136 @@
+{
+  "pages": 30,
+  "delayMs": 200,
+  "timings": [
+    {
+      "page": 1,
+      "wallMs": 3466.014458,
+      "providerCalls": 6,
+      "providerAggregateMs": 1235.0018340000001,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 3428.9485,
+      "stages": {
+        "environmentAndOptions": 67.15558300000001,
+        "cacheLookup": 0.4810420000000022,
+        "prepareInput": 2.1194580000000087,
+        "kernelProcess": 3349.189834,
+        "outputAndCache": 9.99529100000018
+      },
+      "worker": {
+        "imports": 593.7378749949858,
+        "select_page": 13.182458002120256,
+        "model_and_cli_setup": 376.52545899618417,
+        "font_setup": 30.917625001166016,
+        "document_open": 2.149625011952594,
+        "font_resources": 49.05458299617749,
+        "working_copy_save": 5.303625002852641,
+        "paragraph_parse": 3.844708000542596,
+        "translation": 522.5450839934638,
+        "typesetting": 1.945875003002584,
+        "page_processing": 1063.7528329971246,
+        "apply_patches": 0.4526249977061525,
+        "bilingual_assembly": 0.006667003617621958,
+        "font_subset": 895.685333001893,
+        "pdf_serialize": 1.2030419893562794,
+        "output_write": 0.45691699779126793,
+        "workerTotal": 3086.9524589943467
+      },
+      "queueMs": 0.20462499999999295,
+      "providerQueueMs": 0.46046000000023923,
+      "providerMaxMs": 207.8871250000002
+    },
+    {
+      "page": 15,
+      "wallMs": 3368.9896250000006,
+      "providerCalls": 6,
+      "providerAggregateMs": 1222.5407080000023,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 3359.4589589999996,
+      "stages": {
+        "environmentAndOptions": 0.00829199999998309,
+        "cacheLookup": 0.2237079999999878,
+        "prepareInput": 1.690791999999874,
+        "kernelProcess": 3352.6157500000004,
+        "outputAndCache": 4.913332999999511
+      },
+      "worker": {
+        "imports": 573.0681669956539,
+        "select_page": 13.463374998536892,
+        "model_and_cli_setup": 397.1701250120532,
+        "font_setup": 31.02249999938067,
+        "document_open": 2.3474159970646724,
+        "font_resources": 49.68358400219586,
+        "working_copy_save": 7.684625001274981,
+        "paragraph_parse": 4.16662500356324,
+        "translation": 506.65666699933354,
+        "typesetting": 2.0220000005792826,
+        "page_processing": 1105.8677080000052,
+        "apply_patches": 0.4084169922862202,
+        "bilingual_assembly": 0.00508299854118377,
+        "font_subset": 877.5081250059884,
+        "pdf_serialize": 1.1062919948017225,
+        "output_write": 0.42675000440794975,
+        "workerTotal": 3118.8220420008292
+      },
+      "queueMs": 0.08374999999978172,
+      "providerQueueMs": 0.28641699999934644,
+      "providerMaxMs": 204.46145800000068
+    },
+    {
+      "page": 30,
+      "wallMs": 3361.9774579999994,
+      "providerCalls": 6,
+      "providerAggregateMs": 1214.7326270000012,
+      "engine": "pdf_math_fast",
+      "cached": false,
+      "totalMs": 3353.408459,
+      "stages": {
+        "environmentAndOptions": 0.008708999999726075,
+        "cacheLookup": 0.20433299999967858,
+        "prepareInput": 1.9346670000004451,
+        "kernelProcess": 3344.3146659999993,
+        "outputAndCache": 6.940542000000278
+      },
+      "worker": {
+        "imports": 569.6672500052955,
+        "select_page": 13.322749990038574,
+        "model_and_cli_setup": 387.1963750134455,
+        "font_setup": 32.18095799093135,
+        "document_open": 2.2918750037206337,
+        "font_resources": 49.08324999269098,
+        "working_copy_save": 5.932375002885237,
+        "paragraph_parse": 3.9434159989468753,
+        "translation": 494.2938750027679,
+        "typesetting": 1.4280000032158569,
+        "page_processing": 1092.730208998546,
+        "apply_patches": 0.42291601130273193,
+        "bilingual_assembly": 0.005750000127591193,
+        "font_subset": 899.57058399159,
+        "pdf_serialize": 1.0867910023080185,
+        "output_write": 0.4250839992891997,
+        "workerTotal": 3109.1759580012877
+      },
+      "queueMs": 0.05900000000019645,
+      "providerQueueMs": 0.10133300000052259,
+      "providerMaxMs": 203.08941700000105
+    },
+    {
+      "page": 1,
+      "wallMs": 4.842333000000508,
+      "providerCalls": 0,
+      "providerAggregateMs": 0,
+      "engine": "pdf_math_fast",
+      "cached": true,
+      "totalMs": 0.41062499999861757,
+      "stages": {
+        "environmentAndOptions": 0.009207999999489402,
+        "cacheLookup": 0.38120899999921676
+      },
+      "queueMs": 0.05774999999994179,
+      "providerQueueMs": 0,
+      "providerMaxMs": 0
+    }
+  ]
+}

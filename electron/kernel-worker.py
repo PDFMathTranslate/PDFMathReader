@@ -1,9 +1,13 @@
 """App-owned adapters: capture upstream paragraph identity without editing packages."""
 import inspect
+import ast
+import textwrap
 import json
 import os
 import re
 import sys
+from time import perf_counter
+STARTED = perf_counter()
 from pathlib import Path
 import pymupdf
 
@@ -24,6 +28,13 @@ def main(capture_only=False):
     else:
         kind, sidecar, selected, input_path, *args = sys.argv[1:]
     selected = int(selected)
+    timings = {}
+    checkpoint = perf_counter()
+    def step(name):
+        nonlocal checkpoint
+        now = perf_counter()
+        timings[name] = timings.get(name, 0) + (now - checkpoint) * 1000
+        checkpoint = now
     source_pdf = pymupdf.open(input_path)
     source_page = source_pdf[selected - 1]
     records = []
@@ -33,37 +44,93 @@ def main(capture_only=False):
     
     if kind == "pdf_math_fast":
         from pdf2zh.converter import TranslateConverter
-        original = TranslateConverter.receive_layout
-        lines, start = inspect.getsourcelines(original)
-        capture_line = next(start + i for i, line in enumerate(lines) if "for vals in ops_vals:" in line)
-        def receive(self, page):
-            previous = sys.gettrace()
-            seen = set()
-            def trace(frame, event, arg):
-                if frame.f_code is original.__code__ and event == "line" and frame.f_lineno == capture_line and frame.f_locals["id"] not in seen:
-                    v = frame.f_locals
-                    index = v["id"]
-                    seen.add(index)
-                    paragraph = v["pstk"][index]
-                    raw_source, raw_target = v["sstk"][index], v["news"][index]
-                    variables = ["".join(c.get_text() for c in chars) for chars in v["var"]]
-                    def restore(text):
-                        return re.sub(r"\{+\s*v(\d+)\s*\}+", lambda m: variables[int(m[1])] if int(m[1]) < len(variables) else m[0], text)
-                    text, translation = restore(raw_source), restore(raw_target)
-                    if text.strip():
-                        values = [item for item in v["ops_vals"] if item.get("type").value == "text"]
-                        low = min((item["dy"] + v["y"] - item["lidx"] * item["size"] * v["line_height"] - item["size"] * .25 for item in values), default=paragraph.y0)
-                        high = max((item["dy"] + v["y"] - item["lidx"] * item["size"] * v["line_height"] + item["size"] for item in values), default=paragraph.y1)
-                        records.append({"id": f"fast-{selected}-{len(records)}", "page": selected, "text": text, "translation": translation, "sourceBox": box((paragraph.x0, paragraph.y0, paragraph.x1, paragraph.y1)), "translatedBox": box((paragraph.x0, low, paragraph.x1, high)), "fontSize": paragraph.size, "sourceInput": raw_source, "translationOutput": raw_target, "formulaTexts": variables, "layoutSource": "pdf2zh.converter", "translatedWidth": "source-paragraph-width"})
-                return trace if frame.f_code is original.__code__ else None
-            sys.settrace(trace)
+        import pdf2zh.high_level as high_level
+        original_stream = high_level.translate_stream
+        original_document = high_level.Document
+        stream_lines, stream_start = inspect.getsourcelines(original_stream)
+        stream_tree = ast.parse(textwrap.dedent("".join(stream_lines)))
+        source_document_lines = {
+            stream_start + node.lineno - 1 for node in ast.walk(stream_tree)
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "doc_en" for target in node.targets)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name) and node.value.func.id == "Document"
+        }
+        class Timer:
+            def add(self, name, seconds):
+                timings[name] = timings.get(name, 0) + seconds * 1000
+            def step(self, name):
+                step(name)
+        def timed_stream(*positional, **kwargs):
+            step("model_and_cli_setup")
+            kwargs["perf"] = Timer()
+            def mono_document(*args, **options):
+                doc = original_document(*args, **options)
+                caller = sys._getframe(1)
+                if caller.f_code is original_stream.__code__ and caller.f_lineno in source_document_lines:
+                    # doc_en is only used for the unused bilingual output after
+                    # its working copy is saved. Keep source save/font behavior;
+                    # avoid a second font subset and duplicate PDF serialization.
+                    doc.insert_file = lambda *a, **k: None
+                    doc.move_page = lambda *a, **k: None
+                    doc.subset_fonts = lambda *a, **k: None
+                    doc.write = lambda *a, **k: b""
+                return doc
+            high_level.Document = mono_document
             try:
-                return original(self, page)
+                return original_stream(*positional, **kwargs)
             finally:
-                sys.settrace(previous)
-        TranslateConverter.receive_layout = receive
+                high_level.Document = original_document
+        high_level.translate_stream = timed_stream
+        step("imports")
+        original = TranslateConverter.receive_layout
+        def capture(v):
+            index = v["id"]
+            paragraph = v["pstk"][index]
+            raw_source, raw_target = v["sstk"][index], v["news"][index]
+            variables = ["".join(c.get_text() for c in chars) for chars in v["var"]]
+            def restore(text):
+                return re.sub(r"\{+\s*v(\d+)\s*\}+", lambda m: variables[int(m[1])] if int(m[1]) < len(variables) else m[0], text)
+            text, translation = restore(raw_source), restore(raw_target)
+            if text.strip():
+                values = [item for item in v["ops_vals"] if item.get("type").value == "text"]
+                low = min((item["dy"] + v["y"] - item["lidx"] * item["size"] * v["line_height"] - item["size"] * .25 for item in values), default=paragraph.y0)
+                high = max((item["dy"] + v["y"] - item["lidx"] * item["size"] * v["line_height"] + item["size"] for item in values), default=paragraph.y1)
+                records.append({"id": f"fast-{selected}-{len(records)}", "page": selected, "text": text, "translation": translation, "sourceBox": box((paragraph.x0, paragraph.y0, paragraph.x1, paragraph.y1)), "translatedBox": box((paragraph.x0, low, paragraph.x1, high)), "fontSize": paragraph.size, "sourceInput": raw_source, "translationOutput": raw_target, "formulaTexts": variables, "layoutSource": "pdf2zh.converter", "translatedWidth": "source-paragraph-width"})
+        # Inject one capture per paragraph, instead of tracing every Python line
+        # during parsing, provider calls and typesetting. Upstream files stay intact.
+        tree = ast.parse(textwrap.dedent(inspect.getsource(original)))
+        class CaptureParagraph(ast.NodeTransformer):
+            count = 0
+            def visit_For(self, node):
+                self.generic_visit(node)
+                if isinstance(node.target, ast.Name) and node.target.id == "vals" and isinstance(node.iter, ast.Name) and node.iter.id == "ops_vals":
+                    self.count += 1
+                    return [ast.Expr(value=ast.Call(func=ast.Name(id="_preview_capture", ctx=ast.Load()), args=[ast.Call(func=ast.Name(id="locals", ctx=ast.Load()), args=[], keywords=[])], keywords=[])), node]
+                return node
+        injector = CaptureParagraph()
+        tree = injector.visit(tree)
+        if injector.count != 1:
+            raise RuntimeError("Fast paragraph capture is incompatible with this kernel version")
+        namespace = {**original.__globals__, "_preview_capture": capture}
+        exec(compile(ast.fix_missing_locations(tree), inspect.getsourcefile(original), "exec"), namespace)
+        TranslateConverter.receive_layout = namespace[original.__name__]
+        # The reader consumes one page. Preserve its MediaBox, CropBox, rotation,
+        # resources and annotations while preventing whole-document font work.
+        page_pdf = pymupdf.open()
+        page_pdf.insert_pdf(source_pdf, from_page=selected - 1, to_page=selected - 1)
+        page_input = str(Path(input_path).with_name("selected.pdf"))
+        page_pdf.save(page_input)
+        page_pdf.close()
+        args = [page_input if arg == input_path else arg for arg in args]
+        page_flag = next(i for i, arg in enumerate(args) if arg in ("-p", "--pages"))
+        args[page_flag + 1] = "1"
+        step("select_page")
         from pdf2zh.pdf2zh import main
         status = main(args)
+        step("output_write")
+        timings["workerTotal"] = (perf_counter() - STARTED) * 1000
+        Path(sidecar + ".timing.json").write_text(json.dumps(timings), encoding="utf-8")
     else:
         from babeldoc.format.pdf.document_il.midend.il_translator import ILTranslator
         from babeldoc.format.pdf.document_il.midend.il_translator_llm_only import ILTranslatorLLMOnly
