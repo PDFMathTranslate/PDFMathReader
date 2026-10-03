@@ -1,0 +1,42 @@
+name: Update README recent features
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recent-updates-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Test README updater
+        run: node --test .github/scripts/recent-updates.test.cjs
+      - name: Update English README for feat commits
+        id: updates
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const update = require('./.github/scripts/recent-updates.cjs');
+            await update({github, context, core});
+      - name: Commit documentation update
+        if: steps.updates.outputs.changed == 'true'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m 'doc: update recent features'
+          git push origin "HEAD:$TARGET_BRANCH"

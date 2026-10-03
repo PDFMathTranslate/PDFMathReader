@@ -6,60 +6,6 @@
 
 <img src="demo.gif" alt="演示" width="100%">
 
-## 快速开始
-
-### 运行桌面应用
-
-<table>
-  <tr>
-    <th>macOS</th>
-    <th>Windows</th>
-    <th>Linux</th>
-  </tr>
-  <tr>
-    <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
-    <td><img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240"></td>
-    <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
-  </tr>
-</table>
-
-开发环境需要 Apple Silicon Mac 和 Node.js 22：
-
-```zsh
-npm install
-npm run desktop
-```
-
-打开 PDF 后，通过 **Settings…** 或 **File → Preference** 打开设置。输入 OpenAI API 密钥并点击 **Save key**，再选择目标语言和翻译内核。阅读 PDF 和分析版面无需密钥；翻译需要密钥。
-
-**Ultra fast** 已随应用提供。使用 **Fast** 或 **Precise** 前，请安装 `uv`，在设置中选择内核并点击 **Install kernel with uv**。每个数学翻译内核使用由应用管理的独立 Python 环境。检查可用性不会安装软件包或修改全局工具。
-
-### 构建 macOS 应用
-
-```zsh
-npm run package:mac
-```
-
-打开 `release/PDFMathReader-darwin-arm64/PDFMathReader.app`。打包后的应用自带运行时和本地后端，无需另行安装 Node.js 或启动开发服务器。该打包命令生成未签名的 Apple Silicon 本地构建。
-
-桌面应用也支持 `OPENAI_API_KEY` 和 `OPENAI_MODEL`。从 Finder 启动通常不会继承终端环境变量。可使用 `Launch PDFMathReader.command`，按登录 shell 的配置启动打包后的应用。
-
-### 浏览器开发
-
-```zsh
-read -s 'OPENAI_API_KEY?OpenAI API key: '; export OPENAI_API_KEY
-npm run dev
-```
-
-打开 [127.0.0.1:5173](http://127.0.0.1:5173)。启动前可设置 `OPENAI_MODEL`，覆盖默认模型 `gpt-4.1-mini`。
-
-检查后端和阅读器辅助逻辑，并构建前端：
-
-```zsh
-npm test
-npm run build
-```
-
 ## 功能
 
 - 在独立窗口中打开不超过 50 MiB 的 PDF，支持拖放及 macOS Finder/Dock 打开方式。
@@ -67,6 +13,89 @@ npm run build
 - 重新打开最近文档时恢复阅读位置和显示设置。
 - 选择整份文档或邻近页面翻译，单击已检测段落即可切换原文与译文。
 - 在设置中调整翻译语言、并发数和内核选项；界面语言单独设置。
+
+## 最近更新
+
+| 日期 | 功能变更 | 贡献者 |
+| --- | --- | --- |
+| 2026-10-03 | [缓存依赖、Electron 和图标，加快 CI 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [改进 Windows 控件，新增页面适应快捷键](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [新增 Windows PDF 右键菜单和打开方式入口](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [改进段落分组、预览和文档动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [新增 Intel Mac、32 位 Windows 和 Linux ARMv7 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [改进翻译服务、设置和文档交互](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ac384fb4226e385eaed3833fcf434852b74cbac) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [更新 macOS 和 Windows 应用图标](https://github.com/PDFMathTranslate/PDFMathReader/commit/2978dc3bfb348e54b4dfd6bb8ebee137dd196330) | [@reycn](https://github.com/reycn) |
+
+## 快速开始
+
+从 [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 下载与你的系统和 CPU 匹配的包。先解压 Actions 下载的 ZIP。
+
+<details>
+<summary>macOS</summary>
+
+解压 macOS ZIP，将 `PDFMathReader.app` 移到 `/Applications`，然后打开。
+
+<img src="preview.png" alt="PDFMathReader 阅读界面" height="240">
+
+<details>
+<summary>macOS 提示应用“已损坏”</summary>
+
+确认应用来自可信来源后，在终端执行以下命令。按提示输入 Mac 登录密码（不会显示），然后重新打开应用：
+
+```zsh
+sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
+```
+
+</details>
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+双击 `PDFMathReader-win32-x64.exe`（32 位 Windows 使用 `ia32` 版本）。便携版自带运行时，启动后会注册 PDF 的 **Open with PDFMathReader** 右键菜单；移动可执行文件后，再启动一次以更新路径。
+
+<img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240">
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+解压与你的 CPU 匹配的 `.tar.gz`，进入应用目录运行：
+
+```sh
+./PDFMathReader
+```
+
+</details>
+
+打开 PDF，在 **Settings…** 中保存 OpenAI API 密钥并选择目标语言。阅读无需密钥，翻译需要。**Ultra fast** 已内置；使用 **Fast** 或 **Precise** 前，安装 `uv`，再在设置中点击 **Install kernel with uv**。
+
+## 开发
+
+使用 Node.js 22，从源码启动桌面应用：
+
+```sh
+npm ci
+npm run desktop
+```
+
+在对应平台构建：
+
+```sh
+# macOS（需要签名证书；可追加 --unsigned 跳过签名）
+npm run package:mac
+# Windows
+npm run package:win
+```
+
+浏览器开发：设置 `OPENAI_API_KEY`，运行 `npm run dev`，打开 [127.0.0.1:5173](http://127.0.0.1:5173)。可用 `OPENAI_MODEL` 指定模型。桌面应用可通过 `Launch PDFMathReader.command` 加载登录 shell 的环境变量。
+
+```sh
+npm test
+npm run build
+```
 
 ## 技术细节
 

@@ -12,6 +12,9 @@ import {pageNote as getPageNote} from './page-note.mjs';
 function pageNote(p){return getPageNote(p,engine.value);}
 import ReaderPage from './ReaderPage.vue';
 import {captureDocumentPage,animateDocumentPage,animateDocumentSidebar} from './document-motion.mjs';
+import {captureLayoutMotion} from './layout-motion.mjs';
+let layoutMotion=null,layoutMotionGeneration=0;
+function cancelLayoutMotion(){++layoutMotionGeneration;layoutMotion?.cancel();layoutMotion=null;reader.value?.classList.remove('layout-transitioning');}
 let documentMotionController;
 const documentOpening=ref(false),documentClosing=ref(false);
 const documentMotionReduced=()=>reduceMotion.value||matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -400,7 +403,7 @@ const translationTaskProgress=computed(()=>{
 });
 
 async function api(url,options={}) {const controller=new AbortController();if(url==='/api/translate'||url.startsWith('/api/layout'))controllers.add(controller);try{const response=await fetch(url,{...options,signal:controller.signal});noteTranslationService(response);if(response.status===204)return null;const body=await response.json();if(!response.ok)throw Error(body.error||t('error.requestFailed'));return body;}finally{controllers.delete(controller);}}
-function cancel(){hoveredParagraph.value=null;cancelResize();clearTimeout(previewTimer);clearTimeout(zoomRenderTimer);zoomRenderTimer=0;++zoomRenderGeneration;++zoomMotionGeneration;zoomTargetPending=false;zoomRequest=null;finishZoomAnimation();previewScrolling=false;pendingPreview.clear();cancelAnimationFrame(pinchFrame);clearTimeout(pinchTimer);pinchFrame=0;pinchDelta=0;pinching.value=false;revealControllers.forEach(c=>c.abort());revealControllers.clear();pageQueue.length=0;epoch++;renderEpoch++;pageTasks.forEach(t=>t.cancel());pageTasks.clear();controllers.forEach(c=>c.abort());controllers.clear();queue.length=0;for(const p of pages.value){if(['queued','detecting'].includes(p.status))p.status='idle';for(const b of p.blocks)if(['queued','translating'].includes(b.status))b.status='idle';}}
+function cancel(){cancelLayoutMotion();hoveredParagraph.value=null;cancelResize();clearTimeout(previewTimer);clearTimeout(zoomRenderTimer);zoomRenderTimer=0;++zoomRenderGeneration;++zoomMotionGeneration;zoomTargetPending=false;zoomRequest=null;finishZoomAnimation();previewScrolling=false;pendingPreview.clear();cancelAnimationFrame(pinchFrame);clearTimeout(pinchTimer);pinchFrame=0;pinchDelta=0;pinching.value=false;revealControllers.forEach(c=>c.abort());revealControllers.clear();pageQueue.length=0;epoch++;renderEpoch++;pageTasks.forEach(t=>t.cancel());pageTasks.clear();controllers.forEach(c=>c.abort());controllers.clear();queue.length=0;for(const p of pages.value){if(['queued','detecting'].includes(p.status))p.status='idle';for(const b of p.blocks)if(['queued','translating'].includes(b.status))b.status='idle';}}
 async function releaseDocument(){const id=documentId;documentId=undefined;if(id)try{await api('/api/documents/'+id,{method:'DELETE'});}catch{}}
 let closingDocument=false;
 async function closeDocument(closeStartPage=false){
@@ -488,7 +491,7 @@ function viewportPages(){
  for(const n of visiblePages)if(pages.value[n-1])pages.value[n-1].visible=0;
  visiblePages.clear();let best;
  for(const item of window.visible){visiblePages.add(item.number);pages.value[item.number-1].visible=item.ratio;if(!best||item.area>best.area)best=item;}
- if(best&&!fitAdjusting&&!restoringView.value&&!pinching.value&&!fitResizing)active.value=best.number;
+ if(best&&!layoutMotion&&!fitAdjusting&&!restoringView.value&&!pinching.value&&!fitResizing)active.value=best.number;
  setRenderWindow(window.numbers);
  return window.numbers.map(n=>pages.value[n-1]).sort((a,b)=>Number(!visiblePages.has(a.number))-Number(!visiblePages.has(b.number))||Math.abs(a.number-active.value)-Math.abs(b.number-active.value));
 }
@@ -555,7 +558,23 @@ watch(kernelAdvancedOptions,()=>saveView(),{deep:true});
 watch([language,sourceLanguage],()=>{if(loadingPreferences)return;localStorage.setItem('language',language.value);resetTranslations();settle();});
 watch(active,n=>{pageEntry.value=n;if(restoringView.value||fitResizing)return;applyFit();nextTick(()=>scrollThumbnailTo(n));},{flush:'post'});
 watch(reducePadding,async()=>{if(restoringView.value||!pages.value.length)return;const page=active.value;await nextTick();applyFit();await nextTick();go(page);renderPages();});
-watch([direction,columns],async([nextDirection],[previousDirection])=>{if(restoringView.value)return;const directionChanged=nextDirection!==previousDirection&&!loadingPreferences;dismissPopovers();await nextTick();if(directionChanged)chooseFit(nextDirection==='horizontal'?'height':'width');else applyFit();await nextTick();go(active.value);renderPages();saveView();});
+watch([direction,columns],async([nextDirection],[previousDirection])=>{
+ if(restoringView.value)return;
+ cancelLayoutMotion();const generation=layoutMotionGeneration,page=active.value;
+ const directionChanged=nextDirection!==previousDirection&&!loadingPreferences;
+ finishZoomAnimation();
+ reader.value?.classList.add('layout-transitioning');
+ const motion=loadingPreferences?null:captureLayoutMotion(reader.value,pageEls.get(page),{reducedMotion:reducedMotion()});
+ layoutMotion=motion;dismissPopovers();
+ try{
+  await nextTick();if(generation!==layoutMotionGeneration)return;
+  if(directionChanged)chooseFit(nextDirection==='horizontal'?'height':'width');else applyFit();
+  mountAroundPage(page);await nextTick();if(generation!==layoutMotionGeneration)return;
+  go(page);await nextTick();if(generation!==layoutMotionGeneration)return;
+  void renderPages();saveView();
+  await motion?.play(pageEls.get(page));
+ }finally{if(generation===layoutMotionGeneration){motion?.cancel();layoutMotion=null;reader.value?.classList.remove('layout-transitioning');}}
+},{flush:'sync'});
 watch(sidebar,()=>{if(!restoringView.value)nextTick(()=>{observeThumbnails();resizeFit(true);});});
 watch(title,value=>{document.title=value;});
 watch(zoom,async()=>{if(restoringView.value)return;revealControllers.forEach(c=>c.abort());revealControllers.clear();localStorage.setItem('readerZoom',String(zoom.value));if(document.activeElement!==zoomInput.value)zoomEntry.value=formatPercentValue(zoom.value);const request=zoomRequest;zoomRequest=null;if(request&&!pinching.value&&!fitResizing){await applyRequestedZoom({...request,to:zoom.value});}else if(!pinching.value&&!fitResizing){await nextTick();await renderPages();}});watch(concurrency,pump);watch(automatic,()=>{if(automatic.value)settle();});watch(showTranslations,v=>{if(restoringView.value)return;for(const p of pages.value)for(const b of p.blocks)b.translated=v;if(engine.value!=='pdf_inspector'){revealControllers.forEach(c=>c.abort());revealControllers.clear();renderPages(true);}});

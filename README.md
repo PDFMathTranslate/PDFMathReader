@@ -12,69 +12,6 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 <img src="doc/demo.gif" alt="Demo" width="100%">
 
-## Quick start
-
-### Run the desktop app
-
-
-<table>
-  <tr>
-    <th>macOS</th>
-    <th>Windows</th>
-    <th>Linux</th>
-  </tr>
-  <tr>
-    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
-    <td><img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240"></td>
-    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
-  </tr>
-</table>
-
-For development, use Node.js 22 on an Apple Silicon Mac:
-
-```zsh
-npm install
-npm run desktop
-```
-
-Open a PDF, then open **Settings…** or **File → Preference**. Enter your OpenAI API key and choose **Save key**. Select a target language and translation kernel. Reading PDFs and inspecting their layout do not require a key; translation does.
-
-**Ultra fast** is included. To use **Fast** or **Precise**, install `uv`, select the kernel in Settings, and choose **Install kernel with uv**. Each math kernel uses a separate app-managed Python environment. Checking availability does not install packages or change your global tools.
-
-### Build a macOS app
-
-```zsh
-npm run package:mac
-```
-
-Open `release/PDFMathReader-darwin-arm64/PDFMathReader.app`. The packaged app includes its runtime and local backend, so it does not require a separate Node.js installation or development server. The packaging command produces an unsigned local Apple Silicon build.
-
-The desktop app also accepts `OPENAI_API_KEY` and `OPENAI_MODEL`. Finder usually does not inherit terminal environment variables. Use `Launch PDFMathReader.command` to launch the packaged app with your login-shell configuration.
-
-### Build a Windows app
-
-```powershell
-npm run package:win
-```
-
-Launch `release/PDFMathReader-win32-x64/PDFMathReader.exe` once to register the PDF **Open with PDFMathReader** context menu and **Open with** entry for the current Windows user. Administrator privileges are not required and the default PDF reader stays unchanged. On Windows 11, the context menu entry may appear under **Show more options**. Launch the app again after moving its folder to update the registered path. Development and smoke-test runs skip registration.
-
-### Browser development
-
-```zsh
-read -s 'OPENAI_API_KEY?OpenAI API key: '; export OPENAI_API_KEY
-npm run dev
-```
-
-Open [127.0.0.1:5173](http://127.0.0.1:5173). Set `OPENAI_MODEL` before launching to override the default model, `gpt-4.1-mini`.
-
-To check backend and reader support logic and build the frontend:
-
-```zsh
-npm test
-npm run build
-```
-
 ## Features
 
 - Open PDFs up to 50 MiB in independent windows, with drag-and-drop and macOS Finder/Dock support.
@@ -82,6 +19,89 @@ npm run build
 - Resume recent documents with their reading position and display settings restored.
 - Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
 - Configure translation language, concurrency, and kernel-specific options in Settings. Interface language is configured separately.
+
+## Recent updates
+
+| Date | Feature | Contributor |
+| --- | --- | --- |
+| 2026-10-03 | [Speed up CI with dependency, Electron and icon caches](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Improve Windows controls and add page-fit shortcuts](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Add Windows PDF context menu and Open with entry](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Improve paragraph grouping, previews and document animations](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Add Intel Mac, 32-bit Windows and Linux ARMv7 builds](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Refine translation providers, settings and document interactions](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ac384fb4226e385eaed3833fcf434852b74cbac) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Update macOS and Windows application icons](https://github.com/PDFMathTranslate/PDFMathReader/commit/2978dc3bfb348e54b4dfd6bb8ebee137dd196330) | [@reycn](https://github.com/reycn) |
+
+## Quick start
+
+Download the package for your system and CPU from [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml). Extract the Actions artifact ZIP first.
+
+<details>
+<summary>macOS</summary>
+
+Extract the macOS ZIP, move `PDFMathReader.app` to `/Applications`, and open it.
+
+<img src="doc/preview.png" alt="PDFMathReader reader" height="240">
+
+<details>
+<summary>macOS says the app is “damaged”</summary>
+
+For a download you trust, run this in Terminal, enter your Mac login password when prompted (it is not displayed), then reopen the app:
+
+```zsh
+sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
+```
+
+</details>
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+Double-click `PDFMathReader-win32-x64.exe` (or the `ia32` version for 32-bit Windows). The portable app includes its runtime. Launching it registers the PDF **Open with PDFMathReader** menu; launch it again after moving the executable.
+
+<img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240">
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+Extract the `.tar.gz` for your CPU, then run the app from its folder:
+
+```sh
+./PDFMathReader
+```
+
+</details>
+
+Open a PDF. In **Settings…**, save your OpenAI API key and choose a target language. Reading needs no key; translation does. **Ultra fast** is included. For **Fast** or **Precise**, install `uv`, then choose **Install kernel with uv** in Settings.
+
+## Development
+
+Use Node.js 22. To run the desktop app from source:
+
+```sh
+npm ci
+npm run desktop
+```
+
+Build on the matching platform:
+
+```sh
+# macOS (requires a signing identity; add --unsigned to skip signing)
+npm run package:mac
+# Windows
+npm run package:win
+```
+
+For browser development, set `OPENAI_API_KEY`, run `npm run dev`, and open [127.0.0.1:5173](http://127.0.0.1:5173). Use `OPENAI_MODEL` to override the default model. Desktop environment variables can be loaded with `Launch PDFMathReader.command`.
+
+```sh
+npm test
+npm run build
+```
 
 ## Technical Details
 

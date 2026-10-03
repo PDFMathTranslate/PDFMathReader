@@ -93,26 +93,15 @@ jobs:
         if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
         run: npm run icons:mac
       # Both architectures share this host installation and frontend build.
+      - name: Test Windows PDF registration
+        run: node --test server/windows-file-association.test.mjs
       - name: Build frontend
         run: npm run build
       - name: Package primary architecture
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned --distribute
       - name: Package secondary architecture
         if: matrix.extra-arch != ''
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned
-      - name: Archive Unix apps
-        if: matrix.platform != 'win32'
-        shell: bash
-        run: |
-          for app in release/PDFMathReader-${{ matrix.platform }}-*; do
-            tar -czf "$app.tar.gz" -C release "$(basename "$app")"
-          done
-      - name: Archive Windows apps
-        if: matrix.platform == 'win32'
-        run: |
-          Get-ChildItem release -Directory -Filter 'PDFMathReader-win32-*' | ForEach-Object {
-            Compress-Archive -LiteralPath $_.FullName -DestinationPath "$($_.FullName).zip"
-          }
+        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned --distribute
       - name: Upload primary app
         uses: actions/upload-artifact@v6
         with:
@@ -120,6 +109,7 @@ jobs:
           path: |
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.zip
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
@@ -131,6 +121,7 @@ jobs:
           path: |
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}.tar.gz
             release/PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}.zip
+            release/PDFMathReader-${{ matrix.platform }}-${{ matrix.extra-arch }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 7

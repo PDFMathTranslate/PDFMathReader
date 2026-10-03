@@ -21,6 +21,18 @@ test('Development, smoke tests and other platforms never register file menus',as
  }
 });
 
+test('Portable builds register the persistent launcher rather than the temporary runtime',async()=>{
+ const previous=process.env.PORTABLE_EXECUTABLE_FILE;
+ const launcher='C:\\Users\\reader\\Downloads\\PDFMathReader-win32-x64.exe',calls=[];
+ process.env.PORTABLE_EXECUTABLE_FILE=launcher;
+ try{
+  await registerWindowsPDF({platform:'win32',packaged:true,execute:async(...args)=>calls.push(args)});
+  for(const [,args] of calls)if(args[1].endsWith('\\command'))assert.equal(args[args.indexOf('/d')+1],`"${launcher}" "%1"`);
+ }finally{
+  if(previous===undefined)delete process.env.PORTABLE_EXECUTABLE_FILE;else process.env.PORTABLE_EXECUTABLE_FILE=previous;
+ }
+});
+
 test('Invalid executables and registry failures are reported',async()=>{
  for(const executable of ['relative.exe','C:\\other.exe','C:\\bad"path\\PDFMathReader.exe'])assert.throws(()=>windowsPDFRegistryEntries(executable));
  await assert.rejects(registerWindowsPDF({platform:'win32',packaged:true,executable:'C:\\PDFMathReader.exe',execute:async()=>{throw Error('Access denied');}}),/Access denied/);

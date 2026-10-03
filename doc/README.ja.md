@@ -6,60 +6,6 @@
 
 <img src="demo.gif" alt="デモ" width="100%">
 
-## クイックスタート
-
-### デスクトップアプリを実行する
-
-<table>
-  <tr>
-    <th>macOS</th>
-    <th>Windows</th>
-    <th>Linux</th>
-  </tr>
-  <tr>
-    <td><img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"></td>
-    <td><img src="preview-windows.png" alt="PDFMathReader の閲覧画面" height="240"></td>
-    <td><img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"></td>
-  </tr>
-</table>
-
-開発には Apple Silicon Mac 上の Node.js 22 を使用してください。
-
-```zsh
-npm install
-npm run desktop
-```
-
-PDF を開き、**Settings…** または **File → Preference** を開きます。OpenAI API key を入力し、**Save key** を選択します。対象言語と翻訳カーネルを選びます。PDF の閲覧とレイアウトの確認にはキーは不要ですが、翻訳には必要です。
-
-**Ultra fast** が含まれています。**Fast** または **Precise** を使用するには、`uv` をインストールし、Settings でカーネルを選択して **Install kernel with uv** を選びます。各数式カーネルはアプリが管理する個別の Python 環境を使用します。利用可能かどうかの確認では、パッケージをインストールしたりグローバルツールを変更したりしません。
-
-### macOS アプリをビルドする
-
-```zsh
-npm run package:mac
-```
-
-`release/PDFMathReader-darwin-arm64/PDFMathReader.app` を開きます。パッケージ化されたアプリにはランタイムとローカルバックエンドが含まれているため、別途 Node.js をインストールしたり開発サーバーを起動したりする必要はありません。パッケージ化コマンドは、署名されていないローカル Apple Silicon ビルドを生成します。
-
-デスクトップアプリは `OPENAI_API_KEY` と `OPENAI_MODEL` も受け付けます。Finder は通常、ターミナルの環境変数を引き継ぎません。ログインシェルの設定でパッケージ化されたアプリを起動するには、`Launch PDFMathReader.command` を使用します。
-
-### ブラウザ開発
-
-```zsh
-read -s 'OPENAI_API_KEY?OpenAI API key: '; export OPENAI_API_KEY
-npm run dev
-```
-
-[127.0.0.1:5173](http://127.0.0.1:5173) を開きます。起動前に `OPENAI_MODEL` を設定すると、デフォルトモデル `gpt-4.1-mini` を上書きできます。
-
-バックエンドとリーダーのサポートロジックを確認し、フロントエンドをビルドするには、次を実行します。
-
-```zsh
-npm test
-npm run build
-```
-
 ## 機能
 
 - 最大 50 MiB の PDF を独立したウィンドウで開けます。ドラッグ＆ドロップと macOS Finder/Dock に対応しています。
@@ -67,6 +13,89 @@ npm run build
 - 最近の文書を開くと、閲覧位置と表示設定が復元されます。
 - 文書全体または近くのページを翻訳でき、検出された段落をクリックして原文と翻訳を切り替えられます。
 - Settings で翻訳言語、並列処理数、カーネル固有のオプションを設定できます。表示言語は個別に設定します。
+
+## 最近の更新
+
+| 日付 | 機能の変更 | 貢献者 |
+| --- | --- | --- |
+| 2026-10-03 | [依存関係・Electron・アイコンのキャッシュで CI を高速化](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Windows のコントロールとページ表示のショートカットを改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Windows の PDF コンテキストメニューと「開く」項目を追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [段落のグループ化・プレビュー・文書アニメーションを改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [Intel Mac・32 ビット Windows・Linux ARMv7 のビルドを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [翻訳プロバイダー・設定・文書操作を改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ac384fb4226e385eaed3833fcf434852b74cbac) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [macOS と Windows のアプリアイコンを更新](https://github.com/PDFMathTranslate/PDFMathReader/commit/2978dc3bfb348e54b4dfd6bb8ebee137dd196330) | [@reycn](https://github.com/reycn) |
+
+## クイックスタート
+
+[GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) から OS と CPU に合ったパッケージをダウンロードし、まず Actions の ZIP を展開してください。
+
+<details>
+<summary>macOS</summary>
+
+macOS の ZIP を展開し、`PDFMathReader.app` を `/Applications` に移動して開きます。
+
+<img src="preview.png" alt="PDFMathReader の閲覧画面" height="240">
+
+<details>
+<summary>macOS で「アプリが壊れている」と表示される場合</summary>
+
+信頼できる配布元のアプリであることを確認し、ターミナルで次を実行します。求められたら Mac のログインパスワードを入力し（表示されません）、アプリを再度開いてください。
+
+```zsh
+sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
+```
+
+</details>
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+`PDFMathReader-win32-x64.exe` をダブルクリックします（32 ビット Windows では `ia32` 版）。ランタイムを含むポータブル版です。起動すると PDF の **Open with PDFMathReader** メニューが登録されます。ファイルを移動したら再度起動してください。
+
+<img src="preview-windows.png" alt="PDFMathReader の閲覧画面" height="240">
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+CPU に合った `.tar.gz` を展開し、アプリのフォルダーで実行します。
+
+```sh
+./PDFMathReader
+```
+
+</details>
+
+PDF を開き、**Settings…** で OpenAI API key を保存し、対象言語を選びます。閲覧にはキーは不要ですが、翻訳には必要です。**Ultra fast** は同梱されています。**Fast** または **Precise** は、`uv` をインストールしてから Settings の **Install kernel with uv** で導入します。
+
+## 開発
+
+Node.js 22 を使用してソースからデスクトップアプリを起動します。
+
+```sh
+npm ci
+npm run desktop
+```
+
+各 OS 上でビルドします。
+
+```sh
+# macOS（署名証明書が必要です。--unsigned で署名を省略できます）
+npm run package:mac
+# Windows
+npm run package:win
+```
+
+ブラウザ開発では `OPENAI_API_KEY` を設定し、`npm run dev` を実行して [127.0.0.1:5173](http://127.0.0.1:5173) を開きます。`OPENAI_MODEL` でモデルを指定できます。デスクトップの環境変数は `Launch PDFMathReader.command` で読み込めます。
+
+```sh
+npm test
+npm run build
+```
 
 ## 技術詳細
 

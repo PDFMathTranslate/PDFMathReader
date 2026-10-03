@@ -71,11 +71,14 @@ jobs:
             name="PDFMathReader-$target"
             gh run download "$SOURCE_RUN_ID" --name "$name" --dir "artifacts/$name"
             extension=tar.gz
-            if [[ "$target" == win32-* ]]; then extension=zip; fi
+            if [[ "$target" == darwin-* ]]; then extension=zip; fi
+            if [[ "$target" == win32-* ]]; then extension=exe; fi
             archive="artifacts/$name/$name.$extension"
             [[ -s "$archive" ]] || { echo "Missing or empty package: $archive" >&2; exit 1; }
             if [[ "$extension" == zip ]]; then
               python3 -c 'import sys, zipfile; archive = zipfile.ZipFile(sys.argv[1]); bad = archive.testzip(); assert bad is None, f"Corrupt ZIP entry: {bad}"' "$archive"
+            elif [[ "$extension" == exe ]]; then
+              python3 -c 'import sys; assert open(sys.argv[1], "rb").read(2) == b"MZ", "Invalid Windows executable"' "$archive"
             else
               tar -tzf "$archive" > /dev/null
             fi
@@ -88,10 +91,10 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
-            artifacts/PDFMathReader-darwin-arm64/PDFMathReader-darwin-arm64.tar.gz
-            artifacts/PDFMathReader-darwin-x64/PDFMathReader-darwin-x64.tar.gz
-            artifacts/PDFMathReader-win32-x64/PDFMathReader-win32-x64.zip
-            artifacts/PDFMathReader-win32-ia32/PDFMathReader-win32-ia32.zip
+            artifacts/PDFMathReader-darwin-arm64/PDFMathReader-darwin-arm64.zip
+            artifacts/PDFMathReader-darwin-x64/PDFMathReader-darwin-x64.zip
+            artifacts/PDFMathReader-win32-x64/PDFMathReader-win32-x64.exe
+            artifacts/PDFMathReader-win32-ia32/PDFMathReader-win32-ia32.exe
             artifacts/PDFMathReader-linux-x64/PDFMathReader-linux-x64.tar.gz
             artifacts/PDFMathReader-linux-armv7l/PDFMathReader-linux-armv7l.tar.gz
           )

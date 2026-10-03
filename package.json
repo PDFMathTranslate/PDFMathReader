@@ -7,9 +7,9 @@
     "build": "vite build",
     "test": "node --test server/*.test.mjs",
     "desktop": "npm run build && electron .",
-    "package:mac": "npm run icons:mac && npm run build && node electron/package.mjs",
+    "package:mac": "npm run icons:mac && npm run build && node electron/package.mjs --distribute",
     "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols",
-    "package:win": "npm run build && node electron/package.mjs --platform=win32 --arch=x64"
+    "package:win": "npm run build && node electron/package.mjs --platform=win32 --arch=x64 --distribute"
   },
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",
@@ -26,6 +26,7 @@
     "@electron/packager": "^20.3.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
     "vite": "^7.1.0"
   },

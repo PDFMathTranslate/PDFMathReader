@@ -1,4 +1,5 @@
 import {signMacApplication} from './sign-mac.mjs';
+import {distributeApplication} from './distribute.mjs';
 import {packager} from '@electron/packager';
 import {stageApplication,directoryBytes} from './production-stage.mjs';
 import {resolve} from 'node:path';
@@ -19,4 +20,5 @@ const paths=await packager({dir:stage,electronVersion,prune:false,name:test?'PDF
 if(!test&&!unsigned&&platform==='darwin')for(const path of paths)await signMacApplication(resolve(path,'PDFMathReader.app'),root);
 for(const path of paths)await writeFile(resolve(path,'package-size.json'),JSON.stringify({phase,test,stagedBytes,appBytes:await directoryBytes(platform==='darwin'?resolve(path,(test?'PDFMathReader Tests':'PDFMathReader')+'.app'):path)},null,2));
 await rm(stage,{recursive:true,force:true});
+if(!test&&process.argv.includes('--distribute'))for(const path of paths)await distributeApplication({path,platform,arch,electronVersion});
 console.log(paths.join('\n'));
