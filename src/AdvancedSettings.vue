@@ -150,7 +150,7 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
     <div class="setting-row">
      <label :id="'advanced-'+option.id" :for="'advanced-input-'+option.id">{{option.label}}</label>
      <MacSwitch v-if="option.type==='boolean'" :model-value="effectiveValue(option)" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>
-     <MacPopUpButton v-else-if="option.choices?.length" :model-value="String(effectiveValue(option))" :aria-labelledby="'advanced-'+option.id" :teleport-to="false" @update:model-value="update(option,$event)">
+     <MacPopUpButton v-else-if="option.choices?.length" :model-value="String(effectiveValue(option))" :aria-labelledby="'advanced-'+option.id" teleport-to="body" @update:model-value="update(option,$event)">
       <MacPopUpButtonItem v-for="choice in option.choices" :key="String(choice)" :value="String(choice)">{{choice}}</MacPopUpButtonItem>
      </MacPopUpButton>
      <MacTextField v-else-if="option.type==='number'&&platform==='win32'" :id="'advanced-input-'+option.id" type="number" :model-value="String(effectiveValue(option))" :min="option.min" :max="option.max" :step="option.integer?1:'any'" inputmode="decimal" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>

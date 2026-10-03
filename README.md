@@ -6,20 +6,22 @@
 
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
 
-An experimental local PDF reader powered by PDFMathTranslate. Built with Vue 3, PDF.js, and Electron.
+An experimental local PDF reader powered by PDFMathTranslate.
 
 Currently tested on macOS. Windows and Linux have platform-specific window and toolbar styles; native runtime validation on those systems is still pending.
 
-<img src="doc/preview.png" alt="PDFMathReader reader" width="70%">
-
-## Recent updates
-
-- Open multiple PDFs in separate windows, each with its own reading position, translation work, and backend process. Closing one window leaves the others running.
-- Browse recent PDFs in a thumbnail gallery from **File → Open recents...**. Reopening a document restores its page, scroll position, zoom, layout, sidebar, and original/translation view.
-- Open the existing settings panel through **File → Preference** or **Settings…**.
-- Switch the interface language in **Settings… → Appearance → Interface language** between English, 简体中文, and 日本語. This setting is separate from the document's translation language.
-- Switch individual detected regions between original and translation in place: single-click with **Ultra fast**, **Fast**, or **Precise**.
-- Read large documents with virtualized pages and thumbnails, bounded rendering caches, and independent rendering, layout analysis, and translation.
+<table>
+  <tr>
+    <th>macOS</th>
+    <th>Windows</th>
+    <th>Linux</th>
+  </tr>
+  <tr>
+    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
 
 ## Quick start
 
@@ -64,18 +66,19 @@ npm run build
 
 ## Features
 
-### Reading and document management
+- Open PDFs up to 50 MiB in independent windows, with drag-and-drop and macOS Finder/Dock support.
+- Navigate with thumbnails, zoom, fit-to-page controls, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
+- Resume recent documents with their reading position and display settings restored.
+- Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
+- Configure translation language, concurrency, and kernel-specific options in Settings. Interface language is configured separately.
 
-- Open or drag in PDFs up to 50 MiB. The packaged macOS app also supports Finder **Open With** and dropping PDFs onto its Dock icon.
-- Read different PDFs in independent desktop windows. Each window has its own renderer and backend process.
-- Navigate with thumbnails, change zoom, fit width or height, scroll vertically or horizontally, and choose one, two, or four pages per row.
-- Resume recent documents from the start page or the File menu gallery. Reading state is saved for each document.
-- Use **⌘N** for a new window, **⌘O** to open a PDF, **⌘W** to close the current document, and **Ctrl+W** to close its window on macOS. On Windows and Linux, use **Ctrl+N**, **Ctrl+O**, **Ctrl+W**, and **Ctrl+Shift+W**, respectively.
-- Use **⌘1**, **⌘2**, and **⌘3** for One Side, Two Sides, and Quad Side. **⌘⇧1–9** jumps to 10–90%; **⌘⇧0** jumps to the end.
+## Technical Details
 
-macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows uses a native title bar and menu with a Segoe UI toolbar. Linux uses desktop-managed window decorations, system fonts, and an opaque toolbar. Other reader shortcuts use Ctrl in place of Command on Windows and Linux.
+PDFMathReader uses Vue 3 and PDF.js for the reader, Electron for the desktop app, and Express for the local backend. Vite supports frontend development and builds; pdf-lib handles PDF manipulation.
 
-### Translation
+Each desktop window has its own renderer and backend running in an Electron utility process. The main process manages windows, menus, credentials, recent documents, and preferences. A sandboxed preload provides desktop IPC; backend requests use authenticated HTTP on `127.0.0.1`.
+
+Rendering, layout analysis, and translation run independently. Pages and thumbnails are virtualized, PDF.js and layout analysis load on demand, and rendering caches have bounded memory use. Each document is uploaded to its local backend once; subsequent requests use its document ID. Outdated translation work is cancelled when the document, language, or kernel changes.
 
 | Setting | Engine | Output |
 | --- | --- | --- |
@@ -83,87 +86,17 @@ macOS uses an integrated toolbar, native traffic lights, and vibrancy. Windows u
 | Fast | PDFMathTranslate | Translated PDF pages with formula preservation |
 | Precise | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
 
-Choose a target language in Settings. **完整翻译** translates the entire document; **降低翻译请求** translates the current page and up to two pages on either side as you read. Configure 1–12 parallel pages and 1–12 translation requests; defaults are 2 pages and 4 requests.
+PDF rendering and layout analysis stay local. Translation sends document text to OpenAI and may incur API charges. Fast and Precise run in separate app-managed Python environments installed with `uv`, and access OpenAI through the backend proxy. API keys remain outside the renderer.
 
-With Fast or Precise selected, **Advanced** appears in Settings and starts collapsed. Its controls are generated from the installed kernel's supported options; each mode saves its own values. Changes restart translation with a separate cache entry. **Restore defaults** resets only the selected mode.
+Saved desktop keys are encrypted with Electron `safeStorage` and macOS Keychain protection. A saved key overrides `OPENAI_API_KEY`; clearing it restores the environment fallback. Saving is disabled when secure storage is unavailable.
 
-The interface language is changed separately under **Appearance → Interface language**. Changing it updates reader labels and menus without changing the language used for document translation. Additional system-level copy and broader accessibility coverage remain pending UX work.
+Desktop data is stored in the app directory under `~/Library/Application Support/`: credentials, recent documents, translation/layout caches, and kernel environments. Browser-development caches use `.cache/translations/`. Caches and temporary PDFs can contain document content; **Clear** on the start page removes recent-document history only.
 
-The toolbar translation control switches between original and translated content. With any kernel, single-click a detected paragraph to toggle its original and translation in place. Enable **Show paragraph boundaries** to see detected regions. Retry a failed current page from Settings.
-
-Rendering, layout detection, and translation run independently, and results appear as paragraphs or pages finish. Changing the document, language, or kernel cancels outdated work. Minimizing or hiding a window pauses rendering and reading-mode work; full-document translation continues.
-
-### Local processing and storage
-
-PDF rendering and layout analysis run locally. Translation sends document text to OpenAI and may incur API charges. Math kernels also create temporary local PDF files. Translation results and layout metadata are cached on this device.
-
-Desktop API keys saved in Settings are encrypted with Electron `safeStorage` and macOS Keychain protection. A saved key takes precedence over `OPENAI_API_KEY`; clearing it restores the environment fallback. Saving is disabled when secure storage is unavailable, and renderer APIs do not expose saved keys.
-
-Desktop data lives in the app’s directory under `~/Library/Application Support/`:
-
-| Location | Contents |
-| --- | --- |
-| `openai-key.enc` | Encrypted API key |
-| `recent-documents.json` | Recent document paths, previews, and reading positions |
-| `translations/` | Cached text, translated PDF pages, and layout metadata |
-| `engines/` | Math-kernel environments and assets |
-
-Use **Clear** on the start page to remove recent-document history. Browser-development translations are cached in `.cache/translations/`; delete the corresponding translation cache directory to clear cached results. Translation caches can contain document-derived text. The backend binds to `127.0.0.1`, and the desktop app authenticates its local requests.
-
-### Rendering performance
-
-Pages and thumbnail DOM nodes are virtualized. The reader renders visible pages and keeps up to four rows on either side; thumbnails load near the sidebar viewport. Bitmap reuse is limited to 64 MiB and resident page canvases to 128 MiB, with distant prefetched canvases released first under memory pressure.
-
-Each PDF is uploaded to its local backend once, then page requests use its document ID. PDF.js and layout analysis load on demand.
-
-Window resizing and sidebar changes update page layout live, coalescing layout work per animation frame and limiting visible-page redraws to once per 100 ms. After 160 ms without a resize, buffered pages are refreshed. The desktop app records first-screen latency, scroll long tasks, sampled process memory peaks, and HTTP body bytes in `performance.json` (the latest 20 reports). Memory totals include shared processes and can double-count shared resident pages; HTTP counts exclude headers and external kernel/provider traffic.
-
-## Architecture
-
-PDFMathReader separates desktop coordination, page rendering, and translation processing. Each desktop window has its own renderer and local backend; the main process manages app-wide services.
-
-```text
-                         DESKTOP APP
-+--------------------------------------------------------------+
-| Electron main process                                        |
-| Window lifecycle, native menus, file opening                  |
-| Credentials, recent documents, reading preferences            |
-+---------------------+----------------------------------------+
-                      | IPC via sandboxed preload
-                      v
-+--------------------------------------------------------------+
-| Per-window renderer: Vue 3 + PDF.js                           |
-| PDF pages / thumbnails / paragraph overlays / reading state   |
-+---------------------+----------------------------------------+
-                      | Authenticated HTTP on 127.0.0.1
-                      v
-+--------------------------------------------------------------+
-| Per-window backend: Express in an Electron utility process    |
-| Document store / layout analysis / translation queues         |
-|                                                              |
-| Ultra fast: PDF Inspector --> paragraph translation           |
-| Fast / Precise: Python worker --> app-managed math kernels    |
-|                                  |                           |
-|                                  v                           |
-|                         Local OpenAI proxy                    |
-+-----------+----------------------+---------------------------+
-            |                      | HTTPS: text translation
-            v                      v
-+----------------------+   +----------------------+
-| Local disk           |   | OpenAI API           |
-| Translation caches   |   | Translation responses|
-| Kernel environments  |   +----------------------+
-| Temporary PDF files  |
-+----------------------+
-```
-
-Rendering, layout detection, and translation run independently. Python math kernels call OpenAI through the local backend proxy; API keys stay outside the renderer. Credentials, recent-document history, and saved preferences are managed by the main process, while backend caches and kernel environments use local disk.
-
-In browser development, a browser tab replaces the Electron renderer and `npm run dev` runs Express with Vite in a standalone Node.js process. Native menus, desktop IPC, and Keychain-backed key storage belong to the desktop app.
+In browser development, Express and Vite run in a standalone Node.js process. Native menus, desktop IPC, and secure desktop key storage are available only in the desktop app.
 
 ## Limitations
 
-- **Platform support:** macOS is the tested platform. Windows and Linux have platform-specific styles, but native runtime validation is pending. The packaging script currently builds only for macOS arm64; no Intel build is provided.
+- **Platform support:** macOS is the tested platform. Windows and Linux have platform-specific styles, but native runtime validation is pending. Packaging commands target macOS arm64 and Windows x64.
 - **Layout fidelity:** Ultra fast uses geometric paragraph grouping and text overlays. Complex tables, rotated text, unusual backgrounds, and long translations may not retain the original typography. Math-kernel output depends on upstream layout handling.
 - **Scanned documents:** scanned PDFs require OCR, which this app does not implement.
 - **Translation requirements:** translation needs an OpenAI API key and network access. Fast and Precise require separately installed math kernels through `uv`.
