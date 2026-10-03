@@ -26,8 +26,8 @@ jobs:
             platform: win32
             arch: x64
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -47,7 +47,7 @@ jobs:
         if: matrix.platform == 'win32'
         run: Compress-Archive -Path release/PDFMathReader-win32-x64 -DestinationPath release/PDFMathReader-win32-x64.zip
       - name: Upload compiled app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: PDFMathReader-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
