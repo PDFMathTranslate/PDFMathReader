@@ -2,6 +2,12 @@
 
 # <img src="icon.png" alt="PDFMathReader 应用图标" style="height: 1em; width: auto;"> PDFMathReader（实验性）
 
+[![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
+  <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
+    <img src="https://img.shields.io/badge/contributions-welcome-green"></a>
+  <a href="../LICENSE">
+    <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
+
 在任何平台上，通过实时翻译阅读任何语言的科学文档。由 PDFMathTranslate 提供支持。
 
 <img src="demo.gif" alt="演示" width="100%">
@@ -18,15 +24,23 @@
 
 | 日期 | 功能变更 | 贡献者 |
 | --- | --- | --- |
+| 2026-10-03 | [新增自定义菜单和左侧红黄绿窗口按钮](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [提供可运行的 CI 安装包，改进阅读界面的布局动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [缓存依赖、Electron 和图标，加快 CI 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [改进 Windows 控件，新增页面适应快捷键](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [新增 Windows PDF 右键菜单和打开方式入口](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [改进段落分组、预览和文档动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [新增 Intel Mac、32 位 Windows 和 Linux ARMv7 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [改进翻译服务、设置和文档交互](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ac384fb4226e385eaed3833fcf434852b74cbac) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [更新 macOS 和 Windows 应用图标](https://github.com/PDFMathTranslate/PDFMathReader/commit/2978dc3bfb348e54b4dfd6bb8ebee137dd196330) | [@reycn](https://github.com/reycn) |
 
 ## 快速开始
+
+### 截图
+
+| macOS | Windows | Linux |
+| :---: | :---: | :---: |
+| <img src="preview.png" alt="PDFMathReader 阅读界面" height="240"> | <img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240"> | <img src="preview-linux.png" alt="PDFMathReader Linux 阅读界面" height="240"> |
+
+### 安装
 
 从 [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 下载与你的系统和 CPU 匹配的包。先解压 Actions 下载的 ZIP。
 
@@ -34,8 +48,6 @@
 <summary>macOS</summary>
 
 解压 macOS ZIP，将 `PDFMathReader.app` 移到 `/Applications`，然后打开。
-
-<img src="preview.png" alt="PDFMathReader 阅读界面" height="240">
 
 <details>
 <summary>macOS 提示应用“已损坏”</summary>
@@ -55,8 +67,6 @@ sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
 
 双击 `PDFMathReader-win32-x64.exe`（32 位 Windows 使用 `ia32` 版本）。便携版自带运行时，启动后会注册 PDF 的 **Open with PDFMathReader** 右键菜单；移动可执行文件后，再启动一次以更新路径。
 
-<img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240">
-
 </details>
 
 <details>
@@ -74,6 +84,9 @@ sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
 
 ## 开发
 
+<details>
+<summary>本地开发</summary>
+
 使用 Node.js 22，从源码启动桌面应用：
 
 ```sh
@@ -90,14 +103,17 @@ npm run package:mac
 npm run package:win
 ```
 
-浏览器开发：设置 `OPENAI_API_KEY`，运行 `npm run dev`，打开 [127.0.0.1:5173](http://127.0.0.1:5173)。可用 `OPENAI_MODEL` 指定模型。桌面应用可通过 `Launch PDFMathReader.command` 加载登录 shell 的环境变量。
+浏览器开发：设置 `OPENAI_API_KEY`，运行 `npm run dev`，打开 [127.0.0.1:5173](http://127.0.0.1:5173)。可用 `OPENAI_MODEL` 指定模型。桌面应用可通过 `Launch PDFMathReader.command` 加载环境变量。
 
 ```sh
 npm test
 npm run build
 ```
 
-## 技术细节
+</details>
+
+<details>
+<summary>技术细节</summary>
 
 PDFMathReader 使用 Vue 3 和 PDF.js 构建阅读界面，Electron 提供桌面运行环境，Express 提供本地后端，Vite 用于前端开发和构建，pdf-lib 用于 PDF 操作。
 
@@ -118,6 +134,8 @@ PDF 渲染和版面分析在本地完成。翻译会将文档文本发送给 Ope
 桌面数据保存在 `~/Library/Application Support/` 下的应用目录中，包括密钥、最近文档、翻译与版面缓存及内核环境。浏览器开发缓存位于 `.cache/translations/`。缓存和临时 PDF 可能包含文档内容；起始页的 **Clear** 仅清除最近文档历史。
 
 浏览器开发模式在独立 Node.js 进程中运行 Express 和 Vite。原生菜单、桌面 IPC 和安全密钥存储仅在桌面应用中提供。
+
+</details>
 
 ## 已知限制
 

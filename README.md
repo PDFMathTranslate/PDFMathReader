@@ -34,14 +34,18 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Quick start
 
+### Screenshots
+| macOS | Windows | Linux |
+| :---: | :---: | :---: |
+| <img src="doc/preview.png" alt="PDFMathReader reader" height="240"> | <img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240"> | <img src="doc/preview-linux.png" alt="PDFMathReader reader on Linux" height="240"> |
+
+### Installation
 Download the package for your system and CPU from [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml). Extract the Actions artifact ZIP first.
 
 <details>
 <summary>macOS</summary>
 
 Extract the macOS ZIP, move `PDFMathReader.app` to `/Applications`, and open it.
-
-<img src="doc/preview.png" alt="PDFMathReader reader" height="240">
 
 <details>
 <summary>macOS says the app is “damaged”</summary>
@@ -61,8 +65,6 @@ sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
 
 Double-click `PDFMathReader-win32-x64.exe` (or the `ia32` version for 32-bit Windows). The portable app includes its runtime. Launching it registers the PDF **Open with PDFMathReader** menu; launch it again after moving the executable.
 
-<img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240">
-
 </details>
 
 <details>
@@ -79,6 +81,8 @@ Extract the `.tar.gz` for your CPU, then run the app from its folder:
 Open a PDF. In **Settings…**, save your OpenAI API key and choose a target language. Reading needs no key; translation does. **Ultra fast** is included. For **Fast** or **Precise**, install `uv`, then choose **Install kernel with uv** in Settings.
 
 ## Development
+<details>
+<summary>Local development</summary>
 
 Use Node.js 22. To run the desktop app from source:
 
@@ -103,7 +107,10 @@ npm test
 npm run build
 ```
 
-## Technical Details
+</details>
+
+<details>
+<summary>Details</summary>
 
 PDFMathReader uses Vue 3 and PDF.js for the reader, Electron for the desktop app, and Express for the local backend. Vite supports frontend development and builds; pdf-lib handles PDF manipulation.
 
@@ -124,6 +131,8 @@ Saved desktop keys are encrypted with Electron `safeStorage` and macOS Keychain 
 Desktop data is stored in the app directory under `~/Library/Application Support/`: credentials, recent documents, translation/layout caches, and kernel environments. Browser-development caches use `.cache/translations/`. Caches and temporary PDFs can contain document content; **Clear** on the start page removes recent-document history only.
 
 In browser development, Express and Vite run in a standalone Node.js process. Native menus, desktop IPC, and secure desktop key storage are available only in the desktop app.
+
+</details>
 
 ## Limitations
 

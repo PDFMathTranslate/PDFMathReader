@@ -2,6 +2,12 @@
 
 # <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader（実験版）
 
+[![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
+  <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
+    <img src="https://img.shields.io/badge/contributions-welcome-green"></a>
+  <a href="../LICENSE">
+    <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
+
 あらゆる言語の科学文書を、リアルタイム翻訳付きで、どのプラットフォームでも読むことができます。PDFMathTranslate を基盤としています。
 
 <img src="demo.gif" alt="デモ" width="100%">
@@ -18,15 +24,23 @@
 
 | 日付 | 機能の変更 | 貢献者 |
 | --- | --- | --- |
+| 2026-10-03 | [カスタムメニューと左側の赤・黄・緑のウィンドウボタンを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f) | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [実行可能な CI パッケージを提供し、閲覧画面のレイアウトアニメーションを改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [依存関係・Electron・アイコンのキャッシュで CI を高速化](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Windows のコントロールとページ表示のショートカットを改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Windows の PDF コンテキストメニューと「開く」項目を追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [段落のグループ化・プレビュー・文書アニメーションを改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Intel Mac・32 ビット Windows・Linux ARMv7 のビルドを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [翻訳プロバイダー・設定・文書操作を改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ac384fb4226e385eaed3833fcf434852b74cbac) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [macOS と Windows のアプリアイコンを更新](https://github.com/PDFMathTranslate/PDFMathReader/commit/2978dc3bfb348e54b4dfd6bb8ebee137dd196330) | [@reycn](https://github.com/reycn) |
 
 ## クイックスタート
+
+### スクリーンショット
+
+| macOS | Windows | Linux |
+| :---: | :---: | :---: |
+| <img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"> | <img src="preview-windows.png" alt="PDFMathReader の閲覧画面" height="240"> | <img src="preview-linux.png" alt="Linux 上の PDFMathReader の閲覧画面" height="240"> |
+
+### インストール
 
 [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) から OS と CPU に合ったパッケージをダウンロードし、まず Actions の ZIP を展開してください。
 
@@ -34,8 +48,6 @@
 <summary>macOS</summary>
 
 macOS の ZIP を展開し、`PDFMathReader.app` を `/Applications` に移動して開きます。
-
-<img src="preview.png" alt="PDFMathReader の閲覧画面" height="240">
 
 <details>
 <summary>macOS で「アプリが壊れている」と表示される場合</summary>
@@ -55,8 +67,6 @@ sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
 
 `PDFMathReader-win32-x64.exe` をダブルクリックします（32 ビット Windows では `ia32` 版）。ランタイムを含むポータブル版です。起動すると PDF の **Open with PDFMathReader** メニューが登録されます。ファイルを移動したら再度起動してください。
 
-<img src="preview-windows.png" alt="PDFMathReader の閲覧画面" height="240">
-
 </details>
 
 <details>
@@ -73,6 +83,9 @@ CPU に合った `.tar.gz` を展開し、アプリのフォルダーで実行�
 PDF を開き、**Settings…** で OpenAI API key を保存し、対象言語を選びます。閲覧にはキーは不要ですが、翻訳には必要です。**Ultra fast** は同梱されています。**Fast** または **Precise** は、`uv` をインストールしてから Settings の **Install kernel with uv** で導入します。
 
 ## 開発
+
+<details>
+<summary>ローカル開発</summary>
 
 Node.js 22 を使用してソースからデスクトップアプリを起動します。
 
@@ -97,7 +110,10 @@ npm test
 npm run build
 ```
 
-## 技術詳細
+</details>
+
+<details>
+<summary>詳細</summary>
 
 PDFMathReader は Vue 3 と PDF.js で閲覧画面を構築し、Electron をデスクトップ環境、Express をローカルバックエンドとして使用します。Vite はフロントエンドの開発とビルド、pdf-lib は PDF の操作を担当します。
 
@@ -118,6 +134,8 @@ PDF の描画とレイアウト解析はローカルで行います。翻訳で�
 デスクトップデータは `~/Library/Application Support/` 内のアプリディレクトリに保存されます。認証情報、最近の文書、翻訳とレイアウトのキャッシュ、カーネル環境が含まれます。ブラウザ開発時のキャッシュは `.cache/translations/` にあります。キャッシュと一時 PDF には文書の内容が含まれる場合があります。開始ページの **Clear** は最近の文書履歴だけを削除します。
 
 ブラウザ開発では Express と Vite が独立した Node.js プロセスで動作します。ネイティブメニュー、デスクトップ IPC、安全なキー保存はデスクトップアプリのみで利用できます。
+
+</details>
 
 ## 制限事項
 
