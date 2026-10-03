@@ -2063,7 +2063,9 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .reader.layout-transitioning .paragraph{transition:none!important}
 
 /* Linux owns its chrome: traffic lights, custom menu, then sidebar toggle. */
-.desktop[data-platform="linux"] .toolbar{-webkit-app-region:drag}
+.desktop[data-platform="linux"] .toolbar{-webkit-app-region:drag;grid-template-columns:max-content 36px minmax(0,1fr) max-content}
+.desktop[data-platform="linux"] .toolbar.has-document{grid-template-columns:max-content 36px 36px minmax(0,1fr) max-content}
+.desktop[data-platform="linux"] .toolbar>.windows-menu{width:36px}
 .desktop[data-platform="linux"].immersive-header-hidden .toolbar{visibility:hidden;pointer-events:none;-webkit-app-region:no-drag}
 .linux-traffic-lights{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-right:4px;-webkit-app-region:no-drag}
 .linux-traffic-lights button{display:flex;align-items:center;justify-content:center;width:14px;height:14px;padding:0;border:1px solid #0002;border-radius:50%;color:#0009;font:12px/1 sans-serif;cursor:default}
