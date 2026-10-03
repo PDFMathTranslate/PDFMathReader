@@ -188,8 +188,10 @@
 :root[data-reduce-motion=true]::view-transition-old(root),:root[data-reduce-motion=true]::view-transition-new(root){animation:none}
 @media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
 
-/* Keep the entire PDF composition consistent, including translated overlays. */
-[data-appearance=dark] .reader .page{filter:invert(.75)}
+/* Keep PDF pages, translated overlays, and document previews consistent on every platform. */
+[data-appearance=dark] .reader .page,
+[data-appearance=dark] .sidebar .thumb canvas,
+[data-appearance=dark] .recent-document img{filter:invert(.75)}
 .scrub-input.alt-scrub{cursor:ew-resize}
 .toolbar input.zoom-popup{width:70px;min-width:70px;padding:5px 7px;text-align:center;border:0;border-radius:6px;background:var(--chrome-hover);color:var(--text);font-size:13px;line-height:1.4}
 .toolbar input.zoom-popup:focus-visible{outline:2px solid var(--accent);outline-offset:1px}

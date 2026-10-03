@@ -5,6 +5,7 @@ import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 export async function verifyFitWidth(window,recents){
+ if(process.platform==='win32')window.webContents.setBackgroundThrottling(false);
  const evaluate=code=>window.webContents.executeJavaScript(code),pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  async function chooseFit(label){
   if(process.platform==='win32'){
@@ -49,7 +50,14 @@ export async function verifyFitWidth(window,recents){
    const resized=await state();assert.ok(Math.abs(resized.width-resized.available)<2,'fit follows Windows resize '+JSON.stringify(resized));
   }
   for(let i=0;i<2;i++){
+   if(process.platform==='win32')await evaluate(`(()=>{window.sidebarWidths=[document.querySelector('.reader').clientWidth];const timer=setInterval(()=>window.sidebarWidths.push(document.querySelector('.reader').clientWidth),16);setTimeout(()=>clearInterval(timer),400);})()`);
    window.webContents.send('reader:action','sidebar');await pause(650);
+   if(process.platform==='win32'){
+    const widths=await evaluate(`Array.from(new Set(window.sidebarWidths))`);
+    assert.ok(await evaluate(`window.sidebarWidths.length>2`),'Sidebar geometry must be sampled during motion');
+    assert.ok(widths.length>0&&widths.length<=2,'Sidebar animation must commit reader width once: '+JSON.stringify(widths));
+    assert.equal(await evaluate(`(()=>{const rail=document.querySelector('.sidebar');return rail?getComputedStyle(rail).willChange:'auto';})()`),'auto');
+   }
    const toggled=await state();assert.ok(Math.abs(toggled.width-toggled.available)<2,'fit follows sidebar '+JSON.stringify(toggled));
   }
   window.setContentSize(original.width,original.height);await pause(650);

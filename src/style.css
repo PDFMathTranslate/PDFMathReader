@@ -1722,7 +1722,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 .toolbar>.icon-button,.toolbar-actions>.icon-button,.toolbar-actions>select{flex-shrink:0}
 
 /* Masked, staggered text replacement; glyphs never crossfade over old text. */
-.paragraph-text{display:block;text-align:left}.reveal-word{display:inline-block;white-space:nowrap}.reveal-mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-block:.08em;margin-block:-.08em}.reveal-letter{display:inline-block}
+.paragraph-text{display:block;text-align:var(--paragraph-align,left)}.reveal-word{display:inline-block;white-space:nowrap}.reveal-mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-block:.08em;margin-block:-.08em}.reveal-letter{display:inline-block}
 .text-revealing .reveal-letter,.pdf-glyph-rise{animation:glyph-rise 300ms cubic-bezier(.2,.75,.25,1.12) both;animation-delay:calc(40ms + var(--reveal-delay,0ms))}
 @keyframes glyph-rise{0%{transform:translateY(115%);opacity:0}72%{transform:translateY(-7%);opacity:1}100%{transform:translateY(0);opacity:1}}
 .pdf-text-reveal{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}.pdf-reveal-region{position:absolute;background:white;overflow:hidden}.pdf-glyph-mask{position:absolute;display:block;overflow:hidden}.pdf-glyph-rise{background-image:var(--pdf-reveal-image);display:block;width:100%;height:100%;background-repeat:no-repeat}
@@ -1854,13 +1854,15 @@ body:has(.content-glass),.content-glass.app,.content-glass .workspace{background
 body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .desktop.windows-glass .workspace {background:transparent}
 .desktop.windows-glass .reader {background:linear-gradient(to bottom,transparent var(--toolbar-height),var(--reader) var(--toolbar-height))}
-.desktop.windows-glass .sidebar {background:linear-gradient(to bottom,transparent var(--toolbar-height),var(--chrome-solid) var(--toolbar-height))}
+/* Let the thumbnail rail expose the native Windows Acrylic backdrop. */
+.desktop.windows-glass .sidebar {background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 .reduced-transparency .desktop[data-platform="win32"] .toolbar,
 [data-reduced-transparency="true"] .desktop[data-platform="win32"] .toolbar {
   background:var(--chrome-solid);backdrop-filter:none;-webkit-backdrop-filter:none;
 }
 @media(prefers-reduced-transparency:reduce){
  .desktop[data-platform="win32"] .toolbar {background:var(--chrome-solid);backdrop-filter:none;-webkit-backdrop-filter:none}
+ .desktop.windows-glass .sidebar {background:var(--chrome-solid)}
 }
 .desktop[data-platform="linux"] .toolbar {padding-inline: 12px;}
 .desktop[data-platform="linux"] .toolbar .icon-button {border-radius: 8px;}
@@ -1877,10 +1879,13 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 
 /* One shared selection surface glides between virtualized thumbnail buttons. */
 .thumbnail-highlight{position:absolute;top:0;left:50%;background:var(--accent);border-radius:7px;pointer-events:none;transition:transform 220ms var(--motion-ease),width 220ms var(--motion-ease),height 220ms var(--motion-ease)}
-.desktop .sidebar .thumbnail-inner>.thumb{z-index:1;transition:color 160ms var(--motion-ease)}
+.sidebar .thumbnail-inner>.thumb{transition:top 220ms var(--motion-ease),width 220ms var(--motion-ease),height 220ms var(--motion-ease),color 160ms var(--motion-ease),background-color 160ms var(--motion-ease),border-color 160ms var(--motion-ease)}
+.sidebar .thumbnail-inner>.thumb canvas{transition:width 220ms var(--motion-ease),height 220ms var(--motion-ease)}
+.desktop .sidebar .thumbnail-inner>.thumb{z-index:1}
 .desktop .sidebar .thumbnail-inner>.thumb.selected{background:transparent;border-color:transparent;box-shadow:none}
 .thumbnail-highlight.without-motion{transition:none}
-@media(prefers-reduced-motion:reduce){.thumbnail-highlight{transition:none}}
+@media(prefers-reduced-motion:reduce){.thumbnail-highlight,.sidebar .thumbnail-inner>.thumb,.sidebar .thumbnail-inner>.thumb canvas{transition:none}}
+.sidebar.without-motion .thumbnail-inner>.thumb,.sidebar.without-motion .thumbnail-inner>.thumb canvas{transition:none}
 
 /* Layout commits once after a screenshot transition, never on animation frames. */
 .layout-frozen .page,.layout-frozen .paragraph,.layout-frozen .sidebar{transition:none!important}
@@ -2004,3 +2009,23 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 
 /* Keep the destination from appearing before its thumbnail arrives. */
 .reader.document-opening .page-wrap{visibility:hidden}
+.workspace.document-opening>.sidebar,.workspace.document-closing>.sidebar{visibility:hidden}
+
+/* Windows commits the rail width once; only its surface moves between frames. */
+.desktop[data-platform="win32"] .workspace{position:relative}
+.desktop[data-platform="win32"] .sidebar-motion-enter-active,
+.desktop[data-platform="win32"] .sidebar-motion-leave-active{
+ flex-basis:var(--sidebar-width)!important;
+ transition:opacity 200ms var(--motion-ease),transform 200ms var(--motion-ease)!important;
+}
+.desktop[data-platform="win32"] .sidebar-motion-enter-from,
+.desktop[data-platform="win32"] .sidebar-motion-leave-to{flex-basis:var(--sidebar-width)!important}
+.desktop[data-platform="win32"] .sidebar-motion-leave-active{
+ position:absolute;inset:0 auto 0 0;width:var(--sidebar-width);z-index:3;
+}
+/* Native Acrylic already supplies the blur; avoid a second moving backdrop. */
+.desktop.windows-glass[data-platform="win32"] .toolbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+@media(prefers-reduced-motion:reduce){
+ .desktop[data-platform="win32"] .sidebar-motion-enter-active,
+ .desktop[data-platform="win32"] .sidebar-motion-leave-active{transition:none!important}
+}
