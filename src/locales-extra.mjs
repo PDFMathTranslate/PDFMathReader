@@ -132,6 +132,11 @@ export const extraMessages = {
    githubLabel: 'GitHub 上的 PDFMathReader',
   },
   advanced: {
+   reinstallKernelGit: '透過 Git 重新安裝目前核心（最新原始碼）',
+   reinstallKernel: '使用 uv 重新安裝目前核心（更新）',
+   updatingKernel: '正在更新核心…',
+   bundledKernel: '此核心隨應用程式提供，請更新應用程式。',
+
    section: '進階',
    loading: '正在載入選項…',
    restoreDefaults: '還原預設值',
@@ -155,6 +160,7 @@ export const extraMessages = {
    reading: '減少翻譯請求',
    readingDescription: '閱讀時翻譯目前頁面及前後最多兩頁',
    language: '翻譯語言',
+   siliconflowFreeFallback: '尚未設定 OpenAI 金鑰。正在使用 SiliconFlow 免費翻譯服務。',
   },
   parallel: {
    off: '關閉',
@@ -346,6 +352,11 @@ export const extraMessages = {
    githubLabel: 'PDFMathReader sur GitHub',
   },
   advanced: {
+   reinstallKernelGit: 'Réinstaller le noyau via Git (dernière source)',
+   reinstallKernel: 'Réinstaller le noyau actuel avec uv (mise à jour)',
+   updatingKernel: 'Mise à jour du noyau…',
+   bundledKernel: 'Ce noyau est intégré à l’application. Mettez l’application à jour.',
+
    section: 'Avancé',
    loading: 'Chargement des options…',
    restoreDefaults: 'Restaurer les valeurs par défaut',
@@ -369,6 +380,7 @@ export const extraMessages = {
    reading: 'Réduire les requêtes de traduction',
    readingDescription: 'Traduire la page courante et jusqu’à deux pages de chaque côté pendant la lecture',
    language: 'Langue de traduction',
+   siliconflowFreeFallback: 'Aucune clé API OpenAI n’est configurée. Utilisation du service de traduction gratuit SiliconFlow.',
   },
   parallel: {
    off: 'Désactivé',
@@ -560,6 +572,11 @@ export const extraMessages = {
    githubLabel: 'PDFMathReader en GitHub',
   },
   advanced: {
+   reinstallKernelGit: 'Reinstalar el núcleo mediante Git (código más reciente)',
+   reinstallKernel: 'Reinstalar el núcleo actual con uv (actualizar)',
+   updatingKernel: 'Actualizando el núcleo…',
+   bundledKernel: 'Este núcleo está incluido en la aplicación. Actualice la aplicación.',
+
    section: 'Avanzado',
    loading: 'Cargando opciones…',
    restoreDefaults: 'Restaurar valores predeterminados',
@@ -583,6 +600,7 @@ export const extraMessages = {
    reading: 'Reducir las solicitudes de traducción',
    readingDescription: 'Traducir la página actual y hasta dos páginas a cada lado mientras lees',
    language: 'Idioma de traducción',
+   siliconflowFreeFallback: 'No hay ninguna clave de API de OpenAI configurada. Se está utilizando el servicio de traducción gratuito de SiliconFlow.',
   },
   parallel: {
    off: 'Desactivado',
@@ -774,6 +792,11 @@ export const extraMessages = {
    githubLabel: 'GitHub의 PDFMathReader',
   },
   advanced: {
+   reinstallKernelGit: 'Git으로 현재 커널 재설치 (최신 소스)',
+   reinstallKernel: 'uv로 현재 커널 재설치 (업데이트)',
+   updatingKernel: '커널 업데이트 중…',
+   bundledKernel: '이 커널은 앱에 포함되어 있습니다. 앱을 업데이트하세요.',
+
    section: '고급',
    loading: '옵션 로드 중…',
    restoreDefaults: '기본값 복원',
@@ -797,6 +820,7 @@ export const extraMessages = {
    reading: '번역 요청 줄이기',
    readingDescription: '읽는 동안 현재 페이지와 양쪽 최대 2페이지 번역',
    language: '번역 언어',
+   siliconflowFreeFallback: 'OpenAI API 키가 구성되지 않았습니다. SiliconFlow 무료 번역 서비스를 사용합니다.',
   },
   parallel: {
    off: '끔',

@@ -138,6 +138,11 @@ const messages = {
    githubLabel: 'PDFMathReader on GitHub',
   },
   advanced: {
+   reinstallKernelGit: 'Reinstall current kernel via Git (latest source)',
+   reinstallKernel: 'Reinstall current kernel with uv (update)',
+   updatingKernel: 'Updating kernel…',
+   bundledKernel: 'This kernel is bundled with the app; update the app to update it.',
+
    section: 'Advanced',
    loading: 'Loading options…',
    restoreDefaults: 'Restore defaults',
@@ -161,6 +166,7 @@ const messages = {
    reading: 'Reduce translation requests',
    readingDescription: 'Translate the current page and up to two pages on either side while reading',
    language: 'Translation language',
+   siliconflowFreeFallback: 'No OpenAI API key configured. Using SiliconFlow free translation service.',
   },
   parallel: {
    off: 'Off',
@@ -342,6 +348,11 @@ const messages = {
    githubLabel: '在 GitHub 上查看 PDFMathReader',
   },
   advanced: {
+   reinstallKernelGit: '通过 Git 重新安装当前内核（最新源码）',
+   reinstallKernel: '使用 uv 重新安装当前内核（更新）',
+   updatingKernel: '正在更新内核…',
+   bundledKernel: '此内核随应用提供，请更新应用以更新内核。',
+
    section: '高级',
    loading: '正在加载选项…',
    restoreDefaults: '恢复默认设置',
@@ -365,6 +376,7 @@ const messages = {
    reading: '降低翻译请求',
    readingDescription: '阅读时翻译当前页及前后最多两页',
    language: '翻译语言',
+   siliconflowFreeFallback: '未配置 OpenAI 密钥。正在使用 SiliconFlow 免费翻译服务。',
   },
   parallel: {
    off: '关闭',
@@ -546,6 +558,11 @@ const messages = {
    githubLabel: 'GitHub の PDFMathReader',
   },
   advanced: {
+   reinstallKernelGit: 'Git で現在のカーネルを再インストール（最新ソース）',
+   reinstallKernel: 'uv で現在のカーネルを再インストール（更新）',
+   updatingKernel: 'カーネルを更新中…',
+   bundledKernel: 'このカーネルはアプリに同梱されています。アプリを更新してください。',
+
    section: '詳細設定',
    loading: 'オプションを読み込み中…',
    restoreDefaults: 'デフォルトに戻す',
@@ -569,6 +586,7 @@ const messages = {
    reading: '翻訳リクエストを減らす',
    readingDescription: '読書中に現在のページと前後最大 2 ページを翻訳',
    language: '翻訳言語',
+   siliconflowFreeFallback: 'OpenAI API キーが設定されていません。SiliconFlow の無料翻訳サービスを使用しています。',
   },
   parallel: {
    off: 'オフ',

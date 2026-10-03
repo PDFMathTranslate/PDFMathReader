@@ -114,12 +114,27 @@ else {
   dialog.showErrorBox('PDFMathReader',`The local reader backend stopped unexpectedly.${detail?`\n\n${detail}`:''}\n\nQuit and reopen PDFMathReader.`);app.quit();
  }
  notifyDocuments=()=>{if(!documentsReady)return;void deliverPendingFiles().catch(handleBackendFailure);};
- async function deliverPendingFiles(){while(pendingFiles.length){const path=pendingFiles.shift();await createWindow(path);}}
+ async function deliverPendingFiles(){while(pendingFiles.length){const path=pendingFiles.shift();await openDocumentWindow(path);}}
  const token=randomBytes(32).toString('hex');
  const appearance=()=>{const state=preferences?.load?.()||{};return {platform:process.platform,accent:'#'+systemAccent(),appearance:state.appearance||'system',accentColor:state.accentColor||'system',reduceMotion:!!state.reduceMotion,reduceTransparency:!!state.reduceTransparency,reducePadding:!!state.reducePadding,dark:!!nativeTheme.shouldUseDarkColors};};
  const systemAccent=()=>{try{const value=String(systemPreferences.getAccentColor?.()||'').replace(/^#/,'');if(/^[\da-f]{6}$/i.test(value))return value+'ff';if(/^[\da-f]{8}$/i.test(value))return value;}catch{}return '007affff';};
  const updateAppearance=()=>{for(const target of windows.keys())target.webContents.send('appearance:changed',appearance());};
  async function saveWindowReadingView(window){if(!window||window.isDestroyed())return;try{await window.webContents.executeJavaScript('window.previewSaveReadingView?.()');}catch{}}
+ async function openDocumentWindow(document,preferredWindow){
+  const candidates=[preferredWindow,focusedWindow(),...windows.keys()];
+  const target=candidates.find(candidate=>{
+   const state=windows.get(candidate);
+   return state&&!candidate.isDestroyed()&&!state.closing&&!state.performance.hasDocument&&!state.documents.length;
+  });
+  if(!target)return createWindow(document);
+  const state=windows.get(target);
+  // Reserve before notifying the renderer so simultaneous opens get separate windows.
+  state.documents.push(document);state.performance.hasDocument=true;
+  target.webContents.send('documents:available');
+  if(target.isMinimized())target.restore();
+  if(!backgroundRenderSmoke){target.show();target.focus();}
+  return target;
+ }
  async function createWindow(document){
   let window;
   const backend=await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
@@ -154,7 +169,7 @@ else {
   window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==backend.origin)event.preventDefault();});
   window.once('ready-to-show',()=>{hideNativeMenuBar(window);if(!['resize','file-open'].includes(smoke)){if(process.argv.includes('--background'))window.showInactive();else window.show();}updatePerformanceSampling(window);});
   window.on('focus',()=>{updateAppearance();updateMenu(window);});
-  let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;void saveWindowReadingView(window).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
+  let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;windows.get(window).closing=true;void saveWindowReadingView(window).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
   window.on('closed',()=>{stopPerformanceSampling(window);windows.get(window)?.performance.peaks.clear();windows.delete(window);const closing=backend.close();closingBackends.add(closing);void closing.finally(()=>closingBackends.delete(closing));if(!windows.size)app.quit();});
   await window.loadURL(backend.origin);
   activityChanged();return window;
@@ -185,7 +200,7 @@ else {
   ipcMain.handle('documents:next',async event=>{
    const window=trustedWindow(event);
    const state=windows.get(window),path=state.documents.shift();if(!path)return null;if(typeof path!=='string')return path;
-   try{const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);return {...document,ticket};}catch{return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
+   try{const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);return {...document,ticket};}catch{state.performance.hasDocument=false;return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
   });
   ipcMain.handle('clipboard:write-text',async(event,text)=>{trustedWindow(event);if(typeof text!=='string'||text.length>1000000)throw Error('Invalid clipboard text');await clipboard.writeText(text);return true;});
   ipcMain.handle('window:menu',event=>{const target=trustedWindow(event);updateMenu(target);return serializeApplicationMenu(applicationMenu);});
@@ -197,6 +212,12 @@ else {
   ipcMain.handle('window:minimize',event=>{const target=trustedWindow(event);target.minimize();return true;});
   ipcMain.handle('window:maximize',event=>{const target=trustedWindow(event);if(target.isMaximized())target.unmaximize();else target.maximize();return target.isMaximized();});
   ipcMain.handle('window:close',event=>{const target=trustedWindow(event);target.close();return true;});
+  ipcMain.handle('window:close-start-page',event=>{
+   const target=trustedWindow(event);
+   target.close();
+   if(![...windows].some(([other,state])=>other!==target&&(state.performance.hasDocument||state.documents.length)))app.quit();
+   return true;
+  });
   ipcMain.handle('window:header-hidden',(event,hidden)=>{const target=trustedWindow(event);if(typeof hidden!=='boolean')throw Error('Invalid header state');windows.get(target).headerHidden=hidden;updateWindowButtons(target);});
   ipcMain.handle('window:fullscreen',event=>{const window=trustedWindow(event);return window.isFullScreen();});
   ipcMain.handle('window:activity',event=>{const window=trustedWindow(event);return windowActive(window);});
@@ -261,14 +282,14 @@ else {
   for(const action of ['list','open','openWindow','remember','clear','preview','setThumbnail','setView'])ipcMain.handle('recents:'+action,async(event,value)=>{
    const window=trustedWindow(event);
    if(action==='list')return recents.list();if(action==='clear'){app.clearRecentDocuments();return recents.clear();}
-   if(action==='openWindow'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);await createWindow(path);return true;}
+   if(action==='openWindow'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);await openDocumentWindow(path,window);return true;}
    if(action==='open'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);const recent=recents.list().find(entry=>entry.id===value);return {...document,ticket,recentId:value,view:recent?.view};}
    if(action==='preview'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path);return {bytes:document.bytes};}
    if(action==='setThumbnail')return recents.setThumbnail(value?.id,value?.thumbnail);
    if(action==='setView')return recents.setView(value?.id,value?.view);
    const path=value?.ticket?windows.get(window).tickets.get(value.ticket):value?.path;if(!path)return {entries:recents.list(),recentId:null};if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split('/').pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)windows.get(window).tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries[0];return {entries,recentId:first?.id??null,view:first?.view};
   });
-  ipcMain.handle('documents:open',async(event,value)=>{trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await createWindow(value.path);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await createWindow({name:value.name,bytes:value.bytes});}return true;});
+  ipcMain.handle('documents:open',async(event,value)=>{const target=trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await openDocumentWindow(value.path,target);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await openDocumentWindow({name:value.name,bytes:value.bytes},target);}return true;});
   ipcMain.handle('window:new',async event=>{trustedWindow(event);await createWindow();});
   window=await createWindow(pendingFiles.shift());backend=windows.get(window).backend;documentsReady=true;await deliverPendingFiles();
   if(smoke){const checks=await import('./smoke.mjs');if(smoke==='locales')await (await import('./locales-smoke.mjs')).verifyLocales(window);else if(smoke==='advanced')await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);else if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}

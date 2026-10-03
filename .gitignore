@@ -243,3 +243,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local editor rules and code index
+.cursor/
+.codegraph/

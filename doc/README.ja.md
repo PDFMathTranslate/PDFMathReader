@@ -1,12 +1,14 @@
-<p align="center">
-  <img src="icon.png" alt="PDFMathReader app icon" style="height: 4em; width: auto;">
-</p>
-
-# PDFMathReader
-
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-macOS の Preview に着想を得たインターフェース、段落翻訳、数式を考慮した翻訳カーネルを備えたローカル PDF リーダーです。
+# <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader（実験版）
+
+あらゆる言語の科学文書を、リアルタイム翻訳付きで、どのプラットフォームでも読むことができます。PDFMathTranslate を基盤としています。
+
+<img src="demo.gif" alt="デモ" width="100%">
+
+## クイックスタート
+
+### デスクトップアプリを実行する
 
 <table>
   <tr>
@@ -16,15 +18,10 @@ macOS の Preview に着想を得たインターフェース、段落翻訳、�
   </tr>
   <tr>
     <td><img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"></td>
-    <td></td>
-    <td></td>
+    <td><img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"></td>
+    <td><img src="preview.png" alt="PDFMathReader の閲覧画面" height="240"></td>
   </tr>
 </table>
-
-
-## クイックスタート
-
-### デスクトップアプリを実行する
 
 開発には Apple Silicon Mac 上の Node.js 22 を使用してください。
 

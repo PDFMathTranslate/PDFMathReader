@@ -16,8 +16,8 @@ export const LANGUAGE_CODES=Object.freeze({'Simplified Chinese':'zh','Traditiona
 
 export const definitions={
  pdf_inspector:{label:'PDF Inspector',package:'@firecrawl/pdf-inspector'},
- pdf_math_fast:{label:'PDF Math · Fast',package:'pdf2zh',spec:'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@a799fc0ba3b863982f116e3a47a8534f1f5dc475'},
- pdf_math_precise:{label:'PDF Math · Precise',package:'pdf2zh-next',spec:'pdf2zh-next==2.8.2'}
+ pdf_math_fast:{label:'PDF Math · Fast',package:'pdf2zh',spec:'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@a799fc0ba3b863982f116e3a47a8534f1f5dc475',updateSpec:'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git',gitSpec:'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@main'},
+ pdf_math_precise:{label:'PDF Math · Precise',package:'pdf2zh-next',spec:'pdf2zh-next==2.8.2',updateSpec:'pdf2zh-next',gitSpec:'pdf2zh-next @ git+https://github.com/PDFMathTranslate-next/PDFMathTranslate-next.git@main'}
 };
 
 export function createLimiter(max=4){
@@ -49,7 +49,8 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
  return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
 }
 
-export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput}){
+export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput,findUvImpl=findUv,execImpl=exec}){
+ const runExec=execImpl;
  let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map();
  const envPath=id=>join(root,id);const python=id=>join(envPath(id),'bin/python');
 
@@ -57,27 +58,29 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');
   if(id==='pdf_inspector')return {id,label:definitions[id].label,installed:true,available:true,version:require('@firecrawl/pdf-inspector/package.json').version};
   const installed=existsSync(envPath(id));
-  if(!uv)uv=await findUv();
+  if(!uv)uv=await findUvImpl();
   if(!uv.available)return {id,label:definitions[id].label,installed,available:false,reason:uv.message};
   try{
-   const {stdout}=await exec(python(id),['-c',`import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id==='pdf_math_fast'?'pdf2zh':'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}'))`],{timeout:15000});
+   const {stdout}=await runExec(python(id),['-c',`import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id==='pdf_math_fast'?'pdf2zh':'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}'))`],{timeout:15000});
    const version=stdout.trim();if(!/^\d+\.\d+/.test(version))throw Error();
    return {id,label:definitions[id].label,installed:true,available:true,version};
   }catch{return {id,label:definitions[id].label,installed,available:false,reason:installing.has(id)?'Installing…':'Kernel environment is not installed or its version cannot be queried.'};}
  }
 
- async function install(id){
+ async function install(id,{reinstall=false,source='release'}={}){
   if(!Object.hasOwn(definitions,id)||id==='pdf_inspector')throw Error('Unknown kernel');
   if(installing.has(id))return installing.get(id);
   const task=(async()=>{
-   const state=await check(id);if(state.available)return state;
-   uv=await findUv();if(!uv.available)throw Error(uv.message);
+   const state=await check(id);if(state.available&&reinstall!==true)return state;
+   uv=await findUvImpl();if(!uv.available)throw Error(uv.message);
    await mkdir(root,{recursive:true});
    const env={...process.env,UV_CACHE_DIR:join(root,'uv-cache')};
    try{
-    await exec(uv.path,['venv','--allow-existing','--python','3.12',envPath(id)],{env,timeout:300000,maxBuffer:1024*1024});
-    await exec(uv.path,['pip','install','--python',python(id),definitions[id].spec],{env,timeout:600000,maxBuffer:2*1024*1024});
+    if(!state.available)await runExec(uv.path,['venv','--allow-existing','--python','3.12',envPath(id)],{env,timeout:300000,maxBuffer:1024*1024});
+    const pipArgs=['pip','install',...(reinstall===true?['--upgrade','--reinstall',...(source==='git'?['--refresh']:[])]:[]),'--python',python(id),reinstall===true?(source==='git'?definitions[id].gitSpec:definitions[id].updateSpec):definitions[id].spec];
+    await runExec(uv.path,pipArgs,{env,timeout:600000,maxBuffer:2*1024*1024});
    }catch{throw Error('uv could not install this kernel. Check network access and retry.');}
+   if(reinstall===true){for(const key of advancedMetadata.keys())if(key.startsWith(`${id}:`))advancedMetadata.delete(key);}
    return check(id);
   })();
   installing.set(id,task);try{return await task;}finally{installing.delete(id);}
@@ -98,7 +101,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
     const isolatedTmp=join(home,'tmp');
     const env={...process.env,HOME:home,TMPDIR:isolatedTmp,TMP:isolatedTmp,TEMP:isolatedTmp,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),PYTHONPYCACHEPREFIX:join(optionsHomeRoot,'kernel-options-pycache')};
     await mkdir(isolatedTmp,{recursive:true});
-    const {stdout}=await exec(python(id),[pythonResourcePath('kernel-options.py',pythonResourcesPath),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
+    const {stdout}=await runExec(python(id),[pythonResourcePath('kernel-options.py',pythonResourcesPath),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
     const raw=JSON.parse(stdout.trim());
     return {id,options:decorateAdvancedOptions(id,raw)};
    }catch{return {id,options:[],reason:'Kernel advanced options could not be queried.'};}
@@ -147,5 +150,5 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   }finally{await rm(dir,{recursive:true,force:true});}
  }
 
- return {layout:async key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(cacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUv(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
+ return {layout:async key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(cacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
 }

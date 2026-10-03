@@ -54,11 +54,11 @@
 .kernel-status-line .kernel-uv-version{margin-left:auto;max-width:100%;min-width:0}
 
 .parallel-settings{grid-template-columns:1fr;gap:20px}
-.parallel-levels{position:relative;display:block;height:20px;margin:0 9px}
+.parallel-setting{--parallel-end-inset:10px}
+.parallel-setting .macvue-slider-track{margin-inline:var(--parallel-end-inset)}
+.parallel-levels{position:relative;display:block;height:20px;margin:0 var(--parallel-end-inset)}
 .parallel-levels>span{position:absolute;transform:translateX(-50%)}
-.parallel-levels>span:first-child{transform:none}
-.parallel-levels>span:last-child{transform:translateX(-100%)}
-.parallel-ticks{position:relative;height:3px;margin:-5px 9px 0}
+.parallel-ticks{position:relative;height:3px;margin:-5px var(--parallel-end-inset) 0}
 .parallel-ticks>i{position:absolute;top:0;width:3px;height:3px;border-radius:50%;background:#aaa;transform:translateX(-50%)}
 
 .settings .setting-row .macvue-pop-up-button[aria-label="Translation language"]{width:max-content;max-width:none;flex-shrink:0}
@@ -141,6 +141,9 @@
 
 /* Slide chrome without resizing the reading viewport or its page canvases. */
 .toolbar{transform:none;transition:transform 180ms ease}
+/* Release the titlebar inset when its chrome slides out of view. */
+.content-glass.immersive-header-hidden .sidebar,
+.desktop[data-platform="win32"].immersive-header-hidden .sidebar{padding-top:0}
 .immersive-header-hidden .toolbar{transform:translateY(-100%);pointer-events:none;-webkit-app-region:no-drag}
 .header-reveal-zone{position:fixed;inset:0 0 auto;height:12px;z-index:35;-webkit-app-region:no-drag}
 @media(prefers-reduced-motion:reduce){.toolbar{transition:none}}
@@ -191,3 +194,28 @@
 .advanced-option .macvue-text-field{width:100%;margin-top:6px}
 .advanced-options>.macvue-button{margin-top:12px}
 .advanced-option>.macvue-field{width:100%;margin-top:6px}
+
+.advanced-kernel-update{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--chrome-divider)}
+
+/* Keep nested disclosure spacing independent of the outer settings cards. */
+.settings:not(.paragraph-detail) .settings-section>.advanced-settings{
+ display:block;margin:0;padding:12px 0;border-top:1px solid var(--chrome-divider);
+ border-bottom:1px solid var(--chrome-divider);border-radius:0;background:transparent;
+}
+.advanced-settings:not([open])>.advanced-options{display:none}
+.settings:not(.paragraph-detail) .settings-section>.advanced-settings+.kernel-status-line{padding-top:0}
+.settings:not(.paragraph-detail) .settings-section> :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting)+ :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting){
+ border-top:1px solid var(--chrome-divider);padding-top:12px;margin-top:0;
+}
+.settings .translation-service-account{display:grid;gap:8px}
+.settings .translation-service-option{margin-top:0}
+.settings .parallel-settings{border-top-color:var(--chrome-divider)}
+.settings .parallel-setting+.parallel-setting{border-top:1px solid var(--chrome-divider);padding-top:12px}
+.settings .mac-translation-control{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-columns:minmax(0,1fr);
+ height:auto;min-height:32px;align-items:stretch;flex-shrink:0;
+}
+.settings .mac-translation-control>.macvue-segment{
+ min-width:0;height:auto;min-height:32px;white-space:normal;overflow-wrap:anywhere;line-height:1.35;
+ padding:6px 10px;display:flex;align-items:center;justify-content:center;text-align:center;
+}

@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('previewWindow',Object.freeze({
  minimize:()=>ipcRenderer.invoke('window:minimize'),
  maximize:()=>ipcRenderer.invoke('window:maximize'),
  close:()=>ipcRenderer.invoke('window:close'),
+ closeStartPage:()=>ipcRenderer.invoke('window:close-start-page'),
  fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),
  setHeaderHidden:hidden=>ipcRenderer.invoke('window:header-hidden',hidden),
  onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}

@@ -1,12 +1,14 @@
-<p align="center">
-  <img src="icon.png" alt="PDFMathReader app icon" style="height: 4em; width: auto;">
-</p>
-
-# PDFMathReader
-
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-一款本地 PDF 阅读器，采用受 macOS「预览」启发的界面，支持段落翻译和保留数学公式的翻译内核。
+# <img src="icon.png" alt="PDFMathReader 应用图标" style="height: 1em; width: auto;"> PDFMathReader（实验性）
+
+在任何平台上，通过实时翻译阅读任何语言的科学文档。由 PDFMathTranslate 提供支持。
+
+<img src="demo.gif" alt="演示" width="100%">
+
+## 快速开始
+
+### 运行桌面应用
 
 <table>
   <tr>
@@ -16,15 +18,10 @@
   </tr>
   <tr>
     <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
-    <td></td>
-    <td></td>
+    <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
+    <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
   </tr>
 </table>
-
-
-## 快速开始
-
-### 运行桌面应用
 
 开发环境需要 Apple Silicon Mac 和 Node.js 22：
 

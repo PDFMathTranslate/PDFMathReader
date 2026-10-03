@@ -1,14 +1,15 @@
-<p align="center">
-  <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 4em; width: auto;">
-</p>
-
-# PDFMathReader (experimental)
-
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
 
-An experimental local PDF reader powered by PDFMathTranslate.
+# <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader (experimental)
 
-Currently tested on macOS. Windows and Linux have platform-specific window and toolbar styles; native runtime validation on those systems is still pending.
+Read scientific documents in any language, with realtime translation, on any platform. Powered by PDFMathTranslate.
+
+<img src="doc/demo.gif" alt="Demo" width="100%">
+
+## Quick start
+
+### Run the desktop app
+
 
 <table>
   <tr>
@@ -18,14 +19,10 @@ Currently tested on macOS. Windows and Linux have platform-specific window and t
   </tr>
   <tr>
     <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
-    <td></td>
-    <td></td>
+    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
+    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
   </tr>
 </table>
-
-## Quick start
-
-### Run the desktop app
 
 For development, use Node.js 22 on an Apple Silicon Mac:
 

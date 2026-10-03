@@ -9,9 +9,11 @@ const SERVICE_OPTIONS=['prompt','custom_system_prompt'];
 const props=defineProps({
  engine:{type:String,default:''},
  engineState:{type:Object,default:null},
+ installing:Boolean,
+ uvAvailable:Boolean,
  modelValue:{type:Object,default:()=>({})}
 });
-const emit=defineEmits(['update:modelValue']);
+const emit=defineEmits(['update:modelValue','reinstall']);
 const options=ref([]),busy=ref(false),message=ref(''),expanded=ref(false);
 let generation=0,requestController;
 const eligible=computed(()=>SUPPORTED_ENGINES.includes(props.engine));
@@ -21,6 +23,7 @@ const values=computed(()=>{
 });
 const schemaKey=computed(()=>JSON.stringify({
   engine:props.engine,
+  installing:props.installing,
   expanded:expanded.value,
   available:props.engineState?.available===true,
   installed:props.engineState?.installed===true,
@@ -117,7 +120,7 @@ watch(schemaKey,async()=>{
  const token=++generation;
  requestController?.abort();
  options.value=[];message.value='';busy.value=false;
- if(!eligible.value||!expanded.value)return;
+ if(!eligible.value||!expanded.value||props.installing)return;
  if(!props.engineState?.available){message.value=props.engineState?.reason||'';return;}
  busy.value=true;
  const controller=new AbortController();requestController=controller;
@@ -141,7 +144,7 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
 </script>
 
 <template>
- <details v-if="eligible" :key="engine" class="settings-section advanced-settings" @toggle="expanded=$event.target.open">
+ <details :key="engine" class="settings-section advanced-settings" @toggle="expanded=$event.target.open">
   <summary>{{t('advanced.section')}}</summary>
   <div class="advanced-options">
    <p v-if="busy" class="muted" role="status">{{t('advanced.loading')}}</p>
@@ -160,6 +163,11 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
     <p v-if="option.help" class="muted">{{option.help}}</p>
    </div>
    <MacButton v-if="options.length" :disabled="!hasOverrides" :aria-label="t('advanced.restoreDefaults')" @click="reset">{{t('advanced.restoreDefaults')}}</MacButton>
+   <div class="advanced-kernel-update">
+    <p v-if="!eligible" class="muted">{{t('advanced.bundledKernel')}}</p>
+    <MacButton :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','release')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernel')}}</MacButton>
+    <MacButton :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','git')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernelGit')}}</MacButton>
+   </div>
   </div>
  </details>
 </template>
