@@ -25,7 +25,7 @@ Read scientific documents in any language, with realtime translation, on any pla
   </tr>
   <tr>
     <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
-    <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
+    <td><img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240"></td>
     <td><img src="doc/preview.png" alt="PDFMathReader reader" height="240"></td>
   </tr>
 </table>

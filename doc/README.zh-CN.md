@@ -18,7 +18,7 @@
   </tr>
   <tr>
     <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
-    <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
+    <td><img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240"></td>
     <td><img src="preview.png" alt="PDFMathReader 阅读界面" height="240"></td>
   </tr>
 </table>
