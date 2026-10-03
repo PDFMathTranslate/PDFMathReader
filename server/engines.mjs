@@ -1,7 +1,7 @@
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdir,readFile,writeFile,mkdtemp,rm,readdir,symlink} from 'node:fs/promises';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {homedir,tmpdir} from 'node:os';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -33,13 +33,20 @@ export async function prepareKernelAssets(assetHome,home,sharedCache=join(homedi
   const existing=join(sharedCache,kind);
   const assets=existsSync(owned)?owned:existsSync(existing)?existing:owned;
   await mkdir(assets,{recursive:true});
-  await symlink(assets,join(cache,kind),'dir');
+  await symlink(resolve(assets),join(cache,kind),process.platform==='win32'?'junction':'dir');
  }
 }
 
-export async function findUv(){
- for(const path of ['uv',join(homedir(),'.local/bin/uv'),'/opt/homebrew/bin/uv','/usr/local/bin/uv']){
-  try{const {stdout}=await exec(path,['--version'],{timeout:5000});if(/^uv \d/.test(stdout))return {available:true,path,version:stdout.trim()};}catch{}
+export function kernelPythonPath(environment,platform=process.platform){
+ return platform==='win32'?join(environment,'Scripts','python.exe'):join(environment,'bin','python');
+}
+
+export async function findUv({platform=process.platform,home=homedir(),env=process.env,run=exec}={}){
+ const candidates=platform==='win32'
+  ? ['uv.exe',...(env.UV_INSTALL_DIR?[join(env.UV_INSTALL_DIR,'uv.exe')]:[]),join(home,'.local','bin','uv.exe'),join(home,'.cargo','bin','uv.exe')]
+  : ['uv',join(home,'.local/bin/uv'),'/opt/homebrew/bin/uv','/usr/local/bin/uv'];
+ for(const path of candidates){
+  try{const {stdout}=await run(path,['--version'],{timeout:5000,windowsHide:true});if(/^uv \d/.test(stdout))return {available:true,path,version:stdout.trim()};}catch{}
  }
  return {available:false,version:null,message:'uv was not found. Install uv and reopen the app.'};
 }
@@ -52,7 +59,7 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
 export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
  const runExec=execImpl;
  let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map();
- const envPath=id=>join(root,id);const python=id=>join(envPath(id),'bin/python');
+ const envPath=id=>join(root,id);const python=id=>kernelPythonPath(envPath(id));
 
  async function check(id){
   if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');

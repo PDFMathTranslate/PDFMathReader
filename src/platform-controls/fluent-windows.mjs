@@ -2,6 +2,7 @@ import {
   defineComponent,
   h,
   nextTick,
+  normalizeClass,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -188,6 +189,7 @@ export const MacButton = defineComponent({
       ref: element,
       appearance: props.variant === 'prominent' ? 'primary' : 'subtle',
       size: buttonSize(props.size),
+      'icon-only': booleanAttribute(normalizeClass(attrs.class).split(/\s+/).includes('icon-button')),
       type: attrs.type || 'button',
       disabled: booleanAttribute(props.disabled),
     }, slots.default?.());

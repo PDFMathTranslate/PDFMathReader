@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
-const runtimeElectron=['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','preload.cjs'];
+const runtimeElectron=['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','preload.cjs'];
 const runtimeServer=['index.mjs','documents.mjs','engines.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
@@ -22,7 +22,7 @@ async function copyDependencies(root,stage,names){
   if(copied.has(source))return;
   const location=relative(join(root,'node_modules'),source);if(location.startsWith('..'))throw Error('Dependency outside project: '+source);
   copied.set(source,name);const target=join(stage,'node_modules',location);
-  await cp(source,target,{recursive:true,dereference:true,filter:path=>!path.slice(source.length).split('/').includes('node_modules')});
+  await cp(source,target,{recursive:true,dereference:true,filter:path=>!path.slice(source.length).split(/[\\/]/).includes('node_modules')});
   const metadata=JSON.parse(await readFile(join(source,'package.json'),'utf8'));
   for(const dependency of Object.keys(metadata.dependencies||{}))await copy(dependency,source);
   for(const dependency of Object.keys(metadata.optionalDependencies||{}))await copy(dependency,source,true);

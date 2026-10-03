@@ -3,8 +3,22 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm,mkdir,stat,realpath,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {createLimiter,createEngines,prepareKernelAssets,pythonResourcePath,definitions} from './engines.mjs';
+import {createLimiter,createEngines,prepareKernelAssets,pythonResourcePath,definitions,kernelPythonPath,findUv} from './engines.mjs';
 import {startServer} from './index.mjs';
+test('kernel Python uses the virtual environment layout for each platform',()=>{
+ assert.equal(kernelPythonPath('environment','win32'),join('environment','Scripts','python.exe'));
+ for(const platform of ['darwin','linux'])assert.equal(kernelPythonPath('environment',platform),join('environment','bin','python'));
+});
+test('Windows finds uv installed outside the inherited PATH',async()=>{
+ for(const target of [join('custom','uv.exe'),join('user','.local','bin','uv.exe'),join('user','.cargo','bin','uv.exe')]){
+  const calls=[];
+  const result=await findUv({platform:'win32',home:'user',env:{UV_INSTALL_DIR:'custom'},run:async(path,args)=>{
+   calls.push(path);assert.deepEqual(args,['--version']);
+   if(path!==target)throw Error('ENOENT');return {stdout:'uv 0.12.22\n'};
+  }});
+  assert.equal(result.available,true);assert.equal(result.path,target);assert.equal(calls[0],'uv.exe');
+ }
+});
 test('fresh kernel assets have valid targets and reuse existing shared models',async()=>{
  const root=await mkdtemp(join(tmpdir(),'kernel-assets-'));
  try{
@@ -30,7 +44,7 @@ test('missing math environments are unavailable, inspector has a queried version
 test('normal installs stay idempotent while explicit reinstall upgrades a healthy environment and clears advanced metadata',async()=>{
  const root=await mkdtemp(join(tmpdir(),'kernel-install-'));const calls=[];let healthy=false;let releasePip;let resolvePipStarted;
  const pipStarted=new Promise(resolve=>{resolvePipStarted=resolve;});const pipGate=new Promise(resolve=>{releasePip=resolve;});
- const uvPath='/fixture/uv',pythonPath=join(root,'pdf_math_fast','bin/python');
+ const uvPath='/fixture/uv',pythonPath=kernelPythonPath(join(root,'pdf_math_fast'));
  const execImpl=async(command,args)=>{
   calls.push({command,args});
   if(command===uvPath&&args[0]==='venv'){
@@ -79,8 +93,8 @@ test('Git reinstalls use each kernel Git command specification',async()=>{
    const envPath=args.at(-1);healthy.add(envPath);await mkdir(join(envPath,'bin'),{recursive:true});return {stdout:''};
   }
   if(command===uvPath&&args[0]==='pip')return {stdout:''};
-  if(command.endsWith('/bin/python')&&args[0]==='-c'){
-   if(!healthy.has(command.slice(0,-'/bin/python'.length)))throw Error('fixture environment is missing');
+  if([...healthy].some(env=>kernelPythonPath(env)===command)&&args[0]==='-c'){
+   if(![...healthy].some(env=>kernelPythonPath(env)===command))throw Error('fixture environment is missing');
    return {stdout:'2.8.2\n'};
   }
   throw Error(`Unexpected fixture command: ${command}`);
@@ -89,7 +103,7 @@ test('Git reinstalls use each kernel Git command specification',async()=>{
  try{
   for(const id of ['pdf_math_fast','pdf_math_precise']){
    await e.install(id,{reinstall:true,source:'git'});
-   const pythonPath=join(root,id,'bin/python');
+   const pythonPath=kernelPythonPath(join(root,id));
    const pipCalls=calls.filter(call=>call.command===uvPath&&call.args[0]==='pip');
    const pipCall=pipCalls.at(-1);
    assert.deepEqual(pipCall.args,['pip','install','--upgrade','--reinstall','--refresh','--python',pythonPath,definitions[id].gitSpec]);
@@ -100,7 +114,7 @@ test('Git reinstalls use each kernel Git command specification',async()=>{
 
 test('install endpoint parses reinstall requests and forwards the Git source',async()=>{
  const root=await mkdtemp(join(tmpdir(),'kernel-install-api-'));const enginesRoot=join(root,'engines');const calls=[];let healthy=false;
- const uvPath='/fixture/uv',pythonPath=join(enginesRoot,'pdf_math_fast','bin/python');
+ const uvPath='/fixture/uv',pythonPath=kernelPythonPath(join(enginesRoot,'pdf_math_fast'));
  const execImpl=async(command,args)=>{
   calls.push({command,args});
   if(command===uvPath&&args[0]==='venv'){

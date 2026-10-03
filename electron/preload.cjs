@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('previewWindow',Object.freeze({
  menuAction:path=>ipcRenderer.invoke('window:menu-action',path),
  minimize:()=>ipcRenderer.invoke('window:minimize'),
  maximize:()=>ipcRenderer.invoke('window:maximize'),
+ maximized:()=>ipcRenderer.invoke('window:maximized'),
+ onMaximized:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:maximized',listener);return ()=>ipcRenderer.removeListener('window:maximized',listener);},
  close:()=>ipcRenderer.invoke('window:close'),
  closeStartPage:()=>ipcRenderer.invoke('window:close-start-page'),
  fullscreen:()=>ipcRenderer.invoke('window:fullscreen'),

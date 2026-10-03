@@ -20,3 +20,28 @@ test('credential override, reload, clearing and secure-storage failure',async()=
   assert.equal(unavailable.status().keySource,'none');
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('Windows keys use system encryption, survive replacement and reload, and never save plaintext',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'credential-windows-')),path=join(dir,'key.enc');
+ const storage={isEncryptionAvailable:()=>true,encryptString:key=>Buffer.from('encrypted:'+Buffer.from(key).toString('base64')),decryptString:bytes=>Buffer.from(bytes.toString().slice(10),'base64').toString()};
+ try{
+  const options={path,safeStorage:storage,platform:'win32',environment:()=>''};
+  const credentials=await createCredentials(options);
+  assert.equal(credentials.status().keyStorageAvailable,true);
+  await credentials.save('windows-test-key');
+  assert.equal((await readFile(path)).includes(Buffer.from('windows-test-key')),false);
+  assert.equal((await createCredentials(options)).getKey(),'windows-test-key');
+  await credentials.save('replacement-key');
+  assert.equal((await createCredentials(options)).getKey(),'replacement-key');
+  assert.equal(JSON.stringify(credentials.status()).includes('replacement-key'),false);
+  const unavailable=await createCredentials({...options,safeStorage:{isEncryptionAvailable:()=>false}});
+  await assert.rejects(unavailable.save('rejected-key'),/Windows secure storage is unavailable/);
+  assert.equal((await createCredentials(options)).getKey(),'replacement-key');
+  const broken=await createCredentials({...options,safeStorage:{...storage,encryptString:()=>{throw Error('failure');}}});
+  await assert.rejects(broken.save('rejected-key'),/Windows could not encrypt/);
+  assert.equal((await createCredentials(options)).getKey(),'replacement-key');
+  await credentials.clear();
+  assert.equal((await createCredentials(options)).getKey(),'');
+  await assert.rejects(readFile(path),{code:'ENOENT'});
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

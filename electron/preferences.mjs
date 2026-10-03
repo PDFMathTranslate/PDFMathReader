@@ -1,4 +1,5 @@
-import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {replaceFile} from './atomic-file.mjs';
 import {dirname} from 'node:path';
 
 const LANGUAGE_OPTIONS=['Simplified Chinese','Traditional Chinese','English','Japanese','Korean','French','German','Spanish'];
@@ -119,7 +120,7 @@ export async function createReaderPreferences(path){
    validate(next);
    const saved=clonePreferences(next);
    state=saved;
-   writes=writes.catch(()=>{}).then(async()=>{await mkdir(dirname(path),{recursive:true});await writeFile(path+'.tmp',JSON.stringify(saved));await rename(path+'.tmp',path);});
+   writes=writes.catch(()=>{}).then(async()=>{await mkdir(dirname(path),{recursive:true});await writeFile(path+'.tmp',JSON.stringify(saved));await replaceFile(path+'.tmp',path);});
    return writes;
   }
  };
