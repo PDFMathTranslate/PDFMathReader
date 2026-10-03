@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - '**/*.md'
+      - 'doc/**'
+      - '!doc/icon.png'
 
 permissions:
   contents: write
@@ -38,5 +42,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add README.md
-          git commit -m 'doc: update recent features'
+          git commit -m 'doc: update recent features [skip ci]'
           git push origin "HEAD:$TARGET_BRANCH"
