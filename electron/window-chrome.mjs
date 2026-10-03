@@ -16,7 +16,7 @@ const SHORTCUT_ACTIONS=Object.freeze({f:'search',w:'close-document',o:'open',n:'
 export function windowChromeOptions(platform,{windowsBuild=0,reduceTransparency=false}={}){
  if(platform==='darwin')return {...MACOS_WINDOW_CHROME,trafficLightPosition:{...MACOS_WINDOW_CHROME.trafficLightPosition}};
  if(platform==='win32'&&windowsBuild>=22621&&!reduceTransparency)return {...WINDOWS_WINDOW_CHROME,backgroundMaterial:'acrylic',backgroundColor:'#00000000'};
- return platform==='win32'?{...WINDOWS_WINDOW_CHROME}:{...NATIVE_WINDOW_CHROME};
+ return ['win32','linux'].includes(platform)?{...WINDOWS_WINDOW_CHROME}:{...NATIVE_WINDOW_CHROME};
 }
 
 function menuItems(menu){return Array.isArray(menu)?menu:Array.isArray(menu?.items)?menu.items:[];}

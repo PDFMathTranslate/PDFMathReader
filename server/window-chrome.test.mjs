@@ -6,7 +6,7 @@ test('window chrome keeps the macOS inset and vibrancy policy exact',()=>{
  assert.deepEqual(windowChromeOptions('darwin'),{titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:24},vibrancy:'sidebar',visualEffectState:'active',backgroundColor:'#00000000'});
 });
 
-test('Windows uses a frameless hidden menu bar while Linux keeps native chrome',()=>{
+test('Windows and Linux use frameless windows with hidden native menu bars',()=>{
  const windows=windowChromeOptions('win32');
  assert.equal(windows.frame,false);
  assert.equal(windows.autoHideMenuBar,true);
@@ -19,8 +19,8 @@ test('Windows uses a frameless hidden menu bar while Linux keeps native chrome',
   assert.equal(options.visualEffectState,undefined);
   assert.match(options.backgroundColor,/^#[\da-f]{6}$/i);
  }
- assert.equal(windowChromeOptions('linux').frame,undefined);
- assert.equal(windowChromeOptions('linux').autoHideMenuBar,undefined);
+ assert.equal(windowChromeOptions('linux').frame,false);
+ assert.equal(windowChromeOptions('linux').autoHideMenuBar,true);
 });
 
 test('Windows Acrylic requires a supported build and respects reduced transparency',()=>{
