@@ -8,7 +8,7 @@
   <a href="../LICENSE">
     <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
-在任何平台上，通过实时翻译阅读任何语言的科学文档。由 PDFMathTranslate 提供支持。
+在任何平台上，通过实时翻译阅读任何语言的科学文档。由 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) 提供支持。
 
 <img src="demo.gif" alt="演示" width="100%">
 

@@ -8,7 +8,7 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>  
 
-Read scientific documents in any language, with realtime translation, on any platform. Powered by PDFMathTranslate.
+Read scientific documents in any language, with realtime translation, on any platform. Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate).
 
 <img src="doc/demo.gif" alt="Demo" width="100%">
 
