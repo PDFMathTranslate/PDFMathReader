@@ -18,6 +18,7 @@ import {readSystemPDF,validateSystemPDF,pdfLaunchPaths} from './documents.mjs';
 import {writeFile} from 'node:fs/promises';
 import {menuLabel} from './menu-i18n.mjs';
 import {createHaptics} from './haptics.mjs';
+import {registerWindowsPDF} from './windows-file-association.mjs';
 import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction,serializeApplicationMenu,menuPathItems} from './window-chrome.mjs';
 import {appendPerformanceReport,loadPerformanceReports,memoryMetricToBytes,MAX_PERFORMANCE_REPORTS,sumMemoryMetrics,validatePerformanceReport,writePerformanceReports} from './performance-tracker.mjs';
 
@@ -178,6 +179,7 @@ else {
  }
  app.on('second-instance',(_event,args,cwd)=>{const paths=pdfLaunchPaths(args.slice(1),cwd);if((!smoke||['file-open','multi-window'].includes(smoke))&&paths.length)enqueueFiles(paths);else {focusedWindow()?.show();focusedWindow()?.focus();}});
  app.whenReady().then(async()=>{
+  await registerWindowsPDF({packaged:app.isPackaged,smoke:!!smoke}).catch(error=>console.error('Windows PDF menu registration failed:',error.message));
   if(process.platform==='darwin'&&!app.isPackaged&&!smoke)app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png',import.meta.url)));
   const commandId=action=>`action-${String(action).replace(/[^a-z\d]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}`;
   const command=(label,accelerator,action,id=commandId(action))=>({id,label,accelerator,click:(_item,target)=>{const receiver=target||focusedWindow();receiver?.webContents.send('reader:action',action);}});

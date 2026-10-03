@@ -51,6 +51,14 @@ Open `release/PDFMathReader-darwin-arm64/PDFMathReader.app`. The packaged app in
 
 The desktop app also accepts `OPENAI_API_KEY` and `OPENAI_MODEL`. Finder usually does not inherit terminal environment variables. Use `Launch PDFMathReader.command` to launch the packaged app with your login-shell configuration.
 
+### Build a Windows app
+
+```powershell
+npm run package:win
+```
+
+Launch `release/PDFMathReader-win32-x64/PDFMathReader.exe` once to register the PDF **Open with PDFMathReader** context menu and **Open with** entry for the current Windows user. Administrator privileges are not required and the default PDF reader stays unchanged. On Windows 11, the context menu entry may appear under **Show more options**. Launch the app again after moving its folder to update the registered path. Development and smoke-test runs skip registration.
+
 ### Browser development
 
 ```zsh
