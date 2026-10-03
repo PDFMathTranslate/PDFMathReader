@@ -57,7 +57,7 @@ jobs:
       # Native dependencies require the same host OS, CPU and exact Node version.
       # No partial restores: changed lockfiles always require npm ci.
       - name: Restore installed dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: dependencies
         with:
           path: node_modules
@@ -66,7 +66,7 @@ jobs:
         if: steps.dependencies.outputs.cache-hit != 'true'
         run: npm ci --prefer-offline --no-audit --no-fund
       - name: Cache Electron downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/electron
@@ -80,7 +80,7 @@ jobs:
         run: node --test server/pdf-extractor.test.mjs
       - name: Cache macOS icons and symbols
         if: matrix.platform == 'darwin'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: icons
         with:
           path: |
