@@ -24,13 +24,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date | Feature | Contributor |
 | --- | --- | --- |
+| 2026-10-04 | [search selected text within document](https://github.com/PDFMathTranslate/PDFMathReader/commit/d4d5c0f703f0815ae4f9d9767c471dd44edfec8e) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [support paragraph AND search and stabilize translation display](https://github.com/PDFMathTranslate/PDFMathReader/commit/b05fd13edd4ac2268c7af4fa125bfbcd067d025b) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add Google searches to highlight context menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/d712293df5529dcf03f78811b56a371ce651f449) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [open recent documents in new windows and clarify removal labels](https://github.com/PDFMathTranslate/PDFMathReader/commit/248b35713d8b7c2ca10c5b8066282f038203519a) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [pin recent documents, clear file caches and preserve zoom position](https://github.com/PDFMathTranslate/PDFMathReader/commit/d6431b4c60739177e55eaa2c64d79616e0bdbfde) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [return search jumps to the search opening position](https://github.com/PDFMathTranslate/PDFMathReader/commit/3c19b6a3eb4e4ea44f2fd7e02e59be6675990882) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [remember document sidebar tabs and add red highlight](https://github.com/PDFMathTranslate/PDFMathReader/commit/b648da1c06343a691e61b4d767a8935ba428520e) | [@reycn](https://github.com/reycn) |
-| 2026-10-04 | [refine document opening, translation display, and sidebar navigation](https://github.com/PDFMathTranslate/PDFMathReader/commit/36e6f7a579de389e7a4703efe083aab941cc1f47) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
