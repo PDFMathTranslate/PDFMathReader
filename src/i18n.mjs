@@ -714,6 +714,10 @@ for(const [locale,label] of Object.entries(annotationPurpleLabels))annotationBro
 const annotationUnknownColors={en:'No color','zh-CN':'无颜色','zh-TW':'無顏色',ja:'色なし',fr:'Sans couleur',es:'Sin color',ko:'색상 없음'};
 for(const [locale,label] of Object.entries(annotationUnknownColors))annotationBrowserMessages[locale].unknownColor=label;
 for(const [locale,labels] of Object.entries(annotationBrowserMessages))messages[locale].annotationBrowser=labels;
+const topicSentenceLabels={en:'Emphasize topic sentences','zh-CN':'强调主题句','zh-TW':'強調主題句',ja:'段落の最初の文を強調',fr:'Mettre en gras la première phrase',es:'Destacar la primera oración',ko:'문단의 첫 문장 강조'};
+for(const [locale,label] of Object.entries(topicSentenceLabels))messages[locale].settings.emphasizeTopicSentences=label;
+const informationLabels={en:['Emphasize information','Highlight research results, ordering, reasoning, discovery and comparison keywords.'],'zh-CN':['强调信息','用系统强调色高亮科研结果、序数、逻辑、发现和比较关键词。'],'zh-TW':['強調資訊','用系統強調色醒目標示科研結果、序數、邏輯、發現與比較關鍵詞。'],ja:['重要情報を強調','研究結果・順序・論理・発見・比較のキーワードを強調します。'],fr:['Mettre en évidence les informations','Surligner les mots clés des résultats, de l’ordre, du raisonnement, des découvertes et des comparaisons.'],es:['Destacar información','Resaltar palabras clave de resultados, orden, lógica, descubrimientos y comparaciones.'],ko:['중요 정보 강조','연구 결과, 순서, 논리, 발견 및 비교 관련 키워드를 강조합니다.']};
+for(const [locale,[label,hint]] of Object.entries(informationLabels)){messages[locale].settings.emphasizeInformation=label;messages[locale].settings.emphasizeInformationHint=hint;}
 export const UI_MESSAGES=messages;
 
 function lookup(locale, key) {

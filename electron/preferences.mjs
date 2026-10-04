@@ -9,7 +9,7 @@ const KERNEL_OPTION_NAME=/^[a-z][a-z0-9_]*$/;
 const PROTOTYPE_NAMES=new Set([...Object.getOwnPropertyNames(Object.prototype),'prototype']);
 const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- documentOpenMode:'translation',interactionMode:'comparison',restoreDocuments:true,reuseTranslations:true,
+ documentOpenMode:'translation',interactionMode:'comparison',restoreDocuments:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
  language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,
  kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'en'
@@ -51,6 +51,8 @@ const VALIDATORS={
  documentOpenMode:value=>['translation','original','manual'].includes(value),
  restoreDocuments:value=>typeof value==='boolean',
  reuseTranslations:value=>typeof value==='boolean',
+ emphasizeTopicSentences:value=>typeof value==='boolean',
+ emphasizeInformation:value=>typeof value==='boolean',
  engine:value=>['pdf_inspector','pdf_math_fast','pdf_math_precise'].includes(value),
  direction:value=>['vertical','horizontal'].includes(value),
  columns:value=>[1,2,4].includes(value),

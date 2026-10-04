@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {app} from 'electron';
+export async function verifyTopicSentences(window){
+ const evaluate=code=>window.webContents.executeJavaScript(code);
+ const wait=async code=>{for(let i=0;i<250;i++){if(await evaluate(code))return;await new Promise(resolve=>setTimeout(resolve,60));}console.log(await evaluate('JSON.stringify({layers:document.querySelectorAll(".reading-text-layer").length,spans:document.querySelectorAll(".reading-text-layer span").length,mode:document.querySelector("[data-setting=topic-sentences] input")?.outerHTML,settings:document.querySelectorAll(".settings").length})'));throw Error('Topic sentences smoke timed out: '+code);};
+ await wait('window.previewReady===true');
+ assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences)'),false);
+ await evaluate('window.previewPreferences.save({automatic:false,documentOpenMode:"original",interactionMode:"reading"})');
+ await window.webContents.reload();await wait('window.previewReady===true');
+ await evaluate('document.querySelector(".sample-button").click()');
+ await wait('document.querySelector(".page canvas")?.width>0');
+ await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
+ await wait('!!document.querySelector("[data-setting=topic-sentences] input[type=range]")');
+ assert.equal(await evaluate('document.querySelector("[data-setting=topic-sentences] input[type=range]").getAttribute("aria-valuetext")'),'Off');
+ await evaluate('document.querySelector("[data-setting=topic-sentences] input[type=range]").click()');
+ await wait('!!document.querySelector(".pdf-topic-sentence")');
+ await new Promise(resolve=>setTimeout(resolve,300));await wait('!!document.querySelector(".pdf-topic-sentence")');
+ const result=await evaluate('Array.from(document.querySelectorAll(".pdf-topic-sentence"),s=>({text:s.textContent}))');
+ assert.ok(result.every(s=>s.text.length>0));assert.ok(await evaluate('!!document.querySelector(".topic-sentence-overlay")'));assert.equal(await evaluate('document.querySelector(".topic-sentence-overlay").getContext("2d").getImageData(0,0,1,1).data[3]'),0);assert.equal(await evaluate('getComputedStyle(document.querySelector(".topic-sentence-overlay")).backgroundColor'),'rgba(0, 0, 0, 0)');
+ await evaluate('document.querySelector("[data-setting=topic-sentences] input[type=range]").click()');
+ await wait('!document.querySelector(".pdf-topic-sentence")');
+ await evaluate('document.querySelector("[data-setting=topic-sentences] input[type=range]").click()');
+ await wait('(async()=> (await window.previewPreferences.load()).emphasizeTopicSentences===true)()');
+ await window.webContents.reload();await wait('window.previewReady===true');
+ assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences)'),true);
+ await evaluate('window.previewCredentials.save("sk-topic-sentences-test-only")');
+ await evaluate('window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading"})');
+ await window.webContents.reload();await wait('window.previewReady===true');
+ await evaluate('document.querySelector(".sample-button").click()');
+ await wait('!!document.querySelector(".reading-paragraph .topic-sentence-text")');
+ assert.equal(await evaluate('document.querySelector(".reading-paragraph .topic-sentence-text").textContent'),'译文第一句。');
+ assert.ok(await evaluate('document.querySelector(".reading-paragraph .paragraph-text").textContent.includes("第二句保持普通字重。")'));
+ console.log('Topic sentence smoke passed' ,JSON.stringify({defaultOff:true,originalPDF:true,translatedParagraph:true,toggleReversible:true,persisted:true,emphasizedRuns:result.length}));
+ app.exit(0);
+}

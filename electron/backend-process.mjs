@@ -20,7 +20,7 @@ export function makeProviderFetch(mode){
    await new Promise(resolve=>setTimeout(resolve,600));
    if(String(options?.body).includes('fixture 13'))return new Response(JSON.stringify({error:{message:'Synthetic rate limit'}}),{status:429,headers:{'Content-Type':'application/json'}});
   }
-  return new Response(JSON.stringify({choices:[{message:{content:mode==='animation'?'示例译文：新的文字逐个跳跃上来，段落保持自然换行。'.repeat(3)+' 👩🏽‍💻 é':'Mock translated paragraph'}}]}),{headers:{'Content-Type':'application/json'}});
+  return new Response(JSON.stringify({choices:[{message:{content:mode==='animation'?'示例译文：新的文字逐个跳跃上来，段落保持自然换行。'.repeat(3)+' 👩🏽‍💻 é':mode==='information-emphasis'?'首先，结果表明支持研究假设。然而，发现高于原先预期。普通内容保持不变。':mode==='topic-sentences'?'译文第一句。第二句保持普通字重。':'Mock translated paragraph'}}]}),{headers:{'Content-Type':'application/json'}});
  };
 }
 
