@@ -24,7 +24,7 @@ Renderer + backend 的采样 RSS 峰值中位数最初为 780.5 MiB，最终为 
 
 ## 验证
 
-- `npm test`：37 / 37 通过。
+- `npm test`：38 / 38 通过（安装前最终复测）。
 - `npm run build`：通过。
 - `node server/kernel-smoke.mjs`：Fast/Precise 的真实并发、可读译文、段落坐标、缓存、provider 错误及取消通过。
 - `node server/fast-benchmark.mjs`：真实 Fast 基准通过。
@@ -49,6 +49,8 @@ node_modules/.bin/electron electron/motion-memory-smoke.mjs
 
 页面裁剪、翻译调度、动画快照清理和 Fast CJK 段首缩进修复已合并到本次本地构建。Fast 对中文、日文、韩文译文中继承的原文首行缩进统一使用两个全角空格；无原文缩进的段落及其他目标语言保持原有规则。CJK 使用新的排版缓存版本，避免复用旧缩进的 PDF；其他语言保留兼容缓存。
 
-本次重新运行 `npm test`，37 / 37 通过；前端构建、裁剪及动画桌面 smoke 通过。此前已使用真实 Fast 内核及本地模拟服务验证带缩进段落的两个全角空格。
+本次重新运行 `npm test`，38 / 38 通过；新增测试验证旧 schema 4 CJK 排版缓存不会被复用，新 schema 5 缓存仍可绕过 worker 队列。前端构建、裁剪及动画桌面 smoke 通过。此前已使用真实 Fast 内核及本地模拟服务验证带缩进段落的两个全角空格。
 
 macOS arm64 应用通过固定证书签名及 `codesign --verify --deep --strict`，安装到 `/Applications/PDFMathReader.app` 并启动。安装后的 `app.asar` 和 `kernel-worker.py` 与构建产物逐字节一致。旧版备份位于 `/Users/rongxin/Library/Application Support/PDFMathReader/backups/20261004-222643/PDFMathReader.app`。
+
+最终再次安装后的 `app.asar` SHA-256 为 `70a1c115d31cc660b1cef18ca286efc9f8d1d2282dbe9b29d83206fdc98878bf`，与签名构建产物一致；深度严格签名验证通过，已启动。此次替换前的应用另备份至 `.cache/install-backups/20261004-222730/PDFMathReader.app`。Fast CJK 的新排版缓存版本保持升级，旧排版缓存按预期失效。
