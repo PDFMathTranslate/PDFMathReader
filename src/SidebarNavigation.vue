@@ -73,12 +73,10 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .sidebar .thumbnail-list{flex:1;min-height:0}
 
 /* Inset macOS rows: selection is a soft surface, rather than a bordered card. */
-/* Native window corners are about 14px. Edge-adjacent surfaces subtract
-   their window inset instead of using an unrelated component radius. */
+/* Use visible circular arcs for sidebar surfaces beside native window corners. */
 .app[data-platform="darwin"] .sidebar{
- --sidebar-window-radius:14px;
  --sidebar-edge-inset:10px;
- --sidebar-edge-radius:max(0px,calc(var(--sidebar-window-radius) - var(--sidebar-edge-inset)));
+ --sidebar-edge-radius:14px;
 }
 .app[data-platform="darwin"] .sidebar-navigation-list{padding:10px var(--sidebar-edge-inset)}
 .app[data-platform="darwin"] .sidebar-annotation-item{
@@ -91,7 +89,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .app[data-platform="darwin"] .sidebar-annotation-item.selected{
  background:color-mix(in srgb,var(--text) 10%,transparent);
 }
-.app[data-platform="darwin"] .sidebar-outline-row,.app[data-platform="darwin"] .sidebar-outline-item{border-radius:8px}
+.app[data-platform="darwin"] .sidebar-outline-row,.app[data-platform="darwin"] .sidebar-outline-item{border-radius:var(--sidebar-edge-radius);corner-shape:round}
 .app[data-platform="darwin"] .sidebar-navigation-switch{
  --sidebar-switch-radius:var(--sidebar-edge-radius);
  --sidebar-switch-inset:2px;
@@ -105,9 +103,6 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 }
 .app[data-platform="darwin"] .sidebar-tab-indicator{
  box-shadow:0 1px 3px #00000014,inset 0 0 0 1px #ffffff18;
-}
-@supports(corner-shape:squircle){
- .app[data-platform="darwin"] :is(.sidebar-outline-row,.sidebar-outline-item){corner-shape:squircle}
 }
 @media(prefers-reduced-motion:reduce){.app[data-platform="darwin"] .sidebar-annotation-item{transition:none}}
 [data-reduce-motion=true] .app[data-platform="darwin"] .sidebar-annotation-item{transition:none}
