@@ -348,3 +348,12 @@
  box-sizing:border-box;height:36px;min-height:36px;
  border-radius:12px;corner-shape:squircle;
 }
+
+/* Match the palette's continuous corners in the macOS thumbnail rail. */
+.app[data-platform="darwin"] .sidebar .thumbnail-list .thumb,
+.app[data-platform="darwin"] .sidebar .thumbnail-highlight{
+ border-radius:18px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .sidebar .thumbnail-list .thumb canvas{
+ border-radius:10px;corner-shape:squircle;
+}
