@@ -1822,6 +1822,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 /* The spacer owns document geometry; only nearby page/card nodes are mounted. */
 .page-layout.virtual-layout{display:block;position:relative;box-sizing:content-box}
 .page-layout.virtual-layout>.page-wrap{position:absolute;box-sizing:border-box}
+.page-wrap.cropped{box-shadow:var(--shadow-page)}
+.page-wrap.cropped>.page{box-shadow:none}
+:root[data-reduce-padding="true"] .page-wrap.cropped{box-shadow:none}
 .thumbnail-list>.thumbnail-inner{position:relative;width:100%;flex:none}
 .sidebar .thumbnail-list .thumbnail-inner>.thumb{position:absolute;left:0;margin:0;box-sizing:border-box}
 .background-paused *,.background-paused *::before,.background-paused *::after{animation-play-state:paused!important;transition:none!important}
