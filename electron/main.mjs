@@ -254,6 +254,12 @@ else {
     await dialog.showMessageBox(target,{type:'info',message:value.title,detail:value.detail,buttons:[value.close],defaultId:0,cancelId:0,noLink:true});
   });
   ipcMain.handle('previewAnnotations:palette',async event=>{trustedWindow(event);return annotations.palette();});
+  ipcMain.handle('previewAnnotations:search',(event,{provider,text}={})=>{
+   trustedWindow(event);
+   if(!['google','scholar'].includes(provider)||typeof text!=='string'||!text.trim())throw Error('Invalid search.');
+   const base=provider==='scholar'?'https://scholar.google.com/scholar':'https://www.google.com/search';
+   return shell.openExternal(`${base}?q=${encodeURIComponent(text.trim())}`);
+  });
   ipcMain.handle('previewAnnotations:contextMenu',(event,kind)=>{
    const target=trustedWindow(event);
    if(process.platform!=='darwin')return null;
@@ -261,7 +267,7 @@ else {
    return new Promise(resolve=>{
     let selected=null;
     const item=label=>({label,click:()=>{selected=label;}});
-    const template=[item('复制'),item('分享'),item('Hand over to AI'),{type:'separator'},...(kind==='comment'?[item('修改')]:[]),item('删除')];
+    const template=[item('复制'),item('分享'),...(kind==='highlight'?[item('谷歌搜索'),item('谷歌学术搜索')]:[]),item('Hand over to AI'),{type:'separator'},...(kind==='comment'?[item('修改')]:[]),item('删除')];
     Menu.buildFromTemplate(template).popup({window:target,callback:()=>resolve(selected)});
    });
   });

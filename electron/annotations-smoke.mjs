@@ -23,7 +23,7 @@ export async function verifyAnnotations(window,recents){
    for(let i=0;i<100&&!captured;i++)await pause(20);
    assert.ok(captured,'annotation event reaches native Electron Menu');
    assert.equal(captured.options.window,window);
-   assert.deepEqual(captured.menu.items.filter(i=>i.type!=='separator').map(i=>i.label),kind==='comment'?['复制','分享','Hand over to AI','修改','删除']:['复制','分享','Hand over to AI','删除']);
+   assert.deepEqual(captured.menu.items.filter(i=>i.type!=='separator').map(i=>i.label),kind==='comment'?['复制','分享','Hand over to AI','修改','删除']:['复制','分享','谷歌搜索','谷歌学术搜索','Hand over to AI','删除']);
    assert.equal(await run(`!!document.querySelector('.annotation-menu')`),false,'macOS has no custom context menu');
    if(action)captured.menu.items.find(i=>i.label===action).click();
    captured.options.callback();await pause(100);
