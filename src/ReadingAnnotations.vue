@@ -219,6 +219,17 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
 .annotation-toolbar[data-platform="darwin"] button {padding:7px;border-radius:9px;corner-shape:squircle;}
 .annotation-toolbar[data-platform="darwin"] button[aria-pressed="true"] {background:var(--annotation-hover);box-shadow:inset 0 0 0 .5px var(--annotation-divider);}
 .annotation-toolbar[data-platform="darwin"] .annotation-separator {height:20px;margin:0 4px;background:var(--annotation-divider);}
+/* Match the selection palette's continuous corners and softer edge. */
+.annotation-ui.annotation-reader[data-platform="darwin"] {
+ border-radius:14px;
+ corner-shape:squircle;
+ border-color:rgba(0,0,0,.10);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 8px 24px rgba(0,0,0,.14),0 2px 5px rgba(0,0,0,.08);
+}
+[data-appearance="dark"] .annotation-ui.annotation-reader[data-platform="darwin"] {
+ border-color:rgba(255,255,255,.12);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 8px 24px rgba(0,0,0,.30),0 2px 5px rgba(0,0,0,.18);
+}
 .annotation-reader[data-platform="darwin"] {color:var(--annotation-secondary);}
 .annotation-reader[data-platform="darwin"] p {color:var(--annotation-foreground);font-size:13px;}
 .annotation-reader[data-platform="darwin"]:before,
