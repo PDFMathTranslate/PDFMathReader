@@ -174,7 +174,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='de
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
   step('environmentAndOptions');
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,layoutSchema:id==='pdf_math_fast'?3:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,layoutSchema:id==='pdf_math_fast'?4:3,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const key=keyFor(model);
   const cache=createTranslationCache({directory:cacheDir,keyFor,readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
   const cached=join(cacheDir,`${key}.pdf`);

@@ -1,4 +1,4 @@
-// Display-only spacing: cached translations and source text stay verbatim.
+// Shared display/typesetting spacing: source text and raw translation caches stay verbatim.
 const letter = /\p{Letter}/u;
 const latin = /\p{Script=Latin}/u;
 const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
@@ -16,7 +16,19 @@ export function translationSpacing(text = '') {
   const current = script(char);
   if (previous && current && previous !== current) result += ' ';
   result += char;
-  previous = current;
+  previous = /[%％‰‱]/u.test(char) && previous === 'western' ? 'western' : current;
  }
  return result;
+}
+
+// Precise may request JSON. Preserve its keys, types and formula placeholders.
+export function kernelTranslationSpacing(text) {
+ if (typeof text !== 'string') return text;
+ try {
+  const value = JSON.parse(text);
+  const space = value => typeof value === 'string' ? translationSpacing(value)
+   : Array.isArray(value) ? value.map(space)
+   : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, space(item)])) : value;
+  return JSON.stringify(space(value));
+ } catch { return translationSpacing(text); }
 }

@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {translationSpacing} from '../src/translation-spacing.mjs';
+import {translationSpacing,kernelTranslationSpacing} from '../src/translation-spacing.mjs';
+
+test('screenshot numeric references and percentage suffixes have both CJK boundaries',()=>{
+ assert.equal(translationSpacing('压倒性的84%的受访者。如图4.5所示。增长１２％的人和3‰的比例。'), '压倒性的 84% 的受访者。如图 4.5 所示。增长 １２％ 的人和 3‰ 的比例。');
+ assert.equal(translationSpacing('84% 的受访者'), '84% 的受访者');
+});
+test('kernel typesetting spaces plain and structured translations while preserving placeholders',()=>{
+ assert.equal(kernelTranslationSpacing('如图4.5所示，84%的人使用{{v0}}。'), '如图 4.5 所示，84% 的人使用{{v0}}。');
+ const input={中文Key:'图4.5中84%的人',formula:'{{v0}} x_2 = 3.14',count:84,items:['2010年',null]};
+ assert.deepEqual(JSON.parse(kernelTranslationSpacing(JSON.stringify(input))), {...input,中文Key:'图 4.5 中 84% 的人',items:['2010 年',null]});
+ assert.equal(kernelTranslationSpacing(undefined),undefined);
+});
 
 test('separates CJK from Latin letters and numbers in mixed translations',()=>{
  assert.equal(translationSpacing('使用VPN访问，在2010年成功率75%。'), '使用 VPN 访问，在 2010 年成功率 75%。');
