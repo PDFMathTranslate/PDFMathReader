@@ -246,14 +246,39 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
 .annotation-reader[data-platform="darwin"] p {color:var(--annotation-foreground);font-size:13px;}
 .annotation-reader[data-platform="darwin"]:before,
 .annotation-ui[data-platform="darwin"] .annotation-editor:before {display:none;}
-.annotation-ui[data-platform="darwin"] .annotation-editor {box-sizing:border-box;width:298px;max-width:calc(100vw - 24px);padding:10px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor {
+ box-sizing:border-box;width:298px;max-width:calc(100vw - 24px);padding:16px;
+ border-radius:26px;corner-shape:squircle;
+ border-color:var(--annotation-divider);
+ box-shadow:inset 0 1px 0 var(--annotation-inner-edge),var(--annotation-shadow);
+ backdrop-filter:blur(30px) saturate(1.6);
+ -webkit-backdrop-filter:blur(30px) saturate(1.6);
+}
 .annotation-ui[data-platform="darwin"] .annotation-editor textarea {
+ display:block;padding:12px;min-height:110px;
  background:var(--annotation-field);color:var(--annotation-foreground);
- border:1px solid var(--annotation-divider);border-radius:5px;font:inherit;
+ border:1px solid var(--annotation-divider);border-radius:12px;corner-shape:squircle;font:inherit;
 }
 .annotation-ui[data-platform="darwin"] .annotation-editor textarea::placeholder {color:var(--annotation-secondary);opacity:1;}
 .annotation-ui[data-platform="darwin"] .annotation-editor textarea:focus-visible {outline:2px solid var(--accent,#007aff);outline-offset:1px;}
-.annotation-ui[data-platform="darwin"] .annotation-editor>div {margin-top:6px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor>div {display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor button {
+ min-height:32px;min-width:64px;padding:6px 14px;border-radius:999px;
+ border:1px solid var(--annotation-divider);background:var(--annotation-field);
+ box-shadow:inset 0 1px 0 var(--annotation-inner-edge),0 1px 3px #0000000d;
+ font-weight:500;
+}
+.annotation-ui[data-platform="darwin"] .annotation-editor button:hover {background:var(--annotation-hover);}
+.annotation-ui[data-platform="darwin"] .annotation-editor button[type="submit"] {
+ background:var(--accent,#007aff);border-color:transparent;color:#fff;
+}
+.annotation-ui[data-platform="darwin"] .annotation-editor button[type="submit"]:hover {filter:brightness(1.08);}
+.annotation-ui[data-platform="darwin"] .annotation-editor button:active {filter:brightness(.92);}
+.annotation-ui[data-platform="darwin"] .annotation-editor button:focus-visible {outline-offset:2px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor button:disabled {
+ background:var(--annotation-hover);border-color:var(--annotation-divider);
+ color:var(--annotation-secondary);box-shadow:none;opacity:.65;filter:none;
+}
 .annotation-menu[data-platform="darwin"] {padding:5px;}
 .annotation-menu[data-platform="darwin"] button {padding:4px 9px;}
 .annotation-menu[data-platform="darwin"] button:is(:hover,:focus-visible) {background:var(--accent,#007aff);color:#fff;}

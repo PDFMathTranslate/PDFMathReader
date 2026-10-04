@@ -1,11 +1,11 @@
 <script setup>
 import {computed,watch,ref,nextTick,onMounted,onBeforeUnmount} from 'vue';
-import {t} from './i18n.mjs';
-import {orderedAnnotations} from './sidebar-navigation.mjs';
-const props=defineProps({mode:String,outline:Array,annotations:Array,selected:String,reducedMotion:Boolean});
+import {t,uiLanguage} from './i18n.mjs';
+import {annotationSections,annotationChapters} from './annotation-browser.mjs';
+const props=defineProps({mode:String,outline:Array,readChapters:{type:Set,default:()=>new Set()},annotations:Array,selected:String,reducedMotion:Boolean});
 const emit=defineEmits(['update:mode','page','annotation','ready']);
 const collapsed=ref(new Set());
-const view=ref();let viewMotion;
+const view=ref(),dateNow=ref(new Date());let viewMotion,dateTimer;
 async function ready(){
  await nextTick();
  viewMotion?.cancel();
@@ -13,16 +13,29 @@ async function ready(){
  emit('ready');
 }
 watch(()=>props.mode,ready,{flush:'post'});
-onMounted(()=>emit('ready'));
-onBeforeUnmount(()=>viewMotion?.cancel());
+onMounted(()=>{emit('ready');dateTimer=setInterval(()=>dateNow.value=new Date(),60000);});
+onBeforeUnmount(()=>{viewMotion?.cancel();clearInterval(dateTimer);});
 const tabs=computed(()=>['thumbnails',...(props.outline.length?['outline']:[]),...(props.annotations.length?['annotations']:[])]);
 const selectedTab=computed(()=>Math.max(0,tabs.value.indexOf(props.mode)));
+const hasNestedOutline=computed(()=>props.outline.some(item=>item.depth>0));
 const visibleOutline=computed(()=>props.outline.filter(item=>!props.outline.some(parent=>collapsed.value.has(parent.id)&&item.id.startsWith(parent.id+'.'))));
 function hasChildren(item){return props.outline.some(child=>child.id.startsWith(item.id+'.'));}
 function toggleOutline(item){const next=new Set(collapsed.value);if(next.has(item.id))next.delete(item.id);else next.add(item.id);collapsed.value=next;}
 watch(()=>props.outline,()=>collapsed.value=new Set());
-const items=computed(()=>orderedAnnotations(props.annotations));
+const query=ref(''),filtersOpen=ref(false),kind=ref(''),color=ref(''),chapter=ref(''),from=ref(''),to=ref(''),group=ref('none');
+const chapters=computed(()=>annotationChapters(props.outline));
+const colors=computed(()=>[...new Set(props.annotations.map(a=>a.color?.toLowerCase()).filter(Boolean))].sort());
+const filterCount=computed(()=>[kind.value,color.value,chapter.value,from.value,to.value].filter(Boolean).length);
+const sections=computed(()=>annotationSections(props.annotations,props.outline,{query:query.value,kind:kind.value,color:color.value,chapter:chapter.value,from:from.value,to:to.value,group:group.value},dateNow.value));
+function resetFilters(){kind.value='';color.value='';chapter.value='';from.value='';to.value='';}
+function sectionLabel(section){if(section.key.startsWith('chapter:')&&section.key!=='chapter:unknown')return section.label;if(section.key==='color:unknown')return t('annotationBrowser.unknownColor');if(section.key.startsWith('color:'))return colorLabel(section.label);return t('annotationBrowser.'+section.key.replace(':','.'));}
+function colorLabel(value){const names={'#ffff00':'yellow','#00ff00':'green','#00ffff':'cyan','#ff0000':'red','#fff36a':'yellow'};return names[value]?t('annotationBrowser.'+names[value]):value;}
+watch(()=>props.outline,()=>{chapter.value='';if(group.value==='chapter'&&!chapters.value.length)group.value='none';});
 function annotationText(item){return (item.text||'').replace(/[\r\n\u2028\u2029]+/g,'').trim();}
+function annotationDate(item){
+ const value=item.modifiedAt||(!item.dateUnknown&&item.createdAt),date=value?new Date(value):null;
+ return date&&!Number.isNaN(date.getTime())?date.toLocaleDateString(uiLanguage.value,{year:'numeric',month:'2-digit',day:'2-digit'}):t('annotationBrowser.date.unknown');
+}
 watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  if(props.mode==='outline'&&!props.outline.length||props.mode==='annotations'&&!props.annotations.length)emit('update:mode','thumbnails');
 },{immediate:true});
@@ -33,15 +46,35 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  <div v-show="mode==='outline'" class="sidebar-navigation-list" :aria-label="t('sidebar.outline')">
   <div v-for="item in visibleOutline" :key="item.id" class="sidebar-outline-row" :style="{paddingLeft:6+Math.min(item.depth,8)*12+'px'}">
    <button v-if="hasChildren(item)" class="sidebar-outline-toggle" :aria-expanded="!collapsed.has(item.id)" :aria-label="t(collapsed.has(item.id)?'sidebar.expand':'sidebar.collapse',{title:item.title})" @click="toggleOutline(item)"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4 2 4 4-4 4"/></svg></button><span v-else class="sidebar-outline-spacer"></span>
-   <button class="sidebar-outline-item" :disabled="!item.page" @click="emit('page',item.page)"><span>{{item.title}}</span><small v-if="item.page">{{item.page}}</small></button>
+   <button class="sidebar-outline-item" :class="{'sidebar-outline-top-level':hasNestedOutline&&item.depth===0,'sidebar-outline-read':readChapters.has(item.id)}" :disabled="!item.page" @click="emit('page',item.page)"><span>{{item.title}}</span><small v-if="item.page">{{item.page}}</small></button>
   </div>
  </div>
- <div v-show="mode==='annotations'" class="sidebar-navigation-list" :aria-label="t('sidebar.annotations')">
-  <button v-for="item in items" :key="item.id" class="sidebar-annotation-item" :class="{selected:selected===item.id}" @click="emit('annotation',item)">
-   <span class="sidebar-annotation-meta"><i :style="{background:item.color}"></i>{{t(item.origin==='translation'?'sidebar.translation':'sidebar.source')}} · {{t('sidebar.page',{page:item.page})}} · {{t(item.kind==='comment'?'sidebar.comment':'sidebar.highlight')}}</span>
+ <div v-show="mode==='annotations'" class="sidebar-annotations-view">
+  <div class="annotation-browser-controls">
+   <label class="annotation-browser-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5"/><path d="m10 10 4 4"/></svg><input v-model="query" type="search" :placeholder="t('annotationBrowser.search')" :aria-label="t('annotationBrowser.search')" @keydown.esc.stop="query=''"/></label>
+   <div class="annotation-browser-toolbar">
+    <button class="annotation-browser-filter" :aria-expanded="filtersOpen" aria-controls="annotation-browser-filters" @click="filtersOpen=!filtersOpen"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M4 8h8M6 12h4"/></svg>{{t('annotationBrowser.filter')}}<span v-if="filterCount"> · {{filterCount}}</span></button>
+    <label class="annotation-browser-group"><span>{{t('annotationBrowser.group')}}</span><select v-model="group" :aria-label="t('annotationBrowser.group')"><option v-for="value in ['none','kind','date','color',...(chapters.length?['chapter']:[])]" :key="value" :value="value">{{t('annotationBrowser.'+(['kind','date','chapter'].includes(value)?value+'Label':value))}}</option></select></label>
+   </div>
+   <div v-if="filtersOpen" id="annotation-browser-filters" class="annotation-browser-filters">
+    <label>{{t('annotationBrowser.kindLabel')}}<select v-model="kind"><option value="">{{t('annotationBrowser.all')}}</option><option value="highlight">{{t('sidebar.highlight')}}</option><option value="comment">{{t('sidebar.comment')}}</option></select></label>
+    <label>{{t('annotationBrowser.color')}}<select v-model="color"><option value="">{{t('annotationBrowser.all')}}</option><option v-for="value in colors" :key="value" :value="value">{{colorLabel(value)}}</option></select></label>
+    <label v-if="chapters.length">{{t('annotationBrowser.chapterLabel')}}<select v-model="chapter"><option value="">{{t('annotationBrowser.all')}}</option><option v-for="item in chapters" :key="item.id" :value="item.id">{{item.title}}</option></select></label>
+    <label>{{t('annotationBrowser.from')}}<input v-model="from" type="date" :max="to||undefined"/></label><label>{{t('annotationBrowser.to')}}<input v-model="to" type="date" :min="from||undefined"/></label>
+    <button v-if="filterCount" class="annotation-browser-reset" @click="resetFilters">{{t('annotationBrowser.reset')}}</button>
+   </div>
+  </div>
+  <div class="sidebar-navigation-list" :aria-label="t('sidebar.annotations')">
+  <p v-if="!sections.length" class="annotation-browser-empty" role="status">{{t('annotationBrowser.empty')}}</p>
+  <section v-for="section in sections" :key="section.key" class="annotation-browser-section" :aria-label="group!=='none'?sectionLabel(section):undefined">
+  <h3 v-if="group!=='none'" class="annotation-browser-heading"><i v-if="group==='color'&&section.key!=='color:unknown'" :style="{background:section.label}"></i>{{sectionLabel(section)}}<span>{{section.items.length}}</span></h3>
+  <button v-for="item in section.items" :key="item.id" class="sidebar-annotation-item" :class="{selected:selected===item.id}" @click="emit('annotation',item)">
+   <span class="sidebar-annotation-meta"><i :style="{background:item.kind==='comment'?'#8e8e93':item.color}"></i>{{t(item.origin==='translation'?'sidebar.translation':'sidebar.source')}} · {{t('sidebar.page',{page:item.page})}} · <time>{{annotationDate(item)}}</time></span>
    <span v-if="annotationText(item)" class="sidebar-annotation-text">{{annotationText(item)}}</span><span v-if="item.comment" class="sidebar-annotation-comment">{{item.comment}}</span>
-   <span v-if="!annotationText(item)&&!item.comment">{{t('sidebar.highlight')}}</span>
+   <span v-if="!annotationText(item)&&!item.comment">{{t(item.kind==='comment'?'sidebar.comment':'sidebar.highlight')}}</span>
   </button>
+  </section>
+ </div>
  </div>
  </div>
  <div v-if="outline.length||annotations.length" class="sidebar-navigation-switch" role="group" :aria-label="t('sidebar.view')">
@@ -56,6 +89,8 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .sidebar-outline-item,.sidebar-annotation-item{display:flex;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:9px 8px;color:var(--text);gap:8px;cursor:pointer}
 .sidebar-outline-row{display:flex;align-items:flex-start;border-radius:6px}.sidebar-outline-item{flex:1;min-width:0;padding-left:2px}.sidebar-outline-spacer,.sidebar-outline-toggle{flex:0 0 20px;width:20px;height:32px}.sidebar-outline-toggle{border:0;background:transparent;padding:8px 4px;cursor:pointer}.sidebar-outline-toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform .18s ease}.sidebar-outline-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
 .sidebar-outline-item span{flex:1;overflow-wrap:anywhere}.sidebar-outline-item small{color:var(--text-secondary);flex-shrink:0}
+.sidebar-outline-top-level span{font-weight:700}
+.sidebar-outline-item.sidebar-outline-read{color:var(--text-secondary)}
 .sidebar-outline-item:disabled{cursor:default;color:var(--text-secondary)}
 .sidebar-annotation-item{flex-direction:column;gap:5px;border-bottom:1px solid var(--chrome-border)}
 .sidebar-outline-row:has(.sidebar-outline-item:not(:disabled)):hover,.sidebar-annotation-item:hover,.sidebar-annotation-item.selected{background:var(--chrome-pressed)}
@@ -106,4 +141,27 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 }
 @media(prefers-reduced-motion:reduce){.app[data-platform="darwin"] .sidebar-annotation-item{transition:none}}
 [data-reduce-motion=true] .app[data-platform="darwin"] .sidebar-annotation-item{transition:none}
+</style>
+
+<style>
+.sidebar-annotations-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.annotation-browser-controls{flex:none;padding:10px 10px 4px;color:var(--text-secondary);font-size:11px}
+.annotation-browser-search{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:7px;background:color-mix(in srgb,var(--text) 6%,transparent);box-shadow:inset 0 0 0 1px var(--chrome-border)}
+.annotation-browser-controls svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.annotation-browser-search input{width:100%;min-width:0;padding:0;border:0;background:transparent;color:var(--text);font:inherit;outline:none}
+.annotation-browser-search:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.annotation-browser-search input::placeholder{color:var(--text-secondary)}
+.annotation-browser-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;flex-wrap:wrap}
+.annotation-browser-filter{display:flex;align-items:center;gap:4px;border:0;border-radius:5px;padding:4px;background:transparent;color:inherit;font:inherit;cursor:default}
+.annotation-browser-filter:hover,.annotation-browser-filter[aria-expanded=true]{background:var(--chrome-pressed)}
+.annotation-browser-group{display:flex;align-items:center;gap:4px;min-width:0}
+.annotation-browser-controls select,.annotation-browser-filters input{box-sizing:border-box;min-width:0;max-width:100%;border:1px solid var(--chrome-border);border-radius:5px;padding:3px;background:var(--chrome);color:var(--text-secondary);font:inherit;color-scheme:inherit}
+.annotation-browser-group select{max-width:100px}
+.annotation-browser-filters{max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px;padding-top:9px;padding-bottom:5px}
+.annotation-browser-filters label{display:grid;grid-template-columns:65px minmax(0,1fr);align-items:center;gap:5px}
+.annotation-browser-reset{align-self:flex-end;border:0;background:transparent;color:inherit;font:inherit;padding:3px;cursor:default;text-decoration:underline}
+.annotation-browser-controls :is(button,select,input[type=date]):focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.annotation-browser-heading{display:flex;align-items:center;gap:5px;margin:8px 8px 4px;color:var(--text-secondary);font-size:11px;font-weight:600;overflow-wrap:anywhere}
+.annotation-browser-heading span{margin-left:auto;font-weight:400}.annotation-browser-heading i{width:9px;height:9px;border:1px solid #8884;border-radius:50%;flex:none}
+.annotation-browser-empty{padding:20px 8px;text-align:center;color:var(--text-secondary);font-size:12px}
 </style>

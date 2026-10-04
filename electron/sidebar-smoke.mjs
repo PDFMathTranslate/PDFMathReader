@@ -26,6 +26,8 @@ export async function verifySidebar(window,recents){
   await run(`document.querySelector('.sidebar-outline-toggle').click()`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),1);
   await run(`document.querySelector('.sidebar-outline-toggle').click()`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),2);
   await wait(`!document.querySelector('.document-motion-snapshot,.sidebar-motion-enter-active,.sidebar-view-motion-enter-active,.workspace.document-opening')`);
+  await run(`document.querySelectorAll('.sidebar-navigation-switch button')[0].click()`);
+  await wait(`!!document.querySelector('.thumbnail-list')&&!document.querySelector('.sidebar-view-motion-enter-active')`);
   const before=await run(`document.querySelector('.sidebar').getBoundingClientRect().width`);
   const point=await run(`(()=>{const r=document.querySelector('.sidebar-resize-handle').getBoundingClientRect();return {x:Math.round(r.left+3),y:Math.round(r.top+60)};})()`);
 
@@ -34,6 +36,12 @@ export async function verifySidebar(window,recents){
   await wait(`document.querySelector('.sidebar').getBoundingClientRect().width>${before+60}`);
   const expanded=await run(`document.querySelector('.sidebar').getBoundingClientRect().width`);
   await run(`document.querySelector('.sidebar-resize-handle').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);await wait(`document.querySelector('.sidebar').getBoundingClientRect().width>${expanded+10}`);
+  for(const tab of [1,2,0,1]){
+   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+   await wait(`!document.querySelector('.sidebar-view-motion-enter-active')`);
+   assert.ok(Math.abs((await run(`document.querySelector('.sidebar').getBoundingClientRect().width`))-expanded-20)<2,'all sidebar tabs share the dragged thumbnail width');
+  }
+  await wait(`!!document.querySelector('.sidebar-outline-item')`);
   const outlineOrigin=await run(`window.previewRenderDiagnostics().readingView`);
   await run(`document.querySelector('.sidebar-outline-item').click()`);await wait(`window.previewRenderDiagnostics().active===2&&!!document.querySelector('.reference-return-button')`);
   await run(`document.querySelector('.reference-return-button').click()`);await wait(`window.previewRenderDiagnostics().active===${outlineOrigin.page}&&!document.querySelector('.reference-return-button')`);

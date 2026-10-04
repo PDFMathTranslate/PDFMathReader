@@ -20,3 +20,13 @@ export async function readOutline(pdf) {
 export function orderedAnnotations(items) {
  return [...items].sort((a,b)=>a.page-b.page||(a.rects[0]?.y||0)-(b.rects[0]?.y||0)||(a.rects[0]?.x||0)-(b.rects[0]?.x||0)||a.createdAt.localeCompare(b.createdAt));
 }
+
+// A chapter spans until the next heading at the same or a shallower depth.
+// Visiting a nested chapter also visits its enclosing chapters, not skipped siblings.
+export function chaptersAtPage(outline,page) {
+ return outline.filter((item,index)=>{
+  if(!Number.isInteger(item.page)||item.page>page)return false;
+  const next=outline.slice(index+1).find(candidate=>candidate.depth<=item.depth&&Number.isInteger(candidate.page));
+  return !next||page<next.page;
+ }).map(item=>item.id);
+}

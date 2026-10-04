@@ -15,7 +15,7 @@ import ReaderPage from './ReaderPage.vue';
 import {quickLinkAnchor,quickLinkBox} from './quick-links.mjs';
 import RecentTranslationStatus from './RecentTranslationStatus.vue';
 import SidebarNavigation from './SidebarNavigation.vue';
-import {readOutline} from './sidebar-navigation.mjs';
+import {readOutline,chaptersAtPage} from './sidebar-navigation.mjs';
 import {restoreFormulaPlaceholders} from './formula-placeholders.mjs';
 const sidebarWidth=ref(null);
 const sidebarMode=ref('thumbnails'),documentOutline=shallowRef([]),selectedAnnotation=ref(null);
@@ -258,6 +258,19 @@ const sessionTimer=setInterval(()=>{if(!loading.value&&!restoringView.value){con
 const showAnnotations=ref(true);
 const annotations=ref([]),annotationKey=ref(''),annotationNativeRefs=ref([]),annotationToast=ref(null);let annotationToastTimer,annotationWrites=Promise.resolve();const annotationSaved=new Set();
 function annotationNotice(value){clearTimeout(annotationToastTimer);annotationToast.value=value;annotationToastTimer=setTimeout(()=>annotationToast.value=null,3000);}
+const readChapters=ref(new Set());
+watch(annotationKey,key=>{
+ readChapters.value=new Set();
+ if(!key)return;
+ try{const stored=JSON.parse(localStorage.getItem('read-chapters:'+key)||'[]');if(Array.isArray(stored))readChapters.value=new Set(stored.filter(id=>typeof id==='string'));}catch{}
+},{flush:'sync'});
+watch([active,documentOutline,loading,restoringView,annotationKey],()=>{
+ if(loading.value||restoringView.value||!annotationKey.value||!pages.value.length)return;
+ const visited=chaptersAtPage(documentOutline.value,active.value);
+ if(visited.every(id=>readChapters.value.has(id)))return;
+ readChapters.value=new Set([...readChapters.value,...visited]);
+ try{localStorage.setItem('read-chapters:'+annotationKey.value,JSON.stringify([...readChapters.value]));}catch{}
+});
 watch(annotationKey, async key=>{quickLinks.value=[];if(!key)return;try{const stored=window.previewQuickLinks?await window.previewQuickLinks.load(key):JSON.parse(localStorage.getItem('quick-links:'+key)||'[]');if(key===annotationKey.value)quickLinks.value=Array.isArray(stored)?stored:[];}catch{notifyCopy('快捷链接读取失败');}});
 function saveAnnotations(value){annotations.value=value;const key=annotationKey.value,nativeRefs=[...annotationNativeRefs.value], snapshot=JSON.parse(JSON.stringify(value)).map(a=>{delete a.animateUntil;return a;});annotationWrites=annotationWrites.catch(()=>{}).then(async()=>{try{if(window.previewAnnotations)await window.previewAnnotations.save({key,annotations:snapshot,nativeRefs});else localStorage.setItem('annotations:'+key,JSON.stringify(snapshot));if(!annotationSaved.has(key)){annotationSaved.add(key);notifyCopy(window.previewAnnotations?'批注已自动保存':'批注已自动保存到此浏览器');}}catch(e){notifyCopy('批注保存失败：'+e.message,5000);}});}
 const hoveredParagraph=shallowRef(null),copyToast=ref('');let copyToastTimer;
@@ -917,13 +930,13 @@ onBeforeUnmount(()=>{settingsDropdownObserver?.disconnect();clearTimeout(recentP
    </form>
   </Transition>
   <input ref="fileInput" type="file" accept="application/pdf,.pdf" hidden @change="importFile($event.target.files[0]);$event.target.value=''">
-  <div ref="workspace" class="workspace" :style="sidebarMode!=='thumbnails'&&sidebarWidth?{'--sidebar-width':sidebarWidth+'px'}:undefined" :class="{'document-transitioning':documentOpening||documentClosing,'document-opening':documentOpening,'document-closing':documentClosing}">
-   <Transition :css="!documentOpening&&!documentClosing" name="sidebar-motion" @after-enter="observeThumbnails" @after-leave="sidebarLeaving=false;resizeFit()" @leave-cancelled="sidebarLeaving=false"><aside v-if="sidebar && pages.length" class="sidebar" :style="sidebarMode!=='thumbnails'&&sidebarWidth?{flexBasis:sidebarWidth+'px'}:undefined" :class="{'without-motion':restoringView,'sidebar-resizable':sidebarMode!=='thumbnails'}">
+  <div ref="workspace" class="workspace" :style="sidebarWidth?{'--sidebar-width':sidebarWidth+'px'}:undefined" :class="{'document-transitioning':documentOpening||documentClosing,'document-opening':documentOpening,'document-closing':documentClosing}">
+   <Transition :css="!documentOpening&&!documentClosing" name="sidebar-motion" @after-enter="observeThumbnails" @after-leave="sidebarLeaving=false;resizeFit()" @leave-cancelled="sidebarLeaving=false"><aside v-if="sidebar && pages.length" class="sidebar sidebar-resizable" :style="sidebarWidth?{flexBasis:sidebarWidth+'px'}:undefined" :class="{'without-motion':restoringView}">
     <div v-if="pages.length" class="sidebar-heading">{{t('sidebar.'+sidebarMode)}}</div>
-    <SidebarNavigation v-model:mode="sidebarMode" :outline="documentOutline" :annotations="annotations" :selected="selectedAnnotation" :reduced-motion="reduceMotion" @ready="sidebarReady" @page="navigateFromSidebar" @annotation="navigateFromSidebar">
+    <SidebarNavigation v-model:mode="sidebarMode" :outline="documentOutline" :read-chapters="readChapters" :annotations="annotations" :selected="selectedAnnotation" :reduced-motion="reduceMotion" @ready="sidebarReady" @page="navigateFromSidebar" @annotation="navigateFromSidebar">
     <div v-if="pages.length" ref="thumbnailList" class="thumbnail-list" @scroll.passive="thumbnailScrolling"><div class="thumbnail-inner" :style="{height:thumbnailLayout.height+'px'}"><div v-if="desktopCredentials && thumbnailHighlight" class="thumbnail-highlight" :class="{'without-motion':restoringView}" :style="thumbnailHighlight" aria-hidden="true"></div><button v-for="item in thumbnailItems" :key="item.number" class="thumb" :style="{top:item.offset+'px',height:item.height+'px','--thumbnail-width':item.width+'px'}" :class="{selected:item.number===active}" :aria-current="item.number===active?'page':undefined" :aria-label="t('sidebar.goToPage',{page:item.number})" @click="navigateFromSidebar(item.number)"><canvas :ref="el=>bindThumbnail(item.number,el)" :width="0" :height="0" :style="{width:item.width+'px',height:item.imageHeight+'px'}"></canvas><span>{{item.number}}</span><small :style="{visibility:pages[item.number-1].mathDocument||pages[item.number-1].blocks.some(b=>b.translation)?'visible':'hidden'}">{{t('sidebar.translated')}}</small></button></div></div>
     </SidebarNavigation>
-    <div v-if="sidebarMode!=='thumbnails'" class="sidebar-resize-handle" role="separator" aria-orientation="vertical" :aria-label="t('sidebar.resize')" :aria-valuenow="Math.round(sidebarWidth||238)" aria-valuemin="200" :aria-valuemax="640" tabindex="0" @pointerdown="resizeSidebarStart" @pointermove="resizeSidebarMove" @pointerup="resizeSidebarEnd" @pointercancel="resizeSidebarEnd" @lostpointercapture="sidebarDrag=null" @keydown="resizeSidebarKey"></div>
+    <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" :aria-label="t('sidebar.resize')" :aria-valuenow="Math.round(sidebarWidth||238)" aria-valuemin="200" :aria-valuemax="640" tabindex="0" @pointerdown="resizeSidebarStart" @pointermove="resizeSidebarMove" @pointerup="resizeSidebarEnd" @pointercancel="resizeSidebarEnd" @lostpointercapture="sidebarDrag=null" @keydown="resizeSidebarKey"></div>
    </aside></Transition>
    <div class="reader-viewport">
    <main ref="reader" class="reader" :class="{pinching,'restoring-view':restoringView,'document-opening':documentOpening}" @scroll.passive="scrolling" @wheel.passive="interruptPageScroll();immersiveIntent($event)" @pointerdown="interruptPageScroll();immersiveIntent($event)">
