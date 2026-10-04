@@ -214,7 +214,7 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
  --annotation-border:rgba(0,0,0,.10);
  --annotation-inner-edge:rgba(255,255,255,.72);
  --annotation-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 5px rgba(0,0,0,.08);
- padding:6px;gap:3px;
+ padding:8px;gap:0;
  border-radius:20px;
  corner-shape:squircle;
  backdrop-filter:blur(30px) saturate(1.6);
@@ -227,9 +227,9 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
  --annotation-inner-edge:rgba(255,255,255,.10);
  --annotation-shadow:0 8px 24px rgba(0,0,0,.30),0 2px 5px rgba(0,0,0,.18);
 }
-.annotation-toolbar[data-platform="darwin"] button {padding:7px;border-radius:14px;corner-shape:squircle;}
+.annotation-toolbar[data-platform="darwin"] button {box-sizing:border-box;width:34px;height:34px;flex:none;padding:8px;border-radius:12px;corner-shape:squircle;}
 .annotation-toolbar[data-platform="darwin"] button[aria-pressed="true"] {background:var(--annotation-hover);box-shadow:inset 0 0 0 .5px var(--annotation-divider);}
-.annotation-toolbar[data-platform="darwin"] .annotation-separator {height:20px;margin:0 4px;background:var(--annotation-divider);}
+.annotation-toolbar[data-platform="darwin"] .annotation-separator {width:1px;height:20px;flex:none;margin:0;background:var(--annotation-divider);}
 /* Match the selection palette's continuous corners and softer edge. */
 .annotation-ui.annotation-reader[data-platform="darwin"] {
  border-radius:14px;
@@ -280,8 +280,8 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
 
 <style>
 .annotation-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:calc(100vw - 24px);box-sizing:border-box;}
-.annotation-toolbar-actions{display:flex;align-items:center;gap:4px;}
-.annotation-toolbar-comment{border-top:1px solid var(--annotation-divider,#8883);margin-top:8px;padding:12px 8px 6px;min-width:0;}
+.annotation-toolbar-actions{display:flex;align-items:center;justify-content:center;gap:8px;}
+.annotation-toolbar-comment{border-top:1px solid var(--annotation-divider,#8883);margin-top:8px;padding:8px;min-width:0;}
 .annotation-toolbar-comment p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:min(220px,35vh);overflow:auto;line-height:1.5;user-select:text;}
 .annotation-toolbar-with-comment{width:max-content;}
 .annotation-toolbar-comment{width:0;min-width:100%;box-sizing:border-box;}
