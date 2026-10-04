@@ -94,3 +94,26 @@ test('native comments and highlights import, migrate, recover from copied PDF, a
   await assert.rejects(store.save({key:'missing',annotations:[]},{path:join(root,'missing.pdf'),reliable:true}),/ENOENT/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('opening an unannotated or link-only PDF preserves its exact bytes',async()=>{
+ const {importPDFAnnotations}=await import('../electron/annotation-import.mjs');
+ const pdf=await PDFDocument.create(),page=pdf.addPage();
+ for(const withLink of [false,true]){
+  if(withLink)page.node.set(PDFName.Annots,pdf.context.obj([pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Link',Rect:[10,10,30,30],A:{S:'URI',URI:PDFHexString.fromText('https://example.com')}}))]));
+  const bytes=await pdf.save(),prepared=await importPDFAnnotations(bytes,{prepare:true});
+  assert.deepEqual(prepared.bytes,bytes);assert.deepEqual(prepared.annotations,[]);
+ }
+});
+
+test('prepared PDF removes imported native and managed annotations while preserving unrelated links',async()=>{
+ const {importPDFAnnotations}=await import('../electron/annotation-import.mjs');
+ const pdf=await PDFDocument.create(),page=pdf.addPage();addExternalAnnotation(pdf,page);
+ const native=page.node.Annots().get(0),popup=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Popup',Rect:[0,0,20,20],Parent:native}));page.node.Annots().push(popup);
+ const link=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Link',Rect:[10,10,30,30]}));page.node.Annots().push(link);
+ const managed=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Text',NM:PDFHexString.fromText('PDFMathReader:invalid'),Rect:[20,20,40,40]}));page.node.Annots().push(managed);
+ const original=await pdf.save(),prepared=await importPDFAnnotations(original,{prepare:true});
+ assert.equal(prepared.annotations.length,1);assert.equal(prepared.nativeRefs.length,1);
+ const cleaned=await PDFDocument.load(prepared.bytes),retained=pageAnnotations(cleaned.getPage(0));
+ assert.equal(retained.length,1);assert.equal(retained[0].get(PDFName.of('Subtype')).toString(),'/Link');
+ assert.equal(pageAnnotations((await PDFDocument.load(original)).getPage(0)).length,4);
+});

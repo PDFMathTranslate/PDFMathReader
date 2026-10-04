@@ -178,10 +178,18 @@ function addManagedAnnotation(page,annotation,context){
 
 export async function embedAnnotations(bytes,annotations,nativeRefs=[]){
  if(!Array.isArray(nativeRefs)||nativeRefs.some(ref=>typeof ref!=='string'||!/^\d+ \d+ R$/.test(ref)))invalid('Invalid annotation native references.');
- const replaced=new Set(nativeRefs);
  const input=asBytes(bytes);
  const normalized=validateAnnotations(annotations);
  const pdf=await PDFDocument.load(input,{updateMetadata:false});
+ return embedAnnotationDocument(pdf,normalized,nativeRefs,input);
+}
+
+// Reuse an already parsed document during import. Preserve the original bytes
+// when there is nothing to replace, including unrelated links and form widgets.
+export async function embedAnnotationDocument(pdf,annotations,nativeRefs=[],originalBytes){
+ if(!Array.isArray(nativeRefs)||nativeRefs.some(ref=>typeof ref!=='string'||!/^\d+ \d+ R$/.test(ref)))invalid('Invalid annotation native references.');
+ const normalized=validateAnnotations(annotations),replaced=new Set(nativeRefs);
+ let changed=normalized.length>0;
  const context=pdf.context;
  const pages=pdf.getPages();
  for(const page of pages){
@@ -193,6 +201,8 @@ export async function embedAnnotations(bytes,annotations,nativeRefs=[]){
    if(dict?.get(PDFName.of('Subtype'))?.toString()==='/Popup'&&replaced.has(dict.get(PDFName.of('Parent'))?.toString()))continue;
    if((!dict||!managedAnnotation(dict))&&!replaced.has(annots.get(index).toString()))retained.push(annots.get(index));
   }
+  if(retained.length===annots.size())continue;
+  changed=true;
   if(retained.length)page.node.set(PDFName.Annots,context.obj(retained));
   else page.node.delete(PDFName.Annots);
  }
@@ -202,6 +212,7 @@ export async function embedAnnotations(bytes,annotations,nativeRefs=[]){
   const ref=addManagedAnnotation(page,annotation,context);
   const annots=page.node.Annots()||context.obj([]);annots.push(ref);page.node.set(PDFName.Annots,annots);
  }
+ if(!changed&&originalBytes)return asBytes(originalBytes);
  return Buffer.from(await pdf.save({useObjectStreams:false,updateFieldAppearances:false}));
 }
 
