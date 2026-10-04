@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('previewTestMode',process.argv.includes('--previ
 
 contextBridge.exposeInMainWorld('previewAnnotations',Object.freeze({
  contextMenu:kind=>ipcRenderer.invoke('previewAnnotations:contextMenu',kind),
+ confirmDelete:kind=>ipcRenderer.invoke('previewAnnotations:confirmDelete',kind),
  palette:()=>ipcRenderer.invoke('previewAnnotations:palette'),
  markDeleteHint:()=>ipcRenderer.invoke('previewAnnotations:markDeleteHint'),
  prepare:bytes=>ipcRenderer.invoke('previewAnnotations:prepare',bytes),
