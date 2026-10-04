@@ -1,5 +1,6 @@
 import {ref} from 'vue';
 import {extraMessages} from './locales-extra.mjs';
+import {advancedMessages} from './advanced-locales.mjs';
 
 export const SUPPORTED_UI_LANGUAGES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'fr', 'es', 'ja', 'ko']);
 export const uiLanguage = ref('en');
@@ -686,6 +687,7 @@ const messages = {
 };
 
 Object.assign(messages,extraMessages);
+for(const [locale,labels] of Object.entries(advancedMessages))Object.assign(messages[locale].advanced,labels);
 const translationLanguages={
  en:{simplifiedChinese:'Simplified Chinese',traditionalChinese:'Traditional Chinese',english:'English',japanese:'Japanese',korean:'Korean',french:'French',german:'German',spanish:'Spanish'},
  'zh-CN':{simplifiedChinese:'简体中文',traditionalChinese:'繁体中文',english:'英语',japanese:'日语',korean:'韩语',french:'法语',german:'德语',spanish:'西班牙语'},
@@ -750,4 +752,16 @@ export function t(key, params = {}) {
  const value = typeof localized === 'string' ? localized : typeof fallback === 'string' ? fallback : String(key);
  const values = params && typeof params === 'object' ? params : {};
  return value.replace(/\{([A-Za-z0-9_]+)\}/g, (placeholder, name) => Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : placeholder);
+}
+
+// Keep upstream text for options added after this localization snapshot.
+export function advancedOptionText(option, field) {
+ const key = `advanced.options.${option.id}.${field}`;
+ return typeof lookup('en', key) === 'string' ? t(key) : option[field];
+}
+
+export function advancedChoiceText(option, choice) {
+ if (!['primary_font_family', 'backend'].includes(option.id)) return String(choice);
+ const key = `advanced.choices.${choice}`;
+ return typeof lookup('en', key) === 'string' ? t(key) : String(choice);
 }

@@ -1,7 +1,7 @@
 <script setup>
 import {computed,ref,watch,onBeforeUnmount} from 'vue';
 import {MacButton,MacPopUpButton,MacPopUpButtonItem,MacSwitch,MacTextField,platform} from './platform-controls.mjs';
-import {t} from './i18n.mjs';
+import {t,advancedOptionText,advancedChoiceText} from './i18n.mjs';
 
 const SUPPORTED_ENGINES=['pdf_math_fast','pdf_math_precise'];
 const INVALID=Symbol('invalid-advanced-value');
@@ -158,16 +158,16 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
    <p v-else-if="message" class="muted" role="status">{{message}}</p>
    <div v-for="option in options" :key="option.id" class="advanced-option" :data-advanced-option="option.id">
     <div class="setting-row">
-     <label :id="'advanced-'+option.id" :for="'advanced-input-'+option.id">{{option.label}}</label>
+     <label :id="'advanced-'+option.id" :for="'advanced-input-'+option.id">{{advancedOptionText(option,'label')}}</label>
      <MacSwitch v-if="option.type==='boolean'" :model-value="effectiveValue(option)" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>
      <MacPopUpButton v-else-if="option.choices?.length" :model-value="String(effectiveValue(option))" :aria-labelledby="'advanced-'+option.id" teleport-to="body" @update:model-value="update(option,$event)">
-      <MacPopUpButtonItem v-for="choice in option.choices" :key="String(choice)" :value="String(choice)">{{choice}}</MacPopUpButtonItem>
+      <MacPopUpButtonItem v-for="choice in option.choices" :key="String(choice)" :value="String(choice)">{{advancedChoiceText(option,choice)}}</MacPopUpButtonItem>
      </MacPopUpButton>
      <MacTextField v-else-if="option.type==='number'&&platform==='win32'" :id="'advanced-input-'+option.id" type="number" :model-value="String(effectiveValue(option))" :min="option.min" :max="option.max" :step="option.integer?1:'any'" inputmode="decimal" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>
      <input v-else-if="option.type==='number'" :id="'advanced-input-'+option.id" type="number" :value="effectiveValue(option)" :min="option.min" :max="option.max" :step="option.integer?1:'any'" inputmode="decimal" :aria-labelledby="'advanced-'+option.id" @change="update(option,$event.target.value)"/>
     </div>
     <MacTextField v-if="option.type==='string'&&!option.choices?.length" :id="'advanced-input-'+option.id" :model-value="String(effectiveValue(option)??'')" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>
-    <p v-if="option.help" class="muted">{{option.help}}</p>
+    <p v-if="advancedOptionText(option,'help')" class="muted">{{advancedOptionText(option,'help')}}</p>
    </div>
    <MacButton v-if="options.length" :disabled="!hasOverrides" :aria-label="t('advanced.restoreDefaults')" @click="reset">{{t('advanced.restoreDefaults')}}</MacButton>
    <div class="advanced-kernel-update">

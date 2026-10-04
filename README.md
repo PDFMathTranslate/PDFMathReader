@@ -20,6 +20,7 @@ Read scientific documents in any language, with realtime translation, on any pla
 - Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
 - Configure translation language, concurrency, and kernel-specific options in Settings. Interface language is configured separately.
   Target languages follow the selected kernel: Inspector offers 51 choices, Fast offers its 10 upstream languages, and Precise offers 47 choices based on BabelDOC’s [supported languages](https://funstory-ai.github.io/BabelDOC/supported_languages/). Language names follow all seven interface locales; source languages use the shared 51-language catalog. Switching kernels keeps compatible selections and resets unsupported targets to Simplified Chinese.
+  Existing Advanced option labels, descriptions, and font-category choices follow the interface language in all seven supported languages. Newly added kernel options fall back to their upstream text until translations are provided; saved parameter values stay unchanged.
 - Create saved bidirectional links between a search result and its reading origin, with link buttons available in both original and translated views.
 - Use evenly spaced annotation palettes and synchronized titlebar animations across thumbnail, outline, and annotation sidebars.
 - Read cached translations with neutral gray progress indicators; active translation uses the selected accent color.
