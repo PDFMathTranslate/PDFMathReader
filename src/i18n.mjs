@@ -674,6 +674,15 @@ const translationLanguages={
  ja:{simplifiedChinese:'簡体字中国語',traditionalChinese:'繁体字中国語',english:'英語',japanese:'日本語',korean:'韓国語',french:'フランス語',german:'ドイツ語',spanish:'スペイン語'}
 };
 for(const [locale,languages] of Object.entries(translationLanguages))messages[locale].languages=languages;
+for(const [locale,labels] of Object.entries({
+ en:{retry:'Retry',checkPage:'Check this page'},
+ 'zh-CN':{retry:'重试',checkPage:'请检查此页'},
+ 'zh-TW':{retry:'重試',checkPage:'請檢查此頁'},
+ ja:{retry:'再試行',checkPage:'このページを確認'},
+ fr:{retry:'Réessayer',checkPage:'Vérifiez cette page'},
+ es:{retry:'Reintentar',checkPage:'Revisa esta página'},
+ ko:{retry:'다시 시도',checkPage:'이 페이지를 확인하세요'}
+}))Object.assign(messages[locale].pageStatus,labels);
 export const UI_MESSAGES=messages;
 
 function lookup(locale, key) {
