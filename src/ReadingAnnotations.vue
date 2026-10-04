@@ -3,6 +3,8 @@ import {ref,computed,onMounted,onBeforeUnmount,watch,nextTick} from 'vue';
 import {createAnnotationShake,updateAnnotationShake} from './annotation-shake.mjs';
 import {annotationDisplaysTranslation,annotationLineRects,annotationRailX,annotationNotePositions} from './annotation-display.mjs';
 const innerWidth=window.innerWidth,innerHeight=window.innerHeight;
+// Popups are teleported outside .app, so carry the platform with them.
+const popupPlatform=window.previewAppearance?.platform||'web';
 const readerPopup=ref(),editorPopup=ref(),toolbarPopup=ref(),layoutVersion=ref(0);let popupObserver,textObserver,layoutFrame=0;
 function updatePopupLayout(){if(!layoutFrame)layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;layoutVersion.value++;});}
 const props=defineProps({host:Function,page:Object,zoom:Number,annotations:Array,translated:Boolean});
@@ -141,16 +143,105 @@ watch(()=>props.zoom,()=>{toolbar.value=false;updatePopupLayout();});
 </template>
 </div>
 <Teleport to="body">
-<div v-if="assistance" class="annotation-ui annotation-modal"><section class="annotation-confirm annotation-assistance" role="dialog" aria-modal="true" :aria-label="assistance.title"><strong>{{assistance.title}}</strong><p v-if="assistance.busy" role="status">正在处理…</p><p v-else>{{assistance.error||assistance.text}}</p><button @click="assistController?.abort();assistance=null">关闭</button></section></div>
-<Transition name="annotation-fade"><div v-if="toolbar" ref="toolbarPopup" class="annotation-ui annotation-toolbar" :style="toolbarPoint()" role="toolbar" aria-label="文字批注" @pointerdown.prevent @pointermove="touch" @keydown="touch">
+<div v-if="assistance" :data-platform="popupPlatform" class="annotation-ui annotation-modal"><section class="annotation-confirm annotation-assistance" role="dialog" aria-modal="true" :aria-label="assistance.title"><strong>{{assistance.title}}</strong><p v-if="assistance.busy" role="status">正在处理…</p><p v-else>{{assistance.error||assistance.text}}</p><button @click="assistController?.abort();assistance=null">关闭</button></section></div>
+<Transition name="annotation-fade"><div v-if="toolbar" ref="toolbarPopup" :data-platform="popupPlatform" class="annotation-ui annotation-toolbar" :style="toolbarPoint()" role="toolbar" aria-label="文字批注" @pointerdown.prevent @pointermove="touch" @keydown="touch">
 <button v-for="(c,i) in colors" :key="i" :aria-label="['荧光黄','荧光绿','荧光青'][i]" :title="['荧光黄 (1)','荧光绿 (2)','荧光青 (3)'][i]" :aria-keyshortcuts="String(i+1)" :aria-pressed="selection?.id?selection.color?.toUpperCase()===c:undefined" @click="add('highlight',c)"><i class="annotation-color-swatch" :style="{background:c}" aria-hidden="true"/></button><button v-if="false" aria-label="自定义高亮颜色" @click="clearTimeout(timer);colorInput.click()"><i class="annotation-color-swatch annotation-custom-color" :style="{'--annotation-color':favorite}" aria-hidden="true"/></button><input ref="colorInput" type="color" class="annotation-color-input" :value="favorite" @change="add('highlight',$event.target.value)"/><span class="annotation-separator"/><button aria-label="添加批注" title="添加批注 (4)" aria-keyshortcuts="4" @click="comment(selection?.id?selection:undefined)"><svg class="annotation-comment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3.5h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-8l-5 3v-3H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h7"/></svg></button>
 </div></Transition>
-<Transition name="annotation-fade"><div v-if="opened" ref="readerPopup" class="annotation-ui annotation-reader" :style="readerPoint()"><header class="annotation-reader-header"><span>{{opened.origin==='translation'?'译文':'原文'}}{{opened.kind==='highlight'?'高亮':'批注'}}</span><button @click="opened=null" aria-label="关闭"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></header><p>{{opened.comment||opened.text}}</p><time>{{opened.dateUnknown&&!opened.modifiedAt?'日期未知':new Date(opened.modifiedAt||opened.createdAt).toLocaleString()}}</time></div></Transition>
-<Transition name="annotation-fade"><div v-if="editor" class="annotation-ui annotation-modal" @pointerdown.self="editor=null"><form ref="editorPopup" class="annotation-editor" :style="editorPoint()" role="dialog" aria-modal="true" aria-label="添加批注" @submit.prevent="commit"><textarea v-model="draft" placeholder="输入评论…" aria-label="评论"/><div><button type="button" @click="editor=null">关闭</button><button type="submit" :disabled="!draft.trim()">保存 ⌘↵</button></div></form></div></Transition>
-<div v-if="menu" class="annotation-ui annotation-menu" :style="{left:Math.min(menu.x,innerWidth-190)+'px',top:Math.min(menu.y,innerHeight-250)+'px'}" role="menu"><button v-for="name in menu.a.kind==='highlight'?['复制','分享','Hand over to AI','删除']:['复制','分享','Hand over to AI','修改','删除']" :key="name" role="menuitem" @click="action(name)">{{name}}</button></div>
-<div v-if="confirming" class="annotation-ui annotation-modal"><section class="annotation-confirm" role="alertdialog" aria-modal="true"><p>删除这条{{confirming.kind==='highlight'?'高亮':'批注'}}？</p><button @click="confirming=null">取消</button><button @click="remove(confirming)">删除</button></section></div>
+<Transition name="annotation-fade"><div v-if="opened" ref="readerPopup" :data-platform="popupPlatform" class="annotation-ui annotation-reader" :style="readerPoint()"><header class="annotation-reader-header"><span>{{opened.origin==='translation'?'译文':'原文'}}{{opened.kind==='highlight'?'高亮':'批注'}}</span><button @click="opened=null" aria-label="关闭"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></header><p>{{opened.comment||opened.text}}</p><time>{{opened.dateUnknown&&!opened.modifiedAt?'日期未知':new Date(opened.modifiedAt||opened.createdAt).toLocaleString()}}</time></div></Transition>
+<Transition name="annotation-fade"><div v-if="editor" :data-platform="popupPlatform" class="annotation-ui annotation-modal" @pointerdown.self="editor=null"><form ref="editorPopup" class="annotation-editor" :style="editorPoint()" role="dialog" aria-modal="true" aria-label="添加批注" @submit.prevent="commit"><textarea v-model="draft" placeholder="输入评论…" aria-label="评论"/><div><button type="button" @click="editor=null">关闭</button><button type="submit" :disabled="!draft.trim()">保存 ⌘↵</button></div></form></div></Transition>
+<div v-if="menu" :data-platform="popupPlatform" class="annotation-ui annotation-menu" :style="{left:Math.min(menu.x,innerWidth-190)+'px',top:Math.min(menu.y,innerHeight-250)+'px'}" role="menu"><button v-for="name in menu.a.kind==='highlight'?['复制','分享','Hand over to AI','删除']:['复制','分享','Hand over to AI','修改','删除']" :key="name" role="menuitem" @click="action(name)">{{name}}</button></div>
+<div v-if="confirming" :data-platform="popupPlatform" class="annotation-ui annotation-modal"><section class="annotation-confirm" role="alertdialog" aria-modal="true"><p>删除这条{{confirming.kind==='highlight'?'高亮':'批注'}}？</p><button @click="confirming=null">取消</button><button @click="remove(confirming)">删除</button></section></div>
 </Teleport>
 </template>
 <style>
 .annotation-layer{position:absolute;inset:0;pointer-events:none;z-index:7}.annotation-mark{position:absolute;pointer-events:auto;border:0;padding:0;cursor:grab;touch-action:none;transform-origin:center;user-select:none}.annotation-mark:active{cursor:grabbing}.annotation-highlight{border-radius:6px;opacity:.42;} .annotation-new-highlight{animation:annotation-stroke var(--stroke-duration) linear var(--stroke-delay) both}.annotation-note{min-width:34px;min-height:34px;max-width:34px;max-height:34px;border-radius:11px;corner-shape:squircle;background:#f0f0f0;color:#575757;box-shadow:0 1px 2px #0000000a,0 3px 8px #0000000d,inset 0 0 0 1px #00000008;line-height:16px;cursor:pointer;transition:background-color .16s ease,box-shadow .16s ease}.annotation-comment-highlight{opacity:.24;cursor:pointer}.annotation-comment-highlight:hover{opacity:.34}.annotation-note:hover{background:#e7e7e7;box-shadow:0 2px 3px #0000000c,0 4px 10px #00000010,inset 0 0 0 1px #0000000a}.annotation-note:active{background:#dedede;box-shadow:0 1px 2px #0000000c,inset 0 0 0 1px #0000000a}.annotation-comment-note{cursor:pointer}.annotation-mark:focus-visible{outline:2px solid #666;outline-offset:2px}.annotation-ui{z-index:10000;color:var(--text,#222);font-size:14px}.annotation-toolbar,.annotation-reader,.annotation-menu,.annotation-editor,.annotation-confirm{position:fixed;background:var(--chrome-solid,#fafafa);border:1px solid #8884;border-radius:14px;box-shadow:0 8px 30px #0003;padding:8px}.annotation-toolbar{display:flex;align-items:center;gap:4px}.annotation-ui button{cursor:pointer;border:0;border-radius:7px;background:transparent;color:inherit;padding:8px}.annotation-ui button:hover{background:#8882}.annotation-toolbar button{font:inherit;display:flex;align-items:center;justify-content:center}.annotation-color-swatch,.annotation-comment-icon{display:block;width:1.2em;height:1.2em;box-sizing:border-box;flex:none}.annotation-color-swatch{border-radius:50%;border:1px solid #0002}.annotation-custom-color{position:relative;border:0;background:conic-gradient(#ff5b5b,#ffd84d,#69d975,#50caff,#8d70ff,#ff70c5,#ff5b5b)}.annotation-custom-color:after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--annotation-color)}.annotation-comment-icon{overflow:visible}.annotation-note{display:flex;align-items:center;justify-content:center;font-size:14px}.annotation-separator{height:24px;width:1px;background:#8885;margin:0 5px}.annotation-color-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.annotation-reader{box-sizing:border-box;width:280px;max-width:calc(100vw - 24px);padding:12px 14px;display:flex;flex-direction:column;gap:12px;color:var(--text-secondary,#777);text-align:left;line-height:1.45}.annotation-reader-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px;font-size:12px;font-weight:400;color:inherit}.annotation-reader-header>span{display:flex;align-items:center;min-height:22px;line-height:1}.annotation-reader-header button{display:flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;padding:0;color:inherit;font-size:18px;font-weight:400;line-height:1}.annotation-reader-header button svg{display:block;width:16px;height:16px;flex:none}.annotation-reader p{margin:0;color:var(--text,#222);white-space:pre-wrap;max-height:min(220px,40vh);overflow:auto;overflow-wrap:anywhere;font-size:14px}.annotation-reader time{margin:0;color:inherit;font-size:11px;font-weight:400;opacity:1;line-height:1.45}.annotation-modal{position:fixed;inset:0;background:#0002}.annotation-editor{width:280px}.annotation-editor:before,.annotation-reader:before{content:'';position:absolute;top:var(--annotation-tip-top,-7px);bottom:var(--annotation-tip-bottom,auto);left:var(--annotation-tip-left,20px);width:12px;height:12px;border-radius:2px;background:inherit;transform:rotate(var(--annotation-tip-rotation,45deg));border-left:1px solid #8884;border-top:1px solid #8884}.annotation-editor textarea{box-sizing:border-box;width:100%;min-height:110px;border:1px solid #8885;border-radius:7px;padding:8px;background:transparent;color:inherit;font:inherit;resize:vertical}.annotation-editor>div{text-align:right}.annotation-menu{display:flex;flex-direction:column;min-width:170px}.annotation-menu button{text-align:left}.annotation-assistance{width:min(520px,80vw);max-height:70vh;overflow:auto}.annotation-assistance p{white-space:pre-wrap;line-height:1.6}.annotation-confirm{left:50%;top:45%;transform:translate(-50%,-50%)}.annotation-fade-enter-active,.annotation-fade-leave-active{transition:opacity .18s,transform .18s}.annotation-fade-enter-from,.annotation-fade-leave-to{opacity:0;transform:translateY(-4px)}.annotation-mark.annotation-erasing{pointer-events:none;animation:annotation-erase var(--erase-duration) linear var(--erase-delay) both}.annotation-comment-highlight.annotation-erasing:hover{opacity:.24}@keyframes annotation-erase{from{clip-path:inset(0)}to{clip-path:inset(0 100% 0 0)}}@keyframes annotation-stroke{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}@media(prefers-reduced-motion:reduce){.annotation-highlight{animation:none}.annotation-note{transition:none}.annotation-mark.annotation-erasing{animation:none;clip-path:inset(0 100% 0 0)}.annotation-fade-enter-active,.annotation-fade-leave-active{transition:none}}
+
+/* macOS menu material shared by the selection palette and comment popovers. */
+.annotation-ui[data-platform="darwin"] {
+ --annotation-surface:rgba(246,246,246,.82);
+ --annotation-surface-solid:#f6f6f6;
+ --annotation-border:rgba(0,0,0,.18);
+ --annotation-inner-edge:rgba(255,255,255,.65);
+ --annotation-shadow:0 10px 28px rgba(0,0,0,.20),0 2px 7px rgba(0,0,0,.12);
+ --annotation-foreground:#242424;
+ --annotation-secondary:rgba(0,0,0,.56);
+ --annotation-hover:rgba(0,0,0,.075);
+ --annotation-divider:rgba(0,0,0,.14);
+ --annotation-field:rgba(255,255,255,.42);
+ color:var(--annotation-foreground);
+ font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+ font-size:13px;
+}
+[data-appearance="dark"] .annotation-ui[data-platform="darwin"] {
+ --annotation-surface:rgba(44,44,44,.86);
+ --annotation-surface-solid:#2c2c2c;
+ --annotation-border:rgba(0,0,0,.50);
+ --annotation-inner-edge:rgba(255,255,255,.14);
+ --annotation-shadow:0 10px 28px rgba(0,0,0,.38),0 2px 7px rgba(0,0,0,.24);
+ --annotation-foreground:rgba(255,255,255,.92);
+ --annotation-secondary:rgba(255,255,255,.55);
+ --annotation-hover:rgba(255,255,255,.10);
+ --annotation-divider:rgba(255,255,255,.16);
+ --annotation-field:rgba(0,0,0,.18);
+}
+.annotation-ui[data-platform="darwin"]:is(.annotation-toolbar,.annotation-reader,.annotation-menu),
+.annotation-ui[data-platform="darwin"] .annotation-editor {
+ background:var(--annotation-surface);
+ border:1px solid var(--annotation-border);
+ border-radius:8px;
+ box-shadow:inset 0 0 0 1px var(--annotation-inner-edge),var(--annotation-shadow);
+ backdrop-filter:blur(24px) saturate(1.35);
+ -webkit-backdrop-filter:blur(24px) saturate(1.35);
+}
+.annotation-ui[data-platform="darwin"] button {cursor:default;border-radius:4px;font:inherit;}
+.annotation-ui[data-platform="darwin"] button:hover {background:var(--annotation-hover);}
+.annotation-ui[data-platform="darwin"] button:focus-visible {outline:2px solid var(--accent,#007aff);outline-offset:-2px;}
+.annotation-ui[data-platform="darwin"] button:disabled {color:var(--annotation-secondary);opacity:.5;background:transparent;}
+.annotation-ui.annotation-toolbar[data-platform="darwin"] {
+ --annotation-surface:rgba(250,250,250,.64);
+ --annotation-border:rgba(0,0,0,.10);
+ --annotation-inner-edge:rgba(255,255,255,.72);
+ --annotation-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 5px rgba(0,0,0,.08);
+ padding:6px;gap:3px;
+ border-radius:14px;
+ corner-shape:squircle;
+ backdrop-filter:blur(30px) saturate(1.6);
+ -webkit-backdrop-filter:blur(30px) saturate(1.6);
+ box-shadow:inset 0 1px 0 var(--annotation-inner-edge),var(--annotation-shadow);
+}
+[data-appearance="dark"] .annotation-ui.annotation-toolbar[data-platform="darwin"] {
+ --annotation-surface:rgba(38,38,40,.68);
+ --annotation-border:rgba(255,255,255,.12);
+ --annotation-inner-edge:rgba(255,255,255,.10);
+ --annotation-shadow:0 8px 24px rgba(0,0,0,.30),0 2px 5px rgba(0,0,0,.18);
+}
+.annotation-toolbar[data-platform="darwin"] button {padding:7px;border-radius:9px;corner-shape:squircle;}
+.annotation-toolbar[data-platform="darwin"] button[aria-pressed="true"] {background:var(--annotation-hover);box-shadow:inset 0 0 0 .5px var(--annotation-divider);}
+.annotation-toolbar[data-platform="darwin"] .annotation-separator {height:20px;margin:0 4px;background:var(--annotation-divider);}
+.annotation-reader[data-platform="darwin"] {color:var(--annotation-secondary);}
+.annotation-reader[data-platform="darwin"] p {color:var(--annotation-foreground);font-size:13px;}
+.annotation-reader[data-platform="darwin"]:before,
+.annotation-ui[data-platform="darwin"] .annotation-editor:before {display:none;}
+.annotation-ui[data-platform="darwin"] .annotation-editor {box-sizing:border-box;width:298px;max-width:calc(100vw - 24px);padding:10px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor textarea {
+ background:var(--annotation-field);color:var(--annotation-foreground);
+ border:1px solid var(--annotation-divider);border-radius:5px;font:inherit;
+}
+.annotation-ui[data-platform="darwin"] .annotation-editor textarea::placeholder {color:var(--annotation-secondary);opacity:1;}
+.annotation-ui[data-platform="darwin"] .annotation-editor textarea:focus-visible {outline:2px solid var(--accent,#007aff);outline-offset:1px;}
+.annotation-ui[data-platform="darwin"] .annotation-editor>div {margin-top:6px;}
+.annotation-menu[data-platform="darwin"] {padding:5px;}
+.annotation-menu[data-platform="darwin"] button {padding:4px 9px;}
+.annotation-menu[data-platform="darwin"] button:is(:hover,:focus-visible) {background:var(--accent,#007aff);color:#fff;}
+/* Respect both the app preference and the system transparency preference. */
+:is(.reduced-transparency,[data-reduced-transparency="true"],[data-reduce-transparency="true"]) .annotation-ui[data-platform="darwin"] {
+ --annotation-surface:var(--annotation-surface-solid);
+}
+:is(.reduced-transparency,[data-reduced-transparency="true"],[data-reduce-transparency="true"]) .annotation-ui[data-platform="darwin"]:is(.annotation-toolbar,.annotation-reader,.annotation-menu),
+:is(.reduced-transparency,[data-reduced-transparency="true"],[data-reduce-transparency="true"]) .annotation-ui[data-platform="darwin"] .annotation-editor {backdrop-filter:none;-webkit-backdrop-filter:none;}
+@media(prefers-reduced-transparency:reduce) {
+ .annotation-ui[data-platform="darwin"] {--annotation-surface:var(--annotation-surface-solid);}
+ .annotation-ui[data-platform="darwin"]:is(.annotation-toolbar,.annotation-reader,.annotation-menu),
+ .annotation-ui[data-platform="darwin"] .annotation-editor {backdrop-filter:none;-webkit-backdrop-filter:none;}
+}
 </style>
