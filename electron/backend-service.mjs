@@ -90,7 +90,9 @@ export async function startBackendService(options={}){
    const timer=setTimeout(()=>{child.kill();finish();},5000);
    child.once('exit',()=>{clearTimeout(timer);finish();});
    if(!child.pid){clearTimeout(timer);finish();return;}
-   request('close').then(()=>{clearTimeout(timer);finish();},()=>{clearTimeout(timer);child.kill();finish();});
+   // The acknowledgement follows kernel cleanup, but wait for the utility
+   // process itself to exit before allowing Electron to quit.
+   request('close').catch(()=>{child.kill();});
   });
   return closePromise;
  };

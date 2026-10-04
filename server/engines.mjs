@@ -1,4 +1,4 @@
-import {execFile,spawn} from 'node:child_process';
+import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdir,readFile,writeFile,mkdtemp,rm,readdir,symlink} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -12,6 +12,7 @@ import {PDFDocument} from 'pdf-lib';
 import {translationAdvancedArgs,decorateAdvancedOptions} from './kernel-options.mjs';
 import {createTranslationCache} from './translation-cache.mjs';
 import {replaceFile} from '../electron/atomic-file.mjs';
+import {createKernelProcesses} from './kernel-processes.mjs';
 const exec=promisify(execFile);
 
 export const LANGUAGE_CODES=Object.freeze({'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'});
@@ -64,8 +65,8 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
 }
 
 export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,appVersion='development',pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
- const runExec=execImpl;
- let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map(),advancedBackground=new Map(),advancedFailures=new Map();
+ const processes=createKernelProcesses({execImpl});const runExec=processes.exec;
+ let uv;const installing=new Map(),advancedMetadata=new Map(),knownStates=new Map(),advancedBackground=new Map(),advancedFailures=new Map();
  const envPath=id=>join(root,id);const python=id=>kernelPythonPath(envPath(id));
  const metadataPath=id=>join(root,'.advanced-options',id+'.json');
 
@@ -209,10 +210,10 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
    step('prepareInput');
    await new Promise((resolve,reject)=>{
     if(signal?.aborted)return reject(Error('Cancelled'));
-    const child=spawn(python(id),[pythonResourcePath('kernel-worker.py',pythonResourcesPath),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
-    children.add(child);child.stderr.on('data',chunk=>onDiagnostic?.(String(chunk).replaceAll(proxy.token,'[redacted]')));
-    const kill=()=>{try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}};const timer=setTimeout(kill,15*60*1000);signal?.addEventListener('abort',kill,{once:true});
-    child.on('error',()=>reject(Error('Kernel could not start')));child.on('close',code=>{clearTimeout(timer);signal?.removeEventListener('abort',kill);children.delete(child);code===0?resolve():reject(Error(signal?.aborted?'Cancelled':'Kernel translation failed. Check its runtime assets and provider configuration.'));});
+    const child=processes.spawn(python(id),[pythonResourcePath('kernel-worker.py',pythonResourcesPath),id,join(dir,'layout.json'),String(page),input,...args.slice(2)],{env,cwd:dir,stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
+    child.stderr.on('data',chunk=>onDiagnostic?.(String(chunk).replaceAll(proxy.token,'[redacted]')));
+    const kill=()=>{void processes.terminate(child).catch(error=>onDiagnostic?.(error.message));};const timer=setTimeout(kill,15*60*1000);signal?.addEventListener('abort',kill,{once:true});
+    child.on('error',()=>reject(Error('Kernel could not start')));child.on('close',code=>{clearTimeout(timer);signal?.removeEventListener('abort',kill);code===0?resolve():reject(Error(signal?.aborted?'Cancelled':'Kernel translation failed. Check its runtime assets and provider configuration.'));});
    });
    step('kernelProcess');
    let worker;try{worker=JSON.parse(await readFile(join(dir,'layout.json.timing.json'),'utf8'));}catch{}
@@ -224,5 +225,5 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   });
  }
 
- return {layout:async key=>{const scoped=key.match(/^([a-f0-9]{64})-([a-f0-9-]{36})-([a-f0-9]{64})$/);if(scoped)return JSON.parse(await readFile(join(baseCacheDir,'..','documents',scoped[1],'math',scoped[2],scoped[3]+'.layout.json'),'utf8'));if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(baseCacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
+ return {layout:async key=>{const scoped=key.match(/^([a-f0-9]{64})-([a-f0-9-]{36})-([a-f0-9]{64})$/);if(scoped)return JSON.parse(await readFile(join(baseCacheDir,'..','documents',scoped[1],'math',scoped[2],scoped[3]+'.layout.json'),'utf8'));if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(baseCacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close:processes.close};
 }

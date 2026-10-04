@@ -101,7 +101,7 @@ if(development){
 const server=await new Promise((accept,reject)=>{const s=app.listen(port,'127.0.0.1',()=>accept(s));s.on('error',reject);});
 origin=`http://127.0.0.1:${server.address().port}`;
 let closed=false;
- return {origin,documentStats:documents.stats,close:async()=>{if(closed)return;closed=true;for(const entry of layoutEntries.values())layoutExtraction.cleanup(entry);layoutEntries.clear();documents.clear();engines.close();server.closeAllConnections();await new Promise(r=>server.close(r));await vite?.close();}};
+ return {origin,documentStats:documents.stats,close:async()=>{if(closed)return;closed=true;for(const entry of layoutEntries.values())layoutExtraction.cleanup(entry);layoutEntries.clear();documents.clear();server.closeAllConnections();await engines.close();await new Promise(r=>server.close(r));await vite?.close();}};
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  const backend=await startServer();console.log(`PDFMathReader: ${backend.origin}`);
