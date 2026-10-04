@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {translationSpacing,kernelTranslationSpacing} from '../src/translation-spacing.mjs';
+import {translationSpacing,kernelTranslationSpacing,paragraphDisplayText} from '../src/translation-spacing.mjs';
 
 test('screenshot numeric references and percentage suffixes have both CJK boundaries',()=>{
  assert.equal(translationSpacing('压倒性的84%的受访者。如图4.5所示。增长１２％的人和3‰的比例。'), '压倒性的 84% 的受访者。如图 4.5 所示。增长 １２％ 的人和 3‰ 的比例。');
@@ -32,4 +32,11 @@ test('spacing cached or already spaced translations is idempotent',()=>{
  assert.equal(translationSpacing(text),text);
  assert.equal(translationSpacing('English text 2010 75%'), 'English text 2010 75%');
  assert.equal(translationSpacing(), '');
+});
+
+test('Chinese paragraph display converts exactly two leading ASCII spaces only',()=>{
+ assert.equal(paragraphDisplayText('  我发现，中文段落。\n  另一段。'), '\u3000\u3000我发现，中文段落。\n\u3000\u3000另一段。');
+ assert.equal(paragraphDisplayText('  English paragraph.\n中文  正文\n   三个空格\n 一个空格'), '  English paragraph.\n中文  正文\n   三个空格\n 一个空格');
+ assert.equal(paragraphDisplayText('\u3000\u3000中文'), '\u3000\u3000中文');
+ assert.equal(kernelTranslationSpacing('  中文'), '  中文');
 });

@@ -13,12 +13,12 @@ export function freeTranslationPrompt(text,language){
 }
 export function selectTranslationProvider(key){return key?{id:'openai',model:process.env.OPENAI_MODEL||'gpt-4.1-mini',key}:{id:'siliconflow-free',model:'siliconflow-free'};}
 function requestBody(provider,body){
- if(provider.id==='openai')return {...body,stream:false,model:provider.model};
+ if(provider.id==='openai')return {...body,messages:body.messages?.map(message=>({...message,content:typeof message.content==='string'?message.content.replace('Keep the formula notation {v*} unchanged.', 'Preserve every numbered formula placeholder exactly as it appears in Source Text (for example {{v0}} or {v0}). Never output the generic wildcard {v*} or invent a placeholder.'):message.content})),stream:false,model:provider.model};
  let text=(body.messages||[]).map(message=>String(message.content||'')).join('\n\n');
  // Preserve Fast's source and formula placeholders using Next's supported template.
  if(provider.kernel==='pdf_math_fast'&&text.startsWith('You are a professional, authentic machine translation engine.')){
   const source=text.match(/\n\nSource Text: ([\s\S]*)\n\nTranslated Text:$/);
-  if(source)text=freeTranslationPrompt(source[1],provider.language);
+  if(source)text=freeTranslationPrompt(source[1],provider.language)+'\nPreserve every numbered formula placeholder from the input exactly (for example {{v0}} or {v0}); never output {v*} or invent a placeholder.';
  }
  return {text,...body.response_format?.type==='json_object'?{requestJsonMode:true}:{}};
 }

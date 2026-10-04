@@ -32,3 +32,9 @@ export function kernelTranslationSpacing(text) {
   return JSON.stringify(space(value));
  } catch { return translationSpacing(text); }
 }
+
+// Display-only Chinese paragraph indentation; leave caches and kernel text unchanged.
+export function paragraphDisplayText(text = '') {
+ return translationSpacing(text).replace(/^ {2}(?! )([^\r\n]*)/gm, (match, paragraph) =>
+  /\p{Script=Han}/u.test(paragraph) ? '\u3000\u3000' + paragraph : match);
+}

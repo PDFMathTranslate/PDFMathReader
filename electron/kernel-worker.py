@@ -92,6 +92,16 @@ def main(capture_only=False):
             def restore(text):
                 return re.sub(r"\{+\s*v(\d+)\s*\}+", lambda m: variables[int(m[1])] if int(m[1]) < len(variables) else m[0], text)
             text, translation = restore(raw_source), restore(raw_target)
+            # {v*} is prompt notation, not an upstream formula ID. Recover only
+            # when the source paragraph identifies exactly one original run.
+            source_ids = set(int(m) for m in re.findall(r"\{+\s*v(\d+)\s*\}+", raw_source))
+            wildcard = re.compile(r"\{+\s*v\s*\*\s*\}+", re.IGNORECASE)
+            if wildcard.search(translation):
+                if len(source_ids) == 1 and next(iter(source_ids)) < len(variables):
+                    replacement = variables[next(iter(source_ids))]
+                    translation = wildcard.sub(lambda _: replacement, translation)
+                else:
+                    translation = text
             if text.strip():
                 values = [item for item in v["ops_vals"] if item.get("type").value == "text"]
                 low = min((item["dy"] + v["y"] - item["lidx"] * item["size"] * v["line_height"] - item["size"] * .25 for item in values), default=paragraph.y0)
