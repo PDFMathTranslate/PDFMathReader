@@ -2079,7 +2079,9 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .linux-traffic-lights button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
 .reader-viewport{position:relative;display:flex;flex:1;min-width:0;min-height:0;overflow:hidden}
-.reference-return-button{position:absolute;left:22px;right:auto;cursor:pointer;gap:8px;padding:8px 12px;font-size:12px;color:var(--text-primary,var(--text-secondary))}
+.reference-return-button{position:absolute;left:22px;right:auto;cursor:pointer;gap:8px;padding:8px 12px;font-size:12px;line-height:20px;color:var(--text-primary,var(--text-secondary))}
+.reference-return-icon{display:block;flex:none;width:20px;height:20px}
+.reference-return-button>span{display:flex;align-items:center;min-height:20px}
 .reference-return-enter-active,.reference-return-leave-active{transition:opacity 200ms ease}
 .reference-return-enter-from,.reference-return-leave-to{opacity:0}
 .reference-return-leave-active{pointer-events:none}
