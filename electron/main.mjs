@@ -8,6 +8,8 @@ import {join} from 'node:path';
 import {mkdtempSync} from 'node:fs';
 import {tmpdir,release} from 'node:os';
 const windowsBuild=process.platform==='win32'?Number(release().split('.')[2]):0;
+// AppKit otherwise inserts a second full-screen item beside our togglefullscreen role.
+if(process.platform==='darwin')systemPreferences.setUserDefault('NSFullScreenMenuItemEverywhere','boolean',false);
 const smoke=process.argv.find(a=>a.startsWith('--smoke-test='))?.split('=')[1];
 if(smoke&&app.isPackaged&&!process.execPath.includes('PDFMathReader Tests.app'))throw Error('Mock tests require the isolated test application.');
 if(smoke){

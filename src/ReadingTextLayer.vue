@@ -14,7 +14,7 @@ function drawEmphasis(){
  if(props.emphasizeInformation){
   const boxes=[];for(const mark of host.value.querySelectorAll('.pdf-information-keyword')){const range=window.document.createRange();range.selectNodeContents(mark);for(const r of range.getClientRects())boxes.push({x:r.left-pageBounds.left,y:r.top-pageBounds.top,width:r.width,height:r.height});}
   highlights=window.document.createElement('div');highlights.className='information-highlights';highlights.setAttribute('aria-hidden','true');
-  for(const r of mergeInformationRects(boxes)){const rect=window.document.createElement('div');rect.className='information-highlight-rect';Object.assign(rect.style,{left:r.x+'px',top:r.y+'px',width:r.width+'px',height:r.height+'px'});highlights.append(rect);}
+  for(const r of mergeInformationRects(boxes)){const rect=window.document.createElement('div');rect.className='information-highlight-rect';Object.assign(rect.style,{left:r.x+'px',top:(r.y+r.height-Math.max(1,r.height*.08))+'px',width:r.width+'px',height:Math.max(1,r.height*.08)+'px'});highlights.append(rect);}
   host.value.append(highlights);
  }
  if(!props.emphasizeTopicSentences)return;
@@ -22,14 +22,14 @@ function drawEmphasis(){
  const bounds=host.value.getBoundingClientRect();if(!bounds.width||!bounds.height)return;
  const rects=[];for(const strong of host.value.querySelectorAll('.pdf-topic-sentence')){const range=window.document.createRange();range.selectNodeContents(strong);rects.push(...range.getClientRects());}
  if(!rects.length)return;
- overlay=window.document.createElement('canvas');overlay.className='topic-sentence-overlay';overlay.width=source.width;overlay.height=source.height;
+ overlay=window.document.createElement('canvas');overlay.className='topic-sentence-overlay';overlay.setAttribute('aria-hidden','true');overlay.width=source.width;overlay.height=source.height;
  const context=overlay.getContext('2d'),sx=source.width/bounds.width,sy=source.height/bounds.height;
- context.globalCompositeOperation='darken';
- for(const r of rects){context.save();context.beginPath();context.rect((r.left-bounds.left)*sx-.5*sx,(r.top-bounds.top)*sy, r.width*sx+sx,r.height*sy);context.clip();for(const offset of [-.3,0,.3])context.drawImage(source,offset*sx,0);context.restore();}
- // Keep only the glyph ink so the overlay never obscures the rest of the PDF.
- const pixels=context.getImageData(0,0,source.width,source.height),data=pixels.data;
- for(let i=0;i<data.length;i+=4){if(!data[i+3])continue;const white=Math.min(data[i],data[i+1],data[i+2]),alpha=255-white;if(!alpha){data[i+3]=0;continue;}for(let c=0;c<3;c++)data[i+c]=(data[i+c]-white)*255/alpha;data[i+3]=alpha;}
- context.putImageData(pixels,0,0);host.value.append(overlay);
+ // A translucent wash marks the sentence without changing the PDF glyphs.
+ const style=getComputedStyle(host.value);
+ context.fillStyle=style.getPropertyValue('--system-accent').trim()||style.getPropertyValue('--accent').trim()||'#007aff';
+ context.globalAlpha=.1;
+ for(const r of mergeInformationRects(rects.map(r=>({x:r.left-bounds.left,y:r.top-bounds.top,width:r.width,height:r.height}))))context.fillRect(r.x*sx,r.y*sy,r.width*sx,r.height*sy);
+ host.value.append(overlay);
 }
 onMounted(()=>{frameHost=host.value?.parentElement;frameHost?.addEventListener('pdf-frame-presented',drawEmphasis);});
 function emphasize(){
@@ -72,7 +72,7 @@ onBeforeUnmount(()=>{generation++;layer?.cancel();frameHost?.removeEventListener
 <style>
 .reading-text-layer.topic-layer-only{pointer-events:none;user-select:none}
 .reading-text-layer :is(.pdf-topic-sentence,.pdf-information-keyword){position:static;font:inherit;color:transparent;background:transparent;padding:0;white-space:inherit;transform:none}
-.reading-text-layer .topic-sentence-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:none;z-index:2;background:transparent;min-height:0;border-radius:0}
+.reading-text-layer .topic-sentence-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:none;z-index:2;background:transparent;min-height:0;border-radius:0;mix-blend-mode:multiply}
 .reading-text-layer .information-highlights{position:absolute;inset:0;pointer-events:none;user-select:none;transform:none;z-index:1}
-.information-highlight-rect{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--system-accent,var(--accent)) 24%,transparent);border-radius:2px}
+.information-highlight-rect{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--system-accent,var(--accent)) 65%,transparent);border-radius:1px}
 </style>

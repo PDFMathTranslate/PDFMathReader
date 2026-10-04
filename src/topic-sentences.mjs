@@ -117,6 +117,17 @@ export function firstSentenceLength(text, locale = 'en') {
  return source ? intlSentenceEnd(source, locale) : 0;
 }
 
+/** Emphasize only multi-sentence paragraphs over 60 word-equivalents. */
+export function topicSentenceLength(text, locale = 'en') {
+ const source = textValue(text);
+ const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
+ const characters = source.match(cjk)?.length || 0;
+ const words = source.replace(cjk, ' ').match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu)?.length || 0;
+ if (words + characters / 2 <= 60) return 0;
+ const end = firstSentenceLength(source, locale);
+ return source.slice(end).trim() ? end : 0;
+}
+
 function numeric(value) {
  const result = Number(value);
  return Number.isFinite(result) ? result : undefined;
@@ -275,7 +286,7 @@ function rangesForIndices(indices, normalized, locale) {
   logical += text;
   parts.push({index, start, end: logical.length});
  }
- const sentenceEnd = firstSentenceLength(logical, locale);
+ const sentenceEnd = topicSentenceLength(logical, locale);
  if (!sentenceEnd) return [];
  const ranges = [];
  for (const part of parts) {
