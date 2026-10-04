@@ -16,7 +16,7 @@ import {selectTranslationProvider,createTranslationProvider,freeTranslationPromp
 import {extractTextWithPositionsAsync} from './pdf-extractor.mjs';
 export async function startServer({port=5173,development=true,cacheDir=resolve('.cache/translations'),token,diagnostics=false,kernelDiagnostic,kernelTiming,pythonResourcesPath,providerFetch=globalThis.fetch,enginesRoot=join(cacheDir,'..','engines'),runtimeHomeRoot=enginesRoot,appVersion='development',findUvImpl,execImpl,getApiKey=()=>process.env.OPENAI_API_KEY,keyStatus=()=>({keySource:process.env.OPENAI_API_KEY?'environment':'none'})}={}) {
 const app=express();
-let freeServiceNoticeIssued=false;const sessionId=randomBytes(16).toString('hex');const providerClient=createTranslationProvider(providerFetch);
+let freeServiceNoticeIssued=false;const sessionId=randomBytes(16).toString('hex');const providerClient=createTranslationProvider(providerFetch,{cacheDirectory:join(cacheDir,'text')});
 function serviceHeader(res,provider){res.setHeader('X-Translation-Service',provider.id);res.setHeader('X-Translation-Session',sessionId);if(provider.id==='siliconflow-free'&&!freeServiceNoticeIssued){freeServiceNoticeIssued=true;res.setHeader('X-Free-Service-Notice','1');}}
 const kernelReports=[];
 const limiter=createLimiter();const pageLimiter=createLimiter(2);const proxyJobs=new Map();const documents=createDocumentStore();const engines=createEngines({root:enginesRoot,runtimeHomeRoot,appVersion,cacheDir:join(cacheDir,'math'),onDiagnostic:kernelDiagnostic,pythonResourcesPath,findUvImpl,execImpl});
@@ -80,7 +80,7 @@ app.post('/api/reading-assist',express.json({limit:'100kb'}),async(req,res)=>{
  let messages;try{messages=readingAssistRequest(req.body);}catch(e){return res.status(400).json({error:e.message});}
  const provider=selectTranslationProvider(getApiKey());serviceHeader(res,provider);
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),60000);res.on('close',()=>{if(!res.writableEnded)controller.abort();});
- try{const response=await limiter.run(()=>providerClient.complete(provider,{model:provider.model,messages},controller.signal));if(!response.ok)throw Error(`AI service request failed (${response.status}).`);const data=await response.json(),text=data.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw Error('AI service returned an empty response.');res.json({text});}catch(e){if(!res.destroyed)res.status(502).json({error:e.message});}finally{clearTimeout(timeout);}
+ try{const response=await limiter.run(()=>providerClient.complete(provider,{model:provider.model,messages},controller.signal,{cache:false}));if(!response.ok)throw Error(`AI service request failed (${response.status}).`);const data=await response.json(),text=data.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw Error('AI service returned an empty response.');res.json({text});}catch(e){if(!res.destroyed)res.status(502).json({error:e.message});}finally{clearTimeout(timeout);}
 });
 app.use((error,_req,res,next)=>{if(res.headersSent)return next(error);if(error?.type==='entity.too.large'||error?.status===413)return res.status(413).json({error:'PDF exceeds the 50 MiB limit.'});if(error?.status===400)return res.status(400).json({error:'Invalid request body.'});return next(error);});
 let vite;

@@ -62,9 +62,18 @@
 .parallel-levels{display:flex;justify-content:space-between;gap:4px;color:var(--text-secondary);font-size:13px;white-space:nowrap}
 .parallel-levels .selected{color:var(--text);font-weight:500}
 @media(max-width:540px){.parallel-settings{grid-template-columns:1fr;gap:18px}}
-.document-search{position:fixed;top:calc(var(--toolbar-height) + 10px);right:14px;z-index:25;display:flex;align-items:center;gap:8px;padding:12px;border-radius:16px;background:rgba(252,252,252,.94);backdrop-filter:blur(20px);box-shadow:var(--shadow-popover);max-width:calc(100vw - 28px)}
-.document-search>.macvue-field{width:220px;min-width:100px;flex:1}
-.search-count{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.document-search{position:fixed;top:calc(var(--toolbar-height) + 10px);right:14px;z-index:25;display:flex;flex-direction:column;gap:12px;width:360px;box-sizing:border-box;padding:14px;border-radius:16px;background:rgba(252,252,252,.94);backdrop-filter:blur(20px);box-shadow:var(--shadow-popover);max-width:calc(100vw - 28px)}
+.document-search>.macvue-field{width:100%;min-width:0;flex:none;height:40px;border-radius:999px;--_macvue-field-radius:999px;--_macvue-field-padding-inline-start:14px;--_macvue-field-padding-inline-end:12px;--_macvue-field-search-icon-width:18px;--_macvue-field-search-icon-height:18px;--_macvue-field-clear-size:18px;background:var(--chrome-bg,#fff);box-shadow:0 0 0 1px rgba(128,128,128,.3);font-size:15px}
+.document-search>.macvue-field:focus-within{box-shadow:0 0 0 3px rgba(107,136,151,.72)}
+.search-results-row{display:flex;align-items:center;gap:10px;min-width:0;min-height:30px}
+.search-count{flex:1;min-width:0;font-size:13px;color:var(--text-secondary);line-height:1.35;overflow-wrap:anywhere}
+.search-navigation{display:flex;align-items:center;flex:none;border-radius:8px;background:var(--chrome-hover);overflow:hidden}
+.search-navigation .macvue-button,.search-done.macvue-button{height:30px;min-width:30px;border:0;box-shadow:none;background:transparent;padding:6px 9px;color:var(--text)}
+.search-navigation .macvue-button+ .macvue-button{position:relative}
+.search-navigation .macvue-button+ .macvue-button::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--text-secondary);opacity:.4}
+.search-navigation svg{display:block;width:12px;height:16px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.search-done.macvue-button{flex:none;padding:6px 14px;border-radius:8px;background:var(--chrome-hover);font-size:13px;font-weight:600}
+.search-navigation .macvue-button:hover,.search-done.macvue-button:hover{background:var(--chrome-pressed)}
 .search-highlight{position:absolute;z-index:8;pointer-events:none;background:rgba(255,199,0,.32);outline:1px solid rgba(220,155,0,.65);border-radius:6px}
 
 .kernel-status-line{flex-wrap:wrap;row-gap:6px}

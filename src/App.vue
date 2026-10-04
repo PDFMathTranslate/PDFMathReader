@@ -12,6 +12,7 @@ import {pageNote as getPageNote} from './page-note.mjs';
 function pageNote(p){return getPageNote(p,engine.value);}
 import {resolvePDFDestination,destinationPoint,destinationScale} from './pdf-navigation.mjs';
 import ReaderPage from './ReaderPage.vue';
+import RecentTranslationStatus from './RecentTranslationStatus.vue';
 import SidebarNavigation from './SidebarNavigation.vue';
 import {readOutline} from './sidebar-navigation.mjs';
 const sidebarWidth=ref(null);
@@ -101,6 +102,24 @@ import {clampZoom,startZoomMotion,zoomStep} from './zoom-motion.mjs';
 import {uiLanguage,t,setUILanguage} from './i18n.mjs';
 let getDocument,pdfWorker;async function ensurePDF(){if(!getDocument){const runtime=await loadPDFRuntime();pdfWorker??=new runtime.PDFWorker({name:'PDFMathReader'});getDocument=source=>runtime.getDocument({...source,worker:pdfWorker});}}
 const recentDocuments=ref([]);
+const recentStatusDocument=ref(null);
+async function recentContextMenu(id){
+ try{
+  const action=await window.previewRecents?.contextMenu(id);
+  if(action==='open')await openRecent(id);
+  else if(action==='hide'){++recentPreviewGeneration;recentDocuments.value=await window.previewRecents.list();scheduleRecentPreviews();}
+  else if(action==='status'){recentDocuments.value=await window.previewRecents.list();recentStatusDocument.value=recentDocuments.value.find(entry=>entry.id===id)||null;}
+ }catch{error.value=t('error.thisPDFUnavailable');}
+}
+function translationSnapshot(){
+ let completedPages=0,partialPages=0,failedPages=0;
+ for(const page of pages.value){
+  if(page.status==='error'||page.blocks.some(block=>block.status==='error'))failedPages++;
+  else if(page.mathDocument||(page.blocks.length&&page.blocks.every(block=>!!block.translation)))completedPages++;
+  else if(page.blocks.some(block=>!!block.translation))partialPages++;
+ }
+ return {totalPages:pages.value.length,completedPages,partialPages,failedPages,engine:engine.value,language:language.value,updatedAt:Date.now()};
+}
 const renderMetrics={pageFrames:0,thumbnailFrames:0,cacheHits:0,viewportLookups:0,geometryReads:0,openedAt:0,firstPageMs:null,peakResidentBytes:0};
 let recentPreviewGeneration=0,recentPreviewTimer;
 function scheduleRecentPreviews(){
@@ -145,6 +164,7 @@ async function openRecent(id){const token=epoch;try{if((pages.value.length||load
 async function clearRecent(){++recentPreviewGeneration;try{recentDocuments.value=await window.previewRecents.clear();}catch{error.value=t('error.clearDocumentHistory');}}
 const fileInput=ref(),reader=ref(),pages=shallowRef([]),title=ref('PDFMathReader'),active=ref(1),zoom=ref(1),sidebar=ref(true),sidebarLeaving=ref(false),settings=ref(false),language=ref(localStorage.getItem('language')||'Simplified Chinese'),concurrency=ref(2),automatic=ref(true),layoutVisible=ref(false),error=ref(''),loading=ref(false),configured=ref(false),model=ref(''),reading=ref(t('reading.ready')),showTranslations=ref(true),reuseTranslations=ref(localStorage.getItem('reuseTranslations')!=='false');
 const searchOpen=ref(false),searchQuery=ref(''),searchInput=ref(),searchResults=shallowRef([]),searchIndex=ref(-1),searchBusy=ref(false),searchFailure=ref('');
+const searchPageCount=computed(()=>new Set(searchResults.value.map(hit=>hit.page)).size);
 const searchHit=computed(()=>searchResults.value[searchIndex.value]||null);
 const searchTextCache=new WeakMap();let searchGeneration=0,searchTimer;
 async function openSearch(){if(!pages.value.length)return;settings.value=false;searchOpen.value=true;await nextTick();searchInput.value?.focus();}
@@ -232,7 +252,7 @@ function readingView(){
  const bounds=el.getBoundingClientRect(),box=host.getBoundingClientRect(),style=getComputedStyle(el);
  return {page:p.number,offsetX:Math.max(-16,Math.min(16,(bounds.left+parseFloat(style.paddingLeft)-box.left)/box.width)),offsetY:Math.max(-16,Math.min(16,(bounds.top+parseFloat(style.paddingTop)-box.top)/box.height)),zoom:zoom.value,fit:fitMode.value,direction:direction.value,columns:columns.value,sidebar:sidebar.value,showTranslations:showTranslations.value};
 }
-async function saveReadingView(){clearTimeout(readingSaveTimer);if(restoringView.value||loading.value)return;const view=readingView();if(view)try{if(currentRecentId)await window.previewRecents?.setView(currentRecentId,view);await window.previewDocuments?.saveView(view);}catch{error.value=t('error.saveReadingPosition');}}
+async function saveReadingView(){clearTimeout(readingSaveTimer);if(restoringView.value||loading.value)return;const view=readingView();if(view)try{if(currentRecentId){const id=currentRecentId,status=translationSnapshot();await window.previewRecents?.setView(id,view);await window.previewRecents?.setTranslationStatus?.(id,status);}await window.previewDocuments?.saveView(view);}catch{error.value=t('error.saveReadingPosition');}}
 function scheduleReadingSave(){if(restoringView.value||loading.value||!currentRecentId)return;clearTimeout(readingSaveTimer);readingSaveTimer=setTimeout(saveReadingView,180);}
 window.previewSaveReadingView=async()=>{await annotationWrites;await performanceRecorder.finish();await saveReadingView();};
 async function restoreReadingView(view){
@@ -591,7 +611,7 @@ function resetBitmaps(){bitmapFrames.clear();visibleThumbnails.clear();thumbnail
 const layoutElement=ref(),thumbnailList=ref(),thumbnailTop=ref(0),thumbnailHeight=ref(800);
 const pageLayout=computed(()=>markRaw(buildReaderLayout(pages.value,zoom.value,direction.value,columns.value,reducePadding.value?0:24,reducePadding.value?0:2)));
 const thumbnailLayout=computed(()=>markRaw(buildThumbnailLayout(pages.value)));
-const thumbnailItems=computed(()=>(sidebar.value||sidebarLeaving.value)&&sidebarMode.value==='thumbnails'?visibleThumbnailWindow(thumbnailLayout.value,thumbnailTop.value,thumbnailHeight.value):[]);
+const thumbnailItems=computed(()=>(sidebar.value||sidebarLeaving.value)?visibleThumbnailWindow(thumbnailLayout.value,thumbnailTop.value,thumbnailHeight.value):[]);
 const mountedPages=computed(()=>[...renderWindow.value].sort((a,b)=>a-b).map(n=>pages.value[n-1]).filter(Boolean));
 function bindPage(number,el){if(el)pageEls.set(number,el);else pageEls.delete(number);}
 function bindCanvas(number,el){const old=canvasEls.get(number);if(old&&old!==el)releaseCanvas(old);if(el)canvasEls.set(number,el);else canvasEls.delete(number);}
@@ -623,7 +643,7 @@ watch([active,thumbnailItems,sidebar],async()=>{
  thumbnailHighlight.value=button?.isConnected?{transform:`translate(-50%, ${button.offsetTop}px)`,width:button.offsetWidth+'px',height:button.offsetHeight+'px'}:null;
 },{flush:'post'});
 function thumbnailScrolling(event){showScrollbar(event);updateThumbnailViewport();}
-function updateThumbnailViewport(){const root=thumbnailList.value;if(!root)return;thumbnailTop.value=root.scrollTop-parseFloat(getComputedStyle(root).paddingTop);thumbnailHeight.value=root.clientHeight;}
+function updateThumbnailViewport(){const root=thumbnailList.value;if(!root||sidebarMode.value!=='thumbnails'||!root.clientHeight)return;thumbnailTop.value=root.scrollTop-parseFloat(getComputedStyle(root).paddingTop);thumbnailHeight.value=root.clientHeight;}
 watch(immersiveHeaderHidden,updateThumbnailViewport,{flush:'post'});
 function observeThumbnails(){updateThumbnailViewport();void renderThumbnails();}
 watch(thumbnailItems,async items=>{visibleThumbnails.clear();items.forEach(item=>visibleThumbnails.add(item.number));await nextTick();void renderThumbnails();},{flush:'post'});
@@ -764,6 +784,7 @@ onBeforeUnmount(()=>{clearTimeout(recentPreviewTimer);clearInterval(sessionTimer
 </script>
 
 <template>
+ <RecentTranslationStatus v-if="recentStatusDocument" :document="recentStatusDocument" @close="recentStatusDocument=null"/>
  <div class="app" :data-platform="platform" :class="{desktop:desktopCredentials,'content-glass':contentGlass,'windows-glass':windowsGlass,'startup-page':!pages.length,'is-fullscreen':fullscreen,'background-paused':!foreground,'immersive-header-hidden':immersiveHeaderHidden,'horizontal-immersive':pages.length&&direction==='horizontal'&&autoHideHeader,'reading-interaction':interactionMode==='reading'}" @pointermove="immersivePointer" @dragover.prevent @drop.prevent="importFile($event.dataTransfer.files[0])">
   <div v-if="immersiveHeaderHidden" class="header-reveal-zone" @pointerenter="revealHeader" aria-hidden="true"></div>
   <nav class="toolbar" :class="{'has-document':pages.length}" :aria-label="t('app.readerNavigation')" :inert="immersiveHeaderHidden" @focusin="revealHeader" @dblclick="headerDoubleClick">
@@ -790,7 +811,19 @@ onBeforeUnmount(()=>{clearTimeout(recentPreviewTimer);clearInterval(sessionTimer
     <button class="windows-close" :aria-label="menuLabel('Close Window',uiLanguage)" :title="menuLabel('Close Window',uiLanguage)" @click="desktopWindow.close()"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m1 1 10 10M11 1 1 11"/></svg></button>
    </div>
   </nav>
-  <Transition name="settings-motion"><form v-if="searchOpen&&pages.length" class="document-search" role="search" @submit.prevent="nextSearch()"><MacSearchField ref="searchInput" v-model="searchQuery" :placeholder="showTranslations?t('search.searchTranslation'):t('search.searchOriginal')" :aria-label="t('search.documentText')" @keydown.enter.prevent="nextSearch($event.shiftKey?-1:1)"/><span class="search-count" role="status">{{searchFailure|| (searchBusy?t('search.searching'):searchQuery.trim()?(searchResults.length?`${searchIndex+1} / ${searchResults.length}`:t('search.noMatches')):'')}}</span><MacButton :aria-label="t('search.previousMatch')" :disabled="!searchResults.length" @click="nextSearch(-1)">↑</MacButton><MacButton :aria-label="t('search.nextMatch')" :disabled="!searchResults.length" @click="nextSearch(1)">↓</MacButton><MacButton :aria-label="t('search.close')" @click="closeSearch()">×</MacButton></form></Transition>
+  <Transition name="settings-motion">
+   <form v-if="searchOpen&&pages.length" class="document-search" role="search" @submit.prevent="nextSearch()">
+    <MacSearchField ref="searchInput" v-model="searchQuery" :placeholder="showTranslations?t('search.searchTranslation'):t('search.searchOriginal')" :aria-label="t('search.documentText')" @keydown.enter.prevent="nextSearch($event.shiftKey?-1:1)"/>
+    <div class="search-results-row">
+     <span class="search-count" role="status">{{searchFailure||(searchBusy?t('search.searching'):searchQuery.trim()?(searchResults.length?t('search.foundPages',{count:searchPageCount}):t('search.noMatches')):'')}}</span>
+     <div class="search-navigation" role="group" :aria-label="t('search.documentText')">
+      <MacButton type="button" :aria-label="t('search.previousMatch')" :disabled="!searchResults.length" @click="nextSearch(-1)"><svg viewBox="0 0 16 20" aria-hidden="true"><path d="m11 3-7 7 7 7"/></svg></MacButton>
+      <MacButton type="button" :aria-label="t('search.nextMatch')" :disabled="!searchResults.length" @click="nextSearch(1)"><svg viewBox="0 0 16 20" aria-hidden="true"><path d="m5 3 7 7-7 7"/></svg></MacButton>
+     </div>
+     <MacButton type="button" class="search-done" :aria-label="t('search.close')" @click="closeSearch()">{{t('search.done')}}</MacButton>
+    </div>
+   </form>
+  </Transition>
   <input ref="fileInput" type="file" accept="application/pdf,.pdf" hidden @change="importFile($event.target.files[0]);$event.target.value=''">
   <div ref="workspace" class="workspace" :style="sidebarMode!=='thumbnails'&&sidebarWidth?{'--sidebar-width':sidebarWidth+'px'}:undefined" :class="{'document-transitioning':documentOpening||documentClosing,'document-opening':documentOpening,'document-closing':documentClosing}">
    <Transition :css="!documentOpening&&!documentClosing" name="sidebar-motion" @after-enter="observeThumbnails" @after-leave="sidebarLeaving=false;resizeFit()" @leave-cancelled="sidebarLeaving=false"><aside v-if="sidebar && pages.length" class="sidebar" :style="sidebarMode!=='thumbnails'&&sidebarWidth?{flexBasis:sidebarWidth+'px'}:undefined" :class="{'without-motion':restoringView,'sidebar-resizable':sidebarMode!=='thumbnails'}">
@@ -802,7 +835,7 @@ onBeforeUnmount(()=>{clearTimeout(recentPreviewTimer);clearInterval(sessionTimer
    </aside></Transition>
    <div class="reader-viewport">
    <main ref="reader" class="reader" :class="{pinching,'restoring-view':restoringView,'document-opening':documentOpening}" @scroll.passive="scrolling" @wheel.passive="interruptPageScroll();immersiveIntent($event)" @pointerdown="interruptPageScroll();immersiveIntent($event)">
-    <div v-if="!pages.length" class="empty" :class="{'has-recents':recentDocuments.length}"><div class="document-symbol"><span class="system-icon" aria-hidden="true" data-symbol="doc.text" style="--symbol:url('/symbols/doc.text.png')"></span></div><MacButton variant="prominent" size="large" class="primary" @click="fileInput.click()"><span class="open-pdf-content"><span class="system-icon" aria-hidden="true" data-symbol="doc.badge.plus" style="--symbol:url('/symbols/doc.badge.plus.png')"></span><span>{{t('startup.openPDF')}}</span></span></MacButton><p class="startup-description">{{t('startup.description')}}</p><MacButton v-if="!recentDocuments.length" class="sample-button" @click="sample">{{t('startup.sample')}}</MacButton><section v-if="recentDocuments.length" class="recent-documents" :aria-label="t('startup.recentDocuments')"><div class="recent-heading"><h2>{{t('startup.recentDocuments')}}</h2><MacButton size="large" @click="clearRecent">{{t('startup.clear')}}</MacButton></div><div class="recent-gallery"><button v-for="document in recentDocuments" :key="document.id" class="recent-document" :data-recent-id="document.id" :title="document.name" :aria-label="t('startup.openDocument',{name:document.name})" @click="openRecent(document.id)"><img v-if="document.thumbnail" :src="document.thumbnail" alt="" draggable="false"><span v-else class="recent-placeholder" :class="{'is-loading':!document.previewUnavailable}" aria-hidden="true"><span class="system-icon" style="--symbol:url('/symbols/doc.text.png')"></span><span v-if="document.previewUnavailable">{{t('startup.previewUnavailable')}}</span></span></button></div></section></div>
+    <div v-if="!pages.length" class="empty" :class="{'has-recents':recentDocuments.length}"><div class="document-symbol"><span class="system-icon" aria-hidden="true" data-symbol="doc.text" style="--symbol:url('/symbols/doc.text.png')"></span></div><MacButton variant="prominent" size="large" class="primary" @click="fileInput.click()"><span class="open-pdf-content"><span class="system-icon" aria-hidden="true" data-symbol="doc.badge.plus" style="--symbol:url('/symbols/doc.badge.plus.png')"></span><span>{{t('startup.openPDF')}}</span></span></MacButton><p class="startup-description">{{t('startup.description')}}</p><MacButton v-if="!recentDocuments.length" class="sample-button" @click="sample">{{t('startup.sample')}}</MacButton><section v-if="recentDocuments.length" class="recent-documents" :aria-label="t('startup.recentDocuments')"><div class="recent-heading"><h2>{{t('startup.recentDocuments')}}</h2><MacButton size="large" @click="clearRecent">{{t('startup.clear')}}</MacButton></div><div class="recent-gallery"><button v-for="document in recentDocuments" :key="document.id" class="recent-document" :data-recent-id="document.id" :title="document.name" :aria-label="t('startup.openDocument',{name:document.name})" @click="openRecent(document.id)" @contextmenu.prevent="recentContextMenu(document.id)" @keydown.shift.f10.prevent="recentContextMenu(document.id)"><img v-if="document.thumbnail" :src="document.thumbnail" alt="" draggable="false"><span v-else class="recent-placeholder" :class="{'is-loading':!document.previewUnavailable}" aria-hidden="true"><span class="system-icon" style="--symbol:url('/symbols/doc.text.png')"></span><span v-if="document.previewUnavailable">{{t('startup.previewUnavailable')}}</span></span></button></div></section></div>
     <div v-if="pages.length" ref="layoutElement" class="page-layout virtual-layout" :class="direction" :style="{'--page-columns':columns,width:pageLayout.width+'px',height:pageLayout.height+'px'}"><ReaderPage v-for="p in mountedPages" :key="p.number" :page="p" :frame="pageLayout.frames[p.number-1]" :zoom="zoom" :translations="showTranslations" :outlined="layoutVisible" :engine="engine" :foreground="foreground" :interaction-mode="interactionMode" :pdf-document="p.mathDocument&&showTranslations?p.mathDocument:pdf" :pdf-page-number="p.mathDocument&&showTranslations?1:p.number" :annotations="annotations" :selected-annotation="selectedAnnotation" :show-annotations="showAnnotations" @navigate="followReference" @annotations="saveAnnotations" @notice="annotationNotice" :register-host="bindPage" :register-canvas="bindCanvas" :native-source="nativeSource" :math-source="mathSource" :search-boxes="searchHit?.page===p.number?searchHit.boxes:[]" @hover="hoveredParagraph=$event" @toggle="toggle" @retry="processPage($event,true)"/></div>
    </main>
   <Transition name="reference-return"><button v-if="referenceReturn&&pages.length" class="page-navigator reference-return-button" :title="t('navigator.returnToPosition')+' (⌘⌫)'" :aria-label="t('navigator.returnToPosition')" aria-keyshortcuts="Meta+Backspace" @click="returnFromReference"><span aria-hidden="true">↩</span><span>{{t('navigator.returnToPage',{page:referenceReturn.origin.page})}}</span></button></Transition>

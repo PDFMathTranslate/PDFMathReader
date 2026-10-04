@@ -1936,7 +1936,8 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 
 .sidebar-motion-enter-active,.sidebar-motion-leave-active{overflow:hidden;transition:flex-basis 200ms var(--motion-ease),opacity 200ms var(--motion-ease),transform 200ms var(--motion-ease)!important;min-width:0}
 .sidebar-motion-enter-from,.sidebar-motion-leave-to{flex-basis:0!important;opacity:0;transform:translateX(-12px)}
-.sidebar-motion-enter-active>*,.sidebar-motion-leave-active>*{width:var(--sidebar-width)}
+.sidebar-motion-enter-active>*,.sidebar-motion-leave-active>*{width:var(--sidebar-width);box-sizing:border-box}
+.sidebar-motion-enter-active>.sidebar-navigation-switch,.sidebar-motion-leave-active>.sidebar-navigation-switch{width:calc(var(--sidebar-width) - 20px)}
 @media(prefers-reduced-motion:reduce){.sidebar-motion-enter-active,.sidebar-motion-leave-active{transition:none!important}}
 
 /* Let the native behind-window material fill the entire macOS start page. */

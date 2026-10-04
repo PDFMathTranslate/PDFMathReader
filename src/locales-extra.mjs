@@ -25,6 +25,8 @@ export const extraMessages = {
    openTranslationSettings: '開啟翻譯設定',
   },
   search: {
+   foundPages: '在 {count} 頁找到結果',
+   done: '完成',
    searchTranslation: '搜尋譯文',
    searchOriginal: '搜尋原文',
    documentText: '搜尋文件文字',
@@ -255,6 +257,8 @@ export const extraMessages = {
    openTranslationSettings: 'Ouvrir les paramètres de traduction',
   },
   search: {
+   foundPages: 'Trouvé sur {count} pages',
+   done: 'Terminé',
    searchTranslation: 'Rechercher dans la traduction',
    searchOriginal: 'Rechercher dans l’original',
    documentText: 'Rechercher dans le texte du document',
@@ -485,6 +489,8 @@ export const extraMessages = {
    openTranslationSettings: 'Abrir configuración de traducción',
   },
   search: {
+   foundPages: 'Encontrado en {count} páginas',
+   done: 'Listo',
    searchTranslation: 'Buscar traducción',
    searchOriginal: 'Buscar original',
    documentText: 'Buscar texto del documento',
@@ -715,6 +721,8 @@ export const extraMessages = {
    openTranslationSettings: '번역 설정 열기',
   },
   search: {
+   foundPages: '{count}개 페이지에서 발견',
+   done: '완료',
    searchTranslation: '번역문 검색',
    searchOriginal: '원문 검색',
    documentText: '문서 텍스트 검색',

@@ -31,6 +31,8 @@ const messages = {
    openTranslationSettings: 'Open translation settings',
   },
   search: {
+   foundPages: 'Found on {count} pages',
+   done: 'Done',
    searchTranslation: 'Search translation',
    searchOriginal: 'Search original',
    documentText: 'Search document text',
@@ -255,6 +257,8 @@ const messages = {
    openTranslationSettings: '打开翻译设置',
   },
   search: {
+   foundPages: '在 {count} 页找到结果',
+   done: '完成',
    searchTranslation: '搜索译文',
    searchOriginal: '搜索原文',
    documentText: '搜索文档文本',
@@ -479,6 +483,8 @@ const messages = {
    openTranslationSettings: '翻訳設定を開く',
   },
   search: {
+   foundPages: '{count} ページで見つかりました',
+   done: '完了',
    searchTranslation: '翻訳を検索',
    searchOriginal: '原文を検索',
    documentText: '文書テキストを検索',
@@ -700,6 +706,8 @@ for(const [locale,labels] of Object.entries({
  es:{retry:'Reintentar',checkPage:'Revisa esta página'},
  ko:{retry:'다시 시도',checkPage:'이 페이지를 확인하세요'}
 }))Object.assign(messages[locale].pageStatus,labels);
+const recentStatusMessages={"en": {"title": "Translation status", "snapshot": "Progress recorded at the last reading session.", "total": "Total pages", "completed": "Completed", "partial": "Partially translated", "pending": "Not completed", "failed": "Failed", "engine": "Engine", "language": "Target language", "updated": "Updated", "unknown": "No translation status recorded yet. Open this document to record its progress.", "close": "Close"}, "zh-CN": {"title": "翻译状态", "snapshot": "上次阅读时记录的翻译进度。", "total": "总页数", "completed": "已完成", "partial": "部分翻译", "pending": "未完成", "failed": "失败", "engine": "翻译引擎", "language": "目标语言", "updated": "更新时间", "unknown": "尚未记录翻译状态。打开文档后可记录进度。", "close": "关闭"}, "zh-TW": {"title": "翻譯狀態", "snapshot": "上次閱讀時記錄的翻譯進度。", "total": "總頁數", "completed": "已完成", "partial": "部分翻譯", "pending": "未完成", "failed": "失敗", "engine": "翻譯引擎", "language": "目標語言", "updated": "更新時間", "unknown": "尚未記錄翻譯狀態。開啟文件後可記錄進度。", "close": "關閉"}, "ja": {"title": "翻訳状況", "snapshot": "前回の閲覧時に記録された進捗。", "total": "総ページ数", "completed": "完了", "partial": "一部翻訳済み", "pending": "未完了", "failed": "失敗", "engine": "エンジン", "language": "翻訳先の言語", "updated": "更新日時", "unknown": "翻訳状況はまだ記録されていません。文書を開くと進捗を記録できます。", "close": "閉じる"}, "ko": {"title": "번역 상태", "snapshot": "마지막으로 읽을 때 기록된 진행 상황입니다.", "total": "전체 페이지", "completed": "완료", "partial": "부분 번역", "pending": "미완료", "failed": "실패", "engine": "엔진", "language": "대상 언어", "updated": "업데이트", "unknown": "아직 번역 상태가 기록되지 않았습니다. 문서를 열어 진행 상황을 기록하세요.", "close": "닫기"}, "fr": {"title": "État de la traduction", "snapshot": "Progression enregistrée lors de la dernière lecture.", "total": "Pages au total", "completed": "Terminées", "partial": "Partiellement traduites", "pending": "Non terminées", "failed": "Échecs", "engine": "Moteur", "language": "Langue cible", "updated": "Mise à jour", "unknown": "Aucun état enregistré. Ouvrez le document pour enregistrer sa progression.", "close": "Fermer"}, "es": {"title": "Estado de traducción", "snapshot": "Progreso registrado durante la última lectura.", "total": "Páginas totales", "completed": "Completadas", "partial": "Traducción parcial", "pending": "Sin completar", "failed": "Fallidas", "engine": "Motor", "language": "Idioma de destino", "updated": "Actualizado", "unknown": "Aún no hay un estado registrado. Abre el documento para registrar el progreso.", "close": "Cerrar"}};
+for(const [locale,labels] of Object.entries(recentStatusMessages))messages[locale].recentStatus=labels;
 export const UI_MESSAGES=messages;
 
 function lookup(locale, key) {

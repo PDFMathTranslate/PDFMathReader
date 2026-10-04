@@ -1,10 +1,28 @@
+import {createHash,randomUUID} from 'node:crypto';
+import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+
+// Share pending translations between local backends, while keeping their jobs separate.
+const pendingTranslations=new Map();
+const validTranslation=data=>typeof data?.choices?.[0]?.message?.content==='string'&&!!data.choices[0].message.content.trim();
+const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
 // Protocol used by PDFMathTranslate-next's SiliconFlowFreeTranslator.
 export const FREE_ENDPOINTS=Object.freeze(['https://api1.pdf2zh-next.com/chatproxy','https://api2.pdf2zh-next.com/chatproxy']);
 export function freeTranslationPrompt(text,language){
  return `You are a professional,authentic machine translation engine.\n\n;; Treat next line as plain text input and translate it into ${language}, output translation ONLY. If translation is unnecessary (e.g. proper nouns, codes, {{1}}, etc. ), return the original text. NO explanations. NO notes. Input:\n\n${text}`;
 }
 export function selectTranslationProvider(key){return key?{id:'openai',model:process.env.OPENAI_MODEL||'gpt-4.1-mini',key}:{id:'siliconflow-free',model:'siliconflow-free'};}
-export function createTranslationProvider(providerFetch){
+function requestBody(provider,body){
+ if(provider.id==='openai')return {...body,stream:false,model:provider.model};
+ let text=(body.messages||[]).map(message=>String(message.content||'')).join('\n\n');
+ // Preserve Fast's source and formula placeholders using Next's supported template.
+ if(provider.kernel==='pdf_math_fast'&&text.startsWith('You are a professional, authentic machine translation engine.')){
+  const source=text.match(/\n\nSource Text: ([\s\S]*)\n\nTranslated Text:$/);
+  if(source)text=freeTranslationPrompt(source[1],provider.language);
+ }
+ return {text,...body.response_format?.type==='json_object'?{requestJsonMode:true}:{}};
+}
+export function createTranslationProvider(providerFetch,{cacheDirectory}={}){
  let selected;
  async function endpoint(){
   selected??=Promise.any(FREE_ENDPOINTS.map(async url=>{
@@ -14,17 +32,10 @@ export function createTranslationProvider(providerFetch){
   })).catch(()=>FREE_ENDPOINTS[0]);
   return selected;
  }
- async function complete(provider,body,signal){
-  if(provider.id==='openai')return providerFetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal,headers:{Authorization:`Bearer ${provider.key}`,'Content-Type':'application/json'},body:JSON.stringify({...body,stream:false,model:provider.model})});
+ async function request(provider,body,signal){
+  if(provider.id==='openai')return providerFetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal,headers:{Authorization:`Bearer ${provider.key}`,'Content-Type':'application/json'},body:JSON.stringify(requestBody(provider,body))});
   const first=await endpoint();
-  let text=(body.messages||[]).map(message=>String(message.content||'')).join('\n\n');
-  // Legacy's default OpenAI prompt is not accepted by the free chatproxy.
-  // Preserve its source and formula placeholders using Next's supported template.
-  if(provider.kernel==='pdf_math_fast'&&text.startsWith('You are a professional, authentic machine translation engine.')){
-   const source=text.match(/\n\nSource Text: ([\s\S]*)\n\nTranslated Text:$/);
-   if(source)text=freeTranslationPrompt(source[1],provider.language);
-  }
-  const payload={text,...body.response_format?.type==='json_object'?{requestJsonMode:true}:{}};
+  const payload=requestBody(provider,body);
   for(const url of [first,...FREE_ENDPOINTS.filter(url=>url!==first)]){
    if(signal.aborted)throw signal.reason;
    let response;
@@ -38,6 +49,44 @@ export function createTranslationProvider(providerFetch){
    selected=Promise.resolve(url);
    return new Response(JSON.stringify({model:provider.model,choices:[{index:0,message:{role:'assistant',content},finish_reason:'stop'}]}),{headers:{'Content-Type':'application/json'}});
   }
+ }
+ async function complete(provider,body,signal,{cache=true}={}){
+  signal.throwIfAborted();
+  if(!cacheDirectory||!cache)return request(provider,body,signal);
+  // Include all output-affecting request options; never include document IDs,
+  // proxy tokens or provider credentials. Stream responses are buffered upstream.
+  const key=createHash('sha256').update(JSON.stringify(stable({version:1,service:provider.id,model:provider.model,body:requestBody(provider,body)}))).digest('hex');
+  const directory=resolve(cacheDirectory),path=join(directory,key+'.json');
+  try{const data=JSON.parse(await readFile(path,'utf8'));if(validTranslation(data))return Response.json(data);}catch{}
+  signal.throwIfAborted();
+  let pending=pendingTranslations.get(path);
+  if(!pending){
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),60000);
+   pending={controller,users:0};
+   pending.promise=(async()=>{
+    // A previous writer may finish between our first disk read and claiming the job.
+    try{const text=await readFile(path,'utf8');if(validTranslation(JSON.parse(text)))return {text,status:200,headers:[['Content-Type','application/json']]};}catch{}
+    const response=await request(provider,body,controller.signal),text=await response.text();
+    if(response.ok){
+     let data;try{data=JSON.parse(text);}catch{}
+     if(validTranslation(data)){
+      // Cache writes are optional: a full disk must not discard a valid translation.
+      try{await mkdir(directory,{recursive:true});const temporary=path+'.'+randomUUID()+'.tmp';await writeFile(temporary,text);await rename(temporary,path);}catch{}
+     }
+    }
+    return {text,status:response.status,headers:[...response.headers]};
+   })().finally(()=>{clearTimeout(timeout);if(pendingTranslations.get(path)===pending)pendingTranslations.delete(path);});
+   pendingTranslations.set(path,pending);
+  }
+  pending.users++;
+  try{
+   const result=await new Promise((accept,reject)=>{
+    const abort=()=>reject(signal.reason);signal.addEventListener('abort',abort,{once:true});
+    pending.promise.then(accept,reject).finally(()=>signal.removeEventListener('abort',abort));
+    if(signal.aborted)abort();
+   });
+   return new Response(result.text,{status:result.status,headers:result.headers});
+  }finally{if(--pending.users===0){if(pendingTranslations.get(path)===pending)pendingTranslations.delete(path);pending.controller.abort();}}
  }
  return {complete};
 }

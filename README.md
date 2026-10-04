@@ -122,6 +122,8 @@ Each desktop window has its own renderer and backend running in an Electron util
 
 Rendering, layout analysis, and translation run independently. Pages and thumbnails are virtualized, PDF.js and layout analysis load on demand, and rendering caches have bounded memory use. Each document is uploaded to its local backend once; subsequent requests use its document ID. Outdated translation work is cancelled when the document, language, or kernel changes.
 
+Translation text is cached across documents and app restarts. Identical requests to the same service and model reuse the saved result, including requests from the math translation kernels. Languages, prompts, and other translation options remain part of the cache key. Concurrent identical requests share one service call; failed or empty responses are not cached.
+
 | Setting | Engine | Output |
 | --- | --- | --- |
 | Ultra fast | PDF Inspector | Paragraph overlays on the original PDF |

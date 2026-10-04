@@ -63,6 +63,26 @@ export async function verifySidebar(window,recents){
   await run(`document.querySelector('.sidebar-navigation-switch button').click()`);
   assert.ok(await run(`document.querySelector('.sidebar-tab-indicator').getAnimations().length>0`),'tab selection animates');
   await wait(`window.previewRenderDiagnostics().thumbnails.length>0`);
+  await run(`window.sidebarThumbnailNode=document.querySelector('.thumbnail-list')`);
+  for(const tab of [1,2,0,2,1,0]){
+   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+   await new Promise(r=>setTimeout(r,35));
+  }
+  await wait(`!document.querySelector('.sidebar-view-motion-enter-active,.sidebar-view-motion-leave-active')&&!!document.querySelector('.thumbnail-list')`);
+  await wait(`window.previewRenderDiagnostics().thumbnails.length>0`);
+  assert.equal(await run(`document.querySelectorAll('.sidebar-view').length`),1,'rapid switching leaves one sidebar view');
+  assert.ok(await run(`document.querySelector('.thumbnail-list').clientHeight>100`),'thumbnail viewport survives rapid switching');
+  assert.equal(await run(`window.sidebarThumbnailNode===document.querySelector('.thumbnail-list')`),true,'tab switches preserve the thumbnail viewport');
+  assert.ok(await run(`(()=>{const f=document.querySelector('.sidebar-navigation-switch').getBoundingClientRect(),s=document.querySelector('.sidebar').getBoundingClientRect();return s.bottom-f.bottom<16;})()`),'switch remains at the bottom after rapid switching');
+  await run(`document.querySelectorAll('.sidebar-navigation-switch button')[1].click()`);
+  await wait(`!!document.querySelector('.sidebar-outline-item')&&!document.querySelector('.sidebar-view-motion-enter-active')`);
+  window.webContents.send('reader:action','sidebar');
+  await wait(`!document.querySelector('.sidebar')`);
+  window.webContents.send('reader:action','sidebar');
+  await wait(`!!document.querySelector('.sidebar-motion-enter-active')`);
+  assert.equal(await run(`(()=>{const s=document.querySelector('.sidebar'),f=s.querySelector('.sidebar-navigation-switch');return f.getBoundingClientRect().width+parseFloat(getComputedStyle(f).marginLeft)+parseFloat(getComputedStyle(f).marginRight)<=${expanded+21};})()`),true,'tab switch fits the sidebar during expansion');
+  await wait(`!!document.querySelector('.sidebar')&&!document.querySelector('.sidebar-motion-enter-active')`);
+  assert.ok(Math.abs((await run(`document.querySelector('.sidebar').getBoundingClientRect().width`))-expanded-20)<2,'resized sidebar width survives hide/show');
   console.log(JSON.stringify({sidebarModes:true,originalOutlinePageNavigation:true,mergedAnnotations:true,sourceCommentActivation:true,translationAnnotationNavigation:true,footerPlacement:true,thumbnailRestoration:true,outlineCollapse:true,dragAndKeyboardResize:true,fourLineCommentTrim:true,tabAnimation:true}));
  }finally{await rm(folder,{recursive:true,force:true});app.quit();}
 }
