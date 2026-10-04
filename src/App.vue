@@ -167,9 +167,9 @@ const fileInput=ref(),reader=ref(),pages=shallowRef([]),title=ref('PDFMathReader
 const searchOpen=ref(false),searchQuery=ref(''),searchInput=ref(),searchResults=shallowRef([]),searchIndex=ref(-1),searchBusy=ref(false),searchFailure=ref('');
 const searchPageCount=computed(()=>new Set(searchResults.value.map(hit=>hit.page)).size);
 const searchHit=computed(()=>searchResults.value[searchIndex.value]||null);
-const searchTextCache=new WeakMap();let searchGeneration=0,searchTimer;
-async function openSearch(){if(!pages.value.length)return;settings.value=false;searchOpen.value=true;await nextTick();searchInput.value?.focus();}
-function closeSearch(){searchOpen.value=false;searchResults.value=[];searchIndex.value=-1;++searchGeneration;searchBusy.value=false;clearTimeout(searchTimer);}
+const searchTextCache=new WeakMap();let searchGeneration=0,searchTimer,searchOrigin=null;
+async function openSearch(){if(!pages.value.length)return;if(!searchOpen.value)searchOrigin=readingView();settings.value=false;searchOpen.value=true;await nextTick();searchInput.value?.focus();}
+function closeSearch(){searchOrigin=null;searchOpen.value=false;searchResults.value=[];searchIndex.value=-1;++searchGeneration;searchBusy.value=false;clearTimeout(searchTimer);}
 async function indexedText(document,number){let cache=searchTextCache.get(document);if(!cache){cache=new Map();searchTextCache.set(document,cache);}if(!cache.has(number))cache.set(number,pdfSearchSegments(await document.getPage(number)));return cache.get(number);}
 async function runSearch(){
  const generation=++searchGeneration,token=epoch,query=searchQuery.value;searchResults.value=[];searchIndex.value=-1;searchFailure.value='';
@@ -191,7 +191,20 @@ async function runSearch(){
  finally{if(generation===searchGeneration)searchBusy.value=false;}
 }
 function scheduleSearch(){clearTimeout(searchTimer);++searchGeneration;searchBusy.value=false;searchTimer=setTimeout(runSearch,180);}
-async function locateSearch(){const hit=searchHit.value;if(!hit)return;const token=epoch;for(const block of hit.blocks)block.translated=showTranslations.value;await go(hit.page);if(token!==epoch||hit!==searchHit.value)return;const host=pageEls.get(hit.page),el=reader.value,box=hit.boxes[0];if(!host||!el||!box)return;const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;scheduleViewport();}
+async function locateSearch(){
+ const hit=searchHit.value,origin=searchOrigin;if(!hit)return;
+ const token=epoch,generation=searchGeneration,request=++referenceNavigation;
+ referenceJumping=true;referenceReturn.value=null;
+ try{
+  for(const block of hit.blocks)block.translated=showTranslations.value;
+  await go(hit.page);
+  if(token!==epoch||generation!==searchGeneration||request!==referenceNavigation||hit!==searchHit.value||!searchOpen.value)return;
+  const host=pageEls.get(hit.page),el=reader.value,box=hit.boxes[0];
+  if(host&&el&&box){const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;}
+  if(origin)referenceReturn.value={origin,targetPage:hit.page};
+  viewportPages();scheduleViewport();scheduleReadingSave();
+ }finally{if(request===referenceNavigation)referenceJumping=false;}
+}
 function nextSearch(delta=1){if(!searchResults.value.length)return;searchIndex.value=(searchIndex.value+delta+searchResults.value.length)%searchResults.value.length;void locateSearch();}
 watch([searchQuery,showTranslations],scheduleSearch);
 watch(()=>searchOpen.value?pages.value.map(p=>p.blocks.map(b=>b.translation||'').join('')).join(''):null,scheduleSearch);
