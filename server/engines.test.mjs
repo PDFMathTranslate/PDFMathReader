@@ -34,3 +34,13 @@ test('Fast and Precise retain pre-update translated PDFs and their layouts acros
   }
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('kernel cache-only lookup misses without starting a worker or creating a job',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'kernel-cache-probe-'));
+ try{
+  const engines=createEngines({root,cacheDir:join(root,'math'),findUvImpl:async()=>({available:true}),execImpl:async()=>({stdout:'1.0.0'})});
+  for(const id of ['pdf_math_fast','pdf_math_precise'])assert.equal(await engines.translate({id,bytes:Buffer.from('%PDF fixture'),page:1,language:'French',model:'fixture',cacheOnly:true}),null);
+  const {readdir}=await import('node:fs/promises');assert.deepEqual(await readdir(root),[]);
+  engines.close();
+ }finally{await rm(root,{recursive:true,force:true});}
+});

@@ -426,3 +426,5 @@
 .app[data-platform="darwin"] .settings .macvue-segmented>.macvue-segment{
  border-radius:14px;corner-shape:squircle;
 }
+
+.translation-progress.cache-reading .translation-progress-fill{stroke:var(--text-secondary,#8e8e93)}

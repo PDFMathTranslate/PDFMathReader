@@ -163,7 +163,7 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   finally{if(advancedMetadata.get(cacheKey)===task)advancedMetadata.delete(cacheKey);}
  }
 
- async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,cacheScope='',onPageTiming}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,cacheScope='',onPageTiming,cacheOnly=false}){
   const emitTiming=report=>{onTiming?.(report);onPageTiming?.(report);};
   const started=performance.now(),stages={};let checkpoint=started;
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
@@ -184,6 +184,7 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   const hit=await cache.lookup(model,{reuseTranslations});
   if(hit){const result=hit.result;result.layoutKey=layoutKey(hit.key);result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}
   step('cacheLookup');
+  if(cacheOnly)return null;
   await mkdir(root,{recursive:true});
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
   const codes=LANGUAGE_CODES;
