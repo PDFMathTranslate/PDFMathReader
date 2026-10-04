@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('previewTestMode',process.argv.includes('--previ
 
 contextBridge.exposeInMainWorld('previewAnnotations',Object.freeze({
  contextMenu:kind=>ipcRenderer.invoke('previewAnnotations:contextMenu',kind),
+ confirmDelete:kind=>ipcRenderer.invoke('previewAnnotations:confirmDelete',kind),
  palette:()=>ipcRenderer.invoke('previewAnnotations:palette'),
  markDeleteHint:()=>ipcRenderer.invoke('previewAnnotations:markDeleteHint'),
  prepare:bytes=>ipcRenderer.invoke('previewAnnotations:prepare',bytes),
@@ -55,7 +56,7 @@ contextBridge.exposeInMainWorld('previewWindow',Object.freeze({
  onFullscreen:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('window:fullscreen',listener);return ()=>ipcRenderer.removeListener('window:fullscreen',listener);}
 }));
 
-contextBridge.exposeInMainWorld('previewRecents',Object.freeze({list:()=>ipcRenderer.invoke('recents:list'),clear:()=>ipcRenderer.invoke('recents:clear'),open:id=>ipcRenderer.invoke('recents:open',id),openWindow:id=>ipcRenderer.invoke('recents:openWindow',id),preview:id=>ipcRenderer.invoke('recents:preview',id),contextMenu:id=>ipcRenderer.invoke('recents:contextMenu',id),setThumbnail:(id,thumbnail)=>ipcRenderer.invoke('recents:setThumbnail',{id,thumbnail}),setView:(id,view)=>ipcRenderer.invoke('recents:setView',{id,view}),setTranslationStatus:(id,status)=>ipcRenderer.invoke('recents:setTranslationStatus',{id,status}),remember:(file,ticket,thumbnail)=>ipcRenderer.invoke('recents:remember',ticket?{ticket,thumbnail}:{path:webUtils.getPathForFile(file),thumbnail})}));
+contextBridge.exposeInMainWorld('previewRecents',Object.freeze({statusDialog:value=>ipcRenderer.invoke('recents:statusDialog',value),list:()=>ipcRenderer.invoke('recents:list'),clear:()=>ipcRenderer.invoke('recents:clear'),open:id=>ipcRenderer.invoke('recents:open',id),openWindow:id=>ipcRenderer.invoke('recents:openWindow',id),preview:id=>ipcRenderer.invoke('recents:preview',id),contextMenu:id=>ipcRenderer.invoke('recents:contextMenu',id),setThumbnail:(id,thumbnail)=>ipcRenderer.invoke('recents:setThumbnail',{id,thumbnail}),setView:(id,view)=>ipcRenderer.invoke('recents:setView',{id,view}),setTranslationStatus:(id,status)=>ipcRenderer.invoke('recents:setTranslationStatus',{id,status}),remember:(file,ticket,thumbnail)=>ipcRenderer.invoke('recents:remember',ticket?{ticket,thumbnail}:{path:webUtils.getPathForFile(file),thumbnail})}));
 
 contextBridge.exposeInMainWorld('previewActivity',Object.freeze({current:()=>ipcRenderer.invoke('window:activity'),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('activity:changed',listener);return ()=>ipcRenderer.removeListener('activity:changed',listener);}}));
 

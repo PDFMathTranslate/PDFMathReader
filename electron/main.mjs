@@ -233,6 +233,17 @@ else {
    try{const document=await readSystemPDF(path),source={path,reliable:true,preserveWithoutPath:false,bytes:Buffer.from(document.bytes)};state.unkeyedAnnotationSource=source;state.annotationSources.set(path,source);const ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,path);return {...document,ticket};}catch{state.performance.hasDocument=false;return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
   });
   ipcMain.handle('previewAnnotations:prepare',async(event,value)=>{const target=trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');const imported=await importPDFAnnotations(value);windows.get(target).unkeyedAnnotationSource={bytes:Buffer.from(value),reliable:false,preserveWithoutPath:true};return {...imported,bytes:new Uint8Array(await embedAnnotations(value,[],imported.nativeRefs))};});
+  ipcMain.handle('previewAnnotations:confirmDelete',async(event,kind)=>{
+    const target=trustedWindow(event);
+    if(!['highlight','comment'].includes(kind))throw Error('Invalid annotation kind.');
+    const {response}=await dialog.showMessageBox(target,{type:'warning',message:`删除这条${kind==='highlight'?'高亮':'批注'}？`,buttons:['取消','删除'],defaultId:0,cancelId:0,noLink:true});
+    return response===1;
+  });
+  ipcMain.handle('recents:statusDialog',async(event,value)=>{
+    const target=trustedWindow(event);
+    if(!value||typeof value.title!=='string'||value.title.length>200||typeof value.detail!=='string'||value.detail.length>12000||typeof value.close!=='string'||value.close.length>100)throw Error('Invalid status dialog.');
+    await dialog.showMessageBox(target,{type:'info',message:value.title,detail:value.detail,buttons:[value.close],defaultId:0,cancelId:0,noLink:true});
+  });
   ipcMain.handle('previewAnnotations:palette',async event=>{trustedWindow(event);return annotations.palette();});
   ipcMain.handle('previewAnnotations:contextMenu',(event,kind)=>{
    const target=trustedWindow(event);

@@ -6,7 +6,22 @@ const emit=defineEmits(['close']);
 const dialog=ref(null);
 const platform=window.previewAppearance?.platform||'web';
 const languageKeys={'Simplified Chinese':'simplifiedChinese','Traditional Chinese':'traditionalChinese',English:'english',Japanese:'japanese',Korean:'korean',French:'french',German:'german',Spanish:'spanish'};
-onMounted(()=>dialog.value.showModal());
+onMounted(async()=>{
+ if(platform==='darwin'&&window.previewRecents?.statusDialog){
+  const status=props.document.translationStatus;
+  const rows=status?[
+   ['total',status.totalPages],['completed',status.completedPages],['partial',status.partialPages],
+   ['pending',status.totalPages-status.completedPages-status.partialPages-status.failedPages],['failed',status.failedPages],
+   ['engine',t({pdf_inspector:'engine.ultraFast',pdf_math_fast:'engine.fast',pdf_math_precise:'engine.precise'}[status.engine])],
+   ['language',languageKeys[status.language]?t('languages.'+languageKeys[status.language]):status.language],
+   ['updated',new Date(status.updatedAt).toLocaleString(uiLanguage.value)]
+  ].map(([key,value])=>`${t('recentStatus.'+key)}：${value}`).join('\n'):'';
+  try{
+   await window.previewRecents.statusDialog({title:t('recentStatus.title'),detail:[props.document.name,t(status?'recentStatus.snapshot':'recentStatus.unknown'),rows].filter(Boolean).join('\n\n'),close:t('recentStatus.close')});
+   emit('close');
+  }catch{dialog.value.showModal();}
+ }else dialog.value.showModal();
+});
 </script>
 <template>
  <dialog ref="dialog" class="recent-status-dialog" :data-platform="platform" aria-labelledby="recent-status-title" @close="emit('close')" @click="event=>{if(event.target===dialog)dialog.close();}">
