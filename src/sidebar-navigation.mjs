@@ -12,7 +12,10 @@ export async function readOutline(pdf) {
      if(number>=1&&number<=pdf.numPages)page=number;
     }
    }catch{} // Broken/external destinations retain their heading and children.
-   return [{id,title:item.title||'',depth,page},...await resolve(item.items,depth+1,id+'.')];
+   // Some PDF producers pad bookmark strings with NUL bytes. PDF.js retains
+   // these characters, which Windows fonts can render as missing-glyph boxes.
+   const title=(item.title||'').replace(/\u0000/g,'');
+   return [{id,title,depth,page},...await resolve(item.items,depth+1,id+'.')];
   }))).flat();
  }
  return resolve(outline);

@@ -49,7 +49,11 @@ const recentExtraLabels={
  fr:{pin:'Épingler',unpin:'Désépingler',clearCache:'Effacer le cache de traduction'},
  es:{pin:'Fijar',unpin:'Desfijar',clearCache:'Borrar caché de traducción'}
 };
-const recentContextMenuLabelsFor=locale=>recentContextMenuLabels[locale]||recentContextMenuLabels.en;
+const fileManagerRevealLabels={en:'Show in File Manager','zh-CN':'在文件管理器中显示','zh-TW':'在檔案管理員中顯示',fr:'Afficher dans le gestionnaire de fichiers',es:'Mostrar en el administrador de archivos',ja:'ファイルマネージャーで表示',ko:'파일 관리자에서 표시'};
+const recentContextMenuLabelsFor=locale=>{
+ const labels=recentContextMenuLabels[locale]||recentContextMenuLabels.en;
+ return process.platform==='darwin'?labels:{...labels,reveal:fileManagerRevealLabels[locale]||fileManagerRevealLabels.en};
+};
 const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
 const pendingFiles=[];
 function enqueueFiles(paths){for(const path of paths)if(!pendingFiles.includes(path))pendingFiles.push(path);if(paths.length)notifyDocuments();}
