@@ -39,7 +39,7 @@ if(!app.requestSingleInstanceLock())app.quit();
 else {
  let backend,window,credentials,preferences,recents,annotations,documentSession;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
  const WINDOW_LOCAL_PREFERENCES=['engine','direction','columns','fit','zoom','translationMode'];
- const SETTINGS_PREFERENCES=['restoreDocuments','interactionMode','language','sourceLanguage','concurrency','pageConcurrency','automatic','layoutVisible','autoHideHeader','uiLanguage','kernelAdvancedOptions'];
+ const SETTINGS_PREFERENCES=['documentOpenMode','restoreDocuments','interactionMode','language','sourceLanguage','concurrency','pageConcurrency','automatic','layoutVisible','autoHideHeader','uiLanguage','kernelAdvancedOptions'];
  const APPEARANCE_PREFERENCES=['appearance','accentColor','reduceMotion','reduceTransparency','reducePadding'];
  const preferenceSnapshot=state=>Object.fromEntries(APPEARANCE_PREFERENCES.map(key=>[key,state?.[key]]));
  const samePreferences=(left,right)=>APPEARANCE_PREFERENCES.every(key=>left[key]===right[key]);

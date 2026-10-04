@@ -65,7 +65,7 @@
 .document-search{position:fixed;top:calc(var(--toolbar-height) + 10px);right:14px;z-index:25;display:flex;align-items:center;gap:8px;padding:12px;border-radius:16px;background:rgba(252,252,252,.94);backdrop-filter:blur(20px);box-shadow:var(--shadow-popover);max-width:calc(100vw - 28px)}
 .document-search>.macvue-field{width:220px;min-width:100px;flex:1}
 .search-count{font-size:12px;color:var(--text-secondary);white-space:nowrap}
-.search-highlight{position:absolute;z-index:8;pointer-events:none;background:rgba(255,199,0,.32);outline:1px solid rgba(220,155,0,.65);border-radius:3px}
+.search-highlight{position:absolute;z-index:8;pointer-events:none;background:rgba(255,199,0,.32);outline:1px solid rgba(220,155,0,.65);border-radius:6px}
 
 .kernel-status-line{flex-wrap:wrap;row-gap:6px}
 .kernel-module{white-space:nowrap}

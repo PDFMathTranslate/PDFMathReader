@@ -11,6 +11,7 @@ function hasChildren(item){return props.outline.some(child=>child.id.startsWith(
 function toggleOutline(item){const next=new Set(collapsed.value);if(next.has(item.id))next.delete(item.id);else next.add(item.id);collapsed.value=next;}
 watch(()=>props.outline,()=>collapsed.value=new Set());
 const items=computed(()=>orderedAnnotations(props.annotations));
+function annotationText(item){return (item.text||'').replace(/[\r\n\u2028\u2029]+/g,'').trim();}
 watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  if(props.mode==='outline'&&!props.outline.length||props.mode==='annotations'&&!props.annotations.length)emit('update:mode','thumbnails');
 });
@@ -27,8 +28,8 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  <div v-else-if="mode==='annotations'" class="sidebar-navigation-list" :aria-label="t('sidebar.annotations')">
   <button v-for="item in items" :key="item.id" class="sidebar-annotation-item" :class="{selected:selected===item.id}" @click="emit('annotation',item)">
    <span class="sidebar-annotation-meta"><i :style="{background:item.color}"></i>{{t(item.origin==='translation'?'sidebar.translation':'sidebar.source')}} · {{t('sidebar.page',{page:item.page})}} · {{t(item.kind==='comment'?'sidebar.comment':'sidebar.highlight')}}</span>
-   <span v-if="item.text" class="sidebar-annotation-text">{{item.text}}</span><span v-if="item.comment" class="sidebar-annotation-comment">{{item.comment}}</span>
-   <span v-if="!item.text&&!item.comment">{{t('sidebar.highlight')}}</span>
+   <span v-if="annotationText(item)" class="sidebar-annotation-text">{{annotationText(item)}}</span><span v-if="item.comment" class="sidebar-annotation-comment">{{item.comment}}</span>
+   <span v-if="!annotationText(item)&&!item.comment">{{t('sidebar.highlight')}}</span>
   </button>
  </div>
  </div></Transition>
@@ -41,11 +42,11 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .sidebar-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .sidebar-navigation-list{flex:1;min-height:0;overflow:auto;padding:8px 6px;scrollbar-width:thin}
 .sidebar-outline-item,.sidebar-annotation-item{display:flex;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:9px 8px;color:var(--text);gap:8px;cursor:pointer}
-.sidebar-outline-row{display:flex;align-items:flex-start}.sidebar-outline-item{flex:1;min-width:0;padding-left:2px}.sidebar-outline-spacer,.sidebar-outline-toggle{flex:0 0 20px;width:20px;height:32px}.sidebar-outline-toggle{border:0;background:transparent;padding:8px 4px;cursor:pointer}.sidebar-outline-toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform .18s ease}.sidebar-outline-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
+.sidebar-outline-row{display:flex;align-items:flex-start;border-radius:6px}.sidebar-outline-item{flex:1;min-width:0;padding-left:2px}.sidebar-outline-spacer,.sidebar-outline-toggle{flex:0 0 20px;width:20px;height:32px}.sidebar-outline-toggle{border:0;background:transparent;padding:8px 4px;cursor:pointer}.sidebar-outline-toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform .18s ease}.sidebar-outline-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
 .sidebar-outline-item span{flex:1;overflow-wrap:anywhere}.sidebar-outline-item small{color:var(--text-secondary);flex-shrink:0}
 .sidebar-outline-item:disabled{cursor:default;color:var(--text-secondary)}
 .sidebar-annotation-item{flex-direction:column;gap:5px;border-bottom:1px solid var(--chrome-border)}
-.sidebar-outline-item:not(:disabled):hover,.sidebar-annotation-item:hover,.sidebar-annotation-item.selected{background:var(--chrome-pressed)}
+.sidebar-outline-row:has(.sidebar-outline-item:not(:disabled)):hover,.sidebar-annotation-item:hover,.sidebar-annotation-item.selected{background:var(--chrome-pressed)}
 .sidebar-annotation-meta{font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:4px}
 .sidebar-annotation-meta i{width:8px;height:8px;border-radius:2px;flex-shrink:0;border:1px solid #0002}
 .sidebar-annotation-text,.sidebar-annotation-comment{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
@@ -72,7 +73,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .app[data-platform="darwin"] .sidebar-annotation-item.selected{
  background:color-mix(in srgb,var(--text) 10%,transparent);
 }
-.app[data-platform="darwin"] .sidebar-outline-item{border-radius:8px}
+.app[data-platform="darwin"] .sidebar-outline-row,.app[data-platform="darwin"] .sidebar-outline-item{border-radius:8px}
 .app[data-platform="darwin"] .sidebar-navigation-switch{
  margin:8px 10px 10px;padding:2px;border:0;border-radius:10px;
  background:color-mix(in srgb,var(--text) 8%,transparent);
@@ -84,7 +85,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  box-shadow:0 1px 3px #00000014,inset 0 0 0 1px #ffffff18;
 }
 @supports(corner-shape:squircle){
- .app[data-platform="darwin"] :is(.sidebar-annotation-item,.sidebar-outline-item,.sidebar-navigation-switch,.sidebar-navigation-switch button,.sidebar-tab-indicator){corner-shape:squircle}
+ .app[data-platform="darwin"] :is(.sidebar-annotation-item,.sidebar-outline-row,.sidebar-outline-item,.sidebar-navigation-switch,.sidebar-navigation-switch button,.sidebar-tab-indicator){corner-shape:squircle}
 }
 @media(prefers-reduced-motion:reduce){.app[data-platform="darwin"] .sidebar-annotation-item{transition:none}}
 [data-reduce-motion=true] .app[data-platform="darwin"] .sidebar-annotation-item{transition:none}

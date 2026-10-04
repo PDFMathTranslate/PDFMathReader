@@ -26,8 +26,24 @@ export async function verifyPDFNavigation(window,recents){
   await wait('!!document.querySelector(".reference-return-button")&&window.previewRenderDiagnostics().active===3');
   assert.ok(await run('document.querySelector(".reference-return-button").title.includes("⌘⌫")'));
   assert.equal(await run('getComputedStyle(document.querySelector(".reference-return-button")).transitionDuration'),'0.2s');
+  async function verifyPlacement(){
+   const geometry=await run(`(()=>{const b=document.querySelector('.reference-return-button').getBoundingClientRect(),r=document.querySelector('.reader').getBoundingClientRect();return {left:b.left-r.left,bottom:r.bottom-b.bottom,inside:b.left>=r.left&&b.right<=r.right&&b.top>=r.top&&b.bottom<=r.bottom};})()`);
+   assert.equal(geometry.inside,true);assert.ok(Math.abs(geometry.left-22)<2);assert.ok(Math.abs(geometry.bottom-22)<2);
+  }
+  await verifyPlacement();
+  await run(`document.querySelector('[aria-label="Toggle thumbnails"]').click()`);await new Promise(r=>setTimeout(r,400));await verifyPlacement();
+  await run(`document.querySelector('[aria-label="Toggle thumbnails"]').click()`);await new Promise(r=>setTimeout(r,400));await verifyPlacement();
+
   await run('document.querySelector(".reference-return-button").click()');await wait('window.previewRenderDiagnostics().active===1&&!document.querySelector(".reference-return-button")');
   const returned=await run('window.previewRenderDiagnostics().readingView');assert.ok(Math.abs(returned.offsetY-origin.offsetY)<.005,'restore precise position');
+  await run('document.querySelectorAll(".thumb")[2].click()');
+  await wait('window.previewRenderDiagnostics().active===3&&!!document.querySelector(".reference-return-button")');
+  await verifyPlacement();
+  await run('document.querySelector(".reference-return-button").click()');
+  await wait('window.previewRenderDiagnostics().active===1&&!document.querySelector(".reference-return-button")');
+  const sidebarReturned=await run('window.previewRenderDiagnostics().readingView');
+  assert.ok(Math.abs(sidebarReturned.offsetY-origin.offsetY)<.005,'sidebar restores precise position');
+  assert.equal(sidebarReturned.zoom,origin.zoom);
   await run('document.querySelector(".page-wrap:nth-child(1) .reading-links a").click()');await wait('!!document.querySelector(".page-wrap:nth-child(3) .reading-links a")');
   await run('document.querySelector(".page-wrap:nth-child(3) .reading-links a").click()');await wait('window.previewRenderDiagnostics().active===5&&document.querySelector(".reference-return-button")?.textContent.includes("3")');
   await new Promise(r=>setTimeout(r,300));
@@ -35,6 +51,6 @@ export async function verifyPDFNavigation(window,recents){
   await run('document.querySelector(".page-wrap:nth-child(3) .reading-links a").click()');await wait('!!document.querySelector(".reference-return-button")');
   await run('document.querySelector(".reader").scrollTop=0');await wait('!document.querySelector(".reference-return-button")');
   const unbound=await run('(()=>{const e=new KeyboardEvent("keydown",{key:"Backspace",metaKey:true,bubbles:true,cancelable:true});document.dispatchEvent(e);return !e.defaultPrevented})()');assert.equal(unbound,true);
-  console.log(JSON.stringify({internalLinks:true,preciseReturn:true,nestedJump:true,commandBackspace:true,hoverHint:true,fade200ms:true,offscreenDismissal:true,shortcutUnbound:true}));
+  console.log(JSON.stringify({readerViewportPlacement:true,sidebarPlacement:true,internalLinks:true,preciseReturn:true,nestedJump:true,commandBackspace:true,hoverHint:true,fade200ms:true,offscreenDismissal:true,shortcutUnbound:true}));
  }finally{await rm(folder,{recursive:true,force:true});app.quit();}
 }

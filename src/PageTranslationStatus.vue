@@ -17,7 +17,6 @@ const label=computed(()=>props.page.status==='queued'?t('pageStatus.queued'):pro
  </div>
  <Transition name="page-translation-toast">
   <div v-if="failed||(!pending&&detail)" class="page-translation-toast" :class="{error:failed}" role="status" aria-live="polite" @pointerdown.stop @click.stop>
-   <span class="page-translation-toast-icon" aria-hidden="true">!</span>
    <div class="page-translation-toast-content">
     <strong>{{failed?t('pageStatus.translationFailed'):t('pageStatus.checkPage')}}</strong>
     <p v-if="detail">{{detail}}</p>
@@ -34,8 +33,7 @@ const label=computed(()=>props.page.status==='queued'?t('pageStatus.queued'):pro
 .page-translation-progress.queued .page-translation-progress-fill{width:12%;animation:none;opacity:.55}
 @keyframes page-translation-progress{from{transform:translateX(-100%)}to{transform:translateX(386%)}}
 .page-translation-toast{position:absolute;right:12px;bottom:16px;box-sizing:border-box;max-width:min(380px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--chrome-border);border-radius:12px;background:var(--chrome-solid);color:var(--text);box-shadow:0 4px 18px #00000020;z-index:10;font-size:12px;line-height:1.4;text-align:left}
-.page-translation-toast-icon{display:grid;place-items:center;flex:0 0 20px;height:20px;border:1.5px solid currentColor;border-radius:50%;color:#a76500;font-weight:600}
-.page-translation-toast.error .page-translation-toast-icon{color:var(--danger)}
+.page-translation-toast.error::before{content:none}
 .page-translation-toast-content{min-width:0;flex:1}
 .page-translation-toast-content strong{font-size:12px;font-weight:600}
 .page-translation-toast-content p{margin:3px 0 0;color:var(--text-secondary);overflow-wrap:anywhere;max-height:100px;overflow:auto;white-space:pre-wrap}

@@ -38,3 +38,8 @@ export function annotationNotePositions(notes,pageHeight,zoom){
  }
  return new Map(sorted.map(n=>[n.id,Math.max(0,n.y)]));
 }
+
+// Shared search and annotation spacing in screen pixels.
+export function highlightLineRect(r,rects,page,zoom){
+ const padding=2/zoom,gap=4/zoom,previous=rects.filter(b=>b.y<r.y-1).sort((a,b)=>b.y-a.y)[0],next=rects.filter(b=>b.y>r.y+1).sort((a,b)=>a.y-b.y)[0];const x=Math.max(0,r.x-padding),y=Math.max(0,r.y-padding,previous?(previous.y+previous.height+r.y)/2+gap/2:0),bottom=Math.min(page.height,r.y+r.height+padding,next?(r.y+r.height+next.y)/2-gap/2:Infinity);return {x,y,width:Math.min(page.width,r.x+r.width+padding)-x,height:Math.max(1,bottom-y)};
+}
