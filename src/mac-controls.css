@@ -88,10 +88,10 @@
 .parallel-ticks{position:relative;height:3px;margin:-5px var(--parallel-end-inset) 0}
 .parallel-ticks>i{position:absolute;top:0;width:3px;height:3px;border-radius:50%;background:#aaa;transform:translateX(-50%)}
 
-.settings .setting-row .macvue-pop-up-button[aria-label="Translation language"]{width:max-content;max-width:none;flex-shrink:0}
-.language-values{display:grid;grid-template-columns:max-content;white-space:nowrap}
-.language-values>span{grid-area:1 / 1;visibility:hidden}
-.language-values>span.visible{visibility:visible}
+.settings .setting-row .translation-language-select .macvue-pop-up-button{width:max-content;max-width:100%;min-width:0}
+.settings .setting-row .translation-language-select{min-width:0;max-width:65%}
+.translation-language-select .macvue-pop-up-button-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.language-values{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Portaled menus use viewport coordinates, outside the scrolling, filtered settings panel. */
 .macvue-pop-up-button-content{width:max-content;min-width:max-content;z-index:100}
 .macvue-pop-up-button-item-text{white-space:nowrap}

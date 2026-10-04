@@ -2,7 +2,8 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {replaceFile} from './atomic-file.mjs';
 import {dirname} from 'node:path';
 
-const LANGUAGE_OPTIONS=['Simplified Chinese','Traditional Chinese','English','Japanese','Korean','French','German','Spanish'];
+import {LANGUAGE_CODES} from '../src/translation-languages.mjs';
+const LANGUAGE_OPTIONS=Object.keys(LANGUAGE_CODES);
 const KERNEL_ENGINE_IDS=Object.freeze(['pdf_math_fast','pdf_math_precise']);
 const KERNEL_ENGINE_SET=new Set(KERNEL_ENGINE_IDS);
 const KERNEL_OPTION_NAME=/^[a-z][a-z0-9_]*$/;
@@ -102,7 +103,7 @@ function upgrade(value){
  next.kernelAdvancedOptions=cloneKernelAdvancedOptions(DEFAULT_PREFERENCES.kernelAdvancedOptions);
  if(!isObject(value))return next;
  for(const key of KNOWN_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):value[key];
- if(!VALIDATORS.sourceLanguage(value.sourceLanguage)){const codes=['zh','zh-TW','en','ja','ko','fr','de','es'];const index=codes.indexOf(value.kernelAdvancedOptions?.pdf_math_fast?.lang_in);if(index>=0)next.sourceLanguage=LANGUAGE_OPTIONS[index];}
+ if(!VALIDATORS.sourceLanguage(value.sourceLanguage)){const entry=Object.entries(LANGUAGE_CODES).find(([,code])=>code===value.kernelAdvancedOptions?.pdf_math_fast?.lang_in);if(entry)next.sourceLanguage=entry[0];}
  if(next.kernelAdvancedOptions.pdf_math_fast)delete next.kernelAdvancedOptions.pdf_math_fast.lang_in;
  return next;
 }

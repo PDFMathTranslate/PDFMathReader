@@ -15,7 +15,8 @@ import {replaceFile} from '../electron/atomic-file.mjs';
 import {createKernelProcesses} from './kernel-processes.mjs';
 const exec=promisify(execFile);
 
-export const LANGUAGE_CODES=Object.freeze({'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'});
+import {LANGUAGE_CODES,isTranslationLanguageSupported} from '../src/translation-languages.mjs';
+export {LANGUAGE_CODES};
 
 export const definitions={
  pdf_inspector:{label:'PDF Inspector',package:'@firecrawl/pdf-inspector'},
@@ -174,8 +175,8 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   const started=performance.now(),stages={};let checkpoint=started;
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
   if(signal?.aborted)throw Error('Cancelled');
-  if(sourceLanguage!==undefined&&!Object.hasOwn(LANGUAGE_CODES,sourceLanguage))throw Error('Unsupported source language');
-  const lang=LANGUAGE_CODES[language];if(!lang)throw Error('Unsupported language');
+  if(sourceLanguage!==undefined&&!isTranslationLanguageSupported(id,sourceLanguage,'source'))throw Error('Unsupported source language');
+  const lang=LANGUAGE_CODES[language];if(!isTranslationLanguageSupported(id,language))throw Error('Unsupported language for this kernel');
   const known=knownStates.get(id);
   const state=known&&performance.now()-known.at<30000&&!installing.has(id)?known.state:await check(id);if(!state.available)throw Error(state.reason);
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
