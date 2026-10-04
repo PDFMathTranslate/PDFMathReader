@@ -1,7 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {searchSegments} from '../src/document-search.mjs';
+import {searchSegments,selectionSearchQuery} from '../src/document-search.mjs';
 test('PDF search spans text runs, ignores layout whitespace, and keeps matching coordinates',()=>{
+ assert.equal(selectionSearchQuery('Miller, (2017).；“研究”'),'Miller 2017 研究');
+ assert.equal(selectionSearchQuery('… ，'), '');
  const a={x:10,y:20,width:30,height:12},b={x:40,y:20,width:30,height:12};
  const segments=[{text:'Hello ',box:a},{text:'WORLD',box:b},{text:'hello world',box:a}];
  assert.deepEqual(searchSegments(segments,'helloworld').map(m=>m.boxes),[[a,b],[a]]);

@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('previewAnnotations',Object.freeze({
  share:text=>ipcRenderer.invoke('previewAnnotations:share',text)
 }));
 
-contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callback=>{const listener=(_event,action)=>callback(action);ipcRenderer.on('reader:action',listener);return ()=>ipcRenderer.removeListener('reader:action',listener);}}));
+contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callback=>{const listener=(_event,action,selectionText)=>callback(action,selectionText);ipcRenderer.on('reader:action',listener);return ()=>ipcRenderer.removeListener('reader:action',listener);}}));
 
 contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipcRenderer.invoke('preferences:load'),save:value=>ipcRenderer.invoke('preferences:save',value),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('preferences:changed',listener);return ()=>ipcRenderer.removeListener('preferences:changed',listener);}}));
 

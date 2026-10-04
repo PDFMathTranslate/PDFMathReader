@@ -1,5 +1,6 @@
 const menuMessages = {
  en: {
+  'Search in Document': 'Search in Document',
   Menu: 'Menu',
   'Menu unavailable': 'Menu unavailable',
   Minimize: 'Minimize',
@@ -45,6 +46,7 @@ const menuMessages = {
   'Select All': 'Select All',
  },
  'zh-CN': {
+  'Search in Document': '在文档中搜索',
   Menu: '菜单',
   'Menu unavailable': '菜单暂不可用',
   Minimize: '最小化',
@@ -90,6 +92,7 @@ const menuMessages = {
   'Select All': '全选',
  },
  'zh-TW': {
+  'Search in Document': '在文件中搜尋',
   Menu: '選單',
   'Menu unavailable': '選單暫不可用',
   Minimize: '最小化',
@@ -135,6 +138,7 @@ const menuMessages = {
   'Select All': '全選',
  },
  fr: {
+  'Search in Document': 'Rechercher dans le document',
   Menu: 'Menu',
   'Menu unavailable': 'Menu indisponible',
   Minimize: 'Réduire',
@@ -180,6 +184,7 @@ const menuMessages = {
   'Select All': 'Tout sélectionner',
  },
  es: {
+  'Search in Document': 'Buscar en el documento',
   Menu: 'Menú',
   'Menu unavailable': 'Menú no disponible',
   Minimize: 'Minimizar',
@@ -225,6 +230,7 @@ const menuMessages = {
   'Select All': 'Seleccionar todo',
  },
  ja: {
+  'Search in Document': '文書内を検索',
   Menu: 'メニュー',
   'Menu unavailable': 'メニューを利用できません',
   Minimize: '最小化',
@@ -270,6 +276,7 @@ const menuMessages = {
   'Select All': 'すべてを選択',
  },
  ko: {
+  'Search in Document': '문서에서 검색',
   Menu: '메뉴',
   'Menu unavailable': '메뉴를 사용할 수 없음',
   Minimize: '최소화',

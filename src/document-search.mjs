@@ -1,3 +1,4 @@
+export const selectionSearchQuery=value=>String(value||'').replace(/\p{P}+/gu,' ').replace(/\s+/gu,' ').trim();
 const normalized=value=>String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/\s+/gu,'');
 export function searchSegments(segments,query){
  const needles=[...new Set(String(query||'').trim().split(/\s+/u).map(normalized).filter(Boolean))];if(!needles.length)return [];
