@@ -39,6 +39,16 @@ export async function verifyInformationEmphasis(window,recents){
  assert.notEqual(await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor'),before,'existing highlights follow system accent changes');
  await evaluate('document.querySelector("[data-setting=topic-sentences] input").click()');
  await wait('!!document.querySelector(".topic-sentence-overlay")&&!!document.querySelector("strong.pdf-topic-sentence mark.pdf-information-keyword")');
+ const systemHighlight=await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor');
+ const systemTopic=await evaluate('document.querySelector(".topic-sentence-overlay").toDataURL()');
+ await evaluate('document.querySelectorAll(".color-choice")[2].click()');
+ await wait('window.previewPreferences.load().then(p=>p.accentColor!=="system")');
+ await wait('document.querySelector(".topic-sentence-overlay").toDataURL()!=='+JSON.stringify(systemTopic));
+ const customHighlight=await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor');
+ assert.notEqual(customHighlight,systemHighlight,'custom accent updates existing information emphasis');
+ window.webContents.send('appearance:changed',{accent:'#ff9500ff'});
+ await wait('document.documentElement.style.getPropertyValue("--system-accent")==="#ff9500"');
+ assert.equal(await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor'),customHighlight,'custom accent takes precedence over system accent');
  await evaluate('document.querySelector(".settings-heading button").click()');await pause(350);
  await writeFile('/tmp/pdfmathreader-information-original.png',(await window.webContents.capturePage()).toPNG());
  await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');

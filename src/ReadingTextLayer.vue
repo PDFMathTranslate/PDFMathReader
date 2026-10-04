@@ -5,7 +5,7 @@ import {informationRunRanges,informationTextSegments,mergeInformationRects} from
 import {topicSentenceRanges} from './topic-sentences.mjs';
 import {loadPDFRuntime} from './pdf-runtime.mjs';
 const props=defineProps({document:Object,pageNumber:Number,zoom:Number,active:Boolean,obscuredBoxes:Array,paragraphBoxes:Array,emphasizeTopicSentences:Boolean,emphasizeInformation:Boolean,selectable:Boolean});
-const host=ref();let layer,generation=0,currentDocument,currentPage,page,rendered=false,boxKey,overlay,highlights,frameHost;
+const host=ref();let layer,generation=0,currentDocument,currentPage,page,rendered=false,boxKey,overlay,highlights,frameHost,appearanceObserver;
 const originals=new WeakMap();
 function drawEmphasis(){
  if(!host.value)return;overlay?.remove();overlay=null;highlights?.remove();highlights=null;
@@ -26,12 +26,12 @@ function drawEmphasis(){
  const context=overlay.getContext('2d'),sx=source.width/bounds.width,sy=source.height/bounds.height;
  // A translucent wash marks the sentence without changing the PDF glyphs.
  const style=getComputedStyle(host.value);
- context.fillStyle=style.getPropertyValue('--system-accent').trim()||style.getPropertyValue('--accent').trim()||'#007aff';
+ context.fillStyle=style.getPropertyValue('--accent').trim()||'#007aff';
  context.globalAlpha=.1;
  for(const r of mergeInformationRects(rects.map(r=>({x:r.left-bounds.left,y:r.top-bounds.top,width:r.width,height:r.height}))))context.fillRect(r.x*sx,r.y*sy,r.width*sx,r.height*sy);
  host.value.append(overlay);
 }
-onMounted(()=>{frameHost=host.value?.parentElement;frameHost?.addEventListener('pdf-frame-presented',drawEmphasis);});
+onMounted(()=>{frameHost=host.value?.parentElement;frameHost?.addEventListener('pdf-frame-presented',drawEmphasis);appearanceObserver=new MutationObserver(drawEmphasis);appearanceObserver.observe(window.document.documentElement,{attributes:true,attributeFilter:['style']});});
 function emphasize(){
  if(!rendered||!host.value||!layer)return;
  const spans=layer.textDivs.filter(span=>host.value.contains(span));
@@ -65,7 +65,7 @@ watch(()=>[props.document,props.pageNumber,props.zoom,props.active,props.obscure
   emphasize();
  }catch(e){if(e.name!=='AbortException'&&e.name!=='RenderingCancelledException')console.error('Reading text layer failed',e);}
 },{flush:'post',immediate:true});
-onBeforeUnmount(()=>{generation++;layer?.cancel();frameHost?.removeEventListener('pdf-frame-presented',drawEmphasis);});
+onBeforeUnmount(()=>{generation++;layer?.cancel();appearanceObserver?.disconnect();frameHost?.removeEventListener('pdf-frame-presented',drawEmphasis);});
 </script>
 <template><div ref="host" class="reading-text-layer textLayer" :class="{'topic-layer-only':!selectable}" aria-label="Selectable document text"></div></template>
 
@@ -74,5 +74,5 @@ onBeforeUnmount(()=>{generation++;layer?.cancel();frameHost?.removeEventListener
 .reading-text-layer :is(.pdf-topic-sentence,.pdf-information-keyword){position:static;font:inherit;color:transparent;background:transparent;padding:0;white-space:inherit;transform:none}
 .reading-text-layer .topic-sentence-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:none;z-index:2;background:transparent;min-height:0;border-radius:0;mix-blend-mode:multiply}
 .reading-text-layer .information-highlights{position:absolute;inset:0;pointer-events:none;user-select:none;transform:none;z-index:1}
-.information-highlight-rect{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--system-accent,var(--accent)) 65%,transparent);border-radius:1px}
+.information-highlight-rect{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--accent) 65%,transparent);border-radius:1px}
 </style>
