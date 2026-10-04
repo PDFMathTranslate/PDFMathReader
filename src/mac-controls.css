@@ -369,3 +369,60 @@
 .app[data-platform="darwin"] :is(.recent-heading>.macvue-button,.empty>.primary,.empty>.sample-button){
  border-radius:12px;corner-shape:squircle;
 }
+
+/* macOS settings: narrower panel and generously rounded controls, excluding switches. */
+.app[data-platform="darwin"] .settings:not(.paragraph-detail){
+ width:min(448px,calc((100vw - 28px) * .8));border-radius:20px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .settings:not(.paragraph-detail) .settings-section{
+ border-radius:20px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .settings :is(.macvue-button,.macvue-segmented,.macvue-segment,.macvue-field,.macvue-field-input,.macvue-pop-up-button,.appearance-preview,select,textarea,input:not([type="range"]):not([type="checkbox"]):not([type="color"]),button:not(.macvue-switch):not([role="switch"])){
+ border-radius:12px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .settings .macvue-field{--_macvue-field-radius:12px}
+.app[data-platform="darwin"] .settings :is(.setting-row,.translation-service-option,.api-key-row){min-width:0}
+.app[data-platform="darwin"] .settings .setting-row>span{overflow-wrap:anywhere}
+.app[data-platform="darwin"] .settings .appearance-options{gap:6px;min-width:0}
+.app[data-platform="darwin"] .settings .appearance-preview{width:60px}
+
+/* Equal-height option switchers throughout macOS settings. */
+.app[data-platform="darwin"] .settings .macvue-segmented{
+ box-sizing:border-box;height:36px;min-height:36px;max-height:36px;
+ padding:2px;align-items:stretch;flex-shrink:0;
+}
+.app[data-platform="darwin"] .settings .macvue-segmented>.macvue-segment{
+ box-sizing:border-box;height:32px;min-height:32px;max-height:32px;
+ min-width:0;flex:1 1 0%;padding:0 8px;
+ display:flex;align-items:center;justify-content:center;
+ font-size:13px;line-height:16px;white-space:normal;overflow-wrap:anywhere;text-align:center;
+}
+
+.app[data-platform="darwin"] .settings:not(.paragraph-detail)>.settings-section{
+ padding:18px 16px;
+}
+.app[data-platform="darwin"] .settings-section[aria-labelledby="settings-engine"]>.advanced-settings{
+ border-top:0;
+}
+.app[data-platform="darwin"] .settings .macvue-pop-up-button{
+ box-sizing:border-box;width:var(--settings-dropdown-width,max-content);
+ min-width:0;max-width:100%;flex-shrink:0;
+}
+
+/* Softer dividers throughout settings, including expanded advanced options. */
+.settings:not(.paragraph-detail){--settings-divider:rgba(0,0,0,.045);--chrome-divider:var(--settings-divider)}
+[data-appearance="dark"] .settings:not(.paragraph-detail){--settings-divider:rgba(255,255,255,.06)}
+.settings:not(.paragraph-detail) :is(.setting-row,.appearance-row,.appearance-effects,.parallel-settings,.parallel-setting,.advanced-settings,.advanced-option,.advanced-kernel-update,.translation-service-account,.translation-service-option,.kernel-setting){
+ border-top-color:var(--settings-divider);border-bottom-color:var(--settings-divider);
+}
+
+/* The library paints selection in a separate pill, so round that layer too. */
+.app[data-platform="darwin"] .settings .macvue-segmented{
+ --_macvue-segmented-radius:14px;border-radius:16px;
+}
+.app[data-platform="darwin"] .settings .macvue-segmented-pill{
+ inset-block:2px;border-radius:14px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .settings .macvue-segmented>.macvue-segment{
+ border-radius:14px;corner-shape:squircle;
+}
