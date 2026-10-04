@@ -41,3 +41,21 @@ test('paragraph API reuses legacy translations by default, strict mode invokes c
   assert.equal((await post({reuseTranslations:1})).status,400);
  }finally{await backend.close();await rm(root,{recursive:true,force:true});}
 });
+
+test('layout-only update reuses legacy cache after restart without weakening strict mode or document isolation',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'translation-upgrade-'));
+ try{
+  const keyFor=(model,schema=4,document='one')=>digest({document,language:'zh',version:'1.0',model,layoutSchema:schema});
+  const readResult=key=>readFile(join(directory,key+'.pdf'));
+  const oldKey=keyFor('custom-model',3);
+  await writeFile(join(directory,oldKey+'.pdf'),'old translated PDF');
+  await createTranslationCache({directory,keyFor:model=>keyFor(model,3),readResult}).remember('custom-model',oldKey);
+  const updated=()=>createTranslationCache({directory,keyFor,readResult,fallbackKeyFors:[model=>keyFor(model,3)]});
+  const hit=await updated().lookup('siliconflow-free');
+  assert.equal(hit.key,oldKey);assert.equal(hit.model,'custom-model');assert.equal(hit.result.toString(),'old translated PDF');
+  assert.equal(await updated().lookup('siliconflow-free',{reuseTranslations:false}),null);
+  assert.equal(await createTranslationCache({directory,keyFor:model=>keyFor(model,4,'two'),readResult,fallbackKeyFors:[model=>keyFor(model,3,'two')]}).lookup('siliconflow-free'),null);
+  await writeFile(join(directory,keyFor('siliconflow-free')+'.pdf'),'current translated PDF');
+  assert.equal((await updated().lookup('siliconflow-free')).result.toString(),'current translated PDF');
+ }finally{await rm(directory,{recursive:true,force:true});}
+});

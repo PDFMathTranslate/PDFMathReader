@@ -176,9 +176,10 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
   const [scopeHash,scopeGeneration]=cacheScope.split(':');const cacheDir=cacheScope?join(baseCacheDir,'..','documents',scopeHash,'math',scopeGeneration):baseCacheDir;
   const layoutKey=key=>cacheScope?`${scopeHash}-${scopeGeneration}-${key}`:key;
-  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,...cacheScope?{cacheScope}:{},layoutSchema:id==='pdf_math_fast'?4:3,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const currentLayoutSchema=id==='pdf_math_fast'?4:3;
+  const keyFor=(cacheModel,layoutSchema=currentLayoutSchema)=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,...cacheScope?{cacheScope}:{},layoutSchema,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const key=keyFor(model);
-  const cache=createTranslationCache({directory:cacheDir,keyFor,readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
+  const cache=createTranslationCache({directory:cacheDir,keyFor,fallbackKeyFors:[cacheModel=>keyFor(cacheModel,currentLayoutSchema-1)],readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
   const cached=join(cacheDir,`${key}.pdf`);
   const hit=await cache.lookup(model,{reuseTranslations});
   if(hit){const result=hit.result;result.layoutKey=layoutKey(hit.key);result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}

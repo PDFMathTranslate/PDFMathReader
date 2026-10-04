@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 
 // The exact key retains the original on-disk format. A separate pointer records
 // the last compatible result without making provider credentials part of it.
-export function createTranslationCache({directory,keyFor,readResult}){
+export function createTranslationCache({directory,keyFor,readResult,fallbackKeyFors=[]}){
  const compatibleKey=keyFor(undefined),pointer=join(directory,`${compatibleKey}.translation.json`);
  async function remember(model,key){
   await mkdir(directory,{recursive:true});
@@ -25,6 +25,12 @@ export function createTranslationCache({directory,keyFor,readResult}){
    // An optional index write must never turn a valid cache hit into a retranslation.
    await remember(candidate,key).catch(()=>{});
    return {result,key,model:candidate};
+  }
+  // Layout-only upgrades can retain prior translated PDFs when explicitly
+  // allowed by the caller. Keep their original keys and layout metadata.
+  if(reuseTranslations)for(const fallbackKeyFor of fallbackKeyFors){
+   const hit=await createTranslationCache({directory,keyFor:fallbackKeyFor,readResult}).lookup(model);
+   if(hit)return hit;
   }
   return null;
  }
