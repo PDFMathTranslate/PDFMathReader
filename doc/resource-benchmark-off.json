@@ -1,0 +1,1284 @@
+{
+  "date": "2026-10-04T17:52:33.153Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "enabled": false,
+  "measurement": "ps process-tree cumulative CPU delta; summed RSS (shared pages may be counted twice)",
+  "sampleSeconds": 10,
+  "settleSeconds": 3,
+  "document": "built-in sample, original view, automatic translation disabled",
+  "rows": [
+    {
+      "enabled": false,
+      "state": "foreground",
+      "kernel": "idle",
+      "cpuMeanPercent": 1.128358480621662,
+      "rssMeanBytes": 801344716.8,
+      "rssPeakBytes": 803979264,
+      "bitmapBytes": 35726092,
+      "bitmapCacheBytes": 53582972,
+      "foreground": true,
+      "kernelProcessCount": 0,
+      "samples": [
+        {
+          "cpuPercent": 2.7883153922169153,
+          "rssBytes": 798228480,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.45,
+              "rss": 193642496,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.43,
+              "rss": 114688000,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59260928,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109756416,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.83,
+              "rss": 320880640,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9418515383569172,
+          "rssBytes": 800342016,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.46,
+              "rss": 195821568,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.43,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59228160,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109740032,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.83,
+              "rss": 320897024,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 1.874474121557151,
+          "rssBytes": 800342016,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.47,
+              "rss": 195854336,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59228160,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.83,
+              "rss": 320831488,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 800358400,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.47,
+              "rss": 195870720,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59228160,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.83,
+              "rss": 320831488,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 800538624,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.47,
+              "rss": 196050944,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59228160,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.83,
+              "rss": 320831488,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 2.8704276967981817,
+          "rssBytes": 801832960,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.49,
+              "rss": 197246976,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114671616,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.84,
+              "rss": 320847872,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9318735223980468,
+          "rssBytes": 801816576,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.5,
+              "rss": 197246976,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.84,
+              "rss": 320847872,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.940608305989725,
+          "rssBytes": 802652160,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.51,
+              "rss": 197656576,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114671616,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.84,
+              "rss": 321257472,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9360342288996838,
+          "rssBytes": 803356672,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.52,
+              "rss": 197771264,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.84,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 803979264,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.52,
+              "rss": 198393856,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.44,
+              "rss": 114655232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.84,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "state": "inactive",
+      "kernel": "idle",
+      "cpuMeanPercent": 0.8461830692785671,
+      "rssMeanBytes": 808937062.4,
+      "rssPeakBytes": 809385984,
+      "bitmapBytes": 35726092,
+      "bitmapCacheBytes": 53582972,
+      "foreground": true,
+      "kernelProcessCount": 0,
+      "samples": [
+        {
+          "cpuPercent": 0,
+          "rssBytes": 806993920,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.6,
+              "rss": 201211904,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 1.8634910495784167,
+          "rssBytes": 808796160,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.62,
+              "rss": 203014144,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9555588681596345,
+          "rssBytes": 808714240,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.63,
+              "rss": 202932224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 809123840,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.63,
+              "rss": 203341824,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 1.8692485552673725,
+          "rssBytes": 809140224,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.65,
+              "rss": 203358208,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 809140224,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.65,
+              "rss": 203358208,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.85,
+              "rss": 321847296,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 2.8199711602113453,
+          "rssBytes": 809369600,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.66,
+              "rss": 203571200,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.87,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 809353216,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.66,
+              "rss": 203554816,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.87,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9535610595689024,
+          "rssBytes": 809353216,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.67,
+              "rss": 203554816,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.87,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 809385984,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.67,
+              "rss": 203587584,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.5,
+              "rss": 114868224,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.25,
+              "rss": 109772800,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.87,
+              "rss": 321863680,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "state": "minimized",
+      "kernel": "idle",
+      "cpuMeanPercent": 1.2149252652915918,
+      "rssMeanBytes": 762781696,
+      "rssPeakBytes": 764805120,
+      "bitmapBytes": 35726092,
+      "bitmapCacheBytes": 53582972,
+      "foreground": true,
+      "kernelProcessCount": 0,
+      "samples": [
+        {
+          "cpuPercent": 0,
+          "rssBytes": 759873536,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.75,
+              "rss": 194232320,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286687232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9366360267327324,
+          "rssBytes": 761315328,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.76,
+              "rss": 195674112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286687232,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9382651622768254,
+          "rssBytes": 761577472,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.77,
+              "rss": 195854336,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9365415813926063,
+          "rssBytes": 761806848,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.78,
+              "rss": 196083712,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0,
+          "rssBytes": 762232832,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.78,
+              "rss": 196509696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9345435571467655,
+          "rssBytes": 763117568,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.79,
+              "rss": 197394432,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9374426914917143,
+          "rssBytes": 763609088,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.8,
+              "rss": 197885952,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.97,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 3.7230767750702873,
+          "rssBytes": 764674048,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.83,
+              "rss": 198950912,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.98,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 2.8062911903620797,
+          "rssBytes": 764805120,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.86,
+              "rss": 199081984,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.98,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        },
+        {
+          "cpuPercent": 0.9364556684429065,
+          "rssBytes": 764805120,
+          "processes": [
+            {
+              "pid": 32164,
+              "parent": 32162,
+              "seconds": 0.87,
+              "rss": 199081984,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+            },
+            {
+              "pid": 32165,
+              "parent": 32164,
+              "seconds": 0.55,
+              "rss": 116146176,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32166,
+              "parent": 32164,
+              "seconds": 0.09,
+              "rss": 59293696,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32167,
+              "parent": 32164,
+              "seconds": 0.31,
+              "rss": 103514112,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper"
+            },
+            {
+              "pid": 32169,
+              "parent": 32164,
+              "seconds": 0.98,
+              "rss": 286769152,
+              "command": "/Users/rongxin/Developer/oss/PDFMathReader/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
