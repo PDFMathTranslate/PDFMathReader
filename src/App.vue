@@ -264,13 +264,6 @@ watch(annotationKey,key=>{
  if(!key)return;
  try{const stored=JSON.parse(localStorage.getItem('read-chapters:'+key)||'[]');if(Array.isArray(stored))readChapters.value=new Set(stored.filter(id=>typeof id==='string'));}catch{}
 },{flush:'sync'});
-watch([active,documentOutline,loading,restoringView,annotationKey],()=>{
- if(loading.value||restoringView.value||!annotationKey.value||!pages.value.length)return;
- const visited=chaptersAtPage(documentOutline.value,active.value);
- if(visited.every(id=>readChapters.value.has(id)))return;
- readChapters.value=new Set([...readChapters.value,...visited]);
- try{localStorage.setItem('read-chapters:'+annotationKey.value,JSON.stringify([...readChapters.value]));}catch{}
-});
 watch(annotationKey, async key=>{quickLinks.value=[];if(!key)return;try{const stored=window.previewQuickLinks?await window.previewQuickLinks.load(key):JSON.parse(localStorage.getItem('quick-links:'+key)||'[]');if(key===annotationKey.value)quickLinks.value=Array.isArray(stored)?stored:[];}catch{notifyCopy('快捷链接读取失败');}});
 function saveAnnotations(value){annotations.value=value;const key=annotationKey.value,nativeRefs=[...annotationNativeRefs.value], snapshot=JSON.parse(JSON.stringify(value)).map(a=>{delete a.animateUntil;return a;});annotationWrites=annotationWrites.catch(()=>{}).then(async()=>{try{if(window.previewAnnotations)await window.previewAnnotations.save({key,annotations:snapshot,nativeRefs});else localStorage.setItem('annotations:'+key,JSON.stringify(snapshot));if(!annotationSaved.has(key)){annotationSaved.add(key);notifyCopy(window.previewAnnotations?'批注已自动保存':'批注已自动保存到此浏览器');}}catch(e){notifyCopy('批注保存失败：'+e.message,5000);}});}
 const hoveredParagraph=shallowRef(null),copyToast=ref('');let copyToastTimer;
@@ -327,6 +320,13 @@ async function changeCrop(action){
 
 watch([direction,settings,searchOpen,()=>pages.value.length],()=>{revealHeader();immersiveIntentUntil=0;nextTick(()=>{immersiveLastPosition=direction.value==='horizontal'?reader.value?.scrollLeft||0:reader.value?.scrollTop||0;});});
 const restoringView=ref(false);let currentRecentId=null,readingSaveTimer;
+watch([active,documentOutline,loading,restoringView,annotationKey],()=>{
+ if(loading.value||restoringView.value||!annotationKey.value||!pages.value.length)return;
+ const visited=chaptersAtPage(documentOutline.value,active.value);
+ if(visited.every(id=>readChapters.value.has(id)))return;
+ readChapters.value=new Set([...readChapters.value,...visited]);
+ try{localStorage.setItem('read-chapters:'+annotationKey.value,JSON.stringify([...readChapters.value]));}catch{}
+});
 function readingView(){
  const el=reader.value,p=pages.value[active.value-1],host=p&&pageEls.get(p.number);if(!el||!host)return null;
  const bounds=el.getBoundingClientRect(),box=visiblePageHost(host).getBoundingClientRect(),style=getComputedStyle(el);
