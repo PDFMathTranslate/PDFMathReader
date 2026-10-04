@@ -27,13 +27,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date | Feature | Contributor |
 | --- | --- | --- |
+| 2026-10-05 | [add reading emphasis and simplify document menus](https://github.com/PDFMathTranslate/PDFMathReader/commit/9575ef499a1fb982060364f9733a5e85f804c223) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add persistent page edits and improve reader navigation](https://github.com/PDFMathTranslate/PDFMathReader/commit/908efd1612769e9b1a4caa8682eaa8cc735cdbb4) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add annotation search filters and grouping with sidebar refinements](https://github.com/PDFMathTranslate/PDFMathReader/commit/278ca22a5f6bbcb92ea72d259b7367ba86d44407) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add bidirectional quick return links for search results](https://github.com/PDFMathTranslate/PDFMathReader/commit/66715a61680daeb9943b28ed4ca122bc297ff4d8) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [search selected text within document](https://github.com/PDFMathTranslate/PDFMathReader/commit/d4d5c0f703f0815ae4f9d9767c471dd44edfec8e) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [support paragraph AND search and stabilize translation display](https://github.com/PDFMathTranslate/PDFMathReader/commit/b05fd13edd4ac2268c7af4fa125bfbcd067d025b) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add Google searches to highlight context menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/d712293df5529dcf03f78811b56a371ce651f449) | [@reycn](https://github.com/reycn) |
-| 2026-10-04 | [open recent documents in new windows and clarify removal labels](https://github.com/PDFMathTranslate/PDFMathReader/commit/248b35713d8b7c2ca10c5b8066282f038203519a) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
