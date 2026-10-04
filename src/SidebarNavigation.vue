@@ -48,7 +48,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .sidebar-annotation-item{flex-direction:column;gap:5px;border-bottom:1px solid var(--chrome-border)}
 .sidebar-outline-row:has(.sidebar-outline-item:not(:disabled)):hover,.sidebar-annotation-item:hover,.sidebar-annotation-item.selected{background:var(--chrome-pressed)}
 .sidebar-annotation-meta{font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:4px}
-.sidebar-annotation-meta i{width:8px;height:8px;border-radius:2px;flex-shrink:0;border:1px solid #0002}
+.sidebar-annotation-meta i{width:8px;height:8px;border-radius:50%;flex-shrink:0;border:1px solid #0002}
 .sidebar-annotation-text,.sidebar-annotation-comment{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .sidebar-annotation-comment{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
 .sidebar-navigation-switch{position:relative;display:flex;flex:0 0 auto;margin:8px;padding:2px;gap:2px;background:var(--chrome-pressed);border:1px solid var(--chrome-border);border-radius:7px}
