@@ -11,6 +11,12 @@ STARTED = perf_counter()
 from pathlib import Path
 import pymupdf
 
+def fast_paragraph_indent(text, x, x0, language):
+    """Replace inherited source indentation with two CJK full-width spaces."""
+    if language.lower().split("-")[0] in ("zh", "ja", "ko") and x > x0 + 0.1:
+        return "\u3000\u3000" + text.lstrip(" \t\u3000"), x0
+    return text, x
+
 def layout_box(values, source_page, kind):
     # Fast's interpreter applies its CropBox/rotation CTM before layout.
     # Its coordinates are already in the visible page's bottom-left frame.
@@ -44,6 +50,7 @@ def main(capture_only=False):
     
     if kind == "pdf_math_fast":
         from pdf2zh.converter import TranslateConverter
+        output_language = next((args[i + 1] for i, arg in enumerate(args[:-1]) if arg in ("-lo", "--lang-out")), "")
         import pdf2zh.high_level as high_level
         original_stream = high_level.translate_stream
         original_document = high_level.Document
@@ -91,7 +98,8 @@ def main(capture_only=False):
             variables = ["".join(c.get_text() for c in chars) for chars in v["var"]]
             def restore(text):
                 return re.sub(r"\{+\s*v(\d+)\s*\}+", lambda m: variables[int(m[1])] if int(m[1]) < len(variables) else m[0], text)
-            text, translation = restore(raw_source), restore(raw_target)
+            display_target, _ = fast_paragraph_indent(raw_target, paragraph.x, paragraph.x0, output_language)
+            text, translation = restore(raw_source), restore(display_target)
             # {v*} is prompt notation, not an upstream formula ID. Recover only
             # when the source paragraph identifies exactly one original run.
             source_ids = set(int(m) for m in re.findall(r"\{+\s*v(\d+)\s*\}+", raw_source))
@@ -112,6 +120,12 @@ def main(capture_only=False):
         tree = ast.parse(textwrap.dedent(inspect.getsource(original)))
         class CaptureParagraph(ast.NodeTransformer):
             count = 0
+            indent_count = 0
+            def visit_AnnAssign(self, node):
+                if isinstance(node.target, ast.Name) and node.target.id == "cstk":
+                    self.indent_count += 1
+                    return [*ast.parse("new, x = _preview_indent(new, x, x0, _preview_language)").body, node]
+                return node
             def visit_For(self, node):
                 self.generic_visit(node)
                 if isinstance(node.target, ast.Name) and node.target.id == "vals" and isinstance(node.iter, ast.Name) and node.iter.id == "ops_vals":
@@ -120,9 +134,9 @@ def main(capture_only=False):
                 return node
         injector = CaptureParagraph()
         tree = injector.visit(tree)
-        if injector.count != 1:
+        if injector.count != 1 or injector.indent_count != 1:
             raise RuntimeError("Fast paragraph capture is incompatible with this kernel version")
-        namespace = {**original.__globals__, "_preview_capture": capture}
+        namespace = {**original.__globals__, "_preview_capture": capture, "_preview_indent": fast_paragraph_indent, "_preview_language": output_language}
         exec(compile(ast.fix_missing_locations(tree), inspect.getsourcefile(original), "exec"), namespace)
         TranslateConverter.receive_layout = namespace[original.__name__]
         # The reader consumes one page. Preserve its MediaBox, CropBox, rotation,

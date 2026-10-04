@@ -1,4 +1,4 @@
-import {captureDocumentPage,rectangleTransform} from './document-motion.mjs';
+import {captureDocumentPage,rectangleTransform,releaseDocumentCapture} from './document-motion.mjs';
 
 // Keep the old page visible while Vue commits the destination geometry.
 export function captureLayoutMotion(reader,page,{reducedMotion=false}={}){
@@ -13,7 +13,7 @@ export function captureLayoutMotion(reader,page,{reducedMotion=false}={}){
  const hidden=new Map();let animation;
  function hide(host){if(host&&!hidden.has(host)){hidden.set(host,host.style.visibility);host.style.visibility='hidden';}}
  hide(page);
- function cancel(){animation?.cancel();layer.remove();for(const [host,visibility] of hidden)host.style.visibility=visibility;hidden.clear();}
+ function cancel(){animation?.cancel();releaseDocumentCapture(capture);layer.remove();for(const [host,visibility] of hidden)host.style.visibility=visibility;hidden.clear();}
  return {
   cancel,
   async play(target){

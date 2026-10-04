@@ -24,8 +24,13 @@ export const definitions={
 
 export function createLimiter(max=4){
  let active=0;const waiting=[];
- return {setMax(n){max=Math.max(1,Math.min(12,Number(n)||4));drain();},run(fn){return new Promise((resolve,reject)=>{waiting.push({fn,resolve,reject});drain();});}};
- function drain(){while(active<max&&waiting.length){const job=waiting.shift();active++;Promise.resolve().then(job.fn).then(job.resolve,job.reject).finally(()=>{active--;drain();});}}
+ return {setMax(n){max=Math.max(1,Math.min(12,Number(n)||4));drain();},run(fn,{signal}={}){return new Promise((resolve,reject)=>{
+  if(signal?.aborted)return reject(signal.reason||Error('Cancelled'));
+  const job={fn,resolve,reject,signal};
+  job.abort=()=>{const index=waiting.indexOf(job);if(index<0)return;waiting.splice(index,1);signal.removeEventListener('abort',job.abort);reject(signal.reason||Error('Cancelled'));};
+  signal?.addEventListener('abort',job.abort,{once:true});waiting.push(job);drain();
+ });}};
+ function drain(){while(active<max&&waiting.length){const job=waiting.shift();job.signal?.removeEventListener('abort',job.abort);active++;Promise.resolve().then(()=>{if(job.signal?.aborted)throw job.signal.reason||Error('Cancelled');return job.fn();}).then(job.resolve,job.reject).finally(()=>{active--;drain();});}}
 }
 
 export async function prepareKernelAssets(assetHome,home,sharedCache=join(homedir(),'.cache','babeldoc')){
@@ -163,12 +168,13 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   finally{if(advancedMetadata.get(cacheKey)===task)advancedMetadata.delete(cacheKey);}
  }
 
- async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,cacheScope='',onPageTiming,cacheOnly=false}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,cacheScope='',onPageTiming,cacheOnly=false,runWorker=fn=>fn()}){
   const emitTiming=report=>{onTiming?.(report);onPageTiming?.(report);};
   const started=performance.now(),stages={};let checkpoint=started;
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
   if(signal?.aborted)throw Error('Cancelled');
   if(sourceLanguage!==undefined&&!Object.hasOwn(LANGUAGE_CODES,sourceLanguage))throw Error('Unsupported source language');
+  const lang=LANGUAGE_CODES[language];if(!lang)throw Error('Unsupported language');
   const known=knownStates.get(id);
   const state=known&&performance.now()-known.at<30000&&!installing.has(id)?known.state:await check(id);if(!state.available)throw Error(state.reason);
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
@@ -176,22 +182,28 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
   const [scopeHash,scopeGeneration]=cacheScope.split(':');const cacheDir=cacheScope?join(baseCacheDir,'..','documents',scopeHash,'math',scopeGeneration):baseCacheDir;
   const layoutKey=key=>cacheScope?`${scopeHash}-${scopeGeneration}-${key}`:key;
-  const currentLayoutSchema=id==='pdf_math_fast'?4:3;
+  const currentLayoutSchema=id==='pdf_math_fast'?(['zh','ja','ko'].includes(lang.toLowerCase().split('-')[0])?5:4):3;
   const keyFor=(cacheModel,layoutSchema=currentLayoutSchema)=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,...cacheScope?{cacheScope}:{},layoutSchema,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const key=keyFor(model);
-  const cache=createTranslationCache({directory:cacheDir,keyFor,fallbackKeyFors:[cacheModel=>keyFor(cacheModel,currentLayoutSchema-1)],readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
+  const cache=createTranslationCache({directory:cacheDir,keyFor,fallbackKeyFors:currentLayoutSchema===5?[]:[cacheModel=>keyFor(cacheModel,currentLayoutSchema-1)],readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
   const cached=join(cacheDir,`${key}.pdf`);
   const hit=await cache.lookup(model,{reuseTranslations});
   if(hit){const result=hit.result;result.layoutKey=layoutKey(hit.key);result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}
   step('cacheLookup');
   if(cacheOnly)return null;
+  return runWorker(async()=>{
+  if(signal?.aborted)throw Error('Cancelled');
+  // Exclude scheduling delay from input preparation; the API reports queueMs.
+  checkpoint=performance.now();
+  // Another queued request for the same page may have filled the cache.
+  const queuedHit=await cache.lookup(model,{reuseTranslations});step('cacheRecheck');
+  if(queuedHit){const result=queuedHit.result;result.layoutKey=layoutKey(queuedHit.key);result.cached=true;result.translationModel=queuedHit.model;emitTiming({engine:id,cached:true,model:queuedHit.model,totalMs:performance.now()-started,stages});return result;}
   await mkdir(root,{recursive:true});
-  const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
-  const codes=LANGUAGE_CODES;
-  const lang=codes[language];if(!lang)throw Error('Unsupported language');
+  const dir=await mkdtemp(join(root,'job-'));
+  try{
+  const input=join(dir,'input.pdf');await writeFile(input,bytes);
   const assetHome=join(runtimeHomeRoot,id,'home');const home=join(dir,'home');await prepareKernelAssets(assetHome,home);
   const env={...process.env,HOME:home,OPENAI_API_KEY:proxy.token,OPENAI_BASE_URL:proxy.url,OPENAI_MODEL:model,PDF2ZH_OPENAI_API_KEY:proxy.token,PDF2ZH_OPENAI_BASE_URL:proxy.url,PDF2ZH_OPENAI_MODEL:model};delete env.OPENAI_API_KEY_REAL;
-  try{
    const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,...(Object.keys(overrides).length?advancedArgs:['--backend','cpu','--ignore-cache'])]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
    if(sourceLanguage)args.push('--lang-in',LANGUAGE_CODES[sourceLanguage]);
    step('prepareInput');
@@ -209,6 +221,7 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
    const one=await PDFDocument.create();const [selected]=await one.copyPages(document,[index]);one.addPage(selected);const result=Buffer.from(await one.save());const metadata=JSON.parse(await readFile(join(dir,'layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Kernel returned invalid layout');
    await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);await cache.remember(model,key).catch(()=>{});result.layoutKey=layoutKey(key);result.cached=false;result.translationModel=model;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
   }finally{await rm(dir,{recursive:true,force:true});}
+  });
  }
 
  return {layout:async key=>{const scoped=key.match(/^([a-f0-9]{64})-([a-f0-9-]{36})-([a-f0-9]{64})$/);if(scoped)return JSON.parse(await readFile(join(baseCacheDir,'..','documents',scoped[1],'math',scoped[2],scoped[3]+'.layout.json'),'utf8'));if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(baseCacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};

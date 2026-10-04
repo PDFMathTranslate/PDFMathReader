@@ -10,7 +10,9 @@ export async function verifyAnimation(window){
  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.reveal-mask')).overflow`),'hidden');
  assert.ok(await evaluate(`Array.from(document.querySelectorAll('.reveal-letter')).some(e=>e.textContent==='👩🏽‍💻')`));
  await wait(`!!document.querySelector('.paragraph.translated')&&!document.querySelector('.text-revealing')`);
- assert.ok(await evaluate(`(()=>{const p=document.querySelector('.paragraph.translated');return p.scrollWidth<=p.clientWidth+1;})()`));
+ // The button's hover halo extends 8 px beyond its box even at opacity zero.
+ // Check the translated text scroller rather than that decorative overflow.
+ assert.ok(await evaluate(`(()=>{const p=document.querySelector('.paragraph.translated .paragraph-text');return p&&p.scrollWidth<=p.clientWidth+1;})()`));
  const originalCanvas=await evaluate(`document.querySelector('.page canvas').toDataURL()`);
  await evaluate(`document.querySelector('.paragraph.translated').click()`);
  await wait(`!!document.querySelector('.native-paragraph-reveal .pdf-glyph-mask')`);
@@ -24,8 +26,8 @@ export async function verifyAnimation(window){
  await evaluate(`document.querySelector('.paragraph').click()`);await pause(80);assert.equal(await evaluate(`document.querySelectorAll('.text-revealing,.pdf-text-reveal').length`),0);
  await evaluate(`document.querySelector('.paragraph').click()`);await pause(80);assert.equal(await evaluate(`document.querySelectorAll('.text-revealing,.pdf-text-reveal').length`),0);
  await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
- console.log('Inspector reveal checks passed; checking math reveal');await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);await wait(`!!document.querySelector('.kernel-switcher')`);
- await evaluate(`Array.from(document.querySelectorAll('.kernel-switcher button')).find(b=>b.textContent==='Fast').click()`);await wait(`!document.querySelector('.kernel-switcher button').disabled`);await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
+ console.log('Inspector reveal checks passed; checking math reveal');await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);await wait(`!!document.querySelector('.mac-mode-control')`);
+ await evaluate(`Array.from(document.querySelectorAll('.mac-mode-control button')).find(b=>b.textContent.trim()==='Fast').click()`);await wait(`(async()=> (await window.previewPreferences.load()).engine==='pdf_math_fast')()`);await wait(`!document.querySelector('.mac-mode-control').disabled`);await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
  await wait(`!!document.querySelector('.page .pdf-glyph-mask')`);assert.ok(await evaluate(`document.querySelectorAll('.page .pdf-glyph-mask').length>10`));
  await wait(`!document.querySelector('.pdf-text-reveal')&&document.querySelector('.thumb small')?.textContent==='Translated'`);
  window.webContents.send('reader:action','translation');await wait(`!!document.querySelector('.pdf-text-reveal .pdf-glyph-mask')`);await wait(`!document.querySelector('.pdf-text-reveal')`);

@@ -1,0 +1,3952 @@
+{
+  "date": "2026-10-04",
+  "scheduling": {
+    "before": {
+      "providerDelayMs": 1500,
+      "pageLimit": 1,
+      "cacheWhileBusyMs": 5335.4495,
+      "cachedQueueMs": 5332.333916000001
+    },
+    "after": {
+      "providerDelayMs": 1500,
+      "pageLimit": 1,
+      "cacheWhileBusyMs": 2.7873750000003383,
+      "cachedQueueMs": 0
+    }
+  },
+  "fast": {
+    "before": {
+      "pages": 30,
+      "delayMs": 200,
+      "timings": [
+        {
+          "page": 1,
+          "wallMs": 3830.662,
+          "providerCalls": 6,
+          "providerAggregateMs": 1251.4887089999997,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 3793.3817910000002,
+          "stages": {
+            "environmentAndOptions": 63.6275,
+            "cacheLookup": 0.7047500000000468,
+            "prepareInput": 2.1662079999999833,
+            "kernelProcess": 3716.984833,
+            "outputAndCache": 9.892334000000119
+          },
+          "worker": {
+            "imports": 740.271082991967,
+            "select_page": 14.345709001645446,
+            "model_and_cli_setup": 553.552249999484,
+            "font_setup": 32.50133301480673,
+            "document_open": 3.935291984817013,
+            "font_resources": 48.89070801436901,
+            "working_copy_save": 4.857583000557497,
+            "paragraph_parse": 3.8956659846007824,
+            "translation": 515.8528339816257,
+            "typesetting": 1.7279169987887144,
+            "page_processing": 1080.5425840080716,
+            "apply_patches": 0.5203329783398658,
+            "bilingual_assembly": 0.009625015081837773,
+            "font_subset": 917.6771669881418,
+            "pdf_serialize": 1.1320000048726797,
+            "output_write": 0.45200000749900937,
+            "workerTotal": 3471.951999992598
+          },
+          "queueMs": 0.5771250000000236,
+          "providerQueueMs": 0.44574999999986176,
+          "providerMaxMs": 211.7324169999997
+        },
+        {
+          "page": 15,
+          "wallMs": 3304.917792,
+          "providerCalls": 6,
+          "providerAggregateMs": 1225.4180419999993,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 3295.123541,
+          "stages": {
+            "environmentAndOptions": 0.009750000000167347,
+            "cacheLookup": 0.6823329999997441,
+            "prepareInput": 2.261583000000428,
+            "kernelProcess": 3286.7442089999995,
+            "outputAndCache": 5.417333000000326
+          },
+          "worker": {
+            "imports": 568.0672919843346,
+            "select_page": 13.097125018248335,
+            "model_and_cli_setup": 369.64195797918364,
+            "font_setup": 31.573375017615035,
+            "document_open": 2.4835419899318367,
+            "font_resources": 48.94645800231956,
+            "working_copy_save": 5.606708989944309,
+            "paragraph_parse": 3.9917090034577996,
+            "translation": 483.5151669976767,
+            "typesetting": 1.5234169841278344,
+            "page_processing": 1081.769416021416,
+            "apply_patches": 0.3539999888744205,
+            "bilingual_assembly": 0.005125009920448065,
+            "font_subset": 866.938458988443,
+            "pdf_serialize": 1.0964579996652901,
+            "output_write": 0.4161669930908829,
+            "workerTotal": 3046.790249994956
+          },
+          "queueMs": 0.2822919999998703,
+          "providerQueueMs": 0.22999999999956344,
+          "providerMaxMs": 205.4409999999998
+        },
+        {
+          "page": 30,
+          "wallMs": 3332.432499999999,
+          "providerCalls": 6,
+          "providerAggregateMs": 1222.0532509999994,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 3323.152458999999,
+          "stages": {
+            "environmentAndOptions": 0.008666999999149994,
+            "cacheLookup": 0.5054170000003069,
+            "prepareInput": 1.6526249999997162,
+            "kernelProcess": 3313.7319580000003,
+            "outputAndCache": 7.248041999999259
+          },
+          "worker": {
+            "imports": 555.8832920214627,
+            "select_page": 12.92624999769032,
+            "model_and_cli_setup": 374.16520799160935,
+            "font_setup": 30.551375006325543,
+            "document_open": 2.1808749879710376,
+            "font_resources": 47.90912501630373,
+            "working_copy_save": 5.634125001961365,
+            "paragraph_parse": 4.285832983441651,
+            "translation": 493.77349999849685,
+            "typesetting": 1.5837500104680657,
+            "page_processing": 1097.493791981833,
+            "apply_patches": 0.513250008225441,
+            "bilingual_assembly": 0.009624985978007317,
+            "font_subset": 892.7007080055773,
+            "pdf_serialize": 1.096084015443921,
+            "output_write": 0.4047909751534462,
+            "workerTotal": 3076.2857499939855
+          },
+          "queueMs": 0.15650000000005093,
+          "providerQueueMs": 0.10775099999955273,
+          "providerMaxMs": 204.74495799999931
+        },
+        {
+          "page": 1,
+          "wallMs": 6.112583000000086,
+          "providerCalls": 0,
+          "providerAggregateMs": 0,
+          "engine": "pdf_math_fast",
+          "cached": true,
+          "model": "gpt-4.1-mini",
+          "totalMs": 1.2988330000007409,
+          "stages": {
+            "environmentAndOptions": 0.010374999999839929,
+            "cacheLookup": 1.2840420000011363
+          },
+          "queueMs": 0.2156249999989086,
+          "providerQueueMs": 0,
+          "providerMaxMs": 0
+        }
+      ]
+    },
+    "after": {
+      "pages": 30,
+      "delayMs": 200,
+      "timings": [
+        {
+          "page": 1,
+          "wallMs": 2529.8192090000002,
+          "providerCalls": 6,
+          "providerAggregateMs": 1241.1290009999996,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 2503.991292,
+          "stages": {
+            "environmentAndOptions": 45.78329199999999,
+            "cacheLookup": 0.5597500000000082,
+            "cacheRecheck": 0.2560410000000104,
+            "prepareInput": 1.5126669999999933,
+            "kernelProcess": 2449.0932500000004,
+            "outputAndCache": 6.54320800000005
+          },
+          "worker": {
+            "imports": 398.6640420043841,
+            "select_page": 9.33929200982675,
+            "model_and_cli_setup": 262.1268329967279,
+            "font_setup": 21.57354200608097,
+            "document_open": 1.5782499976921827,
+            "font_resources": 32.468290999531746,
+            "working_copy_save": 3.2226670009549707,
+            "paragraph_parse": 2.834749990142882,
+            "translation": 490.83854199852794,
+            "typesetting": 1.6623749979771674,
+            "page_processing": 894.9500829912722,
+            "apply_patches": 0.36787500721402466,
+            "bilingual_assembly": 0.005874986527487636,
+            "font_subset": 644.2251249973197,
+            "pdf_serialize": 0.8128340123221278,
+            "output_write": 0.43899999582208693,
+            "workerTotal": 2305.8078750036657
+          },
+          "queueMs": 0.09345799999999826,
+          "providerQueueMs": 0.4517080000000533,
+          "providerMaxMs": 209.98912499999983
+        },
+        {
+          "page": 15,
+          "wallMs": 2657.5803339999998,
+          "providerCalls": 6,
+          "providerAggregateMs": 1227.8544590000001,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 2651.4112079999995,
+          "stages": {
+            "environmentAndOptions": 0.00537499999973079,
+            "cacheLookup": 0.32500000000027285,
+            "cacheRecheck": 0.1271670000000995,
+            "prepareInput": 1.1390409999999065,
+            "kernelProcess": 2645.365209,
+            "outputAndCache": 4.427166000000398
+          },
+          "worker": {
+            "imports": 431.59462499897927,
+            "select_page": 10.212082997895777,
+            "model_and_cli_setup": 281.64237501914613,
+            "font_setup": 22.252333001233637,
+            "document_open": 1.6286250029224902,
+            "font_resources": 33.19049999117851,
+            "working_copy_save": 3.4140420029871166,
+            "paragraph_parse": 2.7197909948881716,
+            "translation": 501.1836659978144,
+            "typesetting": 1.3221249973867089,
+            "page_processing": 949.7352500038687,
+            "apply_patches": 0.3031670057680458,
+            "bilingual_assembly": 0.004624977009370923,
+            "font_subset": 686.7986660217866,
+            "pdf_serialize": 0.9562499762978405,
+            "output_write": 0.7059170166030526,
+            "workerTotal": 2459.868332982296
+          },
+          "queueMs": 0.013500000000021828,
+          "providerQueueMs": 0.4786239999998543,
+          "providerMaxMs": 206.016208
+        },
+        {
+          "page": 30,
+          "wallMs": 2587.8325829999994,
+          "providerCalls": 6,
+          "providerAggregateMs": 1224.180792,
+          "engine": "pdf_math_fast",
+          "cached": false,
+          "totalMs": 2582.1362499999996,
+          "stages": {
+            "environmentAndOptions": 0.00954100000035396,
+            "cacheLookup": 0.3635839999997188,
+            "cacheRecheck": 0.16274999999950523,
+            "prepareInput": 1.2538340000000971,
+            "kernelProcess": 2576.45075,
+            "outputAndCache": 3.8635409999997137
+          },
+          "worker": {
+            "imports": 445.40729201980866,
+            "select_page": 9.957917005522177,
+            "model_and_cli_setup": 290.54224997526035,
+            "font_setup": 22.29241601889953,
+            "document_open": 1.6115839825943112,
+            "font_resources": 32.87608301616274,
+            "working_copy_save": 3.9001669792924076,
+            "paragraph_parse": 3.0474170052912086,
+            "translation": 491.2469999981113,
+            "typesetting": 1.9130419823341072,
+            "page_processing": 952.2050000086892,
+            "apply_patches": 0.42962501174770296,
+            "bilingual_assembly": 0.006457994459196925,
+            "font_subset": 634.5607079856563,
+            "pdf_serialize": 0.7886670064181089,
+            "output_write": 0.28166701667942107,
+            "workerTotal": 2437.598916993011
+          },
+          "queueMs": 0.024166999999579275,
+          "providerQueueMs": 0.17608500000096683,
+          "providerMaxMs": 205.09791700000005
+        },
+        {
+          "page": 1,
+          "wallMs": 2.9599579999994603,
+          "providerCalls": 0,
+          "providerAggregateMs": 0,
+          "engine": "pdf_math_fast",
+          "cached": true,
+          "model": "gpt-4.1-mini",
+          "totalMs": 0.6643749999993815,
+          "stages": {
+            "environmentAndOptions": 0.005166999999346444,
+            "cacheLookup": 0.6558330000007118
+          },
+          "queueMs": 0,
+          "providerQueueMs": 0,
+          "providerMaxMs": 0
+        }
+      ]
+    }
+  },
+  "reader": {
+    "beforeConcurrentCrop": {
+      "schemaVersion": 1,
+      "label": "round2-before",
+      "fixture": {
+        "name": "Portrait and landscape.pdf",
+        "pageCount": 1000,
+        "bytes": 3100238
+      },
+      "fixtureBytes": 3100238,
+      "reports": [
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:13:04.713Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 431.09999999403954,
+          "stages": {
+            "fileRead": 254.09999999403954,
+            "upload": 263.19999998807907,
+            "pdfReady": 316.19999998807907,
+            "pageGeometry": 349.19999998807907,
+            "recentHistory": 350.2999999821186,
+            "restoreView": 366.19999998807907
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123189825,
+            "scope": {
+              "rendererPid": 24817,
+              "backendPid": 24810,
+              "mainPid": 24805,
+              "gpuPids": [
+                24806
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 403177472,
+                "peakWorkingSetBytes": 411140096,
+                "rssEstimateBytes": 403177472,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 414318592
+              },
+              "backend": {
+                "workingSetBytes": 301449216,
+                "peakWorkingSetBytes": 323682304,
+                "rssEstimateBytes": 301449216,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 323977216
+              },
+              "total": {
+                "workingSetBytes": 704626688,
+                "peakWorkingSetBytes": 727482368,
+                "processPeakWorkingSetBytes": 738295808,
+                "rssEstimateBytes": 704626688,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 515375104,
+                "peakWorkingSetBytes": 516554752,
+                "rssEstimateBytes": 515375104,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 522141696
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 140361728,
+                  "peakWorkingSetBytes": 213057536,
+                  "rssEstimateBytes": 140361728,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 214614016
+                }
+              ],
+              "total": {
+                "workingSetBytes": 655736832,
+                "peakWorkingSetBytes": 728367104,
+                "processPeakWorkingSetBytes": 736755712,
+                "rssEstimateBytes": 655736832,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1360363520,
+              "peakWorkingSetBytes": 1432862720,
+              "processPeakWorkingSetBytes": 1475051520,
+              "rssEstimateBytes": 1360363520,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 190,
+            "requestBodyBytes": 3134343,
+            "responseBodyBytes": 2499783,
+            "layout": {
+              "requests": 94,
+              "totalDurationMs": 163302.767719,
+              "maxDurationMs": 3342.7170829999995,
+              "lastDurationMs": 3307.827292
+            },
+            "nativeExtraction": {
+              "requests": 24,
+              "totalDurationMs": 24551.453749,
+              "maxDurationMs": 1861.4981660000003,
+              "lastDurationMs": 1533.6730829999997
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 69,
+            "frameP95Ms": 16.59999999999991,
+            "frameMaxMs": 66.69999999999982,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 1,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 16.90000000000009,
+              "maxMs": 25.299999999999727,
+              "durationsMs": [
+                8.299999999999727,
+                8.300000000000182,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                7.400000000000091,
+                9.400000000000091,
+                7.299999999999727,
+                9.300000000000182,
+                8.299999999999727,
+                8.300000000000182,
+                8.300000000000182,
+                16.699999999999818,
+                8.300000000000182,
+                8.099999999999909,
+                25.299999999999727,
+                8.300000000000182,
+                16.699999999999818,
+                8.300000000000182,
+                8.300000000000182,
+                8.399999999999636,
+                7.400000000000091,
+                16.700000000000273,
+                9.199999999999818,
+                8.300000000000182,
+                8.399999999999636,
+                15.700000000000273,
+                9,
+                16.90000000000009,
+                8.399999999999636,
+                8.300000000000182,
+                8.300000000000182,
+                8.399999999999636,
+                8.300000000000182,
+                7.400000000000091,
+                9.299999999999727,
+                7.300000000000182,
+                17.59999999999991,
+                8.200000000000273,
+                7.599999999999909,
+                9.299999999999727,
+                8.300000000000182,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                7.900000000000091,
+                8.799999999999727,
+                8.200000000000273,
+                8.5,
+                8.199999999999818,
+                7.700000000000273,
+                9.099999999999909,
+                8.199999999999818,
+                8.400000000000091,
+                7.5,
+                17.5,
+                8.300000000000182,
+                8.299999999999727,
+                8.400000000000091,
+                8.400000000000091,
+                8.199999999999818,
+                8.400000000000091,
+                8.400000000000091,
+                8.299999999999727,
+                16.300000000000182,
+                8.199999999999818,
+                8.900000000000091,
+                7.900000000000091,
+                8.699999999999818,
+                16.600000000000364,
+                8.299999999999727,
+                8.400000000000091,
+                16.699999999999818,
+                8.300000000000182,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                8.300000000000182,
+                16.699999999999818,
+                8.300000000000182,
+                8.399999999999636,
+                8.300000000000182,
+                8,
+                8.199999999999818,
+                17.100000000000364,
+                7.399999999999636,
+                8.400000000000091,
+                8.300000000000182,
+                9.199999999999818,
+                8.400000000000091,
+                8.300000000000182,
+                7.5,
+                17.59999999999991,
+                7.400000000000091,
+                9.199999999999818,
+                15.800000000000182,
+                9.299999999999727,
+                8.200000000000273,
+                7.5,
+                9.299999999999727,
+                7.300000000000182,
+                8.400000000000091,
+                9.199999999999818,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                8.400000000000091,
+                8.199999999999818,
+                8.400000000000091,
+                7.400000000000091,
+                8.400000000000091,
+                9.199999999999818,
+                8.300000000000182,
+                8.399999999999636,
+                7.400000000000091,
+                8.400000000000091,
+                8.300000000000182,
+                9.299999999999727,
+                8.300000000000182
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 69,
+              "layoutChanges": 16,
+              "frameP95Ms": 16.59999999999991,
+              "frameMaxMs": 66.69999999999982,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 3709,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "981.579px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 17,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3717.3,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 18,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3784,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 18,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3792.4,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "543.895px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 18,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4417.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4425.6,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4434,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4441.4,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 6,
+              "pageFramesAfterScroll": 9,
+              "pageFramesBeforeResize": 17,
+              "pageFramesEnd": 33,
+              "pageFramesDelta": 27,
+              "scrollPageFramesDelta": 3,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 16
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:13:10.024Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 434.2000000178814,
+          "stages": {
+            "fileRead": 298.30000001192093,
+            "upload": 311.7000000178814,
+            "pdfReady": 357,
+            "pageGeometry": 386.40000000596046,
+            "recentHistory": 387.80000001192093,
+            "restoreView": 394.09999999403954
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123196726,
+            "scope": {
+              "rendererPid": 24817,
+              "backendPid": 24810,
+              "mainPid": 24805,
+              "gpuPids": [
+                24806
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 488112128,
+                "peakWorkingSetBytes": 488439808,
+                "rssEstimateBytes": 488112128,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 488849408
+              },
+              "backend": {
+                "workingSetBytes": 310280192,
+                "peakWorkingSetBytes": 343474176,
+                "rssEstimateBytes": 310280192,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 346603520
+              },
+              "total": {
+                "workingSetBytes": 798392320,
+                "peakWorkingSetBytes": 818364416,
+                "processPeakWorkingSetBytes": 835452928,
+                "rssEstimateBytes": 798392320,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 542720000,
+                "peakWorkingSetBytes": 545308672,
+                "rssEstimateBytes": 542720000,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 551485440
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 150192128,
+                  "peakWorkingSetBytes": 159612928,
+                  "rssEstimateBytes": 150192128,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 214614016
+                }
+              ],
+              "total": {
+                "workingSetBytes": 692912128,
+                "peakWorkingSetBytes": 702332928,
+                "processPeakWorkingSetBytes": 766099456,
+                "rssEstimateBytes": 692912128,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1491304448,
+              "peakWorkingSetBytes": 1514962944,
+              "processPeakWorkingSetBytes": 1601552384,
+              "rssEstimateBytes": 1491304448,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 189,
+            "requestBodyBytes": 3101847,
+            "responseBodyBytes": 580234,
+            "layout": {
+              "requests": 242,
+              "totalDurationMs": 603719.341763,
+              "maxDurationMs": 3926.964125,
+              "lastDurationMs": 3461.206624999999
+            },
+            "nativeExtraction": {
+              "requests": 60,
+              "totalDurationMs": 129051.56224999997,
+              "maxDurationMs": 5432.325459,
+              "lastDurationMs": 3052.360417
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 69,
+            "frameP95Ms": 16.700000000000728,
+            "frameMaxMs": 83.29999999999927,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 2,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 9.300000000001091,
+              "maxMs": 16.600000000000364,
+              "durationsMs": [
+                8.299999999999272,
+                7.5,
+                9.200000000000728,
+                7.399999999999636,
+                9.300000000001091,
+                7.399999999999636,
+                9.299999999999272,
+                8.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                7.5,
+                8.299999999999272,
+                9.300000000001091,
+                7.399999999999636,
+                9.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                7.5,
+                8.300000000001091,
+                8.299999999999272,
+                9.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                7.400000000001455,
+                9.299999999999272,
+                7.399999999999636,
+                9.200000000000728,
+                8.399999999999636,
+                7.399999999999636,
+                9.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.200000000000728,
+                8.299999999999272,
+                8.399999999999636,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                16.600000000000364,
+                8.5,
+                8.300000000001091,
+                8.299999999999272,
+                8.299999999999272,
+                8.400000000001455,
+                8.299999999999272,
+                7.399999999999636,
+                8.399999999999636,
+                8.200000000000728,
+                9.399999999999636,
+                8.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                7.5,
+                8.399999999999636,
+                9.200000000000728,
+                7.399999999999636,
+                8.299999999999272,
+                9.300000000001091,
+                7.399999999999636,
+                9.299999999999272,
+                8.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                7.400000000001455,
+                8.399999999999636,
+                9.199999999998909,
+                8.400000000001455,
+                8.199999999998909,
+                8.399999999999636,
+                8.300000000001091,
+                7.5,
+                8.299999999999272,
+                9.300000000001091,
+                7.899999999999636,
+                8.799999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8,
+                8.700000000000728,
+                7.399999999999636,
+                9.200000000000728,
+                8.299999999999272,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                7.5,
+                9.300000000001091,
+                8.199999999998909,
+                8.300000000001091,
+                7.5,
+                8.299999999999272,
+                8.300000000001091,
+                9.399999999999636,
+                8.199999999998909,
+                7.400000000001455,
+                9.399999999999636,
+                8.199999999998909,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                7.5
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 69,
+              "layoutChanges": 17,
+              "frameP95Ms": 16.700000000000728,
+              "frameMaxMs": 83.29999999999927,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 10600.7,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 10609,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 10692.3,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 10700.6,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "543.895px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 11317.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 11325.7,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 11334,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 11342.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 42,
+              "pageFramesAfterScroll": 44,
+              "pageFramesBeforeResize": 52,
+              "pageFramesEnd": 68,
+              "pageFramesDelta": 26,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 17
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:13:16.927Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 454.7999999821186,
+          "stages": {
+            "fileRead": 323.5,
+            "upload": 337.89999997615814,
+            "pdfReady": 383.2999999821186,
+            "pageGeometry": 411.39999997615814,
+            "recentHistory": 412.09999999403954,
+            "restoreView": 417.7999999821186
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123202901,
+            "scope": {
+              "rendererPid": 24817,
+              "backendPid": 24810,
+              "mainPid": 24805,
+              "gpuPids": [
+                24806
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 533741568,
+                "peakWorkingSetBytes": 534298624,
+                "rssEstimateBytes": 533741568,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 535625728
+              },
+              "backend": {
+                "workingSetBytes": 321093632,
+                "peakWorkingSetBytes": 364019712,
+                "rssEstimateBytes": 321093632,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 364085248
+              },
+              "total": {
+                "workingSetBytes": 854835200,
+                "peakWorkingSetBytes": 886325248,
+                "processPeakWorkingSetBytes": 899710976,
+                "rssEstimateBytes": 854835200,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 499302400,
+                "peakWorkingSetBytes": 545898496,
+                "rssEstimateBytes": 499302400,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 556597248
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 145604608,
+                  "peakWorkingSetBytes": 163708928,
+                  "rssEstimateBytes": 145604608,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 214614016
+                }
+              ],
+              "total": {
+                "workingSetBytes": 644907008,
+                "peakWorkingSetBytes": 703496192,
+                "processPeakWorkingSetBytes": 771211264,
+                "rssEstimateBytes": 644907008,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1499742208,
+              "peakWorkingSetBytes": 1544486912,
+              "processPeakWorkingSetBytes": 1670922240,
+              "rssEstimateBytes": 1499742208,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 190,
+            "requestBodyBytes": 3101847,
+            "responseBodyBytes": 580247,
+            "layout": {
+              "requests": 419,
+              "totalDurationMs": 1161977.7546440004,
+              "maxDurationMs": 3968.0489579999994,
+              "lastDurationMs": 3591.838833
+            },
+            "nativeExtraction": {
+              "requests": 92,
+              "totalDurationMs": 236361.3149169999,
+              "maxDurationMs": 6163.480916999999,
+              "lastDurationMs": 3200.953083000002
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 68,
+            "frameP95Ms": 16.399999999997817,
+            "frameMaxMs": 91.79999999999927,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 3,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 9.300000000001091,
+              "maxMs": 16.69999999999891,
+              "durationsMs": [
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                7.400000000001455,
+                9.299999999999272,
+                8.299999999999272,
+                7.400000000001455,
+                8.299999999999272,
+                9.100000000000364,
+                8.100000000000364,
+                7.899999999999636,
+                8.299999999999272,
+                9.300000000001091,
+                8.299999999999272,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                7.400000000001455,
+                8.399999999999636,
+                9.199999999998909,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                7.399999999999636,
+                9.400000000001455,
+                8.199999999998909,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                16.69999999999891,
+                8.400000000001455,
+                8.299999999999272,
+                7.399999999999636,
+                9.300000000001091,
+                8.299999999999272,
+                8.299999999999272,
+                8.400000000001455,
+                7.399999999999636,
+                9.199999999998909,
+                7.400000000001455,
+                9.199999999998909,
+                8.399999999999636,
+                8.400000000001455,
+                8.299999999999272,
+                7.399999999999636,
+                8.399999999999636,
+                8.200000000000728,
+                9.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.400000000001455,
+                8.199999999998909,
+                8.399999999999636,
+                7.400000000001455,
+                8.399999999999636,
+                9.199999999998909,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                7.5,
+                9.299999999999272,
+                7.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                9.299999999999272,
+                7.400000000001455,
+                9.299999999999272,
+                7.399999999999636,
+                9.300000000001091,
+                8.299999999999272,
+                8.299999999999272,
+                8.300000000001091,
+                7.399999999999636,
+                9.399999999999636,
+                7.300000000001091,
+                9.399999999999636,
+                8.199999999998909,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.400000000001455,
+                8.299999999999272,
+                7.299999999999272,
+                8.400000000001455,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                9.299999999999272
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 68,
+              "layoutChanges": 17,
+              "frameP95Ms": 16.399999999997817,
+              "frameMaxMs": 91.79999999999927,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 16750.6,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 90,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16759,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 90,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16825.6,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 90,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16833.9,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "543.895px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 90,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17492.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 105,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17500.6,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 105,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17509,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 105,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17517.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 105,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 78,
+              "pageFramesAfterScroll": 80,
+              "pageFramesBeforeResize": 88,
+              "pageFramesEnd": 105,
+              "pageFramesDelta": 27,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 17,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 17
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        }
+      ],
+      "medians": {
+        "firstScreenMs": 434.2000000178814,
+        "stages": {
+          "fileRead": 298.30000001192093,
+          "upload": 311.7000000178814,
+          "pdfReady": 357,
+          "pageGeometry": 386.40000000596046,
+          "recentHistory": 387.80000001192093,
+          "restoreView": 394.09999999403954
+        },
+        "scrollLongTasks": {
+          "count": 0,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "resize": {
+          "count": 0,
+          "layoutCommits": 0,
+          "snapshotTransitions": 0,
+          "frames": 69,
+          "frameP95Ms": 16.59999999999991,
+          "frameMaxMs": 83.29999999999927
+        },
+        "metrics": {
+          "pageFramesStart": 42,
+          "pageFramesAfterScroll": 44,
+          "pageFramesBeforeResize": 52,
+          "pageFramesEnd": 68,
+          "pageFramesDelta": 27,
+          "scrollPageFramesDelta": 2,
+          "resizePageFramesDelta": 16,
+          "resizeLayoutCommits": 0,
+          "burstLayoutCommits": 0,
+          "burstLayoutChanges": 17
+        }
+      },
+      "scroll": {
+        "frames": 120,
+        "p95Ms": 9.400000000001455,
+        "maxMs": 25.299999999999727
+      },
+      "scrollFrameP95Ms": 9.400000000001455,
+      "scrollFrameMaxMs": 25.299999999999727,
+      "resizeFrames": [
+        69,
+        69,
+        68
+      ],
+      "resize": {
+        "bursts": 20,
+        "frames": [
+          69,
+          69,
+          68
+        ],
+        "p95Ms": 16.59999999999991,
+        "maxMs": 91.79999999999927,
+        "snapshotClassSeen": false,
+        "layoutFrozenClassSeen": false
+      }
+    },
+    "withCropDependencyRegression": {
+      "schemaVersion": 1,
+      "label": "round2-final",
+      "fixture": {
+        "name": "Portrait and landscape.pdf",
+        "pageCount": 1000,
+        "bytes": 3100238
+      },
+      "fixtureBytes": 3100238,
+      "reports": [
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:17:19.769Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 460,
+          "stages": {
+            "fileRead": 269.09999999403954,
+            "upload": 280,
+            "pdfReady": 336.09999999403954,
+            "pageGeometry": 370.19999998807907,
+            "recentHistory": 371.5,
+            "restoreView": 389.40000000596046
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123447115,
+            "scope": {
+              "rendererPid": 35001,
+              "backendPid": 34999,
+              "mainPid": 34996,
+              "gpuPids": [
+                34997
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 466042880,
+                "peakWorkingSetBytes": 467501056,
+                "rssEstimateBytes": 466042880,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 467501056
+              },
+              "backend": {
+                "workingSetBytes": 273465344,
+                "peakWorkingSetBytes": 307707904,
+                "rssEstimateBytes": 273465344,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 307724288
+              },
+              "total": {
+                "workingSetBytes": 739508224,
+                "peakWorkingSetBytes": 764723200,
+                "processPeakWorkingSetBytes": 775225344,
+                "rssEstimateBytes": 739508224,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 527564800,
+                "peakWorkingSetBytes": 529793024,
+                "rssEstimateBytes": 527564800,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 535625728
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 205144064,
+                  "peakWorkingSetBytes": 255590400,
+                  "rssEstimateBytes": 205144064,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 255852544
+                }
+              ],
+              "total": {
+                "workingSetBytes": 732708864,
+                "peakWorkingSetBytes": 783040512,
+                "processPeakWorkingSetBytes": 791478272,
+                "rssEstimateBytes": 732708864,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1472217088,
+              "peakWorkingSetBytes": 1547763712,
+              "processPeakWorkingSetBytes": 1566703616,
+              "rssEstimateBytes": 1472217088,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 194,
+            "requestBodyBytes": 3134648,
+            "responseBodyBytes": 3011381,
+            "layout": {
+              "requests": 158,
+              "totalDurationMs": 319079.37513299996,
+              "maxDurationMs": 4009.376625000001,
+              "lastDurationMs": 3183.967625000001
+            },
+            "nativeExtraction": {
+              "requests": 41,
+              "totalDurationMs": 47641.94937500001,
+              "maxDurationMs": 2466.447458999999,
+              "lastDurationMs": 2466.447458999999
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 95,
+            "frameP95Ms": 16.699999999999818,
+            "frameMaxMs": 41.599999999999454,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 1,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 42.5,
+              "maxMs": 67.5,
+              "durationsMs": [
+                8.300000000000182,
+                8.099999999999909,
+                16.90000000000009,
+                33.30000000000018,
+                25,
+                25.09999999999991,
+                25,
+                24.90000000000009,
+                25,
+                66.69999999999982,
+                33.30000000000018,
+                25,
+                25,
+                33.399999999999636,
+                41.600000000000364,
+                25,
+                33.399999999999636,
+                16.100000000000364,
+                41.399999999999636,
+                34.100000000000364,
+                33.29999999999973,
+                25,
+                16.700000000000273,
+                32.79999999999973,
+                33.20000000000027,
+                9,
+                33.399999999999636,
+                33.30000000000018,
+                24.59999999999991,
+                33.70000000000027,
+                25.09999999999991,
+                24.90000000000009,
+                25,
+                33.399999999999636,
+                33.20000000000027,
+                25.09999999999991,
+                24.09999999999991,
+                34.20000000000027,
+                16.699999999999818,
+                25,
+                33.30000000000018,
+                33.29999999999973,
+                25.09999999999991,
+                25,
+                33.30000000000018,
+                33.30000000000018,
+                16.699999999999818,
+                33.30000000000018,
+                33.29999999999973,
+                25.09999999999991,
+                25,
+                25,
+                16.40000000000009,
+                33.59999999999991,
+                41.600000000000364,
+                40.69999999999982,
+                51,
+                25,
+                41.69999999999982,
+                33.30000000000018,
+                33.40000000000009,
+                16.5,
+                24.199999999999818,
+                67.5,
+                25.09999999999991,
+                41.69999999999982,
+                24.900000000000546,
+                32.69999999999982,
+                33.100000000000364,
+                42.5,
+                33.399999999999636,
+                24.699999999999818,
+                17,
+                49.900000000000546,
+                25,
+                33.399999999999636,
+                32.399999999999636,
+                34.30000000000018,
+                33.30000000000018,
+                33.399999999999636,
+                32.5,
+                34.20000000000073,
+                33.19999999999982,
+                25,
+                25.099999999999454,
+                32.400000000000546,
+                42.5,
+                33.5,
+                24.899999999999636,
+                25,
+                33.19999999999982,
+                33.400000000000546,
+                33,
+                33.599999999999454,
+                33.400000000000546,
+                16.699999999999818,
+                33.30000000000018,
+                33.30000000000018,
+                8.399999999999636,
+                16.600000000000364,
+                8.399999999999636,
+                8.300000000000182,
+                8.300000000000182,
+                8.399999999999636,
+                8.300000000000182,
+                8.300000000000182,
+                7.699999999999818,
+                9,
+                7.800000000000182,
+                9,
+                8.199999999999818,
+                8.399999999999636,
+                8.300000000000182,
+                8.399999999999636,
+                8.300000000000182,
+                8.300000000000182,
+                7.800000000000182,
+                9,
+                8.199999999999818
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 95,
+              "layoutChanges": 20,
+              "frameP95Ms": 16.699999999999818,
+              "frameMaxMs": 41.599999999999454,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 5844.666,
+                  "width": 1200,
+                  "height": 850,
+                  "layoutWidth": "981.579px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 15,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 5860.7,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "981.579px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 15,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 5868.9,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 15,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 5894.6,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 15,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 6702.9,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 6711.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 6719.7,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 6727.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 33,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 6,
+              "pageFramesAfterScroll": 8,
+              "pageFramesBeforeResize": 15,
+              "pageFramesEnd": 33,
+              "pageFramesDelta": 27,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 18,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:17:27.329Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 449.69999998807907,
+          "stages": {
+            "fileRead": 281.40000000596046,
+            "upload": 295.90000000596046,
+            "pdfReady": 347.90000000596046,
+            "pageGeometry": 382.30000001192093,
+            "recentHistory": 383.19999998807907,
+            "restoreView": 394.59999999403954
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123454274,
+            "scope": {
+              "rendererPid": 35001,
+              "backendPid": 34999,
+              "mainPid": 34996,
+              "gpuPids": [
+                34997
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 515440640,
+                "peakWorkingSetBytes": 544227328,
+                "rssEstimateBytes": 515440640,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 560791552
+              },
+              "backend": {
+                "workingSetBytes": 272744448,
+                "peakWorkingSetBytes": 335347712,
+                "rssEstimateBytes": 272744448,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 335347712
+              },
+              "total": {
+                "workingSetBytes": 788185088,
+                "peakWorkingSetBytes": 871710720,
+                "processPeakWorkingSetBytes": 896139264,
+                "rssEstimateBytes": 788185088,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 510820352,
+                "peakWorkingSetBytes": 530710528,
+                "rssEstimateBytes": 510820352,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 540114944
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 205766656,
+                  "peakWorkingSetBytes": 217464832,
+                  "rssEstimateBytes": 205766656,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 255852544
+                }
+              ],
+              "total": {
+                "workingSetBytes": 716587008,
+                "peakWorkingSetBytes": 743178240,
+                "processPeakWorkingSetBytes": 795967488,
+                "rssEstimateBytes": 716587008,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1504772096,
+              "peakWorkingSetBytes": 1597734912,
+              "processPeakWorkingSetBytes": 1692106752,
+              "rssEstimateBytes": 1504772096,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 170,
+            "requestBodyBytes": 3117029,
+            "responseBodyBytes": 1176685,
+            "layout": {
+              "requests": 318,
+              "totalDurationMs": 711829.2522129999,
+              "maxDurationMs": 4392.158625,
+              "lastDurationMs": 3831.600875
+            },
+            "nativeExtraction": {
+              "requests": 82,
+              "totalDurationMs": 117912.52107800002,
+              "maxDurationMs": 3562.6759999999995,
+              "lastDurationMs": 3562.6759999999995
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 89,
+            "frameP95Ms": 9.300000000001091,
+            "frameMaxMs": 17.600000000000364,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 2,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 34.29999999999927,
+              "maxMs": 58.29999999999927,
+              "durationsMs": [
+                8.400000000001455,
+                8.199999999998909,
+                8.399999999999636,
+                8.300000000001091,
+                7.5,
+                9.299999999999272,
+                7.899999999999636,
+                8.700000000000728,
+                7.399999999999636,
+                9.300000000001091,
+                7.299999999999272,
+                17.600000000000364,
+                25,
+                25.100000000000364,
+                25,
+                58.29999999999927,
+                25,
+                32.899999999999636,
+                33.80000000000109,
+                32.69999999999891,
+                33,
+                34.20000000000073,
+                33.399999999999636,
+                33.29999999999927,
+                33.30000000000109,
+                25,
+                33.399999999999636,
+                25,
+                33.29999999999927,
+                25,
+                33.30000000000109,
+                24.100000000000364,
+                25,
+                25,
+                34.29999999999927,
+                33.29999999999927,
+                25,
+                33.400000000001455,
+                33.29999999999927,
+                33.29999999999927,
+                41.70000000000073,
+                24.200000000000728,
+                34.099999999998545,
+                33.30000000000109,
+                25,
+                32.69999999999891,
+                25.700000000000728,
+                33.29999999999927,
+                25.100000000000364,
+                33.20000000000073,
+                32.5,
+                34.19999999999891,
+                25.100000000000364,
+                33.30000000000109,
+                25,
+                32.399999999999636,
+                33.29999999999927,
+                34.20000000000073,
+                33.399999999999636,
+                25,
+                24.399999999999636,
+                24.600000000000364,
+                34.29999999999927,
+                33.30000000000109,
+                33.399999999999636,
+                32.399999999999636,
+                34.20000000000073,
+                33.29999999999927,
+                32.5,
+                34.20000000000073,
+                24.100000000000364,
+                34.29999999999927,
+                24.899999999999636,
+                32.399999999999636,
+                25.200000000000728,
+                34.100000000000364,
+                33.399999999999636,
+                25,
+                32.600000000000364,
+                34,
+                33.399999999999636,
+                24.899999999999636,
+                24.200000000000728,
+                34.19999999999891,
+                33.400000000001455,
+                41.599999999998545,
+                40.80000000000109,
+                34.100000000000364,
+                25.099999999998545,
+                25,
+                33.400000000001455,
+                33.29999999999927,
+                33.29999999999927,
+                33.400000000001455,
+                33.29999999999927,
+                33.29999999999927,
+                25,
+                33.400000000001455,
+                33.29999999999927,
+                7.399999999999636,
+                8.800000000001091,
+                8.599999999998545,
+                8.5,
+                8.200000000000728,
+                7.899999999999636,
+                8.899999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                7.600000000000364,
+                8.199999999998909,
+                9.300000000001091,
+                8.100000000000364,
+                8.399999999999636,
+                7.5,
+                9.199999999998909,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 89,
+              "layoutChanges": 20,
+              "frameP95Ms": 9.300000000001091,
+              "frameMaxMs": 17.600000000000364,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 13136.3,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 49,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13144.6,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 49,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13153,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 49,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13161.3,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 50,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13861.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 65,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13869.6,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 65,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13877.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 65,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 13885.4,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 65,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 38,
+              "pageFramesAfterScroll": 41,
+              "pageFramesBeforeResize": 49,
+              "pageFramesEnd": 65,
+              "pageFramesDelta": 27,
+              "scrollPageFramesDelta": 3,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:17:34.479Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 442.7000000178814,
+          "stages": {
+            "fileRead": 297,
+            "upload": 308,
+            "pdfReady": 351.7000000178814,
+            "pageGeometry": 383.30000001192093,
+            "recentHistory": 384,
+            "restoreView": 394.59999999403954
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123461178,
+            "scope": {
+              "rendererPid": 35001,
+              "backendPid": 34999,
+              "mainPid": 34996,
+              "gpuPids": [
+                34997
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 577863680,
+                "peakWorkingSetBytes": 577863680,
+                "rssEstimateBytes": 577863680,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 595034112
+              },
+              "backend": {
+                "workingSetBytes": 333037568,
+                "peakWorkingSetBytes": 345440256,
+                "rssEstimateBytes": 333037568,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 345440256
+              },
+              "total": {
+                "workingSetBytes": 910901248,
+                "peakWorkingSetBytes": 923303936,
+                "processPeakWorkingSetBytes": 940474368,
+                "rssEstimateBytes": 910901248,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 418365440,
+                "peakWorkingSetBytes": 513966080,
+                "rssEstimateBytes": 418365440,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 540114944
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 212484096,
+                  "peakWorkingSetBytes": 216498176,
+                  "rssEstimateBytes": 212484096,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 255852544
+                }
+              ],
+              "total": {
+                "workingSetBytes": 630849536,
+                "peakWorkingSetBytes": 727793664,
+                "processPeakWorkingSetBytes": 795967488,
+                "rssEstimateBytes": 630849536,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1541750784,
+              "peakWorkingSetBytes": 1554137088,
+              "processPeakWorkingSetBytes": 1736441856,
+              "rssEstimateBytes": 1541750784,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 176,
+            "requestBodyBytes": 3117181,
+            "responseBodyBytes": 998172,
+            "layout": {
+              "requests": 456,
+              "totalDurationMs": 1023481.0475429997,
+              "maxDurationMs": 4392.158625,
+              "lastDurationMs": 3630.847916999999
+            },
+            "nativeExtraction": {
+              "requests": 116,
+              "totalDurationMs": 170584.36186900007,
+              "maxDurationMs": 4131.080000000002,
+              "lastDurationMs": 728.5818749999999
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 90,
+            "frameP95Ms": 9.19999999999709,
+            "frameMaxMs": 16.700000000000728,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 3,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 33.400000000001455,
+              "maxMs": 41.70000000000073,
+              "durationsMs": [
+                7.5,
+                9.100000000002183,
+                8.399999999997817,
+                8.30000000000291,
+                8.399999999997817,
+                8.400000000001455,
+                8.200000000000728,
+                8.299999999999272,
+                8.399999999997817,
+                8.400000000001455,
+                16.599999999998545,
+                24.200000000000728,
+                17.5,
+                41.70000000000073,
+                33.29999999999927,
+                33.29999999999927,
+                25.100000000002183,
+                32.39999999999782,
+                25,
+                25.900000000001455,
+                33.29999999999927,
+                25,
+                33.29999999999927,
+                32.900000000001455,
+                25.5,
+                16.599999999998545,
+                33.30000000000291,
+                25,
+                25.099999999998545,
+                24.900000000001455,
+                33.29999999999927,
+                16.799999999999272,
+                24.900000000001455,
+                33.39999999999782,
+                25,
+                25,
+                24.600000000002183,
+                33.69999999999709,
+                33.30000000000291,
+                25,
+                33.39999999999782,
+                16.299999999999272,
+                33.60000000000218,
+                33.39999999999782,
+                16.700000000000728,
+                33.29999999999927,
+                25.100000000002183,
+                24.899999999997817,
+                25,
+                25,
+                33.30000000000291,
+                25.099999999998545,
+                25,
+                33.29999999999927,
+                24.900000000001455,
+                25.200000000000728,
+                24.899999999997817,
+                33.29999999999927,
+                25.100000000002183,
+                24.899999999997817,
+                24.30000000000291,
+                17.399999999997817,
+                33.29999999999927,
+                33.400000000001455,
+                25,
+                24.900000000001455,
+                33.39999999999782,
+                32.70000000000073,
+                25.599999999998545,
+                33.30000000000291,
+                25.099999999998545,
+                33.29999999999927,
+                24.900000000001455,
+                33.39999999999782,
+                24.100000000002183,
+                26,
+                33.20000000000073,
+                33.39999999999782,
+                25,
+                25,
+                33.29999999999927,
+                25,
+                16.700000000000728,
+                33.29999999999927,
+                33.400000000001455,
+                33.20000000000073,
+                33.39999999999782,
+                25,
+                25,
+                24.400000000001455,
+                33.900000000001455,
+                25,
+                25.099999999998545,
+                33.29999999999927,
+                33.29999999999927,
+                25,
+                25,
+                25,
+                33.400000000001455,
+                8.299999999999272,
+                7.600000000002183,
+                9,
+                8.399999999997817,
+                8.299999999999272,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                8.30000000000291,
+                8.299999999999272,
+                8.399999999997817,
+                8.400000000001455,
+                8.200000000000728,
+                8.399999999997817,
+                8.400000000001455,
+                8.299999999999272,
+                8.299999999999272,
+                8,
+                8.700000000000728,
+                8.200000000000728
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 90,
+              "layoutChanges": 20,
+              "frameP95Ms": 9.19999999999709,
+              "frameMaxMs": 16.700000000000728,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 20036.3,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 83,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20044.6,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 83,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20052.9,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 83,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20061.3,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 83,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20769.6,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 95,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20777.9,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 95,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20786.3,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 95,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 20794.6,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 95,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 71,
+              "pageFramesAfterScroll": 73,
+              "pageFramesBeforeResize": 81,
+              "pageFramesEnd": 95,
+              "pageFramesDelta": 24,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 14,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        }
+      ],
+      "medians": {
+        "firstScreenMs": 449.69999998807907,
+        "stages": {
+          "fileRead": 281.40000000596046,
+          "upload": 295.90000000596046,
+          "pdfReady": 347.90000000596046,
+          "pageGeometry": 382.30000001192093,
+          "recentHistory": 383.19999998807907,
+          "restoreView": 394.59999999403954
+        },
+        "scrollLongTasks": {
+          "count": 0,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "resize": {
+          "count": 0,
+          "layoutCommits": 0,
+          "snapshotTransitions": 0,
+          "frames": 90,
+          "frameP95Ms": 9.300000000001091,
+          "frameMaxMs": 17.600000000000364
+        },
+        "metrics": {
+          "pageFramesStart": 38,
+          "pageFramesAfterScroll": 41,
+          "pageFramesBeforeResize": 49,
+          "pageFramesEnd": 65,
+          "pageFramesDelta": 27,
+          "scrollPageFramesDelta": 2,
+          "resizePageFramesDelta": 16,
+          "resizeLayoutCommits": 0,
+          "burstLayoutCommits": 0,
+          "burstLayoutChanges": 20
+        }
+      },
+      "scroll": {
+        "frames": 120,
+        "p95Ms": 34.30000000000018,
+        "maxMs": 67.5
+      },
+      "scrollFrameP95Ms": 34.30000000000018,
+      "scrollFrameMaxMs": 67.5,
+      "resizeFrames": [
+        95,
+        89,
+        90
+      ],
+      "resize": {
+        "bursts": 20,
+        "frames": [
+          95,
+          89,
+          90
+        ],
+        "p95Ms": 9.300000000001091,
+        "maxMs": 41.599999999999454,
+        "snapshotClassSeen": false,
+        "layoutFrozenClassSeen": false
+      }
+    },
+    "optimized": {
+      "schemaVersion": 1,
+      "label": "round2-geometry-fixed",
+      "fixture": {
+        "name": "Portrait and landscape.pdf",
+        "pageCount": 1000,
+        "bytes": 3100238
+      },
+      "fixtureBytes": 3100238,
+      "reports": [
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:18:42.251Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 429.2999999821186,
+          "stages": {
+            "fileRead": 263.90000000596046,
+            "upload": 274.5,
+            "pdfReady": 327.2999999821186,
+            "pageGeometry": 356.7999999821186,
+            "recentHistory": 358,
+            "restoreView": 371.5
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123527252,
+            "scope": {
+              "rendererPid": 37079,
+              "backendPid": 37077,
+              "mainPid": 37073,
+              "gpuPids": [
+                37074
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 442793984,
+                "peakWorkingSetBytes": 443285504,
+                "rssEstimateBytes": 442793984,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 443318272
+              },
+              "backend": {
+                "workingSetBytes": 270598144,
+                "peakWorkingSetBytes": 325206016,
+                "rssEstimateBytes": 270598144,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 326778880
+              },
+              "total": {
+                "workingSetBytes": 713392128,
+                "peakWorkingSetBytes": 748830720,
+                "processPeakWorkingSetBytes": 770097152,
+                "rssEstimateBytes": 713392128,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 522862592,
+                "peakWorkingSetBytes": 524615680,
+                "rssEstimateBytes": 522862592,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 530481152
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 165969920,
+                  "peakWorkingSetBytes": 217743360,
+                  "rssEstimateBytes": 165969920,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 218054656
+                }
+              ],
+              "total": {
+                "workingSetBytes": 688832512,
+                "peakWorkingSetBytes": 740655104,
+                "processPeakWorkingSetBytes": 748535808,
+                "rssEstimateBytes": 688832512,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1402224640,
+              "peakWorkingSetBytes": 1488879616,
+              "processPeakWorkingSetBytes": 1518632960,
+              "rssEstimateBytes": 1402224640,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 188,
+            "requestBodyBytes": 3134266,
+            "responseBodyBytes": 2582406,
+            "layout": {
+              "requests": 104,
+              "totalDurationMs": 205807.18108499996,
+              "maxDurationMs": 3656.805417,
+              "lastDurationMs": 3501.7547919999997
+            },
+            "nativeExtraction": {
+              "requests": 26,
+              "totalDurationMs": 41450.859667000004,
+              "maxDurationMs": 3345.588416,
+              "lastDurationMs": 3345.588416
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 89,
+            "frameP95Ms": 9.300000000000182,
+            "frameMaxMs": 9.399999999999636,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 1,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 9.300000000000182,
+              "maxMs": 17,
+              "durationsMs": [
+                8.300000000000182,
+                8.299999999999727,
+                7.400000000000091,
+                9.300000000000182,
+                8.299999999999727,
+                7.400000000000091,
+                9.400000000000091,
+                8.199999999999818,
+                8.300000000000182,
+                8.099999999999909,
+                8.699999999999818,
+                7.400000000000091,
+                9.200000000000273,
+                8.099999999999909,
+                8.5,
+                8.299999999999727,
+                8.400000000000091,
+                8.400000000000091,
+                8,
+                7.699999999999818,
+                8.300000000000182,
+                8.300000000000182,
+                9.399999999999636,
+                8.200000000000273,
+                8.299999999999727,
+                7.800000000000182,
+                9,
+                8.300000000000182,
+                8.399999999999636,
+                8.200000000000273,
+                8.400000000000091,
+                8.299999999999727,
+                7.400000000000091,
+                9.300000000000182,
+                8.299999999999727,
+                7.5,
+                9.300000000000182,
+                7.299999999999727,
+                9.300000000000182,
+                8.300000000000182,
+                8.299999999999727,
+                7.5,
+                9.200000000000273,
+                8.299999999999727,
+                8,
+                17,
+                8.300000000000182,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                8.299999999999727,
+                7.800000000000182,
+                8.099999999999909,
+                9.099999999999909,
+                7.5,
+                9.200000000000273,
+                8.299999999999727,
+                7.400000000000091,
+                8.400000000000091,
+                9.300000000000182,
+                7.399999999999636,
+                9.300000000000182,
+                7.599999999999909,
+                9.099999999999909,
+                7.300000000000182,
+                9.300000000000182,
+                8.299999999999727,
+                8.300000000000182,
+                8.400000000000091,
+                7.399999999999636,
+                9.300000000000182,
+                8.199999999999818,
+                7.600000000000364,
+                9.199999999999818,
+                8.300000000000182,
+                8.299999999999727,
+                7.400000000000091,
+                8.300000000000182,
+                8.399999999999636,
+                9.300000000000182,
+                8.199999999999818,
+                8.400000000000091,
+                8.400000000000091,
+                8.300000000000182,
+                8,
+                8.699999999999818,
+                8.199999999999818,
+                7.5,
+                8.300000000000182,
+                8.400000000000091,
+                9.199999999999818,
+                7.400000000000091,
+                9.199999999999818,
+                8.400000000000091,
+                8.400000000000091,
+                8.199999999999818,
+                8.400000000000091,
+                8.400000000000091,
+                8.199999999999818,
+                8.400000000000091,
+                8.300000000000182,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                7.900000000000091,
+                8.899999999999636,
+                8.200000000000273,
+                8.400000000000091,
+                8.299999999999727,
+                8.300000000000182,
+                8.299999999999727,
+                8.400000000000091,
+                7.800000000000182,
+                9,
+                8.199999999999818,
+                8.300000000000182,
+                7.799999999999727,
+                9,
+                8.200000000000273
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 89,
+              "layoutChanges": 20,
+              "frameP95Ms": 9.300000000000182,
+              "frameMaxMs": 9.399999999999636,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 3565.6,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "981.579px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 17,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3574.9,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 17,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3583.1,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 18,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 3591.4,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "543.895px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 18,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4274.7,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 32,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4283.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 32,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4291.4,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 32,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 4299.8,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 32,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 6,
+              "pageFramesAfterScroll": 8,
+              "pageFramesBeforeResize": 16,
+              "pageFramesEnd": 32,
+              "pageFramesDelta": 26,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:18:47.457Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 512,
+          "stages": {
+            "fileRead": 384.90000000596046,
+            "upload": 395.30000001192093,
+            "pdfReady": 439.30000001192093,
+            "pageGeometry": 469.40000000596046,
+            "recentHistory": 470.30000001192093,
+            "restoreView": 476.40000000596046
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123532743,
+            "scope": {
+              "rendererPid": 37079,
+              "backendPid": 37077,
+              "mainPid": 37073,
+              "gpuPids": [
+                37074
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 500088832,
+                "peakWorkingSetBytes": 506478592,
+                "rssEstimateBytes": 500088832,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 520830976
+              },
+              "backend": {
+                "workingSetBytes": 319586304,
+                "peakWorkingSetBytes": 348225536,
+                "rssEstimateBytes": 319586304,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 348258304
+              },
+              "total": {
+                "workingSetBytes": 819675136,
+                "peakWorkingSetBytes": 854704128,
+                "processPeakWorkingSetBytes": 869089280,
+                "rssEstimateBytes": 819675136,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 544391168,
+                "peakWorkingSetBytes": 551845888,
+                "rssEstimateBytes": 544391168,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 558039040
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 169639936,
+                  "peakWorkingSetBytes": 186384384,
+                  "rssEstimateBytes": 169639936,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 218054656
+                }
+              ],
+              "total": {
+                "workingSetBytes": 714031104,
+                "peakWorkingSetBytes": 735641600,
+                "processPeakWorkingSetBytes": 776093696,
+                "rssEstimateBytes": 714031104,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1533706240,
+              "peakWorkingSetBytes": 1590345728,
+              "processPeakWorkingSetBytes": 1645182976,
+              "rssEstimateBytes": 1533706240,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 189,
+            "requestBodyBytes": 3101847,
+            "responseBodyBytes": 839414,
+            "layout": {
+              "requests": 270,
+              "totalDurationMs": 669256.3125039994,
+              "maxDurationMs": 3859.8026659999996,
+              "lastDurationMs": 3824.5007920000007
+            },
+            "nativeExtraction": {
+              "requests": 60,
+              "totalDurationMs": 115336.38328800001,
+              "maxDurationMs": 5029.542958,
+              "lastDurationMs": 2025.3608330000006
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 91,
+            "frameP95Ms": 9.299999999999272,
+            "frameMaxMs": 9.300000000001091,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 2,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 9.300000000000182,
+              "maxMs": 16.700000000000728,
+              "durationsMs": [
+                8.5,
+                7.899999999999636,
+                8.700000000000728,
+                7.399999999999636,
+                9.300000000000182,
+                8.300000000000182,
+                7.599999999999454,
+                9.100000000000364,
+                8.300000000000182,
+                8.399999999999636,
+                7.399999999999636,
+                9.200000000000728,
+                8.399999999999636,
+                8.199999999999818,
+                8.400000000000546,
+                7.399999999999636,
+                9.199999999999818,
+                8.300000000000182,
+                8.399999999999636,
+                8.300000000000182,
+                8.400000000000546,
+                8.399999999999636,
+                8.300000000000182,
+                8.300000000000182,
+                8.299999999999272,
+                8.400000000000546,
+                8.300000000000182,
+                8.299999999999272,
+                8.400000000000546,
+                8.199999999999818,
+                7.800000000000182,
+                9.099999999999454,
+                7.300000000000182,
+                9.300000000000182,
+                8.199999999999818,
+                7.5,
+                8.300000000000182,
+                8.399999999999636,
+                9.300000000000182,
+                8.199999999999818,
+                7.5,
+                16.700000000000728,
+                8.399999999999636,
+                9,
+                7.5,
+                8.300000000000182,
+                9.399999999999636,
+                7.300000000000182,
+                9.199999999999818,
+                8.400000000000546,
+                8,
+                8,
+                8.099999999999454,
+                9.300000000000182,
+                8.199999999999818,
+                8.400000000000546,
+                8.299999999999272,
+                8.100000000000364,
+                8.600000000000364,
+                8.299999999999272,
+                7.600000000000364,
+                9.199999999999818,
+                8.199999999999818,
+                8.300000000000182,
+                7.5,
+                9.100000000000364,
+                8.5,
+                8.300000000000182,
+                8.299999999999272,
+                8.400000000000546,
+                8.300000000000182,
+                8.399999999999636,
+                7.699999999999818,
+                9,
+                8.199999999999818,
+                7.5,
+                8.700000000000728,
+                8,
+                8.5,
+                9.100000000000364,
+                7.299999999999272,
+                8.399999999999636,
+                9.300000000001091,
+                7.299999999999272,
+                9.399999999999636,
+                8.200000000000728,
+                8.299999999999272,
+                8.399999999999636,
+                8.200000000000728,
+                7.5,
+                8.299999999999272,
+                9.200000000000728,
+                7.600000000000364,
+                9.199999999998909,
+                8.300000000001091,
+                7.399999999999636,
+                9.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                7.399999999999636,
+                8.299999999999272,
+                9.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.200000000000728,
+                8.399999999999636,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                8.200000000000728,
+                8.399999999999636,
+                8.399999999999636,
+                8.299999999999272,
+                8.200000000000728
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 91,
+              "layoutChanges": 20,
+              "frameP95Ms": 9.299999999999272,
+              "frameMaxMs": 9.300000000001091,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 9049.8,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9058,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9066.4,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9074.7,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 54,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9774.5,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9783.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9791.4,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 9799.7,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 68,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 42,
+              "pageFramesAfterScroll": 44,
+              "pageFramesBeforeResize": 52,
+              "pageFramesEnd": 68,
+              "pageFramesDelta": 26,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "openedAt": "2026-10-04T14:18:52.949Z",
+          "fileBytes": 3100238,
+          "pageCount": 1000,
+          "firstScreenMs": 463.09999999403954,
+          "stages": {
+            "fileRead": 334.40000000596046,
+            "upload": 344.19999998807907,
+            "pdfReady": 388.69999998807907,
+            "pageGeometry": 420.30000001192093,
+            "recentHistory": 421,
+            "restoreView": 426.90000000596046
+          },
+          "scrollLongTasks": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0,
+            "samples": []
+          },
+          "memory": {
+            "schemaVersion": 1,
+            "sampledAtMs": 1791123540070,
+            "scope": {
+              "rendererPid": 37079,
+              "backendPid": 37077,
+              "mainPid": 37073,
+              "gpuPids": [
+                37074
+              ]
+            },
+            "scoped": {
+              "renderer": {
+                "workingSetBytes": 532070400,
+                "peakWorkingSetBytes": 532660224,
+                "rssEstimateBytes": 532070400,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 563691520
+              },
+              "backend": {
+                "workingSetBytes": 270434304,
+                "peakWorkingSetBytes": 336379904,
+                "rssEstimateBytes": 270434304,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 348258304
+              },
+              "total": {
+                "workingSetBytes": 802504704,
+                "peakWorkingSetBytes": 840630272,
+                "processPeakWorkingSetBytes": 911949824,
+                "rssEstimateBytes": 802504704,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "shared": {
+              "main": {
+                "workingSetBytes": 500383744,
+                "peakWorkingSetBytes": 551485440,
+                "rssEstimateBytes": 500383744,
+                "workingSetKind": "rss-estimate",
+                "processPeakWorkingSetBytes": 560660480
+              },
+              "gpu": [
+                {
+                  "workingSetBytes": 170426368,
+                  "peakWorkingSetBytes": 180518912,
+                  "rssEstimateBytes": 170426368,
+                  "workingSetKind": "rss-estimate",
+                  "processPeakWorkingSetBytes": 218054656
+                }
+              ],
+              "total": {
+                "workingSetBytes": 670810112,
+                "peakWorkingSetBytes": 729186304,
+                "processPeakWorkingSetBytes": 778715136,
+                "rssEstimateBytes": 670810112,
+                "workingSetKind": "rss-estimate"
+              }
+            },
+            "aggregate": {
+              "workingSetBytes": 1473314816,
+              "peakWorkingSetBytes": 1544486912,
+              "processPeakWorkingSetBytes": 1690664960,
+              "rssEstimateBytes": 1473314816,
+              "workingSetKind": "rss-estimate"
+            }
+          },
+          "transport": {
+            "schemaVersion": 1,
+            "requests": 189,
+            "requestBodyBytes": 3101847,
+            "responseBodyBytes": 703679,
+            "layout": {
+              "requests": 434,
+              "totalDurationMs": 1151389.434633999,
+              "maxDurationMs": 3865.867792000001,
+              "lastDurationMs": 3829.0374169999996
+            },
+            "nativeExtraction": {
+              "requests": 99,
+              "totalDurationMs": 234001.28399400008,
+              "maxDurationMs": 5595.553957999999,
+              "lastDurationMs": 3711.0032499999998
+            },
+            "uploadBytes": 3088238,
+            "scope": "since-document-open",
+            "timingScope": "window-session"
+          },
+          "resize": {
+            "count": 0,
+            "layoutCommits": 0,
+            "snapshotTransitions": 0,
+            "frames": 92,
+            "frameP95Ms": 9.299999999999272,
+            "frameMaxMs": 9.400000000001455,
+            "snapshotClassSeen": false,
+            "layoutFrozenClassSeen": false
+          },
+          "benchmark": {
+            "open": 3,
+            "scroll": {
+              "frames": 120,
+              "p95Ms": 9.299999999999272,
+              "maxMs": 16.69999999999891,
+              "durationsMs": [
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.300000000001091,
+                7.5,
+                9.199999999998909,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.300000000001091,
+                7.399999999999636,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                9.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                7.399999999999636,
+                8.300000000001091,
+                9.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                7.299999999999272,
+                9.399999999999636,
+                8.300000000001091,
+                16.69999999999891,
+                8.200000000000728,
+                8.399999999999636,
+                8,
+                8.700000000000728,
+                8.299999999999272,
+                8.399999999999636,
+                8.200000000000728,
+                8.399999999999636,
+                8.399999999999636,
+                7.400000000001455,
+                8.299999999999272,
+                9.299999999999272,
+                8.200000000000728,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.199999999998909,
+                8.5,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                7.399999999999636,
+                9.200000000000728,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                7.5,
+                9.299999999999272,
+                8.200000000000728,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                7.5,
+                9.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                7.399999999999636,
+                8.299999999999272,
+                9.300000000001091,
+                7.399999999999636,
+                9.200000000000728,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8.399999999999636,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.399999999999636,
+                8.299999999999272,
+                8.300000000001091,
+                8.299999999999272,
+                8,
+                8.600000000000364,
+                8.5,
+                8.299999999999272,
+                8.399999999999636
+              ]
+            },
+            "sidebar": [
+              {
+                "before": "true",
+                "after": "false"
+              },
+              {
+                "before": "false",
+                "after": "true"
+              }
+            ],
+            "resize": {
+              "frames": 92,
+              "layoutChanges": 20,
+              "frameP95Ms": 9.299999999999272,
+              "frameMaxMs": 9.400000000001455,
+              "snapshotClassSeen": false,
+              "allSnapshotsReady": true,
+              "layoutFrozenClassSeen": false,
+              "samples": [
+                {
+                  "timestamp": 16366.4,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 89,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16373.9,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 89,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16383.2,
+                  "width": 720,
+                  "height": 500,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 89,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 16390.5,
+                  "width": 760,
+                  "height": 540,
+                  "layoutWidth": "502.211px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 89,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17098.8,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 103,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17107.1,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 103,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17116.4,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 103,
+                  "canvasReady": true
+                },
+                {
+                  "timestamp": 17124.7,
+                  "width": 900,
+                  "height": 620,
+                  "layoutWidth": "689.789px",
+                  "snapshot": false,
+                  "snapshotReady": true,
+                  "frozen": false,
+                  "pageFrames": 103,
+                  "canvasReady": true
+                }
+              ]
+            },
+            "metrics": {
+              "pageFramesStart": 77,
+              "pageFramesAfterScroll": 79,
+              "pageFramesBeforeResize": 87,
+              "pageFramesEnd": 103,
+              "pageFramesDelta": 26,
+              "scrollPageFramesDelta": 2,
+              "resizePageFramesDelta": 16,
+              "resizeLayoutCommits": 0,
+              "burstLayoutCommits": 0,
+              "burstLayoutChanges": 20
+            },
+            "finalCanvas": {
+              "canvas": {
+                "width": 938,
+                "height": 1320
+              },
+              "inkSamples": 1,
+              "fitPressed": true,
+              "available": 662,
+              "maxPageWidth": 662,
+              "widthDelta": 0
+            }
+          }
+        }
+      ],
+      "medians": {
+        "firstScreenMs": 463.09999999403954,
+        "stages": {
+          "fileRead": 334.40000000596046,
+          "upload": 344.19999998807907,
+          "pdfReady": 388.69999998807907,
+          "pageGeometry": 420.30000001192093,
+          "recentHistory": 421,
+          "restoreView": 426.90000000596046
+        },
+        "scrollLongTasks": {
+          "count": 0,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "resize": {
+          "count": 0,
+          "layoutCommits": 0,
+          "snapshotTransitions": 0,
+          "frames": 91,
+          "frameP95Ms": 9.299999999999272,
+          "frameMaxMs": 9.399999999999636
+        },
+        "metrics": {
+          "pageFramesStart": 42,
+          "pageFramesAfterScroll": 44,
+          "pageFramesBeforeResize": 52,
+          "pageFramesEnd": 68,
+          "pageFramesDelta": 26,
+          "scrollPageFramesDelta": 2,
+          "resizePageFramesDelta": 16,
+          "resizeLayoutCommits": 0,
+          "burstLayoutCommits": 0,
+          "burstLayoutChanges": 20
+        }
+      },
+      "scroll": {
+        "frames": 120,
+        "p95Ms": 9.300000000000182,
+        "maxMs": 17
+      },
+      "scrollFrameP95Ms": 9.300000000000182,
+      "scrollFrameMaxMs": 17,
+      "resizeFrames": [
+        89,
+        91,
+        92
+      ],
+      "resize": {
+        "bursts": 20,
+        "frames": [
+          89,
+          91,
+          92
+        ],
+        "p95Ms": 9.299999999999272,
+        "maxMs": 9.400000000001455,
+        "snapshotClassSeen": false,
+        "layoutFrozenClassSeen": false
+      }
+    }
+  },
+  "motion": {
+    "sourceBytes": 67108864,
+    "snapshotBytes": 8386816,
+    "completedDisposed": true,
+    "cancelledDisposed": true,
+    "originalIntact": true,
+    "snapshots": 0
+  },
+  "animation": {
+    "incomingCharactersStaggered": true,
+    "clippedMasks": true,
+    "originalUsesNativePDFGlyphs": true,
+    "originalCanvasUnchanged": true,
+    "rapidToggleCleanup": true,
+    "reducedMotionSkipsAnimation": true,
+    "nativeMathArrivalAndReturn": true,
+    "mockOnly": true
+  }
+}
