@@ -168,12 +168,17 @@
 
 /* Slide chrome without resizing the reading viewport or its page canvases. */
 .toolbar{transform:none;transition:transform 180ms ease}
+/* Move all sidebar tabs with the same timing as the header's slide. */
+.content-glass .sidebar,
+.desktop[data-platform="win32"] .sidebar{transition:padding-top 180ms ease}
+.content-glass .sidebar.without-motion,
+.desktop[data-platform="win32"] .sidebar.without-motion{transition:none}
 /* Release the titlebar inset when its chrome slides out of view. */
 .content-glass.immersive-header-hidden .sidebar,
 .desktop[data-platform="win32"].immersive-header-hidden .sidebar{padding-top:0}
 .immersive-header-hidden .toolbar{transform:translateY(-100%);pointer-events:none;-webkit-app-region:no-drag}
 .header-reveal-zone{position:fixed;inset:0 0 auto;height:12px;z-index:35;-webkit-app-region:no-drag}
-@media(prefers-reduced-motion:reduce){.toolbar{transition:none}}
+@media(prefers-reduced-motion:reduce){.toolbar,.content-glass .sidebar,.desktop[data-platform="win32"] .sidebar{transition:none}}
 
 /* PDF.js selection runs align with the rendered page, including rotated PDFs. */
 .reading-text-layer{position:absolute;inset:0;overflow:clip;line-height:1;letter-spacing:normal;word-spacing:normal;text-align:initial;transform-origin:0 0;z-index:3;user-select:text;--min-font-size:1;--text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size));--min-font-size-inv:calc(1 / var(--min-font-size));text-size-adjust:none;forced-color-adjust:none}
@@ -321,4 +326,25 @@
 [data-appearance="dark"] .app:not([data-platform="win32"]) .settings:not(.paragraph-detail) {background:var(--chrome-solid)}
 .app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-section>.advanced-settings {
  margin:0;padding:10px 0;border-radius:0;background:transparent;border-inline:0;
+}
+
+/* Fixed square hit areas keep toolbar icons aligned on every platform. */
+.app .toolbar .icon-button.macvue-button,
+.app .toolbar .windows-menu-trigger{
+ box-sizing:border-box;flex:0 0 36px;
+ width:36px;min-width:36px;max-width:36px;
+ height:36px;min-height:36px;max-height:36px;
+ padding:0;display:inline-flex;align-items:center;justify-content:center;
+}
+.app .toolbar>.windows-menu{width:36px;min-width:36px;flex:0 0 36px}
+.desktop[data-platform="win32"] .windows-window-controls button{
+ box-sizing:border-box;width:48px;min-width:48px;max-width:48px;
+ height:48px;min-height:48px;max-height:48px;flex:0 0 48px;
+}
+.app[data-platform="darwin"] .toolbar .icon-button.macvue-button{
+ border-radius:12px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .toolbar input.zoom-popup{
+ box-sizing:border-box;height:36px;min-height:36px;
+ border-radius:12px;corner-shape:squircle;
 }
