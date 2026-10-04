@@ -46,7 +46,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
  <div v-show="mode==='outline'" class="sidebar-navigation-list" :aria-label="t('sidebar.outline')">
   <div v-for="item in visibleOutline" :key="item.id" class="sidebar-outline-row" :style="{paddingLeft:6+Math.min(item.depth,8)*12+'px'}">
    <button v-if="hasChildren(item)" class="sidebar-outline-toggle" :aria-expanded="!collapsed.has(item.id)" :aria-label="t(collapsed.has(item.id)?'sidebar.expand':'sidebar.collapse',{title:item.title})" @click="toggleOutline(item)"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4 2 4 4-4 4"/></svg></button><span v-else class="sidebar-outline-spacer"></span>
-   <button class="sidebar-outline-item" :class="{'sidebar-outline-top-level':hasNestedOutline&&item.depth===0,'sidebar-outline-read':readChapters.has(item.id)}" :disabled="!item.page" @click="emit('page',item.page)"><span>{{item.title}}</span><small v-if="item.page">{{item.page}}</small></button>
+   <button class="sidebar-outline-item" :class="{'sidebar-outline-top-level':hasNestedOutline&&item.depth===0,'sidebar-outline-read':readChapters.has(item.id)}" :disabled="!item.page&&!hasChildren(item)" @click="item.page&&$event.detail<2&&emit('page',item.page)" @dblclick="hasChildren(item)&&toggleOutline(item)"><span>{{item.title}}</span><small v-if="item.page">{{item.page}}</small></button>
   </div>
  </div>
  <div v-show="mode==='annotations'" class="sidebar-annotations-view">
@@ -54,7 +54,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
    <label class="annotation-browser-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5"/><path d="m10 10 4 4"/></svg><input v-model="query" type="search" :placeholder="t('annotationBrowser.search')" :aria-label="t('annotationBrowser.search')" @keydown.esc.stop="query=''"/></label>
    <div class="annotation-browser-toolbar">
     <button class="annotation-browser-filter" :aria-expanded="filtersOpen" aria-controls="annotation-browser-filters" @click="filtersOpen=!filtersOpen"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M4 8h8M6 12h4"/></svg>{{t('annotationBrowser.filter')}}<span v-if="filterCount"> · {{filterCount}}</span></button>
-    <label class="annotation-browser-group"><span>{{t('annotationBrowser.group')}}</span><select v-model="group" :aria-label="t('annotationBrowser.group')"><option v-for="value in ['none','kind','date','color',...(chapters.length?['chapter']:[])]" :key="value" :value="value">{{t('annotationBrowser.'+(['kind','date','chapter'].includes(value)?value+'Label':value))}}</option></select></label>
+    <label class="annotation-browser-group"><select v-model="group" :aria-label="t('annotationBrowser.group')"><option v-for="value in ['none','kind','date','color',...(chapters.length?['chapter']:[])]" :key="value" :value="value">{{t('annotationBrowser.'+(['kind','date','chapter'].includes(value)?value+'Label':value))}}</option></select></label>
    </div>
    <div v-if="filtersOpen" id="annotation-browser-filters" class="annotation-browser-filters">
     <label>{{t('annotationBrowser.kindLabel')}}<select v-model="kind"><option value="">{{t('annotationBrowser.all')}}</option><option value="highlight">{{t('sidebar.highlight')}}</option><option value="comment">{{t('sidebar.comment')}}</option></select></label>
@@ -87,7 +87,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 .sidebar-thumbnail-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .sidebar-navigation-list{flex:1;min-height:0;overflow:auto;padding:8px 6px;scrollbar-width:thin}
 .sidebar-outline-item,.sidebar-annotation-item{display:flex;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:9px 8px;color:var(--text);gap:8px;cursor:pointer}
-.sidebar-outline-row{display:flex;align-items:flex-start;border-radius:6px}.sidebar-outline-item{flex:1;min-width:0;padding-left:2px}.sidebar-outline-spacer,.sidebar-outline-toggle{flex:0 0 20px;width:20px;height:32px}.sidebar-outline-toggle{border:0;background:transparent;padding:8px 4px;cursor:pointer}.sidebar-outline-toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform .18s ease}.sidebar-outline-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
+.sidebar-outline-row{display:flex;align-items:flex-start;border-radius:6px}.sidebar-outline-item{flex:1;min-width:0;padding-left:2px;font-size:13px;line-height:1.4}.sidebar-outline-spacer,.sidebar-outline-toggle{flex:0 0 20px;width:20px;height:18.2px;margin-top:9px}.sidebar-outline-toggle{display:flex;align-items:center;justify-content:center;border:0;background:transparent;padding:0;cursor:pointer}.sidebar-outline-toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform .18s ease}.sidebar-outline-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
 .sidebar-outline-item span{flex:1;overflow-wrap:anywhere}.sidebar-outline-item small{color:var(--text-secondary);flex-shrink:0}
 .sidebar-outline-top-level span{font-weight:700}
 .sidebar-outline-item.sidebar-outline-read{color:var(--text-secondary)}
@@ -146,17 +146,19 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 <style>
 .sidebar-annotations-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .annotation-browser-controls{flex:none;padding:10px 10px 4px;color:var(--text-secondary);font-size:11px}
-.annotation-browser-search{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:7px;background:color-mix(in srgb,var(--text) 6%,transparent);box-shadow:inset 0 0 0 1px var(--chrome-border)}
+.annotation-browser-search{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:14px;corner-shape:round;background:transparent;box-shadow:inset 0 0 0 1px var(--chrome-border)}
 .annotation-browser-controls svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
 .annotation-browser-search input{width:100%;min-width:0;padding:0;border:0;background:transparent;color:var(--text);font:inherit;outline:none}
 .annotation-browser-search:focus-within{outline:2px solid var(--accent);outline-offset:1px}
 .annotation-browser-search input::placeholder{color:var(--text-secondary)}
 .annotation-browser-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;flex-wrap:wrap}
-.annotation-browser-filter{display:flex;align-items:center;gap:4px;border:0;border-radius:5px;padding:4px;background:transparent;color:inherit;font:inherit;cursor:default}
+.annotation-browser-filter{display:flex;align-items:center;gap:4px;border:0;border-radius:14px;corner-shape:round;min-height:28px;padding:4px 7px;background:transparent;color:inherit;font:inherit;cursor:default}
 .annotation-browser-filter:hover,.annotation-browser-filter[aria-expanded=true]{background:var(--chrome-pressed)}
 .annotation-browser-group{display:flex;align-items:center;gap:4px;min-width:0}
-.annotation-browser-controls select,.annotation-browser-filters input{box-sizing:border-box;min-width:0;max-width:100%;border:1px solid var(--chrome-border);border-radius:5px;padding:3px;background:var(--chrome);color:var(--text-secondary);font:inherit;color-scheme:inherit}
-.annotation-browser-group select{max-width:100px}
+.annotation-browser-controls select,.annotation-browser-filters input{box-sizing:border-box;min-width:0;max-width:100%;border:1px solid var(--chrome-border);border-radius:14px;corner-shape:round;min-height:28px;padding:4px 8px;background:transparent;color:var(--text-secondary);font:inherit;color-scheme:inherit}
+.annotation-browser-group select{max-width:110px;appearance:none;-webkit-appearance:none;padding-right:25px;background:transparent}
+.annotation-browser-group{position:relative}
+.annotation-browser-group:after{content:"";position:absolute;right:10px;top:calc(50% - 4px);width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);pointer-events:none}
 .annotation-browser-filters{max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px;padding-top:9px;padding-bottom:5px}
 .annotation-browser-filters label{display:grid;grid-template-columns:65px minmax(0,1fr);align-items:center;gap:5px}
 .annotation-browser-reset{align-self:flex-end;border:0;background:transparent;color:inherit;font:inherit;padding:3px;cursor:default;text-decoration:underline}

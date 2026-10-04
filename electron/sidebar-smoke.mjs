@@ -25,6 +25,10 @@ export async function verifySidebar(window,recents){
   assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),2);
   await run(`document.querySelector('.sidebar-outline-toggle').click()`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),1);
   await run(`document.querySelector('.sidebar-outline-toggle').click()`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),2);
+  await run(`document.querySelector('.sidebar-outline-item').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),1);
+  await run(`document.querySelector('.sidebar-outline-item').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);assert.equal(await run(`document.querySelectorAll('.sidebar-outline-item').length`),2);
+  assert.ok(await run(`(()=>{const icon=document.querySelector('.sidebar-outline-toggle svg').getBoundingClientRect(),row=document.querySelector('.sidebar-outline-item'),bounds=row.getBoundingClientRect(),style=getComputedStyle(row),center=bounds.top+parseFloat(style.paddingTop)+parseFloat(style.lineHeight)/2;return Math.abs(icon.top+icon.height/2-center)<1;})()`),'disclosure arrow aligns with title first line');
+
   await wait(`!document.querySelector('.document-motion-snapshot,.sidebar-motion-enter-active,.sidebar-view-motion-enter-active,.workspace.document-opening')`);
   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[0].click()`);
   await wait(`!!document.querySelector('.thumbnail-list')&&!document.querySelector('.sidebar-view-motion-enter-active')`);
