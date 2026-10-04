@@ -10,7 +10,41 @@ import {loadPDFRuntime} from './pdf-runtime.mjs';
 import {buildReaderLayout,visibleReaderWindow,buildThumbnailLayout,visibleThumbnailWindow} from './reader-layout.mjs';
 import {pageNote as getPageNote} from './page-note.mjs';
 function pageNote(p){return getPageNote(p,engine.value);}
+import {resolvePDFDestination,destinationPoint,destinationScale} from './pdf-navigation.mjs';
 import ReaderPage from './ReaderPage.vue';
+const referenceReturn=shallowRef(null);let referenceNavigation=0,referenceJumping=false;
+async function followReference(destination){
+ const document=pdf,documentToken=epoch,request=++referenceNavigation;
+ try{
+  const target=await resolvePDFDestination(document,destination);
+  if(!target||documentToken!==epoch||request!==referenceNavigation)return;
+  const origin=readingView();if(!origin)return;
+  const page=await document.getPage(target.pageNumber);
+  if(documentToken!==epoch||request!==referenceNavigation)return;
+  referenceJumping=true;referenceReturn.value=null;
+  const container=reader.value,style=getComputedStyle(container);
+  zoom.value=destinationScale(page,target.dest,zoom.value,container.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),container.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom));
+  fitMode.value='manual';
+  go(target.pageNumber);mountAroundPage(target.pageNumber);await nextTick();
+  if(documentToken!==epoch||request!==referenceNavigation)return;
+  const el=reader.value,host=pageEls.get(target.pageNumber);
+  if(!el||!host)return;
+  const point=destinationPoint(page,target.dest,zoom.value),rect=host.getBoundingClientRect(),bounds=el.getBoundingClientRect();
+  el.scrollLeft+=rect.left+point.x-bounds.left-el.clientLeft;
+  el.scrollTop+=rect.top+point.y-bounds.top-el.clientTop;
+  referenceReturn.value={origin,targetPage:target.pageNumber};
+  viewportPages();scheduleViewport();scheduleReadingSave();
+ }catch(e){if(documentToken===epoch)annotationNotice(e.message);}
+ finally{referenceJumping=false;}
+}
+async function returnFromReference(){
+ const entry=referenceReturn.value;if(!entry)return;
+ referenceReturn.value=null;referenceNavigation++;
+ restoringView.value=true;
+ try{await restoreReadingView(entry.origin);}finally{restoringView.value=false;}
+ viewportPages();scheduleViewport();scheduleReadingSave();
+}
+
 import {captureDocumentPage,animateDocumentPage,animateDocumentSidebar} from './document-motion.mjs';
 import {captureLayoutMotion} from './layout-motion.mjs';
 let layoutMotion=null,layoutMotionGeneration=0;
@@ -347,10 +381,12 @@ function dismissPopovers(){windowsMenu.value?.close();settings.value=false;selec
 function outsidePopover(e){if(e.type==="focusin"&&kernelFocusPending&&engineBusy.value)return;if(e.target instanceof Element&&e.target.closest('.document-search,[data-popover-trigger],.settings,.error-banner,.macvue-pop-up-button-content'))return;dismissPopovers();}
 function popoverFocusOut(e){if(kernelFocusPending&&engineBusy.value)return;if(e.relatedTarget&&!e.currentTarget.contains(e.relatedTarget)&&!e.relatedTarget.closest?.('.macvue-pop-up-button-content'))dismissPopovers();}
 function editableTarget(target=document.activeElement){return !!target?.matches?.('input,textarea,select,[contenteditable="true"]')||target?.isContentEditable===true;}
+watch([interactionMode,showTranslations],()=>{referenceNavigation++;referenceReturn.value=null;});
 function keyboard(e){
  if(e.defaultPrevented)return;
  if(['win32','linux'].includes(platform)&&e.key==='F10'){e.preventDefault();revealHeader();void windowsMenu.value?.toggle();return;}
  const editable=editableTarget(e.target)||editableTarget(document.activeElement);
+ if(referenceReturn.value&&!editable&&e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&e.key==='Backspace'){e.preventDefault();void returnFromReference();return;}
  if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','PageDown','PageUp','Home','End',' '].includes(e.key)&&!editable)immersiveIntent(e);
  if(interactionMode.value==='comparison'&&(platform==='darwin'?e.metaKey:e.ctrlKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='c'){if(editable)return;e.preventDefault();void copyHoveredParagraph();return;}
  if(e.key==='Escape'){closeSearch();dismissPopovers();return;}
@@ -467,7 +503,7 @@ async function closeDocument(closeStartPage=false){
  }finally{await sidebarMotion;capture?.element.remove();if(documentMotionController===controller)documentMotionController=null;documentClosing.value=false;closingDocument=false;}
 }
 async function closeDocumentNow(){
- const documentToken=epoch;await annotationWrites;annotations.value=[];showAnnotations.value=true;annotationKey.value='';await performanceRecorder.finish();await saveReadingView();await window.previewDocuments?.closed();if(documentToken!==epoch)return;currentRecentId=null;
+ referenceReturn.value=null;referenceNavigation++;const documentToken=epoch;await annotationWrites;annotations.value=[];showAnnotations.value=true;annotationKey.value='';await performanceRecorder.finish();await saveReadingView();await window.previewDocuments?.closed();if(documentToken!==epoch)return;currentRecentId=null;
  cancel();const closingToken=epoch;closeSearch();await releaseDocument();if(closingToken!==epoch)return;clearTimeout(timer);clearTimeout(navigatorTimer);cancelAnimationFrame(fitFrame);fitFrame=0;clearTimeout(fitResizeTimer);fitResizing=false;
  dismissPopovers();resetBitmaps();
  const tasks=new Set([pendingPDFTask,pdf?.loadingTask,...pages.value.map(page=>page.mathDocument?.loadingTask)].filter(Boolean));
@@ -489,7 +525,7 @@ async function importFile(file,ticket,origin){
  if(file&&!ticket&&(pages.value.length||loading.value)&&window.previewDocuments?.open){try{await window.previewDocuments.open(file);}catch(e){error.value=e.message;}return;}
  if(!file)return;closeSearch();if(testMode&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(file.name)){error.value=t('error.testDocumentsDisabled');return;}if(file.size>50*1024*1024){error.value=t('error.PDFTooLarge');return;}
  documentMotionController?.abort();documentOpening.value=!!origin&&!documentMotionReduced();
- await annotationWrites;annotations.value=[];showAnnotations.value=true;annotationKey.value='';await performanceRecorder.start(file.size);const runtimeReady=ensurePDF();await saveReadingView();currentRecentId=null;restoringView.value=true;selectedParagraph.value=null;cancel();const token=epoch;await releaseDocument();if(token!==epoch)return;resetBitmaps();renderMetrics.openedAt=performance.now();renderMetrics.firstPageMs=null;loading.value=true;error.value='';for(const p of pages.value)p.mathDocument?.loadingTask.destroy();pages.value=[];pageEls.clear();canvasEls.clear();thumbEls.clear();
+ referenceReturn.value=null;referenceNavigation++;await annotationWrites;annotations.value=[];showAnnotations.value=true;annotationKey.value='';await performanceRecorder.start(file.size);const runtimeReady=ensurePDF();await saveReadingView();currentRecentId=null;restoringView.value=true;selectedParagraph.value=null;cancel();const token=epoch;await releaseDocument();if(token!==epoch)return;resetBitmaps();renderMetrics.openedAt=performance.now();renderMetrics.firstPageMs=null;loading.value=true;error.value='';for(const p of pages.value)p.mathDocument?.loadingTask.destroy();pages.value=[];pageEls.clear();canvasEls.clear();thumbEls.clear();
  try{
   bytes=new Uint8Array(await file.arrayBuffer());let imported={annotations:[],nativeRefs:[]};if(window.previewAnnotations?.prepare){imported=await window.previewAnnotations.prepare(bytes);bytes=imported.bytes;}else if(window.previewAnnotations?.clean)bytes=await window.previewAnnotations.clean(bytes);performanceRecorder.mark('fileRead');if(token!==epoch)return;await pdf?.loadingTask.destroy();if(token!==epoch)return;
   const registered=await api('/api/documents',{method:'POST',headers:{'Content-Type':'application/pdf'},body:bytes});if(token!==epoch){await api('/api/documents/'+registered.id,{method:'DELETE'});return;}documentId=registered.id;performanceRecorder.mark('upload');
@@ -536,6 +572,7 @@ function viewportPages(){
  visiblePages.clear();let best;
  for(const item of window.visible){visiblePages.add(item.number);pages.value[item.number-1].visible=item.ratio;if(!best||item.area>best.area)best=item;}
  if(best&&!layoutMotion&&!fitAdjusting&&!restoringView.value&&!pinching.value&&!fitResizing)active.value=best.number;
+ if(referenceReturn.value&&!referenceJumping&&!visiblePages.has(referenceReturn.value.targetPage))referenceReturn.value=null;
  setRenderWindow(window.numbers);
  return window.numbers.map(n=>pages.value[n-1]).sort((a,b)=>Number(!visiblePages.has(a.number))-Number(!visiblePages.has(b.number))||Math.abs(a.number-active.value)-Math.abs(b.number-active.value));
 }
@@ -669,9 +706,10 @@ onBeforeUnmount(()=>{clearTimeout(recentPreviewTimer);clearInterval(sessionTimer
    </aside></Transition>
    <main ref="reader" class="reader" :class="{pinching,'restoring-view':restoringView,'document-opening':documentOpening}" @scroll.passive="scrolling" @wheel.passive="immersiveIntent" @pointerdown="immersiveIntent">
     <div v-if="!pages.length" class="empty" :class="{'has-recents':recentDocuments.length}"><div class="document-symbol"><span class="system-icon" aria-hidden="true" data-symbol="doc.text" style="--symbol:url('/symbols/doc.text.png')"></span></div><MacButton variant="prominent" size="large" class="primary" @click="fileInput.click()"><span class="open-pdf-content"><span class="system-icon" aria-hidden="true" data-symbol="doc.badge.plus" style="--symbol:url('/symbols/doc.badge.plus.png')"></span><span>{{t('startup.openPDF')}}</span></span></MacButton><p class="startup-description">{{t('startup.description')}}</p><MacButton v-if="!recentDocuments.length" class="sample-button" @click="sample">{{t('startup.sample')}}</MacButton><section v-if="recentDocuments.length" class="recent-documents" :aria-label="t('startup.recentDocuments')"><div class="recent-heading"><h2>{{t('startup.recentDocuments')}}</h2><MacButton size="large" @click="clearRecent">{{t('startup.clear')}}</MacButton></div><div class="recent-gallery"><button v-for="document in recentDocuments" :key="document.id" class="recent-document" :data-recent-id="document.id" :title="document.name" :aria-label="t('startup.openDocument',{name:document.name})" @click="openRecent(document.id)"><img v-if="document.thumbnail" :src="document.thumbnail" alt="" draggable="false"><span v-else class="recent-placeholder" :class="{'is-loading':!document.previewUnavailable}" aria-hidden="true"><span class="system-icon" style="--symbol:url('/symbols/doc.text.png')"></span><span v-if="document.previewUnavailable">{{t('startup.previewUnavailable')}}</span></span></button></div></section></div>
-    <div v-if="pages.length" ref="layoutElement" class="page-layout virtual-layout" :class="direction" :style="{'--page-columns':columns,width:pageLayout.width+'px',height:pageLayout.height+'px'}"><ReaderPage v-for="p in mountedPages" :key="p.number" :page="p" :frame="pageLayout.frames[p.number-1]" :zoom="zoom" :translations="showTranslations" :outlined="layoutVisible" :engine="engine" :foreground="foreground" :interaction-mode="interactionMode" :pdf-document="p.mathDocument&&showTranslations?p.mathDocument:pdf" :pdf-page-number="p.mathDocument&&showTranslations?1:p.number" :annotations="annotations" :show-annotations="showAnnotations" @annotations="saveAnnotations" @notice="annotationNotice" :register-host="bindPage" :register-canvas="bindCanvas" :native-source="nativeSource" :math-source="mathSource" :search-boxes="searchHit?.page===p.number?searchHit.boxes:[]" @hover="hoveredParagraph=$event" @toggle="toggle" @retry="processPage($event,true)"/></div>
+    <div v-if="pages.length" ref="layoutElement" class="page-layout virtual-layout" :class="direction" :style="{'--page-columns':columns,width:pageLayout.width+'px',height:pageLayout.height+'px'}"><ReaderPage v-for="p in mountedPages" :key="p.number" :page="p" :frame="pageLayout.frames[p.number-1]" :zoom="zoom" :translations="showTranslations" :outlined="layoutVisible" :engine="engine" :foreground="foreground" :interaction-mode="interactionMode" :pdf-document="p.mathDocument&&showTranslations?p.mathDocument:pdf" :pdf-page-number="p.mathDocument&&showTranslations?1:p.number" :annotations="annotations" :show-annotations="showAnnotations" @navigate="followReference" @annotations="saveAnnotations" @notice="annotationNotice" :register-host="bindPage" :register-canvas="bindCanvas" :native-source="nativeSource" :math-source="mathSource" :search-boxes="searchHit?.page===p.number?searchHit.boxes:[]" @hover="hoveredParagraph=$event" @toggle="toggle" @retry="processPage($event,true)"/></div>
    </main>
   </div>
+  <Transition name="reference-return"><button v-if="referenceReturn&&pages.length" class="page-navigator reference-return-button" :title="t('navigator.returnToPosition')+' (⌘⌫)'" :aria-label="t('navigator.returnToPosition')" aria-keyshortcuts="Meta+Backspace" @click="returnFromReference"><span aria-hidden="true">↩</span><span>{{t('navigator.returnToPage',{page:referenceReturn.origin.page})}}</span></button></Transition>
   <Transition name="navigator-motion"><nav v-if="navigatorVisible&&pages.length" ref="navigator" class="page-navigator" :aria-label="t('navigator.pageNavigator')" @focusin="holdNavigator" @focusout="hideNavigatorLater"><button :aria-label="t('navigator.previousPage')" :disabled="active<=1" @click="go(active-1)"><span class="system-icon" aria-hidden="true" style="--symbol:url('/symbols/chevron.up.png')"></span></button><form @submit.prevent="submitPage"><input ref="pageInput" v-model.number="pageEntry" class="scrub-input" data-scrub="page" :aria-label="t('navigator.pageNumber')" type="number" min="1" :max="pages.length" @change="submitPage"><span>/ {{pages.length}}</span></form><button :aria-label="t('navigator.nextPage')" :disabled="active>=pages.length" @click="go(active+1)"><span class="system-icon" aria-hidden="true" style="--symbol:url('/symbols/chevron.down.png')"></span></button></nav></Transition>
   <Transition name="copy-toast"><div v-if="annotationToast" class="copy-toast" role="status">{{annotationToast.text}}</div></Transition><Transition name="copy-toast"><div v-if="copyToast" class="copy-toast" role="status">{{copyToast}}</div></Transition>
   <footer v-if="!desktopCredentials" class="statusbar"><span><i class="status-dot" :class="{busy:progress.pending||loading}"></i>{{loading?t('status.openingPDF'):reading}}</span><span v-if="progress.total">{{t('status.paragraphsTranslated',{done:progress.done,total:progress.total,cached:pages.flatMap(p=>p.blocks).filter(b=>b.cached).length})}}</span><span v-else>{{configured?t('status.translationReady'):t('status.openAIKeyNotConfigured')}}</span><span v-if="pages.length">{{t('status.pageOf',{current:active,total:pages.length})}}</span></footer>

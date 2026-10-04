@@ -2076,3 +2076,9 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .linux-traffic-lights span{opacity:0}
 .linux-traffic-lights:hover span,.linux-traffic-lights button:focus-visible span{opacity:1}
 .linux-traffic-lights button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.reference-return-button{left:22px;right:auto;cursor:pointer;gap:8px;padding:8px 12px;font-size:12px;color:var(--text-primary,var(--text-secondary))}
+.reference-return-enter-active,.reference-return-leave-active{transition:opacity 200ms ease}
+.reference-return-enter-from,.reference-return-leave-to{opacity:0}
+.reference-return-leave-active{pointer-events:none}
+@media(prefers-reduced-motion:reduce){.reference-return-enter-active,.reference-return-leave-active{transition:none}}

@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {app} from 'electron';
+import {PDFDocument} from 'pdf-lib';
+import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+export async function verifyPDFNavigation(window,recents){
+ const run=async code=>{try{return await window.webContents.executeJavaScript(code);}catch(e){throw Error(code+' '+e.message);}};
+ async function wait(code){for(let i=0;i<200;i++){if(await run(code))return;await new Promise(r=>setTimeout(r,50));}throw Error('Navigation timeout: '+code+' '+JSON.stringify(await run('({text:document.body.innerText,links:document.querySelectorAll(".reading-links").length,textLayers:document.querySelectorAll(".reading-text-layer").length,diagnostics:window.previewRenderDiagnostics?.()})')));}
+ window.webContents.on('console-message',(_e,...args)=>console.log('renderer',...args));
+ const folder=await mkdtemp(join(tmpdir(),'pdf-navigation-'));
+ try{
+  await wait('window.previewReady');await run(`window.previewPreferences.save({interactionMode:'reading',automatic:false})`);
+  const pdf=await PDFDocument.create();for(let i=0;i<5;i++){const p=pdf.addPage([500,700]);p.drawText('Page '+(i+1),{x:60,y:620});}
+  for(const [index,dest] of [[0,[pdf.getPage(2).ref,'XYZ',0,500,null]],[2,[pdf.getPage(4).ref,'FitH',650]]]){
+   const link=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Link',Rect:[50,590,200,650],Dest:dest}));pdf.getPage(index).node.set((await import('pdf-lib')).PDFName.of('Annots'),pdf.context.obj([link]));
+  }
+  const path=join(folder,'Portrait and landscape.pdf');await writeFile(path,await pdf.save());await recents.remember(path);const id=recents.list()[0].id;
+  await new Promise(resolve=>{window.webContents.once('did-finish-load',resolve);window.webContents.reload();});await wait('window.previewReady');await run(`document.querySelector('[data-recent-id="${id}"]').click()`);
+  await wait('!window.previewRenderDiagnostics().opening&&!!document.querySelector(".translation-toggle")');
+  if(await run('window.previewRenderDiagnostics().readingView.showTranslations'))await run('document.querySelector(".translation-toggle").click()');
+  await wait('!!document.querySelector(".page-wrap:nth-child(1) .reading-links a")');
+  await run('document.querySelector(".reader").scrollTop+=90');await new Promise(r=>setTimeout(r,300));
+  const origin=await run('window.previewRenderDiagnostics().readingView');
+  await run('document.querySelector(".page-wrap:nth-child(1) .reading-links a").click()');
+  await wait('!!document.querySelector(".reference-return-button")&&window.previewRenderDiagnostics().active===3');
+  assert.ok(await run('document.querySelector(".reference-return-button").title.includes("⌘⌫")'));
+  assert.equal(await run('getComputedStyle(document.querySelector(".reference-return-button")).transitionDuration'),'0.2s');
+  await run('document.querySelector(".reference-return-button").click()');await wait('window.previewRenderDiagnostics().active===1&&!document.querySelector(".reference-return-button")');
+  const returned=await run('window.previewRenderDiagnostics().readingView');assert.ok(Math.abs(returned.offsetY-origin.offsetY)<.005,'restore precise position');
+  await run('document.querySelector(".page-wrap:nth-child(1) .reading-links a").click()');await wait('!!document.querySelector(".page-wrap:nth-child(3) .reading-links a")');
+  await run('document.querySelector(".page-wrap:nth-child(3) .reading-links a").click()');await wait('window.previewRenderDiagnostics().active===5&&document.querySelector(".reference-return-button")?.textContent.includes("3")');
+  await new Promise(r=>setTimeout(r,300));
+  await run('document.activeElement?.blur();document.dispatchEvent(new KeyboardEvent("keydown",{key:"Backspace",metaKey:true,bubbles:true,cancelable:true}))');await wait('window.previewRenderDiagnostics().active===3&&!document.querySelector(".reference-return-button")');
+  await run('document.querySelector(".page-wrap:nth-child(3) .reading-links a").click()');await wait('!!document.querySelector(".reference-return-button")');
+  await run('document.querySelector(".reader").scrollTop=0');await wait('!document.querySelector(".reference-return-button")');
+  const unbound=await run('(()=>{const e=new KeyboardEvent("keydown",{key:"Backspace",metaKey:true,bubbles:true,cancelable:true});document.dispatchEvent(e);return !e.defaultPrevented})()');assert.equal(unbound,true);
+  console.log(JSON.stringify({internalLinks:true,preciseReturn:true,nestedJump:true,commandBackspace:true,hoverHint:true,fade200ms:true,offscreenDismissal:true,shortcutUnbound:true}));
+ }finally{await rm(folder,{recursive:true,force:true});app.quit();}
+}

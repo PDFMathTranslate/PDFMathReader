@@ -55,6 +55,10 @@ const messages = {
    previewUnavailable: 'Preview unavailable',
   },
   navigator: {
+   followReference: 'Follow PDF reference',
+   returnToPosition: 'Return to previous position',
+   returnToPage: 'Return to page {page}',
+
    pageNavigator: 'Page navigator',
    previousPage: 'Previous page',
    pageNumber: 'Page number',
@@ -271,6 +275,10 @@ const messages = {
    previewUnavailable: '预览不可用',
   },
   navigator: {
+   followReference: '跳转到 PDF 引用',
+   returnToPosition: '返回之前的位置',
+   returnToPage: '返回第 {page} 页',
+
    pageNavigator: '页面导航',
    previousPage: '上一页',
    pageNumber: '页码',
@@ -487,6 +495,10 @@ const messages = {
    previewUnavailable: 'プレビューを利用できません',
   },
   navigator: {
+   followReference: 'PDF の参照先へ移動',
+   returnToPosition: '前の位置に戻る',
+   returnToPage: '{page} ページに戻る',
+
    pageNavigator: 'ページナビゲーター',
    previousPage: '前のページ',
    pageNumber: 'ページ番号',
