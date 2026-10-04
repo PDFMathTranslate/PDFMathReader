@@ -46,21 +46,27 @@ export async function verifyAnnotations(window,recents){
  assert.ok(pixel(60,20).some(c=>c<240),'highlight still colors the white paper');
  await run(`document.querySelector('#highlight-ink-fixture').remove()`);
  async function select(){await wait(`!!document.querySelector('.reading-text-layer span')`);await run(`(()=>{const el=document.querySelector('.reading-text-layer span');const range=document.createRange();range.selectNodeContents(el);const s=window.getSelection();if(!s)throw Error('Selection unavailable');s.removeAllRanges();s.addRange(range);el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));return true;})()`);await wait(`!!document.querySelector('.annotation-toolbar')`);}
- await select();assert.equal(await run(`document.querySelectorAll('.annotation-toolbar button').length`),4);
+ await select();assert.equal(await run(`document.querySelectorAll('.annotation-toolbar button').length`),6);
+ assert.equal(await run(`document.querySelector('[aria-label="紫色"]').getAttribute('aria-keyshortcuts')`),'5');
+ assert.equal(await run(`document.querySelector('[aria-label="添加批注"]').getAttribute('aria-keyshortcuts')`),'6');
  const commentIcon=await run(`(()=>{const el=document.querySelector('[aria-label="添加批注"] .annotation-comment-icon'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {tag:el.tagName,paths:el.querySelectorAll('path').length,stroke:s.stroke,width:r.width,height:r.height};})()`);
  assert.equal(commentIcon.tag,'svg');assert.equal(commentIcon.paths,2);assert.notEqual(commentIcon.stroke,'none');assert.ok(commentIcon.width>0&&commentIcon.height>0);
 
+ await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'5',bubbles:true}))`);
+ await wait(`(async()=> (await window.previewAnnotations.load(window.previewRenderDiagnostics().annotationKey)).some(a=>a.color==='#AF52DE'))()`);
+ await run(`document.querySelector('.annotation-highlight').click()`);await wait(`!!document.querySelector('.annotation-toolbar')`);
  await run(`document.querySelector('[aria-label="荧光黄"]').click()`);
  await wait(`!!document.querySelector('.annotation-highlight')`);
  await wait(`document.querySelector('.copy-toast')?.textContent.includes('自动保存')`);
  assert.equal(await run(`getComputedStyle(document.querySelector('.annotation-highlight')).borderRadius`),'6px');
  await wait(`(async()=> (await window.previewAnnotations.load(window.previewRenderDiagnostics().annotationKey)).length===1)()`);
- await select();await run(`document.querySelector('[aria-label="添加批注"]').click()`);
+ await select();await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'6',bubbles:true}))`);
  await wait(`!!document.querySelector('.annotation-editor textarea')`);
  await run(`(()=>{const t=document.querySelector('.annotation-editor textarea');t.value='A saved reading comment';t.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
  await run(`document.querySelector('.annotation-editor').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))`);
  await wait(`!!document.querySelector('.annotation-note')&&!document.querySelector('.annotation-editor')`);await wait(`(async()=> (await window.previewAnnotations.load(window.previewRenderDiagnostics().annotationKey)).some(a=>a.comment==='A saved reading comment'))()`);
  await wait(`!!document.querySelector('.annotation-comment-highlight')`);
+ if(process.argv.includes('--smoke-test=annotation-shortcuts')){console.log('Purple shortcut 5, comment shortcut 6 and persisted annotations passed.');app.exit(0);return;}
  await contextAction('.annotation-highlight',null,'highlight');
  assert.equal(await run(`!!document.querySelector('.annotation-confirm')`),false,'cancel preserves annotation');
  await contextAction('.annotation-note','复制');assert.match(await clipboard.readText(),/A saved reading comment/);

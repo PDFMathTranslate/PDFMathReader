@@ -530,12 +530,54 @@ watch(settings,async visible=>{
 async function openSettings(target){selectedParagraph.value=null;settings.value=true;await nextTick();if(target==='language'){languageInput.value?.focus();languageMenuOpen.value=true;}else if(target==='kernel'){kernelFocusPending=engineBusy.value;kernelInput.value?.el?.querySelector('.macvue-segment[data-state="on"]')?.focus();}}
 function chooseKernel(id){kernelFocusPending=!!kernelInput.value?.el?.contains(document.activeElement);engine.value=id;}
 function kernelKeys(e){const current=kernelOptions.findIndex(k=>k.id===engine.value);const index=e.key==='ArrowRight'?Math.min(2,current+1):e.key==='ArrowLeft'?Math.max(0,current-1):e.key==='Home'?0:e.key==='End'?2:null;if(index===null)return;e.preventDefault();if(engineBusy.value)return;kernelFocusPending=true;engine.value=kernelOptions[index].id;nextTick(()=>kernelInput.value?.el?.querySelector('.macvue-segment[data-state="on"]')?.focus());}
-function readerAction(action,selectionText){if(action.startsWith('crop:')){void changeCrop(action);return;}if(action==='search-selection'){const query=selectionSearchQuery(selectionText);if(query&&pages.value.length){searchQuery.value=query;void openSearch().then(scheduleSearch);}return;}if(action.startsWith('layout:'))direction.value=action.split(':')[1];else if(action.startsWith('columns:'))columns.value=Number(action.split(':')[1]);else if(action==='close-document')void closeDocument(true);else if(action==='recents'){if((pages.value.length||loading.value)&&window.previewWindow?.new)void window.previewWindow.new();else void closeDocument();}else if(action==='preferences')openSettings();else if(action==='copy-paragraph')void copyHoveredParagraph();else if(action==='search')void openSearch();else if(action==='open')fileInput.value?.click();else if(action==='translation'){showTranslations.value=!showTranslations.value;}else if(action==='zoom-in')changeZoom(.1);else if(action==='zoom-out')changeZoom(-.1);else if(action==='page-previous'){if(pages.value.length)go(active.value-1,{animate:true});}else if(action==='page-next'){if(pages.value.length)go(active.value+1,{animate:true});}else if(action==='sidebar'){if(pages.value.length)toggleSidebar();}else if(action==='settings')settings.value?settings.value=false:openSettings();else if(action==='language'||action==='kernel')openSettings(action);else if(action==='fit-width'||action==='fit-height'){if(pages.value.length){chooseFit(action==='fit-width'?'width':'height');notifyCopy(menuLabel(action==='fit-width'?'Fit Width':'Fit Height',uiLanguage.value));}}else if(action.startsWith('percent:'))go(Math.max(1,Math.ceil(pages.value.length*Number(action.split(':')[1])/100)));}
+const pageEditing=ref(false);
+async function editDocumentPages(action){
+ if(pageEditing.value||loading.value||!pages.value.length||!window.previewDocuments?.editPages)return;
+ pageEditing.value=true;
+ const token=epoch,view=readingView(),name=title.value.replace(/^TEST — /,'');
+ try{
+  await annotationWrites;await saveReadingView();
+  if(token!==epoch)return;
+  const result=await window.previewDocuments.editPages({key:annotationKey.value,action,page:active.value,annotations:JSON.parse(JSON.stringify(annotations.value)).map(a=>{delete a.animateUntil;return a;}),nativeRefs:[...annotationNativeRefs.value]});
+  if(token!==epoch)return;
+  // The write has completed before replacing the renderer's document.
+  await importFile(new File([result.bytes],name,{type:'application/pdf'}),result.ticket);
+  if(view&&pages.value.length){await restoreReadingView(view);await renderPages();await saveReadingView();}
+  notifyCopy(menuLabel('Page Changes Saved',uiLanguage.value));
+ }catch(e){error.value=e.message;}finally{pageEditing.value=false;}
+}
+function readerAction(action,selectionText){if(action.startsWith('page-edit:')){void editDocumentPages(action.slice(10));return;}if(action.startsWith('crop:')){void changeCrop(action);return;}if(action==='search-selection'){const query=selectionSearchQuery(selectionText);if(query&&pages.value.length){searchQuery.value=query;void openSearch().then(scheduleSearch);}return;}if(action.startsWith('layout:'))direction.value=action.split(':')[1];else if(action.startsWith('columns:'))columns.value=Number(action.split(':')[1]);else if(action==='close-document')void closeDocument(true);else if(action==='recents'){if((pages.value.length||loading.value)&&window.previewWindow?.new)void window.previewWindow.new();else void closeDocument();}else if(action==='preferences')openSettings();else if(action==='copy-paragraph')void copyHoveredParagraph();else if(action==='search')void openSearch();else if(action==='open')fileInput.value?.click();else if(action==='translation'){showTranslations.value=!showTranslations.value;}else if(action==='zoom-in')changeZoom(.1);else if(action==='zoom-out')changeZoom(-.1);else if(action==='page-previous'){if(pages.value.length)go(active.value-1,{animate:true});}else if(action==='page-next'){if(pages.value.length)go(active.value+1,{animate:true});}else if(action==='sidebar'){if(pages.value.length)toggleSidebar();}else if(action==='settings')settings.value?settings.value=false:openSettings();else if(action==='language'||action==='kernel')openSettings(action);else if(action==='fit-width'||action==='fit-height'){if(pages.value.length){chooseFit(action==='fit-width'?'width':'height');notifyCopy(menuLabel(action==='fit-width'?'Fit Width':'Fit Height',uiLanguage.value));}}else if(action.startsWith('percent:'))go(Math.max(1,Math.ceil(pages.value.length*Number(action.split(':')[1])/100)));}
 function dismissPopovers(){windowsMenu.value?.close();settings.value=false;selectedParagraph.value=null;kernelFocusPending=false;error.value='';}
 function outsidePopover(e){if(e.type==="focusin"&&kernelFocusPending&&engineBusy.value)return;if(e.target instanceof Element&&e.target.closest('.document-search,[data-popover-trigger],.settings,.error-banner,.macvue-pop-up-button-content'))return;dismissPopovers();}
 function popoverFocusOut(e){if(kernelFocusPending&&engineBusy.value)return;if(e.relatedTarget&&!e.currentTarget.contains(e.relatedTarget)&&!e.relatedTarget.closest?.('.macvue-pop-up-button-content'))dismissPopovers();}
 function editableTarget(target=document.activeElement){return !!target?.matches?.('input,textarea,select,[contenteditable="true"]')||target?.isContentEditable===true;}
 watch([interactionMode,showTranslations],()=>{if(!referenceJumping){referenceNavigation++;referenceReturn.value=null;}});
+function focusSidebarItem(e){e.target.closest?.('.thumb,.sidebar-outline-item,.sidebar-outline-toggle,.sidebar-annotation-item')?.focus({preventScroll:true});}
+async function sidebarKeyboard(e){
+ if(e.defaultPrevented||!['ArrowUp','ArrowDown'].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey||e.shiftKey||editableTarget(e.target))return;
+ const root=e.currentTarget,focused=e.target.closest?.('.thumb,.sidebar-outline-item,.sidebar-outline-toggle,.sidebar-annotation-item');
+ if(!focused||!root.contains(focused))return;
+ e.preventDefault();e.stopPropagation();
+ const step=e.key==='ArrowDown'?1:-1,token=epoch;
+ let next;
+ if(focused.matches('.thumb')){
+  const number=Number(focused.dataset.pageNumber),target=Math.max(1,Math.min(pages.value.length,number+step));
+  if(target===number)return;
+  // Scroll the full page list first so virtualized neighbours are mounted.
+  scrollThumbnailTo(target);await nextTick();
+  if(token!==epoch||!root.contains(document.activeElement))return;
+  next=root.querySelector('.thumb[data-page-number="'+target+'"]');
+ }else{
+  const selector=focused.matches('.sidebar-annotation-item')?'.sidebar-annotation-item':'.sidebar-outline-item';
+  const current=focused.matches('.sidebar-outline-toggle')?focused.closest('.sidebar-outline-row')?.querySelector('.sidebar-outline-item'):focused;
+  const items=[...root.querySelectorAll(selector)].filter(item=>!item.disabled),index=items.indexOf(current);
+  if(index<0)return;
+  next=items[index+step];
+ }
+ if(!next)return;
+ next.focus({preventScroll:true});if(!next.matches('.thumb'))next.scrollIntoView({block:'nearest'});
+ next.click();
+}
 function keyboard(e){
  if(e.defaultPrevented)return;
  if(['win32','linux'].includes(platform)&&e.key==='F10'){e.preventDefault();revealHeader();void windowsMenu.value?.toggle();return;}
@@ -931,10 +973,10 @@ onBeforeUnmount(()=>{settingsDropdownObserver?.disconnect();clearTimeout(recentP
   </Transition>
   <input ref="fileInput" type="file" accept="application/pdf,.pdf" hidden @change="importFile($event.target.files[0]);$event.target.value=''">
   <div ref="workspace" class="workspace" :style="sidebarWidth?{'--sidebar-width':sidebarWidth+'px'}:undefined" :class="{'document-transitioning':documentOpening||documentClosing,'document-opening':documentOpening,'document-closing':documentClosing}">
-   <Transition :css="!documentOpening&&!documentClosing" name="sidebar-motion" @after-enter="observeThumbnails" @after-leave="sidebarLeaving=false;resizeFit()" @leave-cancelled="sidebarLeaving=false"><aside v-if="sidebar && pages.length" class="sidebar sidebar-resizable" :style="sidebarWidth?{flexBasis:sidebarWidth+'px'}:undefined" :class="{'without-motion':restoringView}">
+   <Transition :css="!documentOpening&&!documentClosing" name="sidebar-motion" @after-enter="observeThumbnails" @after-leave="sidebarLeaving=false;resizeFit()" @leave-cancelled="sidebarLeaving=false"><aside v-if="sidebar && pages.length" class="sidebar sidebar-resizable" @keydown="sidebarKeyboard" @click="focusSidebarItem" :style="sidebarWidth?{flexBasis:sidebarWidth+'px'}:undefined" :class="{'without-motion':restoringView}">
     <div v-if="pages.length" class="sidebar-heading">{{t('sidebar.'+sidebarMode)}}</div>
     <SidebarNavigation v-model:mode="sidebarMode" :outline="documentOutline" :read-chapters="readChapters" :annotations="annotations" :selected="selectedAnnotation" :reduced-motion="reduceMotion" @ready="sidebarReady" @page="navigateFromSidebar" @annotation="navigateFromSidebar">
-    <div v-if="pages.length" ref="thumbnailList" class="thumbnail-list" @scroll.passive="thumbnailScrolling"><div class="thumbnail-inner" :style="{height:thumbnailLayout.height+'px'}"><div v-if="desktopCredentials && thumbnailHighlight" class="thumbnail-highlight" :class="{'without-motion':restoringView}" :style="thumbnailHighlight" aria-hidden="true"></div><button v-for="item in thumbnailItems" :key="item.number" class="thumb" :style="{top:item.offset+'px',height:item.height+'px','--thumbnail-width':item.width+'px'}" :class="{selected:item.number===active}" :aria-current="item.number===active?'page':undefined" :aria-label="t('sidebar.goToPage',{page:item.number})" @click="navigateFromSidebar(item.number)"><canvas :ref="el=>bindThumbnail(item.number,el)" :width="0" :height="0" :style="{width:item.width+'px',height:item.imageHeight+'px'}"></canvas><span>{{item.number}}</span><small :style="{visibility:pages[item.number-1].mathDocument||pages[item.number-1].blocks.some(b=>b.translation)?'visible':'hidden'}">{{t('sidebar.translated')}}</small></button></div></div>
+    <div v-if="pages.length" ref="thumbnailList" class="thumbnail-list" @scroll.passive="thumbnailScrolling"><div class="thumbnail-inner" :style="{height:thumbnailLayout.height+'px'}"><div v-if="desktopCredentials && thumbnailHighlight" class="thumbnail-highlight" :class="{'without-motion':restoringView}" :style="thumbnailHighlight" aria-hidden="true"></div><button v-for="item in thumbnailItems" :key="item.number" class="thumb" :data-page-number="item.number" :style="{top:item.offset+'px',height:item.height+'px','--thumbnail-width':item.width+'px'}" :class="{selected:item.number===active}" :aria-current="item.number===active?'page':undefined" :aria-label="t('sidebar.goToPage',{page:item.number})" @click="navigateFromSidebar(item.number)"><canvas :ref="el=>bindThumbnail(item.number,el)" :width="0" :height="0" :style="{width:item.width+'px',height:item.imageHeight+'px'}"></canvas><span>{{item.number}}</span><small :style="{visibility:pages[item.number-1].mathDocument||pages[item.number-1].blocks.some(b=>b.translation)?'visible':'hidden'}">{{t('sidebar.translated')}}</small></button></div></div>
     </SidebarNavigation>
     <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" :aria-label="t('sidebar.resize')" :aria-valuenow="Math.round(sidebarWidth||238)" aria-valuemin="200" :aria-valuemax="640" tabindex="0" @pointerdown="resizeSidebarStart" @pointermove="resizeSidebarMove" @pointerup="resizeSidebarEnd" @pointercancel="resizeSidebarEnd" @lostpointercapture="sidebarDrag=null" @keydown="resizeSidebarKey"></div>
    </aside></Transition>

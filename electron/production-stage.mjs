@@ -4,7 +4,7 @@ import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
 import {hasNativeInspector} from '../server/pdf-extractor.mjs';
-const runtimeElectron=['main.mjs','annotations.mjs','annotation-import.mjs','document-session.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
+const runtimeElectron=['main.mjs','page-edits.mjs','page-edit-annotations.mjs','annotations.mjs','annotation-import.mjs','document-session.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
 const runtimeServer=['index.mjs','translation-cache.mjs','reading-assist.mjs','translation-provider.mjs','documents.mjs','engines.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','pdf-extractor.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;

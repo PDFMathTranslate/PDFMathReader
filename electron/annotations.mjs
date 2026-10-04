@@ -1,3 +1,5 @@
+import {editPDFPages} from './page-edits.mjs';
+import {transformPageAnnotations} from './page-edit-annotations.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {dirname,join} from 'node:path';
 import {mkdir,open,readFile,unlink,stat} from 'node:fs/promises';
@@ -244,11 +246,11 @@ export async function createAnnotationStore(root){
    throw error;
   }
  }
- async function performSave(key,annotations,rawSource,nativeRefs){
+ async function performSave(key,annotations,rawSource,nativeRefs,editedBytes){
   let previous=[];try{previous=JSON.parse(await readFile(metadataPath(key),'utf8')).annotations||[];}catch{}const source=sourceValue(rawSource);
-  let sourceBytes,sourcePathReadable=false;
+  let sourceBytes=editedBytes,sourcePathReadable=false;
   if(source.path&&source.reliable){
-   sourceBytes=await readFile(source.path);sourcePathReadable=true;
+   sourceBytes??=await readFile(source.path);sourcePathReadable=true;
   }
   sourceBytes??=source.bytes;
   sourceBytes??=await readIfPresent(cachePath(key));
@@ -266,10 +268,25 @@ export async function createAnnotationStore(root){
   const key=validateAnnotationKey(value?.key),annotations=validateAnnotations(value?.annotations),nativeRefs=value?.nativeRefs||[];if(!Array.isArray(nativeRefs)||nativeRefs.length>10000||nativeRefs.some(ref=>typeof ref!=='string'||!/^\d+ \d+ R$/.test(ref)))invalid('Invalid annotation native references.');
   const operation=writes.then(()=>performSave(key,annotations,source,[...nativeRefs]));writes=operation.catch(()=>{});return operation;
  }
+ async function editPages(value,rawSource){
+  const key=validateAnnotationKey(value?.key),items=validateAnnotations(value?.annotations),nativeRefs=value?.nativeRefs||[];
+  if(!['rotate','align-width','align-height'].includes(value?.action))invalid('Invalid page edit action.');
+  if(!Array.isArray(nativeRefs)||nativeRefs.some(ref=>typeof ref!=='string'||!/^\d+ \d+ R$/.test(ref)))invalid('Invalid annotation native references.');
+  const operation=writes.then(async()=>{
+   const source=sourceValue(rawSource);
+   const original=source.path&&source.reliable?await readFile(source.path):await readIfPresent(cachePath(key))||source.bytes;
+   if(!original)throw Error('No PDF source available for editing.');
+   const result=await editPDFPages(original,{action:value.action,page:value.page});
+   const updated=transformPageAnnotations(items,result.transforms);
+   await performSave(key,updated,source,[...nativeRefs],result.bytes);
+   return {bytes:new Uint8Array(await readFile(cachePath(key))),annotations:updated};
+  });
+  writes=operation.catch(()=>{});return operation;
+ }
  async function loadState(key){const annotations=await load(key);let nativeRefs=[];try{const record=JSON.parse(await readFile(metadataPath(key),'utf8'));nativeRefs=record.nativeRefs||[];}catch{}return {annotations,nativeRefs};}
  async function palette(){await writes;const custom=Object.entries(settings.counts).filter(([color])=>!['#fff36a','#86ff86'].includes(color.toLowerCase())).sort((a,b)=>b[1]-a[1]);return {favorite:custom[0]?.[0]||'#82ddff',deleteHintShown:settings.deleteHintShown};}
  function markDeleteHint(){const operation=writes.then(async()=>{settings.deleteHintShown=true;await durableWrite(settingsPath,JSON.stringify(settings));});writes=operation.catch(()=>{});return operation;}
- return {load,loadState,save,palette,markDeleteHint,metadataPath,cachePath,flush:()=>writes};
+ return {load,loadState,save,editPages,palette,markDeleteHint,metadataPath,cachePath,flush:()=>writes};
 }
 
 export const managedAnnotationPrefix=MANAGED_PREFIX;

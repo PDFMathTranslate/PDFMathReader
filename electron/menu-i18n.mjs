@@ -398,6 +398,9 @@ const quitLabel = {
  ko: name => `${name} 종료`,
 };
 
+const pageEditLabels={"en": ["Edit", "Rotate Current Page", "Align Page Widths", "Align Page Heights", "Page Changes Saved"], "zh-CN": ["编辑", "旋转本页", "对齐页面宽度", "对齐页面高度", "页面变更已保存"], "zh-TW": ["編輯", "旋轉本頁", "對齊頁面寬度", "對齊頁面高度", "頁面變更已儲存"], "ja": ["編集", "現在のページを回転", "ページ幅を揃える", "ページ高さを揃える", "ページの変更を保存しました"], "fr": ["Édition", "Tourner la page actuelle", "Aligner les largeurs des pages", "Aligner les hauteurs des pages", "Modifications enregistrées"], "es": ["Editar", "Girar página actual", "Igualar anchos de página", "Igualar alturas de página", "Cambios guardados"], "ko": ["편집", "현재 페이지 회전", "페이지 너비 맞추기", "페이지 높이 맞추기", "페이지 변경 저장됨"]};
+for(const [locale,values] of Object.entries(pageEditLabels))Object.assign(menuMessages[locale],Object.fromEntries(pageEditLabels.en.map((key,index)=>[key,values[index]])));
+
 function localeMessages(locale) {
  return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
 }

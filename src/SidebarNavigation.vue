@@ -29,7 +29,7 @@ const filterCount=computed(()=>[kind.value,color.value,chapter.value,from.value,
 const sections=computed(()=>annotationSections(props.annotations,props.outline,{query:query.value,kind:kind.value,color:color.value,chapter:chapter.value,from:from.value,to:to.value,group:group.value},dateNow.value));
 function resetFilters(){kind.value='';color.value='';chapter.value='';from.value='';to.value='';}
 function sectionLabel(section){if(section.key.startsWith('chapter:')&&section.key!=='chapter:unknown')return section.label;if(section.key==='color:unknown')return t('annotationBrowser.unknownColor');if(section.key.startsWith('color:'))return colorLabel(section.label);return t('annotationBrowser.'+section.key.replace(':','.'));}
-function colorLabel(value){const names={'#ffff00':'yellow','#00ff00':'green','#00ffff':'cyan','#ff0000':'red','#fff36a':'yellow'};return names[value]?t('annotationBrowser.'+names[value]):value;}
+function colorLabel(value){const names={'#ffff00':'yellow','#00ff00':'green','#00ffff':'cyan','#ff0000':'red','#af52de':'purple','#fff36a':'yellow'};return names[value]?t('annotationBrowser.'+names[value]):value;}
 watch(()=>props.outline,()=>{chapter.value='';if(group.value==='chapter'&&!chapters.value.length)group.value='none';});
 function annotationText(item){return (item.text||'').replace(/[\r\n\u2028\u2029]+/g,'').trim();}
 function annotationDate(item){

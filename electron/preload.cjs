@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
 
 contextBridge.exposeInMainWorld('previewDocuments',Object.freeze({
  next:()=>ipcRenderer.invoke('documents:next'),
+ editPages:value=>ipcRenderer.invoke('documents:editPages',value),
  closed:()=>ipcRenderer.invoke('documents:closed'),
  saveView:view=>ipcRenderer.invoke('documents:view',view),
  open:async file=>{const path=webUtils.getPathForFile(file);return ipcRenderer.invoke('documents:open',path?{path}:{name:file.name,bytes:new Uint8Array(await file.arrayBuffer())});},

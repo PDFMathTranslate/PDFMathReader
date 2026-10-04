@@ -267,7 +267,7 @@ export async function verifyPerformance(window){
  assertResidentWindow(horizontalState,'horizontal');
  assertLimits(horizontalState,'horizontal');
  await assertBlackCenter(96,'horizontal');
- const horizontalMenu=Menu.getApplicationMenu()?.getMenuItemById('layout-columns');
+ const horizontalMenu=Menu.getApplicationMenu()?.getMenuItemById('columns-1');
  assert.ok(horizontalMenu,`missing pages-per-row menu`);
  assert.equal(horizontalMenu.enabled,false,'horizontal layout should disable columns');
  assert.ok(await evaluate(`(()=>{const d=window.previewRenderDiagnostics?.(),pages=[...document.querySelectorAll('.page')];return d?.totalPages===${PAGE_COUNT}&&pages.length===d.mountedPages&&pages.every((page,index)=>index===0||page.getBoundingClientRect().left>pages[index-1].getBoundingClientRect().left);})()`),'horizontal layout should place mounted pages in one scrollable row');
