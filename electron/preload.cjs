@@ -79,3 +79,5 @@ contextBridge.exposeInMainWorld('previewResize',Object.freeze({
 contextBridge.exposeInMainWorld('previewClipboard',Object.freeze({writeText:text=>ipcRenderer.invoke('clipboard:write-text',text)}));
 
 contextBridge.exposeInMainWorld('previewHaptics',Object.freeze({tick:()=>ipcRenderer.invoke('haptics:tick')}));
+
+contextBridge.exposeInMainWorld('previewQuickLinks',Object.freeze({load:key=>ipcRenderer.invoke('quickLinks:load',key),save:(key,links)=>ipcRenderer.invoke('quickLinks:save',{key,links})}));

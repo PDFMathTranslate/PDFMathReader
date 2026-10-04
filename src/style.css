@@ -2090,3 +2090,12 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .sidebar-resize-handle:hover,.sidebar-resize-handle:focus-visible{background:color-mix(in srgb,var(--accent) 35%,transparent);outline:none}
 
 .desktop .sidebar.sidebar-resizable{transition:none}
+
+.reference-return-actions{position:absolute;left:22px;bottom:22px;display:flex;align-items:center;gap:6px;z-index:20}
+.reference-return-actions .reference-return-button{position:static}
+.quick-return-create,.paragraph-quick-link{border:0;border-radius:11px;background:#f0f0f0;color:#575757;box-shadow:0 1px 2px #0000000a,0 3px 8px #0000000d,inset 0 0 0 1px #00000008;cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.quick-return-create:hover,.paragraph-quick-link:hover{background:#e7e7e7}
+.quick-return-create .system-icon,.paragraph-quick-link .system-icon{width:20px;height:20px}
+.quick-link-layer{position:absolute;inset:0;pointer-events:none;z-index:8}
+.paragraph-quick-link{position:absolute;pointer-events:auto}
+.paragraph-quick-link:focus-visible,.quick-return-create:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

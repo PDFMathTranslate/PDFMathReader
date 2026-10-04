@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 let output=CommandLine.arguments[1]
 try FileManager.default.createDirectory(atPath:output,withIntermediateDirectories:true)
-for name in ["magnifyingglass","sidebar.left","minus.magnifyingglass","plus.magnifyingglass","gearshape","doc.badge.plus","xmark","character.book.closed","doc.text","checkmark.circle","trash","arrow.left.and.right","arrow.up.and.down","chevron.up","chevron.down","text.bubble"] {
+for name in ["link","magnifyingglass","sidebar.left","minus.magnifyingglass","plus.magnifyingglass","gearshape","doc.badge.plus","xmark","character.book.closed","doc.text","checkmark.circle","trash","arrow.left.and.right","arrow.up.and.down","chevron.up","chevron.down","text.bubble"] {
  guard let image=NSImage(systemSymbolName:name,accessibilityDescription:nil)?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize:22,weight:.regular)) else { fatalError("Missing system symbol: \(name)") }
  let canvas=NSImage(size:NSSize(width:28,height:28))
  canvas.lockFocus()
