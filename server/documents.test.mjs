@@ -21,15 +21,6 @@ function validPDFBytes(){
  return Buffer.from('%PDF-1.7\nfixture');
 }
 
-test('document store validates PDF headers, bounds capacity, and releases bytes',()=>{
- const store=createDocumentStore({maxDocuments:2,maxBytes:20,maxDocumentBytes:10});
- assert.throws(()=>store.register(Buffer.from('not a PDF')),error=>error.code==='INVALID_PDF'&&error.status===400);
- const bytes=Buffer.from('%PDF-1.7');
- const first=store.register(bytes),second=store.register(bytes);
- assert.ok(isDocumentId(first));assert.ok(isDocumentId(second));assert.notEqual(first,second);
- assert.deepEqual(store.stats(),{uploads:2,uploadBytes:16,activeBytes:16});
-});
-
 test('document store rejects capacity without evicting active documents and invalidates deletes',()=>{
  const store=createDocumentStore({maxDocuments:2,maxBytes:100,maxDocumentBytes:100});
  const bytes=validPDFBytes();

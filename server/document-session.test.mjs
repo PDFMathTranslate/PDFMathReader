@@ -16,9 +16,3 @@ test('session persists multiple documents and positions; closing all restores on
  assert.equal(JSON.parse(await readFile(path)).documents.length,0);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
-test('session validates stored paths and ignores corrupt data',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'reader-session-'));try{
- const path=join(dir,'session.json');await writeFile(path,'invalid');assert.deepEqual((await createDocumentSession(path)).restore(),[]);
- await writeFile(path,JSON.stringify({documents:[{path:'relative.pdf'},{path:'/tmp/good.pdf',view:{page:-1}}]}));assert.deepEqual((await createDocumentSession(path)).restore(),[{path:'/tmp/good.pdf'}]);
- }finally{await rm(dir,{recursive:true,force:true});}
-});

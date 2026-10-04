@@ -93,8 +93,8 @@ jobs:
         if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
         run: npm run icons:mac
       # Both architectures share this host installation and frontend build.
-      - name: Test Windows PDF registration
-        run: node --test server/windows-file-association.test.mjs
+      - name: Test secure credential persistence
+        run: node --test server/credentials.test.mjs
       - name: Build frontend
         run: npm run build
       - name: Package primary architecture

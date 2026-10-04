@@ -145,7 +145,7 @@ In browser development, Express and Vite run in a standalone Node.js process. Na
 - **Scanned documents:** scanned PDFs require OCR, which this app does not implement.
 - **Translation requirements:** translation needs an OpenAI API key and network access. Fast and Precise require separately installed math kernels through `uv`.
 - **Scope:** this is an experimental local reader and translation app, not a complete PDF editing or export tool.
-- **Validation:** automated tests cover backend and reader support logic. Mock-provider checks do not establish live OpenAI translation quality or API-key validity.
+- **Validation:** the [30 core regression tests](doc/core-tests.md) cover backend and reader support logic. Mock-provider checks do not establish live OpenAI translation quality or API-key validity.
 
 ## License
 

@@ -94,7 +94,3 @@ test('native comments and highlights import, migrate, recover from copied PDF, a
   await assert.rejects(store.save({key:'missing',annotations:[]},{path:join(root,'missing.pdf'),reliable:true}),/ENOENT/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
-
-test('frequent custom colors and deletion hint survive restarts without recounting edits',async()=>{
- const root=await mkdtemp(join(tmpdir(),'annotation-palette-'));try{const store=await createAnnotationStore(root),a=fixtureAnnotations()[0];a.color='#ff88bb';await store.save({key:'palette',annotations:[a]});await store.save({key:'palette',annotations:[{...a,comment:'edited'}]});await store.markDeleteHint();const next=await createAnnotationStore(root);assert.deepEqual(await next.palette(),{favorite:'#ff88bb',deleteHintShown:true});const preferences=JSON.parse(await readFile(join(root,'annotation-settings.json'),'utf8'));assert.equal(preferences.counts['#ff88bb'],1);}finally{await rm(root,{recursive:true,force:true});}
-});

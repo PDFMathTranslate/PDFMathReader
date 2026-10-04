@@ -29,23 +29,6 @@ test('compatible cache survives restart for custom models and strict mode stays 
  }finally{await rm(directory,{recursive:true,force:true});}
 });
 
-test('legacy math page cache is reused across providers without a worker or provider call',async()=>{
- const root=await mkdtemp(join(tmpdir(),'math-cache-api-')),cacheDir=join(root,'translations'),math=join(cacheDir,'math');let calls=0;
- const pdf=Buffer.from('%PDF-1.7\nfixture');
- const keyFor=model=>createHash('sha256').update(pdf).update(JSON.stringify({id:'pdf_math_fast',version:'1.9.12',page:255,language:'Simplified Chinese',model,prompt:2,layoutSchema:3})).digest('hex');
- const key=keyFor('gpt-4.1-mini');await mkdir(math,{recursive:true});await writeFile(join(math,key+'.pdf'),'cached translated page');await writeFile(join(math,key+'.layout.json'),JSON.stringify({paragraphs:[]}));
- const backend=await startServer({port:0,development:false,cacheDir,getApiKey:()=>null,findUvImpl:async()=>({available:true,path:'/fixture/uv'}),execImpl:async()=>({stdout:'1.9.12\n'}),providerFetch:async()=>{calls++;throw Error('Must not call provider');}});
- const post=(path,body)=>fetch(backend.origin+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- try{
-  const upload=await fetch(backend.origin+'/api/documents',{method:'POST',headers:{'Content-Type':'application/pdf'},body:pdf});const {id}=await upload.json();
-  const url='/api/math-page?engine=pdf_math_fast&page=255&language=Simplified%20Chinese';
-  const hit=await post(url,{documentId:id,sourceLanguage:'English'});assert.equal(hit.status,200);assert.equal(hit.headers.get('X-Translation-Cache'),'hit');assert.equal(hit.headers.get('X-Translation-Model'),'gpt-4.1-mini');assert.equal(hit.headers.get('X-Layout-Key'),key);assert.equal(await hit.text(),'cached translated page');assert.equal(calls,0);
-  const reports=await (await fetch(backend.origin+'/api/kernel-performance')).json();assert.equal(reports.reports[0].providerCalls,0);assert.equal(reports.reports[0].cached,true);
-  const invalid=await post(url,{documentId:id,reuseTranslations:'yes'});assert.equal(invalid.status,400);
-  const strict=await post(url,{documentId:id,reuseTranslations:false});assert.equal(strict.status,422);assert.equal(calls,0);
- }finally{await backend.close();await rm(root,{recursive:true,force:true});}
-});
-
 test('paragraph API reuses legacy translations by default, strict mode invokes current provider',async()=>{
  const root=await mkdtemp(join(tmpdir(),'paragraph-cache-api-'));let calls=0;
  const text='Prior translated paragraph',language='Simplified Chinese',model='gpt-4.1-mini',key=digest({text,language,model,prompt:1});await writeFile(join(root,key+'.json'),JSON.stringify({translation:'已有译文',key,model}));

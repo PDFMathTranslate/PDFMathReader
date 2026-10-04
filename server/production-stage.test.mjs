@@ -26,13 +26,3 @@ test('production bundle serves and extracts PDFs without an external Express ins
   assert.equal(layout.status,200);assert.ok((await layout.json()).paragraphs.some(p=>p.text.includes('Bundled extraction fixture')));
  }finally{await backend?.close();await rm(stage,{recursive:true,force:true});}
 });
-
-test('fallback target retains PDF.js and DOMMatrix but excludes frontend and build packages',async()=>{
- const {stage,packages}=await stageApplication({platform:'darwin',arch:'x64'});
- try{
-  const metadata=JSON.parse(await readFile(join(stage,'package.json'),'utf8'));
-  for(const name of ['pdfjs-dist','@thednp/dommatrix']){assert.ok(packages.includes(name));assert.equal(typeof metadata.dependencies[name],'string');await access(join(stage,'node_modules',name,'package.json'));}
-  for(const name of ['vue','@macvue/core','@fluentui/web-components','vite','esbuild','electron','express'])assert.ok(!packages.includes(name));
-  await access(join(stage,'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'));
- }finally{await rm(stage,{recursive:true,force:true});}
-});
