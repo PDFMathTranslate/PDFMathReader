@@ -2091,7 +2091,11 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .sidebar-resize-handle{position:absolute;top:var(--toolbar-height);bottom:0;right:0;width:6px;cursor:col-resize;touch-action:none;z-index:5}
 .sidebar-resize-handle:hover,.sidebar-resize-handle:focus-visible{background:color-mix(in srgb,var(--accent) 35%,transparent);outline:none}
 
-.desktop .sidebar.sidebar-resizable{transition:none}
+/* Resizable tabs follow the header inset without animating dragged widths. */
+.desktop .sidebar.sidebar-resizable{transition:padding-top 180ms ease}
+.desktop .sidebar.sidebar-resizable.without-motion{transition:none}
+[data-reduce-motion=true] .desktop .sidebar.sidebar-resizable{transition:none}
+@media(prefers-reduced-motion:reduce){.desktop .sidebar.sidebar-resizable{transition:none}}
 
 .reference-return-actions{position:absolute;left:22px;bottom:22px;display:flex;align-items:center;gap:6px;z-index:20}
 .reference-return-actions .reference-return-button{position:static}

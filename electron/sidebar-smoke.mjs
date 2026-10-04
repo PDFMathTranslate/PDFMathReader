@@ -83,6 +83,15 @@ export async function verifySidebar(window,recents){
   assert.equal(await run(`(()=>{const s=document.querySelector('.sidebar'),f=s.querySelector('.sidebar-navigation-switch');return f.getBoundingClientRect().width+parseFloat(getComputedStyle(f).marginLeft)+parseFloat(getComputedStyle(f).marginRight)<=${expanded+21};})()`),true,'tab switch fits the sidebar during expansion');
   await wait(`!!document.querySelector('.sidebar')&&!document.querySelector('.sidebar-motion-enter-active')`);
   assert.ok(Math.abs((await run(`document.querySelector('.sidebar').getBoundingClientRect().width`))-expanded-20)<2,'resized sidebar width survives hide/show');
+  for(const tab of [0,1,2]){
+   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+   await new Promise(r=>setTimeout(r,220));
+   const motion=await run(`(async()=>{const app=document.querySelector('.app'),sidebar=document.querySelector('.sidebar');const padding=()=>parseFloat(getComputedStyle(sidebar).paddingTop);const start=padding();app.classList.add('immersive-header-hidden');await new Promise(r=>setTimeout(r,70));const middle=padding();await new Promise(r=>setTimeout(r,160));const hidden=padding();app.classList.remove('immersive-header-hidden');await new Promise(r=>setTimeout(r,70));const returning=padding();await new Promise(r=>setTimeout(r,160));return {start,middle,hidden,returning,end:padding()};})()`);
+   assert.ok(motion.start>0&&motion.middle>0&&motion.middle<motion.start,'sidebar tab '+tab+' animates while hiding header');
+   assert.equal(motion.hidden,0);
+   assert.ok(motion.returning>0&&motion.returning<motion.start,'sidebar tab '+tab+' animates while showing header');
+   assert.equal(motion.end,motion.start);
+  }
   console.log(JSON.stringify({sidebarModes:true,originalOutlinePageNavigation:true,mergedAnnotations:true,sourceCommentActivation:true,translationAnnotationNavigation:true,footerPlacement:true,thumbnailRestoration:true,outlineCollapse:true,dragAndKeyboardResize:true,fourLineCommentTrim:true,tabAnimation:true}));
  }finally{await rm(folder,{recursive:true,force:true});app.quit();}
 }
