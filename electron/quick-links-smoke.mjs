@@ -16,9 +16,18 @@ export async function verifyQuickLinks(window){
  for(const side of ['origin','result']){await evaluate(`document.querySelector('[data-link-side="${side}"]').click()`);await pause(250);assert.equal(await evaluate(`document.querySelectorAll('.paragraph-quick-link [data-symbol="link"]').length`),2);}
  await evaluate(`document.querySelector('.translation-toggle').click()`);await pause(250);
  assert.equal(await evaluate(`document.querySelectorAll('.paragraph-quick-link').length`),2);
+ await evaluate(`window.previewAnnotations.save({key:window.previewRenderDiagnostics().annotationKey,nativeRefs:[],annotations:[{id:'rail-note',page:1,kind:'comment',origin:'source',text:'Selection',comment:'Rail alignment',color:'#FFFF00',rects:[{x:50,y:80,width:160,height:20}],createdAt:'2026-01-01T00:00:00Z'}]})`);
+ await evaluate(`window.previewPreferences.save({interactionMode:'reading'})`);
  await new Promise(resolve=>{window.webContents.once('did-finish-load',resolve);window.webContents.reload();});
  await wait(`!![...document.querySelectorAll('button')].find(b=>b.textContent==='Try a sample document')`);
  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Try a sample document').click()`);
  await wait(`document.querySelectorAll('.paragraph-quick-link').length===2`);
+ await wait(`!!document.querySelector('.annotation-note')`);
+ for(let mode=0;mode<2;mode++){
+  await pause(500);
+  const aligned=await evaluate(`(()=>{const comment=document.querySelector('.annotation-note').getBoundingClientRect();return [...document.querySelectorAll('.paragraph-quick-link')].every(button=>Math.abs(button.getBoundingClientRect().left-comment.left)<1);})()`);
+  assert.equal(aligned,true,'links share the comment rail in both original and translated views');
+  await evaluate(`document.querySelector('.translation-toggle').click()`);
+ }
  console.log('Quick links passed: creation, paired SF Symbols, both directions, original/translation switching, persistence across reload.');window.close();
 }

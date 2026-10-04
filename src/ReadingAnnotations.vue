@@ -8,7 +8,7 @@ const popupPlatform=window.previewAppearance?.platform||'web';
 const readerPopup=ref(),editorPopup=ref(),toolbarPopup=ref(),layoutVersion=ref(0);let popupObserver,textObserver,layoutFrame=0;
 function updatePopupLayout(){if(!layoutFrame)layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;layoutVersion.value++;});}
 const props=defineProps({host:Function,page:Object,zoom:Number,annotations:Array,translated:Boolean,selectedAnnotation:String});
-const emit=defineEmits(['change','notice']);
+const emit=defineEmits(['change','notice','rail']);
 const popupFromNote=ref(false);
 const assistance=ref(null);let assistController;
 const selection=ref(null),toolbar=ref(false),editor=ref(null),draft=ref(''),opened=ref(null),menu=ref(null),focused=ref(null),pointer=ref({x:0,y:0}),confirming=ref(null),colorInput=ref();
@@ -72,6 +72,7 @@ const noteRail=computed(()=>{
  if(!right)for(const b of props.page.blocks){const box=(annotationDisplaysTranslation(props.page,props.translated,b)?b.translatedBox:b.sourceBox)||b;right=Math.max(right,box.x+box.width);}
  return annotationRailX(props.page.width,right,props.zoom);
 });
+watch(noteRail,x=>emit('rail',x),{immediate:true});
 function baseNoteRect(a){
  const b=blockFor(a),translated=translatedAt(a),box=translated?(b?.translatedBox||b):(b?.sourceBox||b);
  const line=a.rects[0],anchor=box||line,markerSize=34/props.zoom;
