@@ -1,0 +1,15 @@
+{
+  "margin_scene_units": {
+    "left": 1.200000286102295,
+    "right": 1.200000286102295,
+    "top": 1.200000286102295,
+    "bottom": 1.200000286102295
+  },
+  "margin_pixels_at_1024": {
+    "left": 133.56525200481522,
+    "right": 133.56525200481522,
+    "top": 133.56525200481522,
+    "bottom": 133.56525200481522
+  },
+  "note": "Insets between base and document geometry; lens is an overlapping foreground element."
+}
