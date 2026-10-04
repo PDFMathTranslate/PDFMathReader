@@ -20,7 +20,7 @@ export async function verifyFitWidth(window,recents){
  async function wait(code){for(let i=0;i<150;i++){if(await evaluate(code))return;await pause(80);}console.error('Fit diagnostic',await evaluate(`(()=>{const r=document.querySelector('.reader');return {diagnostics:window.previewRenderDiagnostics?.(),scroll:r?.scrollTop,frames:[...document.querySelectorAll('.page')].map(p=>({page:p.dataset.page,top:p.getBoundingClientRect().top,height:p.getBoundingClientRect().height})),padding:r&&getComputedStyle(r).padding};})()`));throw Error('Fit width timeout: '+code);}
  const folder=await mkdtemp(join(tmpdir(),'reader-fit-width-'));
  try{
-  const pdf=await PDFDocument.create();for(const width of [800,600,800,600])pdf.addPage([width,1000]);
+  const pdf=await PDFDocument.create();for(const [width,height] of [[800,1000],[600,800],[800,1000],[600,800]])pdf.addPage([width,height]);
   const path=join(folder,'Portrait and landscape.pdf');await writeFile(path,await pdf.save());await recents.remember(path);const id=recents.list()[0].id;
   await window.webContents.reload();await wait(`!!document.querySelector('[data-recent-id="${id}"]')`);
   await evaluate(`document.querySelector('[data-recent-id="${id}"]').click();true`);
@@ -58,6 +58,24 @@ export async function verifyFitWidth(window,recents){
   window.webContents.send('reader:action','zoom-in');await pause(350);const manual=await state();assert.equal(manual.view.fit,'manual');
   window.webContents.send('reader:action','percent:100');await pause(500);assert.equal((await state()).view.zoom,manual.view.zoom,'manual zoom stays unchanged across page widths');
   await chooseFit('Fit Width');assert.equal((await state()).view.fit,'width');
+  // Both fit modes follow the active page, including mixed-size multi-column rows.
+  for(const columns of [1,2,4]){
+   window.webContents.send('reader:action','columns:'+columns);await pause(500);
+   for(const mode of ['width','height']){
+    await chooseFit(mode==='width'?'Fit Width':'Fit Height');
+    const zooms=[];
+    for(const page of [1,2]){
+     window.webContents.send('reader:action','percent:'+(page*25));
+     await wait(`window.previewRenderDiagnostics().readingView.page===${page}`);await pause(500);
+     const fitted=await evaluate(`(()=>{const d=window.previewRenderDiagnostics(),r=document.querySelector('.reader'),s=getComputedStyle(r),p=document.querySelector('.page[data-page="'+d.readingView.page+'"]'),b=p.getBoundingClientRect(),layout=document.querySelector('.page-layout');return {page:d.readingView.page,zoom:d.readingView.zoom,width:b.width,height:b.height,availableWidth:(r.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)-(parseFloat(getComputedStyle(layout).columnGap)||0)*(${columns}-1))/${columns},availableHeight:r.clientHeight-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom)};})()`);
+     assert.equal(fitted.page,page);
+     assert.ok(Math.abs(mode==='width'?fitted.width-fitted.availableWidth:fitted.height-fitted.availableHeight)<2,'Fit '+mode+' uses current page in '+columns+' columns '+JSON.stringify(fitted));
+     zooms.push(fitted.zoom);
+    }
+    assert.ok(zooms[1]>zooms[0]*1.2,'smaller current page increases fit scale');
+   }
+  }
+  window.webContents.send('reader:action','columns:1');await pause(500);await chooseFit('Fit Width');
   const original=window.getContentBounds();
   for(const [width,height] of [[720,600],[1400,1000],[1050,700]]){
    window.setContentSize(width,height);await pause(650);

@@ -28,9 +28,8 @@ async function followReference(destination){
   if(documentToken!==epoch||request!==referenceNavigation)return;
   referenceJumping=true;referenceReturn.value=null;
   const container=reader.value,style=getComputedStyle(container);
-  zoom.value=destinationScale(page,target.dest,zoom.value,container.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),container.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom));
-  fitMode.value='manual';
-  go(target.pageNumber);mountAroundPage(target.pageNumber);await nextTick();
+  if(fitMode.value==='manual')zoom.value=destinationScale(page,target.dest,zoom.value,container.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),container.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom));
+  await go(target.pageNumber);
   if(documentToken!==epoch||request!==referenceNavigation)return;
   const el=reader.value,host=pageEls.get(target.pageNumber);
   if(!el||!host)return;
@@ -56,7 +55,7 @@ async function navigateFromSidebar(target){
  const documentToken=epoch,request=++referenceNavigation;
  referenceJumping=true;referenceReturn.value=null;
  try{
-  if(typeof target==='number')go(page);else await locateAnnotation(target);
+  if(typeof target==='number')await go(page);else await locateAnnotation(target);
   await nextTick();
   if(documentToken!==epoch||request!==referenceNavigation)return;
   referenceReturn.value={origin,targetPage:page};
@@ -67,7 +66,7 @@ async function locateAnnotation(a){
  const token=epoch,p=pages.value[a.page-1];if(!p)return;
  selectedAnnotation.value=null;interactionMode.value='reading';showAnnotations.value=true;showTranslations.value=a.origin==='translation';
  for(const block of p.blocks)block.translated=a.origin==='translation';
- go(a.page);await nextTick();if(token!==epoch)return;
+ await go(a.page);if(token!==epoch)return;
  const host=pageEls.get(a.page),el=reader.value,box=a.rects[0];
  if(host&&el&&box){const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;scheduleViewport();}
  selectedAnnotation.value=a.id;
@@ -171,7 +170,7 @@ async function runSearch(){
  finally{if(generation===searchGeneration)searchBusy.value=false;}
 }
 function scheduleSearch(){clearTimeout(searchTimer);++searchGeneration;searchBusy.value=false;searchTimer=setTimeout(runSearch,180);}
-async function locateSearch(){const hit=searchHit.value;if(!hit)return;const token=epoch;for(const block of hit.blocks)block.translated=showTranslations.value;go(hit.page);await nextTick();if(token!==epoch||hit!==searchHit.value)return;const host=pageEls.get(hit.page),el=reader.value,box=hit.boxes[0];if(!host||!el||!box)return;const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;scheduleViewport();}
+async function locateSearch(){const hit=searchHit.value;if(!hit)return;const token=epoch;for(const block of hit.blocks)block.translated=showTranslations.value;await go(hit.page);if(token!==epoch||hit!==searchHit.value)return;const host=pageEls.get(hit.page),el=reader.value,box=hit.boxes[0];if(!host||!el||!box)return;const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;scheduleViewport();}
 function nextSearch(delta=1){if(!searchResults.value.length)return;searchIndex.value=(searchIndex.value+delta+searchResults.value.length)%searchResults.value.length;void locateSearch();}
 watch([searchQuery,showTranslations],scheduleSearch);
 watch(()=>searchOpen.value?pages.value.map(p=>p.blocks.map(b=>b.translation||'').join('')).join(''):null,scheduleSearch);
@@ -287,9 +286,8 @@ function updateReaderInsets(){
  for(const [name,value] of [['--scrollbar-inline-inset',inline],['--scrollbar-block-inset',block],['--overflow-end-inset',end]]){const pixels=Math.min(48,value)+'px';if(el.style.getPropertyValue(name)!==pixels){el.style.setProperty(name,pixels);changed=true;}}
  return changed;
 }
-const fitRowWidth=computed(()=>{const widths=Array(columns.value).fill(0);pages.value.forEach((page,index)=>widths[index%columns.value]=Math.max(widths[index%columns.value],page.width));return widths.reduce((sum,width)=>sum+width,0);});
 let fitAdjusting=false;
-function applyFit(){updateReaderInsets();const p=currentPage.value,el=reader.value;if(!p||!el||fitMode.value==='manual')return;const style=getComputedStyle(el);const width=el.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);const count=direction.value==='vertical'?columns.value:1;const layout=el.querySelector('.page-layout'),gap=layout?parseFloat(getComputedStyle(layout).columnGap)||0:24;const availableWidth=(width-gap*(count-1))/count;const height=el.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom);const frame=pageEls.get(p.number),border=frame?getComputedStyle(frame):null;const borderWidth=border?parseFloat(border.borderLeftWidth)+parseFloat(border.borderRightWidth):0,borderHeight=border?parseFloat(border.borderTopWidth)+parseFloat(border.borderBottomWidth):0;const scale=Math.max(.1,Math.min(4,fitMode.value==='width'?(availableWidth-borderWidth)/(count>1?fitRowWidth.value/count:p.width):(height-borderHeight)/(count>1?Math.max(...pages.value.slice(Math.floor((p.number-1)/count)*count,Math.floor((p.number-1)/count)*count+count).map(page=>page.height)):p.height)));
+function applyFit(){updateReaderInsets();const p=currentPage.value,el=reader.value;if(!p||!el||fitMode.value==='manual')return;const style=getComputedStyle(el);const width=el.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);const count=direction.value==='vertical'?columns.value:1;const layout=el.querySelector('.page-layout'),gap=layout?parseFloat(getComputedStyle(layout).columnGap)||0:24;const availableWidth=(width-gap*(count-1))/count;const height=el.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom);const frame=pageEls.get(p.number),border=frame?getComputedStyle(frame):null;const borderWidth=border?parseFloat(border.borderLeftWidth)+parseFloat(border.borderRightWidth):(reducePadding.value?0:2),borderHeight=border?parseFloat(border.borderTopWidth)+parseFloat(border.borderBottomWidth):(reducePadding.value?0:2);const scale=Math.max(.1,Math.min(4,fitMode.value==='width'?(availableWidth-borderWidth)/p.width:(height-borderHeight)/p.height));
  if(Math.abs(scale-zoom.value)<.0001)return;
  // Anchor the visible part of the active page before preceding pages resize.
  const bounds=el.getBoundingClientRect(),box=frame?.getBoundingClientRect();
@@ -607,7 +605,11 @@ function viewportPages(){
  for(const n of visiblePages)if(pages.value[n-1])pages.value[n-1].visible=0;
  visiblePages.clear();let best;
  for(const item of window.visible){visiblePages.add(item.number);pages.value[item.number-1].visible=item.ratio;if(!best||item.area>best.area)best=item;}
- if(best&&!layoutMotion&&!fitAdjusting&&!restoringView.value&&!pinching.value&&!fitResizing)active.value=best.number;
+ // Keep the selected page within a visible row; a larger neighbour must not
+ // override navigation or repeatedly change the fit scale in mixed-size PDFs.
+ const selected=window.visible.find(item=>item.number===active.value);
+ if(best&&selected&&selected.row===best.row)best=selected;
+ if(best&&!pageJumping&&!layoutMotion&&!fitAdjusting&&!restoringView.value&&!pinching.value&&!fitResizing)active.value=best.number;
  if(referenceReturn.value&&!referenceJumping&&!visiblePages.has(referenceReturn.value.targetPage))referenceReturn.value=null;
  setRenderWindow(window.numbers);
  return window.numbers.map(n=>pages.value[n-1]).sort((a,b)=>Number(!visiblePages.has(a.number))-Number(!visiblePages.has(b.number))||Math.abs(a.number-active.value)-Math.abs(b.number-active.value));
@@ -669,7 +671,25 @@ async function processPage(p,manual=false){if(!p||p.status==='detecting')return;
  for(const b of p.blocks)if(!b.translation&&!['queued','translating'].includes(b.status)){b.status='queued';queue.push({block:b,token,language:language.value,sourceLanguage:sourceLanguage.value,page:p.number,manual});}pruneTranslationQueue();pump();}
 function pump(){if(!foreground.value&&translationMode.value!=='full')return;while(running<Number(concurrency.value)&&queue.length){const job=queue.shift();if(job.token!==epoch)continue;running++;translate(job).finally(()=>{running--;if(job.token===epoch&&engineState.value?.available)schedulePages();else pump();});}}
 async function translate({block:b,token,language:target,sourceLanguage:source,page,manual}){b.status='translating';b.error='';try{const data=await api('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},translationJob:{page,manual},body:JSON.stringify({text:b.text,language:target,sourceLanguage:source,reuseTranslations:reuseTranslations.value,concurrency:concurrency.value})});if(token!==epoch)return;b.translation=data.translation;b.cached=data.cached===true;b.translationModel=data.model||'';b.status='ready';const owner=pages.value[page-1];if(owner){owner.cached=owner.blocks.length>0&&owner.blocks.every(block=>block.translation&&block.cached===true);owner.translationModel=owner.blocks.map(block=>block.translationModel).filter(Boolean).at(-1)||'';}}catch(e){if(token===epoch){b.status=e.name==='AbortError'?'idle':'error';b.error=e.name==='AbortError'?'':e.message;}}}
-function go(n){if(!pages.value.length)return;const previous=active.value;n=Math.min(pages.value.length,Math.max(1,Math.round(Number(n)||1)));if(n!==previous)readingDirection=Math.sign(n-previous);translationMoving=true;active.value=n;pageEntry.value=n;const frame=pageLayout.value.frames[n-1],el=reader.value,host=layoutElement.value;if(frame&&el&&host){const rect=host.getBoundingClientRect(),bounds=el.getBoundingClientRect(),style=getComputedStyle(el);el.scrollTop+=rect.top+frame.y-bounds.top-parseFloat(style.paddingTop);el.scrollLeft+=rect.left+frame.x-bounds.left-parseFloat(style.paddingLeft);}viewportPages();scheduleViewport();scrolling();}
+let pageJumping=false,pageJumpGeneration=0;
+async function go(n){
+ if(!pages.value.length)return;
+ const previous=active.value,token=epoch,request=++pageJumpGeneration;
+ n=Math.min(pages.value.length,Math.max(1,Math.round(Number(n)||1)));
+ if(n!==previous)readingDirection=Math.sign(n-previous);
+ translationMoving=true;pageJumping=true;active.value=n;pageEntry.value=n;
+ try{
+  // Fit the destination before calculating its scroll position or content offsets.
+  mountAroundPage(n);await nextTick();
+  if(token!==epoch||request!==pageJumpGeneration)return;
+  applyFit();await nextTick();
+  if(token!==epoch||request!==pageJumpGeneration)return;
+  const frame=pageLayout.value.frames[n-1],el=reader.value,host=layoutElement.value;
+  if(frame&&el&&host){const rect=host.getBoundingClientRect(),bounds=el.getBoundingClientRect(),style=getComputedStyle(el);el.scrollTop+=rect.top+frame.y-bounds.top-parseFloat(style.paddingTop);el.scrollLeft+=rect.left+frame.x-bounds.left-parseFloat(style.paddingLeft);}
+ }finally{
+  if(request===pageJumpGeneration){pageJumping=false;if(token===epoch){viewportPages();scheduleViewport();scrolling();}}
+ }
+}
 function toggle(b){if(b.math||b.translation)b.translated=!b.translated;}
 
 // Fit returned text inside the source box, retaining a scrollable minimum size.
@@ -684,8 +704,8 @@ watch(documentOpenMode,value=>{
 watch([documentOpenMode,restoreDocuments,reuseTranslations,interactionMode,language,sourceLanguage,concurrency,pageConcurrency,automatic,layoutVisible,autoHideHeader,uiLanguage],()=>saveView());
 watch(kernelAdvancedOptions,()=>saveView(),{deep:true});
 watch([language,sourceLanguage,reuseTranslations],()=>{if(loadingPreferences)return;localStorage.setItem('language',language.value);localStorage.setItem('reuseTranslations',String(reuseTranslations.value));resetTranslations();settle();});
-watch(active,n=>{pageEntry.value=n;if(restoringView.value||fitResizing)return;applyFit();nextTick(()=>scrollThumbnailTo(n));},{flush:'post'});
-watch(reducePadding,async()=>{if(restoringView.value||!pages.value.length)return;const page=active.value;await nextTick();applyFit();await nextTick();go(page);renderPages();});
+watch(active,n=>{pageEntry.value=n;if(restoringView.value||fitResizing)return;if(!pageJumping)applyFit();nextTick(()=>scrollThumbnailTo(n));},{flush:'post'});
+watch(reducePadding,async()=>{if(restoringView.value||!pages.value.length)return;const page=active.value;await nextTick();applyFit();await nextTick();await go(page);renderPages();});
 watch([direction,columns],async([nextDirection],[previousDirection])=>{
  if(restoringView.value)return;
  cancelLayoutMotion();const generation=layoutMotionGeneration,page=active.value;
@@ -698,7 +718,7 @@ watch([direction,columns],async([nextDirection],[previousDirection])=>{
   await nextTick();if(generation!==layoutMotionGeneration)return;
   if(directionChanged)chooseFit(nextDirection==='horizontal'?'height':'width',{animate:false});else applyFit();
   mountAroundPage(page);await nextTick();if(generation!==layoutMotionGeneration)return;
-  go(page);await nextTick();if(generation!==layoutMotionGeneration)return;
+  await go(page);if(generation!==layoutMotionGeneration)return;
   void renderPages();saveView();
   await motion?.play(pageEls.get(page));
  }finally{if(generation===layoutMotionGeneration){motion?.cancel();layoutMotion=null;reader.value?.classList.remove('layout-transitioning');}}
