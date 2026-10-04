@@ -29,13 +29,13 @@ import {importPDFAnnotations} from './annotation-import.mjs';
 import {createAnnotationStore,stripManagedAnnotations,embedAnnotations} from './annotations.mjs';
 
 const recentContextMenuLabels={
- en:{open:'Open',hide:'Hide',copy:'Copy File Location',reveal:'Reveal in Finder',status:'View Translation Status'},
- 'zh-CN':{open:'打开',hide:'隐藏',copy:'复制文件位置',reveal:'在访达中显示',status:'查看翻译状态'},
- 'zh-TW':{open:'開啟',hide:'隱藏',copy:'複製檔案位置',reveal:'在 Finder 中顯示',status:'檢視翻譯狀態'},
- fr:{open:'Ouvrir',hide:'Masquer',copy:'Copier l’emplacement du fichier',reveal:'Révéler dans le Finder',status:'Afficher l’état de la traduction'},
- es:{open:'Abrir',hide:'Ocultar',copy:'Copiar ubicación del archivo',reveal:'Mostrar en Finder',status:'Ver estado de la traducción'},
- ja:{open:'開く',hide:'非表示',copy:'ファイルの場所をコピー',reveal:'Finder で表示',status:'翻訳状況を表示'},
- ko:{open:'열기',hide:'가리기',copy:'파일 위치 복사',reveal:'Finder에서 보기',status:'번역 상태 보기'},
+ en:{open:'Open',openWindow:'Open in New Window',hide:'Remove from Recents',copy:'Copy File Location',reveal:'Reveal in Finder',status:'View Translation Status'},
+ 'zh-CN':{open:'打开',openWindow:'在新窗口打开',hide:'从最近记录中删除',copy:'复制文件位置',reveal:'在访达中显示',status:'查看翻译状态'},
+ 'zh-TW':{open:'開啟',openWindow:'在新視窗開啟',hide:'從最近記錄中移除',copy:'複製檔案位置',reveal:'在 Finder 中顯示',status:'檢視翻譯狀態'},
+ fr:{open:'Ouvrir',openWindow:'Ouvrir dans une nouvelle fenêtre',hide:'Retirer des documents récents',copy:'Copier l’emplacement du fichier',reveal:'Révéler dans le Finder',status:'Afficher l’état de la traduction'},
+ es:{open:'Abrir',openWindow:'Abrir en una ventana nueva',hide:'Eliminar de recientes',copy:'Copiar ubicación del archivo',reveal:'Mostrar en Finder',status:'Ver estado de la traducción'},
+ ja:{open:'開く',openWindow:'新しいウインドウで開く',hide:'最近の項目から削除',copy:'ファイルの場所をコピー',reveal:'Finder で表示',status:'翻訳状況を表示'},
+ ko:{open:'열기',openWindow:'새 창에서 열기',hide:'최근 항목에서 제거',copy:'파일 위치 복사',reveal:'Finder에서 보기',status:'번역 상태 보기'},
 };
 const recentExtraLabels={
  en:{pin:'Pin',unpin:'Unpin',clearCache:'Clear Translation Cache'},
@@ -382,6 +382,7 @@ else {
      let selected=null,pending=Promise.resolve();
      const template=[
       {label:labels.open,click:()=>{selected='open';}},
+      {label:labels.openWindow,click:()=>{selected='openWindow';}},
       {label:entry?.pinned?labels.unpin:labels.pin,click:()=>{pending=recents.setPinned(id,!entry?.pinned).then(()=>{selected='pin';});}},
       {label:labels.hide,click:()=>{pending=recents.remove(id).then(()=>{selected='hide';});}},
       {type:'separator'},

@@ -108,6 +108,7 @@ async function recentContextMenu(id){
  try{
   const action=await window.previewRecents?.contextMenu(id);
   if(action==='open')await openRecent(id);
+  else if(action==='openWindow')await window.previewRecents.openWindow(id);
   else if(['hide','pin','clearCache'].includes(action)){++recentPreviewGeneration;recentDocuments.value=await window.previewRecents.list();scheduleRecentPreviews();}
   else if(action==='status'){recentDocuments.value=await window.previewRecents.list();recentStatusDocument.value=recentDocuments.value.find(entry=>entry.id===id)||null;}
  }catch{error.value=t('error.thisPDFUnavailable');}
