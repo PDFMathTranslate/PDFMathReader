@@ -570,7 +570,7 @@ async function importFile(file,ticket,origin){
   for(let first=1;first<=pdf.numPages;first+=16){const numbers=Array.from({length:Math.min(16,pdf.numPages-first+1)},(_,i)=>first+i),batch=await Promise.all(numbers.map(n=>pdf.getPage(n)));if(token!==epoch)return;for(let i=0;i<batch.length;i++){const v=batch[i].getViewport({scale:1});list.push(reactive({number:numbers[i],width:v.width,height:v.height,status:'idle',blocks:[],cached:false,translationModel:'',dwell:0}));}}
   performanceRecorder.mark('pageGeometry');let saved;
   if(window.previewRecents)try{const result=await window.previewRecents.remember(file,ticket);if(token!==epoch)return;recentDocuments.value=result.entries;currentRecentId=result.recentId;saved=result.view;}catch{if(token===epoch)error.value=t('error.saveRecentHistory');}
-  annotationKey.value=currentRecentId||pdf.fingerprints[0];try{const stored=window.previewAnnotations?.loadState?await window.previewAnnotations.loadState(annotationKey.value):{annotations:window.previewAnnotations?await window.previewAnnotations.load(annotationKey.value):JSON.parse(localStorage.getItem('annotations:'+annotationKey.value)||'[]'),nativeRefs:[]};annotationNativeRefs.value=[...new Set([...stored.nativeRefs,...imported.nativeRefs])];annotations.value=[...stored.annotations,...imported.annotations.filter(a=>!stored.annotations.some(b=>b.id===a.id)&&(!a.nativeRef||!stored.nativeRefs.includes(a.nativeRef)))];}catch(e){error.value='无法读取批注：'+e.message;}if(token!==epoch)return;await recoverHighlightedText(pdf,annotations.value);if(token!==epoch)return;performanceRecorder.mark('recentHistory');pages.value=list;await restoreReadingView(saved);if(showTranslations.value)translationDeferred.value=false;performanceRecorder.mark('restoreView');if(token!==epoch)return;observe();observeThumbnails();await renderPages();if(token!==epoch)return;restoringView.value=false;loading.value=false;saveView();await nextTick();
+  annotationKey.value=currentRecentId||pdf.fingerprints[0];try{const stored=window.previewAnnotations?.loadState?await window.previewAnnotations.loadState(annotationKey.value):{annotations:window.previewAnnotations?await window.previewAnnotations.load(annotationKey.value):JSON.parse(localStorage.getItem('annotations:'+annotationKey.value)||'[]'),nativeRefs:[]};annotationNativeRefs.value=[...new Set([...stored.nativeRefs,...imported.nativeRefs])];annotations.value=[...stored.annotations,...imported.annotations.filter(a=>!stored.annotations.some(b=>b.id===a.id)&&(!a.nativeRef||!stored.nativeRefs.includes(a.nativeRef)))];}catch(e){error.value='无法读取批注：'+e.message;}if(token!==epoch)return;await recoverHighlightedText(pdf,annotations.value);if(token!==epoch)return;performanceRecorder.mark('recentHistory');pages.value=list;await restoreReadingView(saved&&documentOpenMode.value==='manual'?{...saved,showTranslations:false}:saved);if(showTranslations.value)translationDeferred.value=false;performanceRecorder.mark('restoreView');if(token!==epoch)return;observe();observeThumbnails();await renderPages();if(token!==epoch)return;restoringView.value=false;loading.value=false;saveView();await nextTick();
   if(origin&&!documentMotionReduced()){
    const host=pageEls.get(active.value),capture=captureDocumentPage(host);
    if(capture){const controller=new AbortController();documentMotionController=controller;const visibility=host.style.visibility;host.style.visibility='hidden';
@@ -635,7 +635,7 @@ async function draw(page,canvas,scale,preview=false){
  if(!foreground.value||!canvas||!canvas.isConnected)return false;
  const number=Number(canvas.closest('.page')?.dataset.page);if(number&&!renderWindow.value.has(number))return false;
  const base=page.getViewport({scale}),dpr=preview?scrollPixelRatio(base.width,base.height,devicePixelRatio):renderPixelRatio(base.width,base.height,devicePixelRatio,!!number&&visiblePages.has(number)),cached=canvasCache.get(canvas),current=pageTasks.get(canvas);
- if(cached?.page===page&&cached.scale===scale&&(cached.dpr===dpr||(preview&&cached.dpr>=dpr))){if(current){pageTasks.delete(canvas);current.cancel();}return true;}
+ if(cached?.page===page&&cached.scale===scale&&cached.dpr>=dpr){if(current){pageTasks.delete(canvas);current.cancel();}return true;}
  if(current?.previewPage===page&&current.previewScale===scale&&current.previewDpr===dpr)return current.previewResult;
  if(current){pageTasks.delete(canvas);current.cancel();}
  if(!bitmapIds.has(page))bitmapIds.set(page,++bitmapId);
@@ -675,7 +675,12 @@ function toggle(b){if(b.math||b.translation)b.translated=!b.translated;}
 // Fit returned text inside the source box, retaining a scrollable minimum size.
 
 watch(interactionMode,()=>{hoveredParagraph.value=null;selectedParagraph.value=null;window.getSelection()?.removeAllRanges();if(interactionMode.value==='reading'){for(const p of pages.value)for(const b of p.blocks)b.translated=showTranslations.value;}void renderPages();});
-watch(documentOpenMode,value=>localStorage.setItem('documentOpenMode',value));
+watch(documentOpenMode,value=>{
+ localStorage.setItem('documentOpenMode',value);
+ if(value==='manual'&&!loadingPreferences&&!applyingSavedSettings&&!restoringView.value){
+  translationDeferred.value=true;showTranslations.value=false;pruneTranslationQueue();
+ }
+});
 watch([documentOpenMode,restoreDocuments,reuseTranslations,interactionMode,language,sourceLanguage,concurrency,pageConcurrency,automatic,layoutVisible,autoHideHeader,uiLanguage],()=>saveView());
 watch(kernelAdvancedOptions,()=>saveView(),{deep:true});
 watch([language,sourceLanguage,reuseTranslations],()=>{if(loadingPreferences)return;localStorage.setItem('language',language.value);localStorage.setItem('reuseTranslations',String(reuseTranslations.value));resetTranslations();settle();});

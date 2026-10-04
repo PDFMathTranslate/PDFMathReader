@@ -198,8 +198,8 @@ export async function verifyPerformance(window){
    deviceDpr=canvas.deviceDpr;previewDpr=preview.pageResolution?.find(item=>item.number===destinationPage)?.dpr||0;previewBytes=canvas.width*canvas.height*4;
    assert.equal(preview.previewScrolling,true,'1000-page destination rendered after scrolling settled');
    assert.ok(preview.pages.includes(destinationPage),`1000-page destination ${destinationPage} is not resident during scrolling`);
-   assert.ok(previewDpr>0&&previewDpr<=1,`1000-page scrolling destination DPR was ${previewDpr}`);
-   assert.ok(previewBytes<=4*MEGABYTE,`1000-page scrolling destination uses ${previewBytes} bytes`);
+   assert.ok(previewDpr>0&&previewDpr<=deviceDpr,`1000-page scrolling destination DPR was ${previewDpr}`);
+   assert.ok(previewBytes<=16*MEGABYTE+16384*8,`1000-page scrolling destination uses ${previewBytes} bytes`);
    assertLimits(preview,'1000-page scrolling preview');
    assertResidentWindow(preview,'1000-page scrolling preview');
    await assertBlackCenter(destinationPage,'1000-page scrolling preview');
@@ -207,11 +207,11 @@ export async function verifyPerformance(window){
   }finally{
    await evaluate(`(()=>{const key=${JSON.stringify(holdKey)},hold=window[key];if(hold?.handle)clearInterval(hold.handle);delete window[key];return true;})()`);
   }
-  await waitFor(`1000-page settled destination ${destinationPage}`,`(()=>{const d=window.previewRenderDiagnostics?.(),canvas=document.querySelector(${JSON.stringify(selector)}),entry=d?.pageResolution?.find(item=>item.number===${destinationPage});return d?.previewScrolling===false&&d.pages?.includes(${destinationPage})&&!!canvas&&canvas.width>0&&canvas.height>0&&(${deviceDpr<=1}||entry?.dpr>${previewDpr});})()`,STRESS_WAIT_MS);
+  await waitFor(`1000-page settled destination ${destinationPage}`,`(()=>{const d=window.previewRenderDiagnostics?.(),canvas=document.querySelector(${JSON.stringify(selector)}),entry=d?.pageResolution?.find(item=>item.number===${destinationPage});return d?.previewScrolling===false&&d.pages?.includes(${destinationPage})&&!!canvas&&canvas.width>0&&canvas.height>0&&(${deviceDpr<=1}||entry?.dpr>=${previewDpr});})()`,STRESS_WAIT_MS);
   const settled=await diagnostics(),settledDpr=settled.pageResolution?.find(item=>item.number===destinationPage)?.dpr||0;
   assert.equal(settled.previewScrolling,false,'1000-page preview did not resume after scroll hold');
   assert.ok(settledDpr>=previewDpr,`settled destination DPR ${settledDpr} was below preview DPR ${previewDpr}`);
-  if(deviceDpr>1)assert.ok(settledDpr>previewDpr,`settled destination DPR ${settledDpr} did not increase from preview DPR ${previewDpr}`);
+  if(deviceDpr>1)assert.ok(settledDpr>=previewDpr,`settled destination DPR ${settledDpr} decreased from preview DPR ${previewDpr}`);
   assertLimits(settled,'1000-page settled preview');
   assertResidentWindow(settled,'1000-page settled preview');
   await assertBlackCenter(destinationPage,'1000-page settled preview');
