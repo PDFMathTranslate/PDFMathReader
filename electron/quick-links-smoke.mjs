@@ -9,6 +9,8 @@ export async function verifyQuickLinks(window){
  await wait(`!!document.querySelector('[aria-label="Search document text"]')`);
  await evaluate(`(()=>{const input=document.querySelector('[aria-label="Search document text"]');input.value='Mock translated';input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
  await wait(`!!document.querySelector('.quick-return-create')`);
+ const surfaces=await evaluate(`(()=>{const properties=['height','paddingTop','paddingBottom','borderRadius','border','backgroundColor','boxShadow','color'];return ['.reference-return-button','.quick-return-create'].map(selector=>{const style=getComputedStyle(document.querySelector(selector));return properties.map(property=>style[property]);});})()`);
+ assert.deepEqual(surfaces[0],surfaces[1],'paired return controls share the same surface and height');
  await evaluate(`document.querySelector('.quick-return-create').click()`);
  await wait(`!document.querySelector('.document-search')&&document.querySelectorAll('.paragraph-quick-link').length===2`);
  for(const side of ['origin','result']){await evaluate(`document.querySelector('[data-link-side="${side}"]').click()`);await pause(250);assert.equal(await evaluate(`document.querySelectorAll('.paragraph-quick-link [data-symbol="link"]').length`),2);}

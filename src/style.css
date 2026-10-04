@@ -2105,3 +2105,9 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .quick-link-layer{position:absolute;inset:0;pointer-events:none;z-index:8}
 .paragraph-quick-link{position:absolute;pointer-events:auto}
 .paragraph-quick-link:focus-visible,.quick-return-create:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Paired return controls share one surface; only their widths differ. */
+.app[data-platform] .reference-return-actions>button:is(.reference-return-button,.quick-return-create){box-sizing:border-box;display:flex;align-items:center;justify-content:center;height:38px;min-height:38px;corner-shape:round;padding:8px 12px;gap:8px;border:1px solid var(--chrome-border);border-radius:10px;background:var(--chrome);backdrop-filter:blur(20px);box-shadow:0 3px 14px #0002;color:var(--text-secondary);font-size:12px;line-height:20px;cursor:pointer}
+.app .reference-return-actions>.quick-return-create{width:38px;padding:8px}
+.reference-return-actions>button:hover{background:var(--chrome-hover,var(--chrome))}
+.reference-return-actions>button:active{background:var(--chrome-pressed,var(--chrome))}

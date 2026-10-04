@@ -12,6 +12,7 @@ import {pageNote as getPageNote} from './page-note.mjs';
 function pageNote(p){return getPageNote(p,engine.value);}
 import {resolvePDFDestination,destinationPoint,destinationScale} from './pdf-navigation.mjs';
 import ReaderPage from './ReaderPage.vue';
+import {quickLinkAnchor,quickLinkBox} from './quick-links.mjs';
 import RecentTranslationStatus from './RecentTranslationStatus.vue';
 import SidebarNavigation from './SidebarNavigation.vue';
 import {readOutline} from './sidebar-navigation.mjs';
@@ -179,9 +180,7 @@ const quickLinks=ref([]);
 
 function paragraphAnchor(view,box){
  const p=pages.value[view.page-1];if(!p)return null;
- const point=box||{x:Math.max(0,view.offsetX*p.width),y:Math.max(0,view.offsetY*p.height)};
- const block=p.blocks.reduce((best,b)=>{const distance=Math.hypot(Math.max(b.x-point.x,0,point.x-b.x-b.width),Math.max(b.y-point.y,0,point.y-b.y-b.height));return !best||distance<best.distance?{b,distance}:best;},null)?.b;
- return {page:p.number,blockId:block?.id,box:block?{x:block.x,y:block.y,width:block.width,height:block.height}:box||{x:point.x,y:point.y,width:p.width*.8,height:20}};
+ return quickLinkAnchor(p,view,box,view.showTranslations);
 }
 function quickLinkButtons(page){return quickLinks.value.flatMap(link=>['origin','result'].filter(side=>link[side].page===page).map(side=>({id:link.id+side,link,side,anchor:link[side]})));}
 async function createQuickReturn(){
@@ -196,7 +195,7 @@ async function followQuickLink(button){
  const anchor=button.link[button.side==='origin'?'result':'origin'],token=epoch;
  closeSearch();referenceReturn.value=null;++referenceNavigation;
  await go(anchor.page);if(token!==epoch)return;
- const p=pages.value[anchor.page-1],block=p?.blocks.find(b=>b.id===anchor.blockId),box=block||anchor.box,host=pageEls.get(anchor.page),el=reader.value;
+ const p=pages.value[anchor.page-1],block=p?.blocks.find(b=>b.id===anchor.blockId),box=quickLinkBox(block,showTranslations.value)||anchor.box,host=pageEls.get(anchor.page),el=reader.value;
  if(host&&el){const rect=host.getBoundingClientRect(),bounds=el.getBoundingClientRect();el.scrollTop+=rect.top+box.y*zoom.value-bounds.top-el.clientHeight*.35;el.scrollLeft+=rect.left+box.x*zoom.value-bounds.left-el.clientWidth*.25;}
  viewportPages();scheduleViewport();scheduleReadingSave();
 }

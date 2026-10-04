@@ -2,6 +2,7 @@
 import {computed,nextTick,onMounted,onBeforeUnmount,shallowRef} from 'vue';
 import ReadingAnnotations from './ReadingAnnotations.vue';
 import ReadingLinks from './ReadingLinks.vue';
+import {quickLinkBox} from './quick-links.mjs';
 import ReadingTextLayer from './ReadingTextLayer.vue';
 import TextReveal from './TextReveal.vue';
 import MathRegion from './MathRegion.vue';
@@ -10,7 +11,7 @@ import PageTranslationStatus from './PageTranslationStatus.vue';
 import {paragraphDisplayText} from './translation-spacing.mjs';
 const props=defineProps({page:Object,frame:Object,zoom:Number,translations:Boolean,outlined:Boolean,engine:String,foreground:Boolean,registerHost:Function,registerCanvas:Function,nativeSource:Function,mathSource:Function,searchBoxes:Array,quickLinks:Array,interactionMode:String,pdfDocument:Object,pdfPageNumber:Number,annotations:Array,selectedAnnotation:String,showAnnotations:{type:Boolean,default:true}});
 function quickLinkStyle(button,index){
- const box=props.page.blocks.find(b=>b.id===button.anchor.blockId)||button.anchor.box;
+ const box=quickLinkBox(props.page.blocks.find(b=>b.id===button.anchor.blockId),props.translations)||button.anchor.box;
  const stacked=props.quickLinks.slice(0,index).filter(b=>b.anchor.blockId===button.anchor.blockId&&b.anchor.box.y===button.anchor.box.y).length;
  return {left:Math.min(props.page.width*props.zoom-36,(box.x+box.width)*props.zoom+6)+'px',top:(box.y*props.zoom+stacked*38)+'px'};
 }
