@@ -3,7 +3,7 @@ import {computed,watch,ref,nextTick,onMounted,onBeforeUnmount} from 'vue';
 import {t,uiLanguage} from './i18n.mjs';
 import {annotationSections,annotationChapters} from './annotation-browser.mjs';
 const props=defineProps({mode:String,outline:Array,readChapters:{type:Set,default:()=>new Set()},annotations:Array,selected:String,reducedMotion:Boolean});
-const emit=defineEmits(['update:mode','page','annotation','ready']);
+const emit=defineEmits(['update:mode','page','annotation','ready','scroll']);
 const collapsed=ref(new Set());
 const view=ref(),dateNow=ref(new Date());let viewMotion,dateTimer;
 async function ready(){
@@ -43,7 +43,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
 <template>
  <div ref="view" class="sidebar-view">
  <div v-show="mode==='thumbnails'" class="sidebar-thumbnail-view"><slot></slot></div>
- <div v-show="mode==='outline'" class="sidebar-navigation-list" :aria-label="t('sidebar.outline')">
+ <div v-show="mode==='outline'" class="sidebar-navigation-list" :aria-label="t('sidebar.outline')" @scroll.passive="emit('scroll',$event)">
   <div v-for="item in visibleOutline" :key="item.id" class="sidebar-outline-row" :style="{paddingLeft:6+Math.min(item.depth,8)*12+'px'}">
    <button v-if="hasChildren(item)" class="sidebar-outline-toggle" :aria-expanded="!collapsed.has(item.id)" :aria-label="t(collapsed.has(item.id)?'sidebar.expand':'sidebar.collapse',{title:item.title})" @click="toggleOutline(item)"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4 2 4 4-4 4"/></svg></button><span v-else class="sidebar-outline-spacer"></span>
    <button class="sidebar-outline-item" :class="{'sidebar-outline-top-level':hasNestedOutline&&item.depth===0,'sidebar-outline-read':readChapters.has(item.id)}" :disabled="!item.page&&!hasChildren(item)" @click="item.page&&$event.detail<2&&emit('page',item.page)" @dblclick="hasChildren(item)&&toggleOutline(item)"><span>{{item.title}}</span><small v-if="item.page">{{item.page}}</small></button>
@@ -64,7 +64,7 @@ watch(()=>[props.mode,props.outline.length,props.annotations.length],()=>{
     <button v-if="filterCount" class="annotation-browser-reset" @click="resetFilters">{{t('annotationBrowser.reset')}}</button>
    </div>
   </div>
-  <div class="sidebar-navigation-list" :aria-label="t('sidebar.annotations')">
+  <div class="sidebar-navigation-list" :aria-label="t('sidebar.annotations')" @scroll.passive="emit('scroll',$event)">
   <p v-if="!sections.length" class="annotation-browser-empty" role="status">{{t('annotationBrowser.empty')}}</p>
   <section v-for="section in sections" :key="section.key" class="annotation-browser-section" :aria-label="group!=='none'?sectionLabel(section):undefined">
   <h3 v-if="group!=='none'" class="annotation-browser-heading"><i v-if="group==='color'&&section.key!=='color:unknown'" :style="{background:section.label}"></i>{{sectionLabel(section)}}<span>{{section.items.length}}</span></h3>

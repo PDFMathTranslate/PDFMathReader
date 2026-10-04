@@ -661,12 +661,16 @@ textarea:focus-visible,
   scrollbar-width: thin;
 }
 
+.sidebar-navigation-list{scrollbar-color:rgba(0,0,0,.24) transparent}
+
+.sidebar-navigation-list::-webkit-scrollbar,
 .thumbnail-list::-webkit-scrollbar,
 .thumbnails::-webkit-scrollbar,
 .sidebar-content::-webkit-scrollbar {
   width: 7px;
 }
 
+.sidebar-navigation-list::-webkit-scrollbar-thumb,
 .thumbnail-list::-webkit-scrollbar-thumb,
 .thumbnails::-webkit-scrollbar-thumb,
 .sidebar-content::-webkit-scrollbar-thumb {
@@ -1767,9 +1771,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 .translation-mode-switcher{grid-template-columns:repeat(2,1fr)}.translation-mode-switcher::before{width:calc((100% - 6px)/2)}
 
 /* Keep scrollbar geometry stable, showing the thumb only during scrolling. */
-:is(.reader,.thumbnail-list):not([data-scrolling]){scrollbar-color:transparent transparent}
-:is(.reader,.thumbnail-list):not([data-scrolling])::-webkit-scrollbar-thumb,
-:is(.reader,.thumbnail-list):not([data-scrolling])::-webkit-scrollbar-thumb:hover{background:transparent}
+:is(.reader,.thumbnail-list,.sidebar-navigation-list):not([data-scrolling]){scrollbar-color:transparent transparent}
+:is(.reader,.thumbnail-list,.sidebar-navigation-list):not([data-scrolling])::-webkit-scrollbar-thumb,
+:is(.reader,.thumbnail-list,.sidebar-navigation-list):not([data-scrolling])::-webkit-scrollbar-thumb:hover{background:transparent}
 /* Reserve the tools' intrinsic width; the filename alone absorbs resizing. */
 .desktop .toolbar{display:grid;grid-template-columns:36px minmax(0,1fr) max-content;flex-wrap:nowrap}
 .desktop .toolbar:not(.has-document){grid-template-columns:minmax(0,1fr) max-content}

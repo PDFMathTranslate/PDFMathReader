@@ -104,7 +104,7 @@ export async function verifySidebar(window,recents){
   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[1].click();document.querySelector('.sidebar-outline-item')?.click()`);await wait(`!!document.querySelector('.sidebar-outline-item')`);await run(`document.querySelector('.sidebar-outline-item').click()`);await wait(`window.previewRenderDiagnostics().active===2`);assert.equal(await run(`window.previewRenderDiagnostics().readingView.showTranslations`),true);
   await run(`document.querySelectorAll('.sidebar-navigation-switch button')[2].click()`);await wait(`document.querySelectorAll('.sidebar-annotation-item').length===2`);
   await new Promise(r=>setTimeout(r,250));
-  await writeFile('/tmp/pdfreader-sidebar.png',(await window.webContents.capturePage()).toPNG());
+  await writeFile(join(tmpdir(),'pdfreader-sidebar.png'),(await window.webContents.capturePage()).toPNG());
   const footer=await run(`(()=>{const f=document.querySelector('.sidebar-navigation-switch').getBoundingClientRect(),s=document.querySelector('.sidebar').getBoundingClientRect();return {within:f.bottom<=s.bottom,gap:s.bottom-f.bottom};})()`);assert.equal(footer.within,true);assert.ok(footer.gap<16);
   await run(`document.querySelector('.sidebar-navigation-switch button').click()`);
   assert.ok(await run(`document.querySelector('.sidebar-tab-indicator').getAnimations().length>0`),'tab selection animates');
