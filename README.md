@@ -24,13 +24,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date | Feature | Contributor |
 | --- | --- | --- |
+| 2026-10-04 | [remember document sidebar tabs and add red highlight](https://github.com/PDFMathTranslate/PDFMathReader/commit/b648da1c06343a691e61b4d767a8935ba428520e) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [refine document opening, translation display, and sidebar navigation](https://github.com/PDFMathTranslate/PDFMathReader/commit/36e6f7a579de389e7a4703efe083aab941cc1f47) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add resizable sidebar with outline and annotation navigation](https://github.com/PDFMathTranslate/PDFMathReader/commit/5d47aaf703b6be08486f12efb97caec3add192c5) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [support PDF reference navigation with return control](https://github.com/PDFMathTranslate/PDFMathReader/commit/ec7b1a3f47d9799747f536f6cbf8f3cede844df6) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add Google and Google Scholar selection search in reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/94eaf60e7a999554f0b897b884280f17bd1e055d) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add reading annotations and accelerate reader startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/b3ab7d4572dc17b53d67268545b2f9366a694bcb) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [add custom menu and left-side traffic lights](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [ship runnable CI packages and improve reader layout motion](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
