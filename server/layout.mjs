@@ -31,7 +31,7 @@ export function paragraphs(items, height) {
   return terminal&&b.count>=2&&last.right<b.right-l.fontSize*2&&last.right-last.x<(b.right-b.x)*.85;
  };
  for(const l of lines.sort((a,b)=>a.top-b.top||a.x-b.x)){
-  const b=blocks.findLast(b=>l.top>=b.top && l.top-b.bottom<l.fontSize*.85 && l.top-b.bottom>=-2 && (Math.abs(l.x-b.x)<l.fontSize*1.5 || centered(b,l)) && Math.abs(l.fontSize-b.fontSize)<1.5 && !!l.isBold===!!b.isBold);
+  const b=blocks.findLast(b=>l.top>=b.top && l.top-b.bottom<l.fontSize*.85 && l.top-b.bottom>=-2 && (Math.abs(l.x-b.x)<l.fontSize*1.5 || (b.count===1&&b.x>l.x&&b.x-l.x<=l.fontSize*3) || centered(b,l)) && Math.abs(l.fontSize-b.fontSize)<1.5 && !!l.isBold===!!b.isBold);
   if(b&&!boundary(b,l)){if(Math.abs(l.x-b.x)>=l.fontSize*1.5&&centered(b,l))b.textAlign='center';b.text=b.text.replace(/-$/,'')+(b.text.endsWith('-')?'':' ')+l.text;b.x=Math.min(b.x,l.x);b.top=Math.min(b.top,l.top);b.right=Math.max(b.right,l.right);b.bottom=Math.max(b.bottom,l.bottom);b.last=l;b.count++;}
   else blocks.push({...l,firstX:l.x,count:1,last:l});
  }

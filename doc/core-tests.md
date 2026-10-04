@@ -4,9 +4,11 @@ The repository retains 29 automated Node tests, reduced from 77 during the Octob
 
 Selection ranks original PDF and annotation integrity first, credential protection and authenticated document access next, then translation routing, cancellation, cache persistence and document isolation. Extraction, session recovery, settings preservation, production packaging and bounded rendering complete the suite. Existing retained assertions remain intact.
 
-Removed lower-priority checks cover annotation browser filters, topic/keyword emphasis, translation spacing, outline tracking, quick links, pins, navigation helpers and row layout. Helper-level page-edit variants are replaced in the retained coverage by the existing save integration test, which checks disk contents, annotation geometry, rotation and rejection without modifying the PDF. Redundant cache variants were removed. These areas have less automatic regression coverage; additions should replace a lower-priority case to keep the suite below 30.
+Removed lower-priority checks cover annotation browser filters, topic/keyword emphasis, translation spacing, outline tracking, quick links, pins, navigation helpers and row layout. Helper-level page-edit variants are replaced in the retained coverage by the existing save integration test, which checks disk contents, annotation geometry, rotation and rejection without modifying the PDF. Redundant cache variants were removed; the generic custom-model cache unit case was replaced by the topic-sentence regression below, while kernel upgrade/restart and paragraph API cache coverage remain. These areas have less automatic regression coverage; additions should replace a lower-priority case to keep the suite below 30.
 
 Run `npm run build` before `npm test`: the production-stage check consumes the built frontend. Provider requests use mocks; passing tests do not establish live translation quality or visual rendering correctness. Electron smoke scripts remain available for targeted desktop checks outside this Node suite. Historical performance reports retain their original counts.
+
+The topic-sentence regression checks the reported indented Chinese paragraph, math-kernel source/translation geometry, column isolation, page continuations, small numbered footnotes and unchanged length rules.
 
 | # | Test file | Retained behavior |
 |---|---|---|
@@ -32,7 +34,7 @@ Run `npm run build` before `npm test`: the production-stage check consumes the b
 | 20 | server/preferences.test.mjs | partial saves keep every current setting and unknown key |
 | 21 | server/production-stage.test.mjs | production bundle serves and extracts PDFs without an external Express installation |
 | 22 | server/render-resolution.test.mjs | large pages remain bounded by backing store memory and canvas dimensions |
-| 23 | server/translation-cache.test.mjs | compatible cache survives restart for custom models and strict mode stays isolated |
+| 23 | server/topic-sentences.test.mjs | topic sentences start on indented first lines and use original or translated paragraph boundaries |
 | 24 | server/translation-cache.test.mjs | paragraph API reuses legacy translations by default, strict mode invokes current provider |
 | 25 | server/translation-provider.test.mjs | configured key routes only to OpenAI and aborted fallback sends no translation |
 | 26 | server/translation-provider.test.mjs | backend fallback headers survive cache and failure, with independent launch sessions and provider caches |

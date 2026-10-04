@@ -128,6 +128,29 @@ export function topicSentenceLength(text, locale = 'en') {
  return source.slice(end).trim() ? end : 0;
 }
 
+/** Use the paragraph geometry of the PDF currently displayed, including math kernels. */
+export function topicParagraphBoxes(blocks, translated = false) {
+ const source = Array.isArray(blocks) ? blocks : [];
+ const fonts = new Map();
+ for (const block of source) {
+  const size = numeric(block.fontSize);
+  if (!size || size <= 0) continue;
+  const key = Math.round(size * 2) / 2;
+  fonts.set(key, (fonts.get(key) || 0) + textValue(block.text).length * size * size);
+ }
+ const bodySize = [...fonts].sort((a, b) => b[1] - a[1])[0]?.[0];
+ const firstBody = source.find(block => textValue(block.text).trim().length > 20 &&
+  (!bodySize || numeric(block.fontSize) >= bodySize * .9));
+ return source.map(block => ({
+  ...((translated ? block.translatedBox : block.sourceBox) || block),
+  id: block.id,
+  // A lowercase source at the page's first body block is a carried-over sentence.
+  // Small numbered notes belong to the apparatus, not the body paragraphs.
+  eligible: !(block === firstBody && /^[a-z]/u.test(textValue(block.text).trimStart())) &&
+   !(bodySize && numeric(block.fontSize) < bodySize * .9 && /^\s*\d{1,3}(?!\d)/u.test(textValue(block.text)))
+ }));
+}
+
 function numeric(value) {
  const result = Number(value);
  return Number.isFinite(result) ? result : undefined;
@@ -160,7 +183,7 @@ function explicitGeometry(value) {
  const rect = rectangle(value);
  if (!rect) return null;
  const id = value.id ?? value.paragraphId ?? value.blockId ?? value.groupId ?? value.paragraph;
- return {rect, id};
+ return {rect, id, eligible: value.eligible !== false};
 }
 
 function contains(rect, x, y) {
@@ -234,6 +257,8 @@ function paragraphBreak(previous, line, paragraph) {
  if (gap > Math.max(3, size * .9)) return true;
  if (Math.abs(previous.fontSize - line.fontSize) > Math.max(1.5, size * .2)) return true;
  const xJump = Math.abs(line.x - previous.x);
+ // An indented first line returning to the body margin is still the same paragraph.
+ if (paragraph.lines.length === 1 && previous.x > line.x && xJump <= size * 3) return false;
  if (xJump > Math.max(3, size * 1.35)) return true;
  const indent = Math.abs(line.x - paragraph.firstX);
  return indent > Math.max(3, size * 1.35) && xJump > Math.max(2, size * .5);
@@ -312,12 +337,14 @@ export function topicSentenceRanges(runs, boxes = [], locale = 'en') {
   const match = bestExplicitBox(normalized[index].geometry, explicit);
   if (!match) {unmatched.push(index);continue;}
   let group = groups.get(match.key);
-  if (!group) {group={indices: [], order: index};groups.set(match.key, group);}
+  if (!group) {group={indices: [], order: index, eligible: match.eligible};groups.set(match.key, group);}
   group.indices.push(index);
  }
  for (const indices of fallbackGroups(unmatched, normalized)) groups.set(`fallback:${indices[0]}`, {indices, order: indices[0]});
 
  const ranges = [];
- for (const group of [...groups.values()].sort((a, b) => a.order - b.order)) ranges.push(...rangesForIndices(group.indices, normalized, locale));
+ for (const group of [...groups.values()].sort((a, b) => a.order - b.order)) {
+  if (group.eligible !== false) ranges.push(...rangesForIndices(group.indices, normalized, locale));
+ }
  return ranges.sort((a, b) => a.index - b.index || a.start - b.start);
 }
