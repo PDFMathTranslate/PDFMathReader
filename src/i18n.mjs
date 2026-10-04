@@ -675,6 +675,11 @@ const translationLanguages={
 };
 for(const [locale,languages] of Object.entries(translationLanguages))messages[locale].languages=languages;
 for(const [locale,labels] of Object.entries({
+ en:{outline:'Contents',annotations:'Annotations',source:'Original',translation:'Translation',page:'Page {page}',comment:'Comment',highlight:'Highlight',view:'Sidebar view',resize:'Resize sidebar',expand:'Expand {title}',collapse:'Collapse {title}'},
+ 'zh-CN':{outline:'目录',annotations:'批注',source:'原文',translation:'译文',page:'第 {page} 页',comment:'评论',highlight:'高亮',view:'侧边栏视图',resize:'调整侧边栏宽度',expand:'展开 {title}',collapse:'折叠 {title}'},
+ 'zh-TW':{outline:'目錄',annotations:'批註',source:'原文',translation:'譯文',page:'第 {page} 頁',comment:'評論',highlight:'螢光標示',view:'側邊欄檢視',resize:'調整側邊欄寬度',expand:'展開 {title}',collapse:'摺疊 {title}'}
+}))Object.assign(messages[locale].sidebar,labels);
+for(const [locale,labels] of Object.entries({
  en:{retry:'Retry',checkPage:'Check this page'},
  'zh-CN':{retry:'重试',checkPage:'请检查此页'},
  'zh-TW':{retry:'重試',checkPage:'請檢查此頁'},

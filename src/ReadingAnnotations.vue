@@ -7,7 +7,7 @@ const innerWidth=window.innerWidth,innerHeight=window.innerHeight;
 const popupPlatform=window.previewAppearance?.platform||'web';
 const readerPopup=ref(),editorPopup=ref(),toolbarPopup=ref(),layoutVersion=ref(0);let popupObserver,textObserver,layoutFrame=0;
 function updatePopupLayout(){if(!layoutFrame)layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;layoutVersion.value++;});}
-const props=defineProps({host:Function,page:Object,zoom:Number,annotations:Array,translated:Boolean});
+const props=defineProps({host:Function,page:Object,zoom:Number,annotations:Array,translated:Boolean,selectedAnnotation:String});
 const emit=defineEmits(['change','notice']);
 const popupFromNote=ref(false);
 const assistance=ref(null);let assistController;
@@ -74,6 +74,7 @@ const notePositions=computed(()=>annotationNotePositions(visible.value.filter(a=
 function noteRect(a){const rect=baseNoteRect(a);return {...rect,y:notePositions.value.get(a.id)??rect.y};}
 
 function activate(a){if(!props.annotations.some(b=>b.id===a.id))return;popupFromNote.value=false;toolbar.value=false;selection.value=null;menu.value=null;focused.value=a;opened.value=null;if(a.kind==='highlight'){selection.value=a;toolbar.value=true;touch();}else opened.value=a;}
+watch(()=>props.selectedAnnotation,async id=>{if(!id)return;await nextTick();if(props.selectedAnnotation!==id)return;const a=props.annotations.find(a=>a.id===id&&a.page===props.page.number);if(a)activate(a);else{toolbar.value=false;opened.value=null;focused.value=null;menu.value=null;}},{immediate:true});
 function isNew(a){return a.animateUntil>performance.now();}
 function strokeStyle(a,index){const widths=a.rects.map(r=>Math.max(1,r.width)),total=widths.reduce((sum,w)=>sum+w,0);return {'--stroke-delay':highlightDuration*widths.slice(0,index).reduce((sum,w)=>sum+w,0)/total+'ms','--stroke-duration':highlightDuration*widths[index]/total+'ms'};}
 function position(r){return {left:r.x*props.zoom+'px',top:r.y*props.zoom+'px',width:r.width*props.zoom+'px',height:r.height*props.zoom+'px'};}

@@ -2082,3 +2082,9 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .reference-return-enter-from,.reference-return-leave-to{opacity:0}
 .reference-return-leave-active{pointer-events:none}
 @media(prefers-reduced-motion:reduce){.reference-return-enter-active,.reference-return-leave-active{transition:none}}
+
+.sidebar{position:relative}
+.sidebar-resize-handle{position:absolute;top:var(--toolbar-height);bottom:0;right:0;width:6px;cursor:col-resize;touch-action:none;z-index:5}
+.sidebar-resize-handle:hover,.sidebar-resize-handle:focus-visible{background:color-mix(in srgb,var(--accent) 35%,transparent);outline:none}
+
+.desktop .sidebar.sidebar-resizable{transition:none}
