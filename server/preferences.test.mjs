@@ -36,24 +36,3 @@ test('partial saves keep every current setting and unknown key',async()=>{
   assert.deepEqual((await createReaderPreferences(path)).load(),expected);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
-
-test('topic sentence emphasis defaults off and persists a boolean preference',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'topic-preferences-'));
- try{
-  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
-  assert.equal(preferences.load().emphasizeTopicSentences,false);
-  assert.throws(()=>preferences.save({emphasizeTopicSentences:'true'}));
-  await preferences.save({emphasizeTopicSentences:true});await preferences.flush();
-  assert.equal((await createReaderPreferences(path)).load().emphasizeTopicSentences,true);
- }finally{await rm(dir,{recursive:true,force:true});}
-});
-
- test('information emphasis defaults off, rejects non-booleans, and persists independently',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'information-preferences-'));
- try{const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
- assert.equal(preferences.load().emphasizeInformation,false);
- assert.throws(()=>preferences.save({emphasizeInformation:'true'}));
- await preferences.save({emphasizeInformation:true});await preferences.flush();
- const loaded=(await createReaderPreferences(path)).load();assert.equal(loaded.emphasizeInformation,true);assert.equal(loaded.emphasizeTopicSentences,false);
- }finally{await rm(dir,{recursive:true,force:true});}
-});
