@@ -224,6 +224,17 @@ else {
   });
   ipcMain.handle('previewAnnotations:prepare',async(event,value)=>{const target=trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');const imported=await importPDFAnnotations(value);windows.get(target).unkeyedAnnotationSource={bytes:Buffer.from(value),reliable:false,preserveWithoutPath:true};return {...imported,bytes:new Uint8Array(await embedAnnotations(value,[],imported.nativeRefs))};});
   ipcMain.handle('previewAnnotations:palette',async event=>{trustedWindow(event);return annotations.palette();});
+  ipcMain.handle('previewAnnotations:contextMenu',(event,kind)=>{
+   const target=trustedWindow(event);
+   if(process.platform!=='darwin')return null;
+   if(!['highlight','comment'].includes(kind))throw Error('Invalid annotation kind.');
+   return new Promise(resolve=>{
+    let selected=null;
+    const item=label=>({label,click:()=>{selected=label;}});
+    const template=[item('复制'),item('分享'),item('Hand over to AI'),{type:'separator'},...(kind==='comment'?[item('修改')]:[]),item('删除')];
+    Menu.buildFromTemplate(template).popup({window:target,callback:()=>resolve(selected)});
+   });
+  });
   ipcMain.handle('previewAnnotations:markDeleteHint',async event=>{trustedWindow(event);return annotations.markDeleteHint();});
   ipcMain.handle('previewAnnotations:loadState',async(event,key)=>{trustedWindow(event);return annotations.loadState(key);});
   ipcMain.handle('previewAnnotations:load',async(event,key)=>{const target=trustedWindow(event);return annotations.load(key);});
