@@ -19,6 +19,8 @@ Read scientific documents in any language, with realtime translation, on any pla
 - Resume recent documents with their reading position and display settings restored.
 - Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
 - Configure translation language, concurrency, and kernel-specific options in Settings. Interface language is configured separately.
+- Create saved bidirectional links between a search result and its reading origin, with link buttons available in both original and translated views.
+- Use evenly spaced annotation palettes and synchronized titlebar animations across thumbnail, outline, and annotation sidebars.
 
 ## Recent updates
 
