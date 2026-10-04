@@ -174,6 +174,10 @@ else {
    if(process.platform==='darwin'&&typeof window.webContents.showDefinitionForSelection==='function'){
     template.push({type:'separator'},{label:'Look Up Selection',click:()=>window.webContents.showDefinitionForSelection()});
    }
+   const query=encodeURIComponent(params.selectionText.trim());
+   template.push({type:'separator'},
+    {label:'Search on Google',click:()=>void shell.openExternal(`https://www.google.com/search?q=${query}`)},
+    {label:'Search on Google Scholar',click:()=>void shell.openExternal(`https://scholar.google.com/scholar?q=${query}`)});
    Menu.buildFromTemplate(template).popup({window});
   });
   const ses=window.webContents.session;
