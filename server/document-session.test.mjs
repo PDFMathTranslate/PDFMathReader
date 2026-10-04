@@ -16,3 +16,19 @@ test('session persists multiple documents and positions; closing all restores on
  assert.equal(JSON.parse(await readFile(path)).documents.length,0);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('sidebar tabs persist separately for each document and reject unknown modes',async()=>{
+ const {createRecents}=await import('../electron/recents.mjs');
+ const dir=await mkdtemp(join(tmpdir(),'reader-sidebar-'));
+ try{
+  const path=join(dir,'recents.json'),recents=await createRecents(path);
+  const [a]=await recents.remember('/tmp/a.pdf');
+  const [b]=await recents.remember('/tmp/b.pdf');
+  await recents.setView(a.id,{...view,sidebarMode:'annotations'});
+  await recents.setView(b.id,{...view,sidebarMode:'outline'});
+  const restored=(await createRecents(path)).list();
+  assert.equal(restored.find(item=>item.id===a.id).view.sidebarMode,'annotations');
+  assert.equal(restored.find(item=>item.id===b.id).view.sidebarMode,'outline');
+  await assert.rejects(recents.setView(a.id,{...view,sidebarMode:'invalid'}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

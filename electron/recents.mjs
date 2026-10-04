@@ -14,12 +14,13 @@ function storedThumbnail(thumbnail){try{return validateThumbnail(thumbnail);}cat
 export function validateReadingView(view){
  if(!view||typeof view!=='object'||Array.isArray(view))throw Error('Invalid recent document view.');
  const keys=Reflect.ownKeys(view);
- if(keys.length!==readingViewFields.length||readingViewFields.some(key=>!Object.hasOwn(view,key)))throw Error('Invalid recent document view.');
+ if(keys.length!==readingViewFields.length+(Object.hasOwn(view,'sidebarMode')?1:0)||readingViewFields.some(key=>!Object.hasOwn(view,key)))throw Error('Invalid recent document view.');
  if(!Number.isInteger(view.page)||view.page<1||view.page>1000000)throw Error('Invalid recent document view.');
  if(!Number.isFinite(view.offsetX)||view.offsetX<-16||view.offsetX>16||!Number.isFinite(view.offsetY)||view.offsetY<-16||view.offsetY>16)throw Error('Invalid recent document view.');
  if(!Number.isFinite(view.zoom)||view.zoom<.1||view.zoom>4)throw Error('Invalid recent document view.');
  if(!['width','height','manual'].includes(view.fit)||!['vertical','horizontal'].includes(view.direction)||![1,2,4].includes(view.columns)||typeof view.sidebar!=='boolean'||typeof view.showTranslations!=='boolean')throw Error('Invalid recent document view.');
- return {page:view.page,offsetX:view.offsetX,offsetY:view.offsetY,zoom:view.zoom,fit:view.fit,direction:view.direction,columns:view.columns,sidebar:view.sidebar,showTranslations:view.showTranslations};
+ if(Object.hasOwn(view,'sidebarMode')&&!['thumbnails','outline','annotations'].includes(view.sidebarMode))throw Error('Invalid recent document sidebar mode.');
+ return {...(Object.hasOwn(view,'sidebarMode')?{sidebarMode:view.sidebarMode}:{}),page:view.page,offsetX:view.offsetX,offsetY:view.offsetY,zoom:view.zoom,fit:view.fit,direction:view.direction,columns:view.columns,sidebar:view.sidebar,showTranslations:view.showTranslations};
 }
 function storedReadingView(view){try{return validateReadingView(view);}catch{return undefined;}}
 function cloneReadingView(view){return view===undefined?undefined:{...view};}
