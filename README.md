@@ -24,13 +24,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date | Feature | Contributor |
 | --- | --- | --- |
+| 2026-10-04 | [add reading annotations and accelerate reader startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/b3ab7d4572dc17b53d67268545b2f9366a694bcb) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [add custom menu and left-side traffic lights](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [ship runnable CI packages and improve reader layout motion](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Speed up CI with dependency, Electron and icon caches](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Improve Windows controls and add page-fit shortcuts](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Add Windows PDF context menu and Open with entry](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [Improve paragraph grouping, previews and document animations](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [Add Intel Mac, 32-bit Windows and Linux ARMv7 builds](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
