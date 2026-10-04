@@ -61,6 +61,19 @@ test('kernel cache-only lookup misses without starting a worker or creating a jo
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
+test('Fast CJK layout upgrade rejects PDFs typeset with the prior schema',async()=>{
+ const {createHash}=await import('node:crypto');
+ const root=await mkdtemp(join(tmpdir(),'kernel-layout-upgrade-')),cacheDir=join(root,'math'),bytes=Buffer.from('%PDF prior layout fixture');
+ try{
+  await mkdir(cacheDir,{recursive:true});
+  const key=createHash('sha256').update(bytes).update(JSON.stringify({id:'pdf_math_fast',version:'1.0.0',page:1,language:'Simplified Chinese',model:'fixture',prompt:2,layoutSchema:4})).digest('hex');
+  await writeFile(join(cacheDir,key+'.pdf'),'%PDF obsolete typesetting');await writeFile(join(cacheDir,key+'.layout.json'),JSON.stringify({paragraphs:[]}));
+  const engines=createEngines({root,cacheDir,findUvImpl:async()=>({available:true}),execImpl:async()=>({stdout:'1.0.0'})});
+  assert.equal(await engines.translate({id:'pdf_math_fast',bytes,page:1,language:'Simplified Chinese',model:'fixture',cacheOnly:true,reuseTranslations:true}),null);
+  engines.close();
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('a page filled while waiting reuses its cache instead of starting another worker',async()=>{
  const {createHash}=await import('node:crypto');
  const {readdir}=await import('node:fs/promises');
