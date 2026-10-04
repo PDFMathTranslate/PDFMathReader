@@ -357,3 +357,15 @@
 .app[data-platform="darwin"] .sidebar .thumbnail-list .thumb canvas{
  border-radius:10px;corner-shape:squircle;
 }
+
+/* Use the same nested continuous corners on the macOS start-page cards. */
+.app[data-platform="darwin"] .recent-document{
+ border-radius:18px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .recent-document :is(img,.recent-placeholder){
+ border-radius:10px;corner-shape:squircle;
+}
+.app[data-platform="darwin"] .recent-placeholder{overflow:hidden}
+.app[data-platform="darwin"] :is(.recent-heading>.macvue-button,.empty>.primary,.empty>.sample-button){
+ border-radius:12px;corner-shape:squircle;
+}

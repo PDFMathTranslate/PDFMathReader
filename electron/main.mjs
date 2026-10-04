@@ -37,6 +37,15 @@ const recentContextMenuLabels={
  ja:{open:'開く',hide:'非表示',copy:'ファイルの場所をコピー',reveal:'Finder で表示',status:'翻訳状況を表示'},
  ko:{open:'열기',hide:'가리기',copy:'파일 위치 복사',reveal:'Finder에서 보기',status:'번역 상태 보기'},
 };
+const recentExtraLabels={
+ en:{pin:'Pin',unpin:'Unpin',clearCache:'Clear Translation Cache'},
+ 'zh-CN':{pin:'置顶',unpin:'取消置顶',clearCache:'清除翻译缓存'},
+ 'zh-TW':{pin:'置頂',unpin:'取消置頂',clearCache:'清除翻譯快取'},
+ ja:{pin:'ピン留め',unpin:'ピン留め解除',clearCache:'翻訳キャッシュを削除'},
+ ko:{pin:'고정',unpin:'고정 해제',clearCache:'번역 캐시 지우기'},
+ fr:{pin:'Épingler',unpin:'Désépingler',clearCache:'Effacer le cache de traduction'},
+ es:{pin:'Fijar',unpin:'Desfijar',clearCache:'Borrar caché de traducción'}
+};
 const recentContextMenuLabelsFor=locale=>recentContextMenuLabels[locale]||recentContextMenuLabels.en;
 const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
 const pendingFiles=[];
@@ -368,17 +377,20 @@ else {
    if(action==='contextMenu'){
     const id=value,path=typeof id==='string'?recents.path(id):undefined;
     if(typeof id!=='string'||!id||typeof path!=='string'||!path)throw Error('Document no longer in history.');
-    const labels=recentContextMenuLabelsFor(preferences?.load?.().uiLanguage);
+    const locale=preferences?.load?.().uiLanguage,labels={...recentContextMenuLabelsFor(locale),...(recentExtraLabels[locale]||recentExtraLabels.en)},entry=recents.list().find(item=>item.id===id);
     return new Promise((resolve,reject)=>{
      let selected=null,pending=Promise.resolve();
      const template=[
       {label:labels.open,click:()=>{selected='open';}},
+      {label:entry?.pinned?labels.unpin:labels.pin,click:()=>{pending=recents.setPinned(id,!entry?.pinned).then(()=>{selected='pin';});}},
       {label:labels.hide,click:()=>{pending=recents.remove(id).then(()=>{selected='hide';});}},
       {type:'separator'},
       {label:labels.copy,click:()=>{pending=Promise.resolve().then(()=>clipboard.writeText(path));}},
       {label:labels.reveal,click:()=>{pending=Promise.resolve().then(()=>shell.showItemInFolder(path));}},
       {type:'separator'},
       {label:labels.status,click:()=>{selected='status';}},
+      {type:'separator'},
+      {label:labels.clearCache,click:()=>{pending=(async()=>{const document=await readSystemPDF(path);const response=await fetch(windows.get(window).backend.origin+'/api/translation-cache/clear',{method:'POST',headers:{'Content-Type':'application/pdf','X-Preview-Token':token},body:document.bytes});if(!response.ok)throw Error('Could not clear translation cache.');await recents.clearTranslationStatus(id);selected='clearCache';})();}},
      ];
      try{Menu.buildFromTemplate(template).popup({window,callback:()=>{pending.then(()=>resolve(selected),reject);}});}catch(error){reject(error);}
     });
@@ -389,7 +401,7 @@ else {
    if(action==='setThumbnail')return recents.setThumbnail(value?.id,value?.thumbnail);
    if(action==='setView')return recents.setView(value?.id,value?.view);
    if(action==='setTranslationStatus')return recents.setTranslationStatus(value?.id,value?.status);
-   const state=windows.get(window),path=value?.ticket?state.tickets.get(value.ticket):value?.path;if(!path){await documentSession.close(window.id);if(!state.unkeyedAnnotationSource?.preserveWithoutPath){state.unkeyedAnnotationSource=null;state.annotationSources.clear();}return {entries:recents.list(),recentId:null};}if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split(/[\\/]/).pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)state.tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries[0],source={path,reliable:true,preserveWithoutPath:false};state.annotationSources.set(first.id,source);state.unkeyedAnnotationSource=source;const restored=state.restoreView;state.restoreView=null;await documentSession.open(window.id,{path,view:restored||first?.view});return {entries,recentId:first?.id??null,view:restored||first?.view};
+   const state=windows.get(window),path=value?.ticket?state.tickets.get(value.ticket):value?.path;if(!path){await documentSession.close(window.id);if(!state.unkeyedAnnotationSource?.preserveWithoutPath){state.unkeyedAnnotationSource=null;state.annotationSources.clear();}return {entries:recents.list(),recentId:null};}if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split(/[\\/]/).pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)state.tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries.find(item=>recents.path(item.id)===path),source={path,reliable:true,preserveWithoutPath:false};state.annotationSources.set(first.id,source);state.unkeyedAnnotationSource=source;const restored=state.restoreView;state.restoreView=null;await documentSession.open(window.id,{path,view:restored||first?.view});return {entries,recentId:first?.id??null,view:restored||first?.view};
   });
   ipcMain.handle('documents:open',async(event,value)=>{const target=trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await openDocumentWindow(value.path,target);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await openDocumentWindow({name:value.name,bytes:value.bytes},target);}return true;});
   ipcMain.handle('window:new',async event=>{trustedWindow(event);await createWindow();});

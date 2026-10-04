@@ -134,3 +134,19 @@ test('cache false bypasses the persistent text cache without replacing it',async
   assert.equal(calls,2);
  }finally{await rm(directory,{recursive:true,force:true});}
 });
+
+test('document cache invalidation bypasses shared text results without changing another document',async()=>{
+ const {createDocumentCache}=await import('./document-cache.mjs');
+ const {createHash}=await import('node:crypto');
+ const directory=await mkdtemp(join(tmpdir(),'translation-document-scope-'));
+ let calls=0;
+ try{
+  const cache=createDocumentCache(directory),a=createHash('sha256').update('PDF A'),b=createHash('sha256').update('PDF B');
+  const client=createTranslationProvider(async()=>{calls++;return openAIResponse('translated');},{cacheDirectory:join(directory,'text')});
+  const provider={id:'openai',model:'gpt-4.1-mini',key:'test'};
+  const complete=async hash=>content(await client.complete(provider,body(),signal(),{cacheScope:await cache.scope(hash)}));
+  await complete(a);await complete(b);assert.equal(calls,1);
+  await cache.clear(a);await complete(a);assert.equal(calls,2);
+  await complete(b);assert.equal(calls,2);
+ }finally{await rm(directory,{recursive:true,force:true});}
+});

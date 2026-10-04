@@ -50,13 +50,14 @@ export function createTranslationProvider(providerFetch,{cacheDirectory}={}){
    return new Response(JSON.stringify({model:provider.model,choices:[{index:0,message:{role:'assistant',content},finish_reason:'stop'}]}),{headers:{'Content-Type':'application/json'}});
   }
  }
- async function complete(provider,body,signal,{cache=true}={}){
+ async function complete(provider,body,signal,{cache=true,cacheScope=''}={}){
   signal.throwIfAborted();
   if(!cacheDirectory||!cache)return request(provider,body,signal);
   // Include all output-affecting request options; never include document IDs,
   // proxy tokens or provider credentials. Stream responses are buffered upstream.
-  const key=createHash('sha256').update(JSON.stringify(stable({version:1,service:provider.id,model:provider.model,body:requestBody(provider,body)}))).digest('hex');
-  const directory=resolve(cacheDirectory),path=join(directory,key+'.json');
+  const key=createHash('sha256').update(JSON.stringify(stable({version:1,...cacheScope?{cacheScope}:{},service:provider.id,model:provider.model,body:requestBody(provider,body)}))).digest('hex');
+  const [documentHash,generation]=cacheScope.split(':');
+  const directory=cacheScope?join(resolve(cacheDirectory),'..','documents',documentHash,'text',generation):resolve(cacheDirectory),path=join(directory,key+'.json');
   try{const data=JSON.parse(await readFile(path,'utf8'));if(validTranslation(data))return Response.json(data);}catch{}
   signal.throwIfAborted();
   let pending=pendingTranslations.get(path);

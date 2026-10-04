@@ -108,7 +108,7 @@ async function recentContextMenu(id){
  try{
   const action=await window.previewRecents?.contextMenu(id);
   if(action==='open')await openRecent(id);
-  else if(action==='hide'){++recentPreviewGeneration;recentDocuments.value=await window.previewRecents.list();scheduleRecentPreviews();}
+  else if(['hide','pin','clearCache'].includes(action)){++recentPreviewGeneration;recentDocuments.value=await window.previewRecents.list();scheduleRecentPreviews();}
   else if(action==='status'){recentDocuments.value=await window.previewRecents.list();recentStatusDocument.value=recentDocuments.value.find(entry=>entry.id===id)||null;}
  }catch{error.value=t('error.thisPDFUnavailable');}
 }
@@ -358,8 +358,9 @@ let zoomRequest=null,zoomAnimation=null,zoomRenderTimer=0,zoomRenderGeneration=0
 function captureZoomAnchor(){
  const el=reader.value,host=pageEls.get(active.value);if(!el||!host)return null;
  const bounds=el.getBoundingClientRect(),rect=host.getBoundingClientRect();
- const point={x:Math.min(rect.right,Math.max(rect.left,bounds.left+bounds.width/2)),y:Math.min(rect.bottom,Math.max(rect.top,bounds.top+bounds.height/2))};
- return {page:active.value,x:(point.x-rect.left)/Math.max(1,rect.width),y:(point.y-rect.top)/Math.max(1,rect.height),clientX:point.x,clientY:point.y};
+ // Manual zoom keeps the active page's top at its current screen position.
+ const point={x:Math.min(rect.right,Math.max(rect.left,bounds.left+bounds.width/2)),y:rect.top};
+ return {page:active.value,x:(point.x-rect.left)/Math.max(1,rect.width),y:0,clientX:point.x,clientY:point.y};
 }
 function restoreZoomAnchor(anchor){
  const el=reader.value,host=anchor&&pageEls.get(anchor.page);if(!el||!host)return;
@@ -381,7 +382,7 @@ async function applyRequestedZoom(request){
  const generation=++zoomMotionGeneration;finishZoomAnimation();await nextTick();if(generation!==zoomMotionGeneration)return;
  restoreZoomAnchor(request.anchor);startZoomAnimation(request);zoomTargetPending=true;scheduleZoomRender();
 }
-function requestZoom(value,{animate=true,anchor=animate?captureZoomAnchor():null}={}){
+function requestZoom(value,{animate=true,anchor=captureZoomAnchor()}={}){
  const target=clampZoom(value);if(Math.abs(target-zoom.value)<.00001)return false;
  if(!zoomRequest)zoomRequest={from:zoom.value,anchor,animate};else {zoomRequest.to=target;zoomRequest.animate=zoomRequest.animate&&animate;}
  zoomTargetPending=true;zoom.value=target;return true;
@@ -705,7 +706,7 @@ async function processPage(p,manual=false){if(!p||p.status==='detecting')return;
  if(token!==epoch)return;p.status='ready';if(!manual&&!scopePages().has(p.number))return;
  for(const b of p.blocks)if(!b.translation&&!['queued','translating'].includes(b.status)){b.status='queued';queue.push({block:b,token,language:language.value,sourceLanguage:sourceLanguage.value,page:p.number,manual});}pruneTranslationQueue();pump();}
 function pump(){if(!foreground.value&&translationMode.value!=='full')return;while(running<Number(concurrency.value)&&queue.length){const job=queue.shift();if(job.token!==epoch)continue;running++;translate(job).finally(()=>{running--;if(job.token===epoch&&engineState.value?.available)schedulePages();else pump();});}}
-async function translate({block:b,token,language:target,sourceLanguage:source,page,manual}){b.status='translating';b.error='';try{const data=await api('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},translationJob:{page,manual},body:JSON.stringify({text:b.text,language:target,sourceLanguage:source,reuseTranslations:reuseTranslations.value,concurrency:concurrency.value})});if(token!==epoch)return;b.translation=data.translation;b.cached=data.cached===true;b.translationModel=data.model||'';b.status='ready';const owner=pages.value[page-1];if(owner){owner.cached=owner.blocks.length>0&&owner.blocks.every(block=>block.translation&&block.cached===true);owner.translationModel=owner.blocks.map(block=>block.translationModel).filter(Boolean).at(-1)||'';}}catch(e){if(token===epoch){b.status=e.name==='AbortError'?'idle':'error';b.error=e.name==='AbortError'?'':e.message;}}}
+async function translate({block:b,token,language:target,sourceLanguage:source,page,manual}){b.status='translating';b.error='';try{const data=await api('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},translationJob:{page,manual},body:JSON.stringify({documentId,text:b.text,language:target,sourceLanguage:source,reuseTranslations:reuseTranslations.value,concurrency:concurrency.value})});if(token!==epoch)return;b.translation=data.translation;b.cached=data.cached===true;b.translationModel=data.model||'';b.status='ready';const owner=pages.value[page-1];if(owner){owner.cached=owner.blocks.length>0&&owner.blocks.every(block=>block.translation&&block.cached===true);owner.translationModel=owner.blocks.map(block=>block.translationModel).filter(Boolean).at(-1)||'';}}catch(e){if(token===epoch){b.status=e.name==='AbortError'?'idle':'error';b.error=e.name==='AbortError'?'':e.message;}}}
 let pageJumping=false,pageJumpGeneration=0,pageScrollMotion=null;
 function cancelPageScroll(){pageScrollMotion?.();pageScrollMotion=null;}
 function interruptPageScroll(){

@@ -58,7 +58,7 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
  return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
 }
 
-export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='development',pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
+export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,appVersion='development',pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
  const runExec=execImpl;
  let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map(),advancedBackground=new Map(),advancedFailures=new Map();
  const envPath=id=>join(root,id);const python=id=>kernelPythonPath(envPath(id));
@@ -163,7 +163,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='de
   finally{if(advancedMetadata.get(cacheKey)===task)advancedMetadata.delete(cacheKey);}
  }
 
- async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,onPageTiming}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,cacheScope='',onPageTiming}){
   const emitTiming=report=>{onTiming?.(report);onPageTiming?.(report);};
   const started=performance.now(),stages={};let checkpoint=started;
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
@@ -174,12 +174,14 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='de
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
   step('environmentAndOptions');
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,layoutSchema:id==='pdf_math_fast'?4:3,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const [scopeHash,scopeGeneration]=cacheScope.split(':');const cacheDir=cacheScope?join(baseCacheDir,'..','documents',scopeHash,'math',scopeGeneration):baseCacheDir;
+  const layoutKey=key=>cacheScope?`${scopeHash}-${scopeGeneration}-${key}`:key;
+  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,...cacheScope?{cacheScope}:{},layoutSchema:id==='pdf_math_fast'?4:3,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
   const key=keyFor(model);
   const cache=createTranslationCache({directory:cacheDir,keyFor,readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
   const cached=join(cacheDir,`${key}.pdf`);
   const hit=await cache.lookup(model,{reuseTranslations});
-  if(hit){const result=hit.result;result.layoutKey=hit.key;result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}
+  if(hit){const result=hit.result;result.layoutKey=layoutKey(hit.key);result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}
   step('cacheLookup');
   await mkdir(root,{recursive:true});
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
@@ -203,9 +205,9 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='de
    const names=await readdir(dir);const output=names.find(n=>/mono.*\.pdf$/i.test(n)||/\.mono\.pdf$/i.test(n));if(!output)throw Error('Kernel did not produce a translated PDF');
    const raw=await readFile(join(dir,output));await onOutput?.(raw,id);const document=await PDFDocument.load(raw);const index=document.getPageCount()===1?0:page-1;if(index>=document.getPageCount())throw Error('Kernel returned an unexpected page count');
    const one=await PDFDocument.create();const [selected]=await one.copyPages(document,[index]);one.addPage(selected);const result=Buffer.from(await one.save());const metadata=JSON.parse(await readFile(join(dir,'layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Kernel returned invalid layout');
-   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);await cache.remember(model,key).catch(()=>{});result.layoutKey=key;result.cached=false;result.translationModel=model;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
+   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);await cache.remember(model,key).catch(()=>{});result.layoutKey=layoutKey(key);result.cached=false;result.translationModel=model;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
   }finally{await rm(dir,{recursive:true,force:true});}
  }
 
- return {layout:async key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(cacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
+ return {layout:async key=>{const scoped=key.match(/^([a-f0-9]{64})-([a-f0-9-]{36})-([a-f0-9]{64})$/);if(scoped)return JSON.parse(await readFile(join(baseCacheDir,'..','documents',scoped[1],'math',scoped[2],scoped[3]+'.layout.json'),'utf8'));if(!/^[a-f0-9]{64}$/.test(key))throw Error('Invalid layout key');return JSON.parse(await readFile(join(baseCacheDir,key+'.layout.json'),'utf8'));},startup:async()=>({uv:uv=await findUvImpl(),engines:await Promise.all(Object.keys(definitions).map(check))}),check,install,advanced,translate,close(){for(const child of children){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill();}}}};
 }

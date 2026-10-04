@@ -2,6 +2,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {dirname,basename} from 'node:path';
 import {randomUUID} from 'node:crypto';
 const maxThumbnailLength=200000;
+const maxUnpinnedRecents=10;
 const pngDataURL=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 const readingViewFields=['page','offsetX','offsetY','zoom','fit','direction','columns','sidebar','showTranslations'];
 const translationStatusFields=['totalPages','completedPages','partialPages','failedPages','engine','language','updatedAt'];
@@ -34,15 +35,20 @@ export function validateTranslationStatus(status){
 }
 function storedTranslationStatus(status){try{return validateTranslationStatus(status);}catch{return undefined;}}
 function cloneTranslationStatus(status){return status===undefined?undefined:{...status};}
+function normalizeEntries(entries){
+ const pinned=[],unpinned=[];
+ for(const entry of entries)(entry.pinned?pinned:unpinned).push(entry);
+ return [...pinned,...unpinned.slice(0,maxUnpinnedRecents)];
+}
 function listedEntry(entry){
- const result={id:entry.id,name:basename(entry.path),thumbnail:entry.thumbnail};
+ const result={id:entry.id,name:basename(entry.path),thumbnail:entry.thumbnail,pinned:entry.pinned===true};
  if(entry.view!==undefined)result.view=cloneReadingView(entry.view);
  if(entry.translationStatus!==undefined)result.translationStatus=cloneTranslationStatus(entry.translationStatus);
  return result;
 }
 export async function createRecents(path){
- let entries=[];try{entries=JSON.parse(await readFile(path,'utf8')).filter(e=>typeof e.id==='string'&&typeof e.path==='string').slice(0,10).map(e=>{const entry={id:e.id,path:e.path},thumbnail=storedThumbnail(e.thumbnail),view=storedReadingView(e.view),translationStatus=storedTranslationStatus(e.translationStatus);if(thumbnail!==undefined)entry.thumbnail=thumbnail;if(view!==undefined)entry.view=view;if(translationStatus!==undefined)entry.translationStatus=translationStatus;return entry;});}catch{}
+ let entries=[];try{const stored=JSON.parse(await readFile(path,'utf8'));entries=normalizeEntries((Array.isArray(stored)?stored:[]).filter(e=>e&&typeof e.id==='string'&&typeof e.path==='string').map(e=>{const entry={id:e.id,path:e.path,pinned:e.pinned===true},thumbnail=storedThumbnail(e.thumbnail),view=storedReadingView(e.view),translationStatus=storedTranslationStatus(e.translationStatus);if(thumbnail!==undefined)entry.thumbnail=thumbnail;if(view!==undefined)entry.view=view;if(translationStatus!==undefined)entry.translationStatus=translationStatus;return entry;}));}catch{}
  let writes=Promise.resolve();
  function persist(){const data=JSON.stringify(entries);writes=writes.catch(()=>{}).then(async()=>{await mkdir(dirname(path),{recursive:true});await writeFile(path+'.tmp',data);await rename(path+'.tmp',path);});return writes;}
- return {list:()=>entries.map(listedEntry),path:id=>entries.find(e=>e.id===id)?.path,async remember(file,thumbnail){const current=entries.find(e=>e.path===file),entry={id:current?.id||randomUUID(),path:file};if(thumbnail===undefined){if(current?.thumbnail!==undefined)entry.thumbnail=current.thumbnail;}else entry.thumbnail=validateThumbnail(thumbnail);if(current?.view!==undefined)entry.view=cloneReadingView(current.view);if(current?.translationStatus!==undefined)entry.translationStatus=cloneTranslationStatus(current.translationStatus);entries=[entry,...entries.filter(e=>e.path!==file)].slice(0,10);await persist();return this.list();},async setThumbnail(id,thumbnail){const entry=entries.find(e=>e.id===id);if(!entry)throw Error('Document no longer in history.');entry.thumbnail=validateThumbnail(thumbnail);await persist();return this.list();},async setView(id,view){const validated=validateReadingView(view),entry=entries.find(e=>e.id===id);if(!entry)return this.list();entry.view=validated;await persist();return this.list();},async setTranslationStatus(id,status){const validated=validateTranslationStatus(status),entry=entries.find(e=>e.id===id);if(!entry)return this.list();entry.translationStatus=validated;await persist();return this.list();},async remove(id){const index=entries.findIndex(e=>e.id===id);if(index<0)throw Error('Document no longer in history.');entries.splice(index,1);await persist();return this.list();},async clear(){entries=[];await persist();return [];},flush:()=>writes};
+ return {list:()=>entries.map(listedEntry),path:id=>entries.find(e=>e.id===id)?.path,async remember(file,thumbnail){const current=entries.find(e=>e.path===file),entry={id:current?.id||randomUUID(),path:file,pinned:current?.pinned===true};if(thumbnail===undefined){if(current?.thumbnail!==undefined)entry.thumbnail=current.thumbnail;}else entry.thumbnail=validateThumbnail(thumbnail);if(current?.view!==undefined)entry.view=cloneReadingView(current.view);if(current?.translationStatus!==undefined)entry.translationStatus=cloneTranslationStatus(current.translationStatus);entries=normalizeEntries([entry,...entries.filter(e=>e.path!==file)]);await persist();return this.list();},async setThumbnail(id,thumbnail){const entry=entries.find(e=>e.id===id);if(!entry)throw Error('Document no longer in history.');entry.thumbnail=validateThumbnail(thumbnail);await persist();return this.list();},async setView(id,view){const validated=validateReadingView(view),entry=entries.find(e=>e.id===id);if(!entry)return this.list();entry.view=validated;await persist();return this.list();},async setTranslationStatus(id,status){const validated=validateTranslationStatus(status),entry=entries.find(e=>e.id===id);if(!entry)return this.list();entry.translationStatus=validated;await persist();return this.list();},async clearTranslationStatus(id){const entry=entries.find(e=>e.id===id);if(!entry)return this.list();delete entry.translationStatus;await persist();return this.list();},async setPinned(id,pinned){if(typeof pinned!=='boolean')throw Error('Invalid recent document pinned state.');const entry=entries.find(e=>e.id===id);if(!entry)return this.list();entry.pinned=pinned;entries=normalizeEntries(entries);await persist();return this.list();},async remove(id){const index=entries.findIndex(e=>e.id===id);if(index<0)throw Error('Document no longer in history.');entries.splice(index,1);await persist();return this.list();},async clear(){entries=entries.filter(entry=>entry.pinned);await persist();return this.list();},flush:()=>writes};
 }
