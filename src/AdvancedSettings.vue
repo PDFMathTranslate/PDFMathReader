@@ -125,9 +125,16 @@ watch(schemaKey,async()=>{
  busy.value=true;
  const controller=new AbortController();requestController=controller;
  try{
-  const response=await fetch('/api/engines/'+props.engine+'/advanced',{signal:controller.signal});
-  const result=await response.json();
-  if(!response.ok)throw Error(result.error||'Advanced options unavailable.');
+  let result;
+  do{
+   const response=await fetch('/api/engines/'+props.engine+'/advanced',{signal:controller.signal});
+   result=await response.json();
+   if(!response.ok)throw Error(result.error||'Advanced options unavailable.');
+   if(result.pending)await new Promise(resolve=>{
+    const done=()=>{clearTimeout(timer);controller.signal.removeEventListener('abort',done);resolve();};
+    const timer=setTimeout(done,500);controller.signal.addEventListener('abort',done,{once:true});
+   });
+  }while(result.pending&&token===generation&&!controller.signal.aborted);
   if(token===generation){
    options.value=normalizeSchema(result.options);
    if(!result.reason){

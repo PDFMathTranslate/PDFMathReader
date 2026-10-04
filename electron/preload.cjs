@@ -15,11 +15,25 @@ contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
 
 contextBridge.exposeInMainWorld('previewDocuments',Object.freeze({
  next:()=>ipcRenderer.invoke('documents:next'),
+ closed:()=>ipcRenderer.invoke('documents:closed'),
+ saveView:view=>ipcRenderer.invoke('documents:view',view),
  open:async file=>{const path=webUtils.getPathForFile(file);return ipcRenderer.invoke('documents:open',path?{path}:{name:file.name,bytes:new Uint8Array(await file.arrayBuffer())});},
  onAvailable:callback=>{const listener=()=>callback();ipcRenderer.on('documents:available',listener);return ()=>ipcRenderer.removeListener('documents:available',listener);}
 }));
 
 contextBridge.exposeInMainWorld('previewTestMode',process.argv.includes('--preview-test-mode'));
+
+contextBridge.exposeInMainWorld('previewAnnotations',Object.freeze({
+ palette:()=>ipcRenderer.invoke('previewAnnotations:palette'),
+ markDeleteHint:()=>ipcRenderer.invoke('previewAnnotations:markDeleteHint'),
+ prepare:bytes=>ipcRenderer.invoke('previewAnnotations:prepare',bytes),
+ loadState:key=>ipcRenderer.invoke('previewAnnotations:loadState',key),
+ load:key=>ipcRenderer.invoke('previewAnnotations:load',key),
+ save:value=>ipcRenderer.invoke('previewAnnotations:save',value),
+ clean:bytes=>ipcRenderer.invoke('previewAnnotations:clean',bytes),
+ handover:text=>ipcRenderer.invoke('previewAnnotations:handover',text),
+ share:text=>ipcRenderer.invoke('previewAnnotations:share',text)
+}));
 
 contextBridge.exposeInMainWorld('previewActions',Object.freeze({onAction:callback=>{const listener=(_event,action)=>callback(action);ipcRenderer.on('reader:action',listener);return ()=>ipcRenderer.removeListener('reader:action',listener);}}));
 

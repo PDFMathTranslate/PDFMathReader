@@ -33,6 +33,19 @@ export async function verifyFluent(window) {
  assert.equal(startup.platform,'win32','fluent smoke must run with the Windows preload platform override');
  assert.equal(startup.buttonRegistered,true,'Fluent button custom element is not registered');
  assert.equal(startup.buttonTag,'FLUENT-BUTTON');
+ if(process.env.PDF_READER_CACHE_ONLY==='1'){
+  window.show();window.focus();
+  await evaluate(`document.querySelector('fluent-button[aria-label="Translation settings"]').click()`);
+  await wait('native Fluent cache switch',`!!document.querySelector('fluent-switch[aria-labelledby="reuse-translations-label"]')`);
+  assert.equal(await evaluate(`document.querySelector('fluent-switch[aria-labelledby="reuse-translations-label"]').checked`),true);
+  for(const checked of [false,true]){
+   await evaluate(`(()=>{const control=document.querySelector('fluent-switch[aria-labelledby="reuse-translations-label"]');control.checked=${checked};control.dispatchEvent(new Event('change',{bubbles:true,composed:true}));})()`);
+   await wait('cache preference persistence',`(async()=> (await window.previewPreferences.load()).reuseTranslations===${checked})()`);
+  }
+  console.log('Windows cache settings passed: Fluent switch rendered, default enabled, both preference changes saved.');window.close();return;
+ }
+
+
  await wait('Windows custom menu',`!!document.querySelector('.windows-menu-trigger')&&typeof window.previewWindow.menu==='function'`);
  await evaluate(`document.querySelector('.windows-menu-trigger').click();true`);
  await wait('custom menu opened',`document.querySelectorAll('.windows-menu-panel [role="menuitem"]').length>2`);

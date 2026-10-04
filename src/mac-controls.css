@@ -275,3 +275,41 @@
 .desktop[data-platform="win32"] .windows-menu-cascade :is(.windows-menu-item,.windows-menu-separator) {flex:none}
 .desktop[data-platform="win32"] .windows-menu-cascade .windows-menu-item {width:auto;min-width:0;align-self:stretch}
 .desktop[data-platform="win32"] .windows-menu-item.submenu-open {background:var(--accent-soft)}
+
+/* Settings layout; control appearance comes from MacVue. */
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) {
+ width:min(560px,calc(100vw - 28px));padding:20px;font-size:13px;
+ background:var(--chrome-solid);
+}
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-heading {margin-bottom:12px}
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-section {
+ padding:14px 12px;margin-bottom:16px;gap:12px;border-radius:12px;background:rgba(120,120,128,.055);
+}
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-section:last-child {margin-bottom:0}
+.app:not([data-platform="win32"]) .settings .setting-row {min-height:32px;gap:12px}
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-section> :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting)+ :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting) {padding-top:10px}
+.app:not([data-platform="win32"]) .settings :is(.translation-service-account,.translation-service-option) {
+ display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;align-items:center;
+}
+.app:not([data-platform="win32"]) .settings .translation-service-option>label {margin:0}
+.app:not([data-platform="win32"]) .settings .api-key-row .key-clear {height:24px;width:24px;flex-basis:24px;padding:3px}
+.app:not([data-platform="win32"]) .settings .parallel-settings {gap:10px;padding-top:10px}
+.app:not([data-platform="win32"]) .settings .parallel-setting {
+ display:grid;grid-template-columns:140px minmax(0,1fr);gap:4px 16px;align-items:center;
+}
+.app:not([data-platform="win32"]) .settings .parallel-setting+.parallel-setting {padding-top:10px}
+.app:not([data-platform="win32"]) .settings .parallel-setting>span {grid-column:1;grid-row:1 / 4;align-self:start;padding-top:3px}
+.app:not([data-platform="win32"]) .settings .parallel-setting> :is(.macvue-slider,.parallel-ticks,.parallel-levels) {grid-column:2}
+.app:not([data-platform="win32"]) .settings .parallel-levels {font-size:11px;height:16px}
+.app:not([data-platform="win32"]) .settings .parallel-ticks {margin-top:0}
+@media(max-width:420px) {
+ .app:not([data-platform="win32"]) .settings :is(.translation-service-account,.translation-service-option,.parallel-setting) {grid-template-columns:1fr;gap:6px}
+ .app:not([data-platform="win32"]) .settings .parallel-setting>span {grid-row:auto;padding:0}
+ .app:not([data-platform="win32"]) .settings .parallel-setting> :is(.macvue-slider,.parallel-ticks,.parallel-levels) {grid-column:1}
+}
+
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) {background:#fff}
+[data-appearance="dark"] .app:not([data-platform="win32"]) .settings:not(.paragraph-detail) {background:var(--chrome-solid)}
+.app:not([data-platform="win32"]) .settings:not(.paragraph-detail) .settings-section>.advanced-settings {
+ margin:0;padding:10px 0;border-radius:0;background:transparent;border-inline:0;
+}

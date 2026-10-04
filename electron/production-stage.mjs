@@ -4,8 +4,8 @@ import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
 import {hasNativeInspector} from '../server/pdf-extractor.mjs';
-const runtimeElectron=['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
-const runtimeServer=['index.mjs','documents.mjs','engines.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','pdf-extractor.mjs','performance.mjs'];
+const runtimeElectron=['main.mjs','annotations.mjs','annotation-import.mjs','document-session.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
+const runtimeServer=['index.mjs','translation-cache.mjs','reading-assist.mjs','translation-provider.mjs','documents.mjs','engines.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','pdf-extractor.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
  try{path=dirname(require.resolve(name+'/package.json'));}catch{
@@ -43,7 +43,7 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  await cp(join(root,'electron/kernel-worker.py'),join(stage,'electron/kernel-worker.py'));
  await cp(join(root,'electron/kernel-options.py'),join(stage,'electron/kernel-options.py'));
  if(test)for(const file of await readdir(join(root,'electron')))if(file==='smoke.mjs'||file.endsWith('-smoke.mjs'))await cp(join(root,'electron',file),join(stage,'electron',file));
- const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['express','@firecrawl/pdf-inspector'];
+ const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['@firecrawl/pdf-inspector'];
  if(test&&!names.includes('pdf-lib'))names.push('pdf-lib');
  const fallback=!hasNativeInspector(platform,arch);
  if(fallback&&!names.includes('pdfjs-dist'))names.push('pdfjs-dist');
@@ -58,14 +58,14 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
   for(const directory of ['dist','es','src','ts3.4','apps'])await rm(join(stage,'node_modules/pdf-lib',directory),{recursive:true,force:true});
  }
  if(phase==='bundle'){
-  const common={bundle:true,platform:'node',format:'esm',target:'node22',minify:true,sourcemap:false,legalComments:'eof',mainFields:['module','main'],external:['electron','express','@firecrawl/pdf-inspector','@firecrawl/pdf-inspector/*','pdfjs-dist/*','vite']};
-  await build({...common,entryPoints:[join(root,'server/index.mjs')],outfile:join(stage,'server/index.mjs'),metafile:true}).then(async result=>{
-   // Preserve licenses for dependencies incorporated into the backend bundle.
+  const preserveBundleLicenses=async result=>{
    const packages=new Set();for(const path of Object.keys(result.metafile.inputs)){const match=path.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/);if(match)packages.add(match[1]);}
    for(const name of packages){const source=await packageDirectory(name,root);const target=join(stage,'licenses',name);await mkdir(target,{recursive:true});for(const file of await readdir(source))if(/^(licen[sc]e|copying|notice)(\.|$)/i.test(file))await cp(join(source,file),join(target,file));}
-  });
+  };
+  const common={bundle:true,metafile:true,banner:{js:"import {createRequire as __createRequire} from 'node:module';const require=__createRequire(import.meta.url);"},platform:'node',format:'esm',target:'node22',minify:true,sourcemap:false,legalComments:'eof',mainFields:['module','main'],external:['electron','@firecrawl/pdf-inspector','@firecrawl/pdf-inspector/*','pdfjs-dist/*','vite']};
+  await build({...common,entryPoints:[join(root,'server/index.mjs')],outfile:join(stage,'server/index.mjs'),metafile:true}).then(preserveBundleLicenses);
   // Smoke imports remain external so the same production bundle can be exercised in a test-only package.
-  await build({...common,entryPoints:[join(root,'electron/main.mjs')],outfile:join(stage,'electron/main.mjs'),plugins:[{name:'smoke-modules',setup(build){build.onResolve({filter:/\.\/(?:smoke|.*-smoke)\.mjs$/},args=>({path:args.path,external:true}));}}]});
+  await build({...common,entryPoints:[join(root,'electron/main.mjs')],outfile:join(stage,'electron/main.mjs'),plugins:[{name:'smoke-modules',setup(build){build.onResolve({filter:/\.\/(?:smoke|.*-smoke)\.mjs$/},args=>({path:args.path,external:true}));}}]}).then(preserveBundleLicenses);
   const {rm}=await import('node:fs/promises');for(const file of runtimeElectron)if(!test&&!['main.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','preload.cjs'].includes(file))await rm(join(stage,'electron',file));
   for(const file of runtimeServer)if(file!=='index.mjs')await rm(join(stage,'server',file));
  }

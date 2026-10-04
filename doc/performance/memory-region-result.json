@@ -1,0 +1,22 @@
+{
+  "before": {
+    "displayed": 12800000,
+    "temporary": 12800000,
+    "pixel": [
+      18,
+      52,
+      86,
+      255
+    ]
+  },
+  "after": {
+    "displayed": 12800000,
+    "temporary": 0,
+    "pixel": [
+      18,
+      52,
+      86,
+      255
+    ]
+  }
+}

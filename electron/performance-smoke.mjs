@@ -159,10 +159,12 @@ export async function verifyPerformance(window){
 
  async function assertBackgroundPause(){
   await pause(300);
-  const before=await diagnostics();
-  const snapshot={cache:before.cache,metrics:before.metrics,window:before.window,pages:before.pages,thumbnails:before.thumbnails,residentBytes:before.residentBytes};
   window.minimize();
   await waitFor('background render pause',`window.previewRenderDiagnostics?.().foreground===false`,10_000);
+  // macOS can animate minimization before sending the inactive event.
+  // Compare only work after the renderer has acknowledged the pause.
+  const before=await diagnostics();
+  const snapshot={cache:before.cache,metrics:before.metrics,window:before.window,pages:before.pages,thumbnails:before.thumbnails,residentBytes:before.residentBytes};
   await pause(200);
   const paused=await diagnostics();
   assert.equal(paused.foreground,false,'minimized window should report foreground false');
@@ -177,6 +179,43 @@ export async function verifyPerformance(window){
   await waitFor('foreground render restore',`window.previewRenderDiagnostics?.().foreground===true`,10_000);
   await waitFor('restored page pixels',`(()=>{const canvas=document.querySelector('.page canvas');return !!canvas&&canvas.width>0&&canvas.height>0;})()`,20_000);
   await assertBlackCenter(1,'foreground restore');
+ }
+
+ async function assertContinuousStressPreview(destinationPage,percent){
+  const selector=`.page[data-page="${destinationPage}"] canvas`,holdKey='__pdfMathReaderPerformanceSmokeScrollHold',started=Date.now();
+  const before=await diagnostics();
+  assert.ok(!before.pages.includes(destinationPage),`1000-page scroll destination ${destinationPage} should start without a resident canvas`);
+  await evaluate(`(()=>{const reader=document.querySelector('.reader'),key=${JSON.stringify(holdKey)};if(!reader)throw Error('reader is unavailable');const previous=window[key];if(previous?.handle)clearInterval(previous.handle);const tick=()=>{if(reader.isConnected)reader.dispatchEvent(new Event('scroll',{bubbles:true}));};tick();window[key]={handle:setInterval(tick,40)};return true;})()`);
+  let preview;
+  let previewDpr;
+  let previewBytes;
+  let deviceDpr;
+  try{
+   window.webContents.send('reader:action',`percent:${percent}`);
+   await waitFor(`1000-page scrolling preview destination ${destinationPage}`,`(()=>{const d=window.previewRenderDiagnostics?.(),canvas=document.querySelector(${JSON.stringify(selector)});return d?.previewScrolling===true&&d.pages?.includes(${destinationPage})&&!!canvas&&canvas.width>0&&canvas.height>0;})()`,STRESS_WAIT_MS);
+   preview=await diagnostics();
+   const canvas=await evaluate(`(()=>{const canvas=document.querySelector(${JSON.stringify(selector)});return {width:canvas?.width||0,height:canvas?.height||0,deviceDpr:window.devicePixelRatio||1};})()`);
+   deviceDpr=canvas.deviceDpr;previewDpr=preview.pageResolution?.find(item=>item.number===destinationPage)?.dpr||0;previewBytes=canvas.width*canvas.height*4;
+   assert.equal(preview.previewScrolling,true,'1000-page destination rendered after scrolling settled');
+   assert.ok(preview.pages.includes(destinationPage),`1000-page destination ${destinationPage} is not resident during scrolling`);
+   assert.ok(previewDpr>0&&previewDpr<=1,`1000-page scrolling destination DPR was ${previewDpr}`);
+   assert.ok(previewBytes<=4*MEGABYTE,`1000-page scrolling destination uses ${previewBytes} bytes`);
+   assertLimits(preview,'1000-page scrolling preview');
+   assertResidentWindow(preview,'1000-page scrolling preview');
+   await assertBlackCenter(destinationPage,'1000-page scrolling preview');
+   console.log('Performance smoke 1000-page scrolling preview:',JSON.stringify({destinationPage,elapsedMs:Date.now()-started,deviceDpr,previewDpr,previewBytes}));
+  }finally{
+   await evaluate(`(()=>{const key=${JSON.stringify(holdKey)},hold=window[key];if(hold?.handle)clearInterval(hold.handle);delete window[key];return true;})()`);
+  }
+  await waitFor(`1000-page settled destination ${destinationPage}`,`(()=>{const d=window.previewRenderDiagnostics?.(),canvas=document.querySelector(${JSON.stringify(selector)}),entry=d?.pageResolution?.find(item=>item.number===${destinationPage});return d?.previewScrolling===false&&d.pages?.includes(${destinationPage})&&!!canvas&&canvas.width>0&&canvas.height>0&&(${deviceDpr<=1}||entry?.dpr>${previewDpr});})()`,STRESS_WAIT_MS);
+  const settled=await diagnostics(),settledDpr=settled.pageResolution?.find(item=>item.number===destinationPage)?.dpr||0;
+  assert.equal(settled.previewScrolling,false,'1000-page preview did not resume after scroll hold');
+  assert.ok(settledDpr>=previewDpr,`settled destination DPR ${settledDpr} was below preview DPR ${previewDpr}`);
+  if(deviceDpr>1)assert.ok(settledDpr>previewDpr,`settled destination DPR ${settledDpr} did not increase from preview DPR ${previewDpr}`);
+  assertLimits(settled,'1000-page settled preview');
+  assertResidentWindow(settled,'1000-page settled preview');
+  await assertBlackCenter(destinationPage,'1000-page settled preview');
+  console.log('Performance smoke 1000-page settled preview:',JSON.stringify({destinationPage,elapsedMs:Date.now()-started,deviceDpr,previewDpr,settledDpr,previewBytes}));
  }
 
  console.log(`Performance smoke: generating ${PAGE_COUNT}-page variable portrait / landscape fixture`);
@@ -277,6 +316,7 @@ export async function verifyPerformance(window){
  console.log('Performance smoke 1000-page baseline:',JSON.stringify({totalPages:stressInitial.totalPages,mountedPages:stressInitial.mountedPages,mountedThumbnails:stressInitial.mountedThumbnails,window:stressInitial.window.length,pageDOM:stressInitial.mountedPages,thumbnailDOM:stressInitial.mountedThumbnails,cache:stressInitial.cache,documents:statsValues(stressStats),metrics:stressInitial.metrics}));
  await selectLayout('vertical');
  await selectColumns(1);
+ await assertContinuousStressPreview(Math.ceil(STRESS_PAGE_COUNT/2),50);
  await jump(100,STRESS_PAGE_COUNT);
  const stressTail=await waitForRowWindow('vertical',1,'1000-page final row',STRESS_PAGE_COUNT);
  assertResidentWindow(stressTail,'1000-page final row');

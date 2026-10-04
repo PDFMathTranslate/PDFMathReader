@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import {createCredentials} from './credentials.mjs';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 export async function verify(window,backend,token,mode,credentials){
+ if(mode==='annotations')return (await import('./annotations-smoke.mjs')).verifyAnnotations(window);
  const headers={'X-Preview-Token':token};
  const backendMetric=app.getAppMetrics().find(metric=>metric.pid===backend.processId&&metric.type==='Utility'&&metric.name==='PDFMathReader backend');
  if(!backendMetric)console.log('Backend metrics',JSON.stringify(app.getAppMetrics().map(({pid,type,serviceName,name})=>({pid,type,serviceName,name}))),backend.processId);

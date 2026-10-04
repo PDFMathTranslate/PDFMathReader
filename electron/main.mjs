@@ -1,5 +1,8 @@
-import {app,BrowserWindow,dialog,Menu,ipcMain,shell,clipboard,safeStorage,systemPreferences,nativeTheme} from 'electron';
+import {app,BrowserWindow,dialog,Menu,ShareMenu,ipcMain,shell,clipboard,safeStorage,systemPreferences,nativeTheme} from 'electron';
 import {randomBytes} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+const runFile=promisify(execFile);
 import {join} from 'node:path';
 import {mkdtempSync} from 'node:fs';
 import {tmpdir,release} from 'node:os';
@@ -11,6 +14,7 @@ if(smoke){
 }
 import {startBackendService} from './backend-service.mjs';
 import {createCredentials} from './credentials.mjs';
+import {createDocumentSession} from './document-session.mjs';
 import {createRecents} from './recents.mjs';
 import {createReaderPreferences} from './preferences.mjs';
 import {fileURLToPath} from 'node:url';
@@ -21,6 +25,8 @@ import {createHaptics} from './haptics.mjs';
 import {registerWindowsPDF} from './windows-file-association.mjs';
 import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction,serializeApplicationMenu,menuPathItems} from './window-chrome.mjs';
 import {appendPerformanceReport,loadPerformanceReports,memoryMetricToBytes,MAX_PERFORMANCE_REPORTS,sumMemoryMetrics,validatePerformanceReport,writePerformanceReports} from './performance-tracker.mjs';
+import {importPDFAnnotations} from './annotation-import.mjs';
+import {createAnnotationStore,stripManagedAnnotations,embedAnnotations} from './annotations.mjs';
 
 const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
 const pendingFiles=[];
@@ -31,9 +37,9 @@ app.setName(smoke?'PDFMathReader Tests':'PDFMathReader');if(!smoke)app.setPath('
 if(!smoke||smoke==='file-open')enqueueFiles(pdfLaunchPaths(process.argv.slice(1),process.cwd()));if(process.platform==='darwin'&&['resize','file-open'].includes(smoke))app.setActivationPolicy('prohibited');
 if(!app.requestSingleInstanceLock())app.quit();
 else {
- let backend,window,credentials,preferences,recents;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
+ let backend,window,credentials,preferences,recents,annotations,documentSession;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
  const WINDOW_LOCAL_PREFERENCES=['engine','direction','columns','fit','zoom','translationMode'];
- const SETTINGS_PREFERENCES=['interactionMode','language','sourceLanguage','concurrency','pageConcurrency','automatic','layoutVisible','autoHideHeader','uiLanguage','kernelAdvancedOptions'];
+ const SETTINGS_PREFERENCES=['restoreDocuments','interactionMode','language','sourceLanguage','concurrency','pageConcurrency','automatic','layoutVisible','autoHideHeader','uiLanguage','kernelAdvancedOptions'];
  const APPEARANCE_PREFERENCES=['appearance','accentColor','reduceMotion','reduceTransparency','reducePadding'];
  const preferenceSnapshot=state=>Object.fromEntries(APPEARANCE_PREFERENCES.map(key=>[key,state?.[key]]));
  const samePreferences=(left,right)=>APPEARANCE_PREFERENCES.every(key=>left[key]===right[key]);
@@ -59,6 +65,12 @@ else {
  };
  const backgroundRenderSmoke=['resize','file-open'].includes(smoke)||(process.platform==='win32'&&['fit-width','windows-settings'].includes(smoke));
  const focusedWindow=()=>BrowserWindow.getFocusedWindow()||[...windows.keys()].at(-1);
+ const annotationSourceForDocument=document=>{
+  if(typeof document==='string')return {path:document,reliable:true,preserveWithoutPath:false};
+  if(document?.bytes instanceof Uint8Array)return {bytes:Buffer.from(document.bytes),reliable:false,preserveWithoutPath:true};
+  return null;
+ };
+ const annotationSourceForWindow=(state,key)=>state?.annotationSources?.get(key)||state?.unkeyedAnnotationSource;
  const trustedWindow=event=>{const target=BrowserWindow.fromWebContents(event.sender),state=windows.get(target);if(!state||event.senderFrame!==target.webContents.mainFrame||new URL(event.senderFrame.url).origin!==state.backend.origin)throw Error('Window request rejected.');return target;};
  const normalizeMenuPath=value=>{
   const path=Array.isArray(value)?value:typeof value==='string'?[value]:null;
@@ -130,18 +142,18 @@ else {
   if(!target)return createWindow(document);
   const state=windows.get(target);
   // Reserve before notifying the renderer so simultaneous opens get separate windows.
-  state.documents.push(document);state.performance.hasDocument=true;
+  state.documents.push(document);state.unkeyedAnnotationSource=annotationSourceForDocument(document);state.performance.hasDocument=true;
   target.webContents.send('documents:available');
   if(target.isMinimized())target.restore();
   if(!backgroundRenderSmoke){target.show();target.focus();}
   return target;
  }
- async function createWindow(document){
+ async function createWindow(document,restoreView){
   let window;
   const backend=await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
   window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:'PDFMathReader',icon:fileURLToPath(new URL('./AppIcon.png',import.meta.url)),...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:true,additionalArguments:[...(process.platform==='win32'&&windowsBuild>=22621?['--preview-windows-glass']:[]),...(smoke?['--preview-test-mode']:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   hideNativeMenuBar(window);
-  windows.set(window,{backend,documents:document?[document]:[],tickets:new Map(),preferences:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
+  windows.set(window,{backend,restoreView,documents:document?[document]:[],tickets:new Map(),annotationSources:new Map(),unkeyedAnnotationSource:annotationSourceForDocument(document),preferences:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
   const fullscreenChanged=()=>{if(!window||window.isDestroyed())return;const full=window.isFullScreen();updateWindowButtons(window);window.webContents.send('window:fullscreen',full);};
   const activityChanged=()=>{if(!window||window.isDestroyed())return;window.webContents.send('activity:changed',windowActive(window));updatePerformanceSampling(window);};
   let resizing=false;
@@ -172,7 +184,7 @@ else {
   window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==backend.origin)event.preventDefault();});
   window.once('ready-to-show',()=>{hideNativeMenuBar(window);if(!backgroundRenderSmoke){if(process.argv.includes('--background'))window.showInactive();else window.show();}updatePerformanceSampling(window);});
   window.on('focus',()=>{updateAppearance();updateMenu(window);});
-  let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;windows.get(window).closing=true;void saveWindowReadingView(window).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
+  let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;windows.get(window).closing=true;void saveWindowReadingView(window).then(()=>documentSession.close(window.id)).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
   window.on('closed',()=>{stopPerformanceSampling(window);windows.get(window)?.performance.peaks.clear();windows.delete(window);const closing=backend.close();closingBackends.add(closing);void closing.finally(()=>closingBackends.delete(closing));if(!windows.size)app.quit();});
   await window.loadURL(backend.origin);
   activityChanged();return window;
@@ -192,9 +204,9 @@ else {
    {id:'go-menu',label:'Go',submenu:[command('Previous Page',undefined,'page-previous','go-previous'),command('Next Page',undefined,'page-next','go-next'),{type:'separator'},...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`,`go-percent-${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100','go-percent-100')]},
    {id:'translation-menu',label:'Translation',submenu:[command('Choose Language…',accelerator('L'),'language','translation-language'),command('Choose Kernel…',accelerator('K'),'kernel','translation-kernel')]},...(process.platform==='win32'?[]:[{id:'window-menu',role:'windowMenu'}])];const locale=preferences?.load?.().uiLanguage||'en';const localize=items=>items.map(item=>({...item,...item.label?{label:menuLabel(item.label,locale)}:{},...Array.isArray(item.submenu)?{submenu:localize(item.submenu)}:{}}));const localized=localize(template),actions=new Map(),indexActions=items=>{for(const item of items){if(item.id&&typeof item.click==='function')actions.set(item.id,item.click);if(Array.isArray(item.submenu))indexActions(item.submenu);}};indexActions(localized);menuActions=actions;applicationMenu=Menu.buildFromTemplate(localized);Menu.setApplicationMenu(['win32','linux'].includes(process.platform)?null:applicationMenu);if(['win32','linux'].includes(process.platform))for(const target of windows.keys())hideNativeMenuBar(target);};rebuildMenu();
   const credentialOptions={path:join(app.getPath('userData'),'openai-key.enc'),safeStorage};
-  if(['present','kernels','ux','animation','coverage','search','advanced'].includes(smoke))credentialOptions.environment=()=> 'local-smoke-placeholder';
+  if(['present','kernels','ux','animation','coverage','search','advanced','advanced-cache'].includes(smoke))credentialOptions.environment=()=> 'local-smoke-placeholder';
   const credentialStore=await createCredentials(credentialOptions);
-  backendOptions={port:0,development:false,pythonResourcesPath:process.resourcesPath,cacheDir:join(app.getPath('userData'),'translations'),token,smoke,diagnostics:!!smoke,credentials:{getKey:credentialStore.getKey,status:credentialStore.status},onCrash:handleBackendFailure,...(['kernels','animation','layout-region','advanced'].includes(smoke)?{enginesRoot:join(app.getPath('appData'),'PDFMathReader','engines'),runtimeHomeRoot:join(tmpdir(),'preview-kernel-test-homes')}: {})};
+  backendOptions={port:0,development:false,appVersion:app.getVersion(),pythonResourcesPath:process.resourcesPath,cacheDir:join(app.getPath('userData'),'translations'),token,smoke,diagnostics:!!smoke,credentials:{getKey:credentialStore.getKey,status:credentialStore.status},onCrash:handleBackendFailure,...(['kernels','animation','layout-region','advanced','advanced-cache'].includes(smoke)?{enginesRoot:join(app.getPath('appData'),'PDFMathReader','engines'),runtimeHomeRoot:join(tmpdir(),'preview-kernel-test-homes')}: {})};
   credentials={
    getKey:credentialStore.getKey,
    status:credentialStore.status,
@@ -203,8 +215,34 @@ else {
   };
   ipcMain.handle('documents:next',async event=>{
    const window=trustedWindow(event);
-   const state=windows.get(window),path=state.documents.shift();if(!path)return null;if(typeof path!=='string')return path;
-   try{const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);return {...document,ticket};}catch{state.performance.hasDocument=false;return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
+   const state=windows.get(window),path=state.documents.shift();if(!path)return null;if(typeof path!=='string'){state.unkeyedAnnotationSource=annotationSourceForDocument(path);return path;}
+   try{const document=await readSystemPDF(path),source={path,reliable:true,preserveWithoutPath:false,bytes:Buffer.from(document.bytes)};state.unkeyedAnnotationSource=source;state.annotationSources.set(path,source);const ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,path);return {...document,ticket};}catch{state.performance.hasDocument=false;return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
+  });
+  ipcMain.handle('previewAnnotations:prepare',async(event,value)=>{const target=trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');const imported=await importPDFAnnotations(value);windows.get(target).unkeyedAnnotationSource={bytes:Buffer.from(value),reliable:false,preserveWithoutPath:true};return {...imported,bytes:new Uint8Array(await embedAnnotations(value,[],imported.nativeRefs))};});
+  ipcMain.handle('previewAnnotations:palette',async event=>{trustedWindow(event);return annotations.palette();});
+  ipcMain.handle('previewAnnotations:markDeleteHint',async event=>{trustedWindow(event);return annotations.markDeleteHint();});
+  ipcMain.handle('previewAnnotations:loadState',async(event,key)=>{trustedWindow(event);return annotations.loadState(key);});
+  ipcMain.handle('previewAnnotations:load',async(event,key)=>{const target=trustedWindow(event);return annotations.load(key);});
+  ipcMain.handle('previewAnnotations:save',async(event,value)=>{const target=trustedWindow(event),state=windows.get(target);return annotations.save(value,annotationSourceForWindow(state,value?.key));});
+  ipcMain.handle('previewAnnotations:clean',async(event,value)=>{trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');return new Uint8Array(await stripManagedAnnotations(value));});
+  ipcMain.handle('previewAnnotations:share',async(event,text)=>{const target=trustedWindow(event);if(process.platform!=='darwin')return false;if(typeof text!=='string'||!text.trim()||text.length>1000000)throw Error('Invalid share text.');new ShareMenu({texts:[text]}).popup({window:target});return true;});
+  ipcMain.handle('previewAnnotations:handover',async(event,text)=>{
+   const target=trustedWindow(event);
+   if(typeof text!=='string'||!text.trim()||text.length>1000000)throw Error('Invalid handover text.');
+   if(process.platform!=='darwin')throw Error('本机 AI 客户端交接目前仅支持 macOS。');
+   const client=await new Promise(resolve=>{
+    let selected=null;
+    const menu=Menu.buildFromTemplate(['ChatGPT','Claude'].map(label=>({label,click:()=>{selected=label;}})));
+    menu.popup({window:target,callback:()=>resolve(selected)});
+   });
+   if(!client)return {cancelled:true};
+   // Resolve the installed app before modifying the clipboard. Never submit automatically.
+   try{await runFile('/usr/bin/open',['-Ra',client],{timeout:10000});}
+   catch{throw Error(`未找到本机 ${client} 客户端，请先安装。`);}
+   clipboard.writeText(text);
+   try{await runFile('/usr/bin/open',['-a',client],{timeout:10000});}
+   catch{throw Error(`内容已复制，但无法打开 ${client} 客户端。`);}
+   return {client};
   });
   ipcMain.handle('clipboard:write-text',async(event,text)=>{trustedWindow(event);if(typeof text!=='string'||text.length>1000000)throw Error('Invalid clipboard text');await clipboard.writeText(text);return true;});
   ipcMain.handle('window:menu',event=>{const target=trustedWindow(event);updateMenu(target);return serializeApplicationMenu(applicationMenu);});
@@ -282,26 +320,31 @@ else {
    if(window===focusedWindow())updateMenu(window);
    return write;
   });
+  documentSession=await createDocumentSession(join(app.getPath('userData'),'document-session.json'));
+  ipcMain.handle('documents:closed',event=>documentSession.close(trustedWindow(event).id));
+  ipcMain.handle('documents:view',async(event,view)=>{const target=trustedWindow(event);await documentSession.update(target.id,view);return true;});
   recents=await createRecents(join(app.getPath('userData'),'recent-documents.json'));
+  annotations=await createAnnotationStore(join(app.getPath('userData'),'annotations'));
   performanceReports=await loadPerformanceReports(join(app.getPath('userData'),'performance.json'));
   for(const action of ['list','open','openWindow','remember','clear','preview','setThumbnail','setView'])ipcMain.handle('recents:'+action,async(event,value)=>{
    const window=trustedWindow(event);
    if(action==='list')return recents.list();if(action==='clear'){app.clearRecentDocuments();return recents.clear();}
-   if(action==='openWindow'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);await openDocumentWindow(path,window);return true;}
-   if(action==='open'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path);const ticket=randomBytes(16).toString('hex');windows.get(window).tickets.set(ticket,path);const recent=recents.list().find(entry=>entry.id===value);return {...document,ticket,recentId:value,view:recent?.view};}
+   if(action==='openWindow'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);const state=windows.get(window),source={path,reliable:true,preserveWithoutPath:false};state.annotationSources.set(value,source);state.unkeyedAnnotationSource=source;await openDocumentWindow(path,window);return true;}
+   if(action==='open'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path),state=windows.get(window),source={path,reliable:true,preserveWithoutPath:false,bytes:Buffer.from(document.bytes)};state.annotationSources.set(value,source);state.unkeyedAnnotationSource=source;const ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,path);const recent=recents.list().find(entry=>entry.id===value);return {...document,ticket,recentId:value,view:recent?.view};}
    if(action==='preview'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path);return {bytes:document.bytes};}
    if(action==='setThumbnail')return recents.setThumbnail(value?.id,value?.thumbnail);
    if(action==='setView')return recents.setView(value?.id,value?.view);
-   const path=value?.ticket?windows.get(window).tickets.get(value.ticket):value?.path;if(!path)return {entries:recents.list(),recentId:null};if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split(/[\\/]/).pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)windows.get(window).tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries[0];return {entries,recentId:first?.id??null,view:first?.view};
+   const state=windows.get(window),path=value?.ticket?state.tickets.get(value.ticket):value?.path;if(!path){await documentSession.close(window.id);if(!state.unkeyedAnnotationSource?.preserveWithoutPath){state.unkeyedAnnotationSource=null;state.annotationSources.clear();}return {entries:recents.list(),recentId:null};}if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split(/[\\/]/).pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)state.tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries[0],source={path,reliable:true,preserveWithoutPath:false};state.annotationSources.set(first.id,source);state.unkeyedAnnotationSource=source;const restored=state.restoreView;state.restoreView=null;await documentSession.open(window.id,{path,view:restored||first?.view});return {entries,recentId:first?.id??null,view:restored||first?.view};
   });
   ipcMain.handle('documents:open',async(event,value)=>{const target=trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await openDocumentWindow(value.path,target);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await openDocumentWindow({name:value.name,bytes:value.bytes},target);}return true;});
   ipcMain.handle('window:new',async event=>{trustedWindow(event);await createWindow();});
-  window=await createWindow(pendingFiles.shift());backend=windows.get(window).backend;documentsReady=true;await deliverPendingFiles();
-  if(smoke){const checks=await import('./smoke.mjs');if(smoke==='layout-settings')await (await import('./layout-settings-smoke.mjs')).verifyLayoutSettings(window);else if(smoke==='windows-settings')await (await import('./windows-settings-smoke.mjs')).verifyWindowsSettings(window);else if(smoke==='locales')await (await import('./locales-smoke.mjs')).verifyLocales(window);else if(smoke==='advanced')await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);else if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
+  if(!smoke&&preferences.load().restoreDocuments){for(const document of documentSession.restore()){try{await validateSystemPDF(document.path);}catch{continue;}if(!pendingFiles.includes(document.path))await createWindow(document.path,document.view);}}
+  window=[...windows.keys()][0]||await createWindow(pendingFiles.shift());backend=windows.get(window).backend;documentsReady=true;await deliverPendingFiles();
+  if(smoke){const checks=await import('./smoke.mjs');if(smoke==='advanced-cache')await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);else if(smoke==='startup')await (await import('./startup-smoke.mjs')).verifyStartup(window);else if(smoke==='session')await (await import('./session-smoke.mjs')).verifySession(window,windows,createWindow);else if(smoke==='layout-settings')await (await import('./layout-settings-smoke.mjs')).verifyLayoutSettings(window);else if(smoke==='windows-settings')await (await import('./windows-settings-smoke.mjs')).verifyWindowsSettings(window);else if(smoke==='locales')await (await import('./locales-smoke.mjs')).verifyLocales(window);else if(smoke==='advanced')await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);else if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(smoke==='annotations')await (await import('./annotations-smoke.mjs')).verifyAnnotations(window,recents);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
  }).catch(async error=>{if(smoke){await backend?.close();console.error('Desktop smoke failed:',error.stack||error.message);if(smoke==='file-open')await writeFile('/tmp/preview-system-open-result.json',JSON.stringify({passed:false,error:error.message}));app.exit(1);return;}dialog.showErrorBox('PDFMathReader',`The local reader could not start.\n\n${error?.message||'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`);app.quit();});
  app.on('before-quit',event=>{
   if(!backend || quitting)return;
   event.preventDefault();quitting=true;
-  void Promise.allSettled([...windows.keys()].map(saveWindowReadingView)).finally(()=>Promise.allSettled([...windows.values()].map(state=>state.backend.close()).concat([...closingBackends,preferences?.flush(),recents?.flush()])).finally(()=>app.quit()));
+  void Promise.allSettled([...windows.keys()].map(saveWindowReadingView)).finally(()=>Promise.allSettled([...windows.values()].map(state=>state.backend.close()).concat([...closingBackends,preferences?.flush(),recents?.flush(),documentSession?.flush()])).finally(()=>app.quit()));
  });
 }

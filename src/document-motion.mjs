@@ -29,10 +29,10 @@ export function captureDocumentPage(page){
 export async function animateDocumentPage(capture,from,to,{opening=false,thumbnail,signal}={}){
  if(!capture||signal?.aborted)return;
  const {element,rect}=capture;
- const windowsApp=document.querySelector('.app[data-platform="win32"]');
+ const app=document.querySelector('.app');
  // Keep the snapshot inside the app's isolated stacking context, below its toolbar (5).
- if(windowsApp)element.style.zIndex='4';
- (windowsApp||document.body).append(element);
+ element.style.zIndex='4';
+ (app||document.body).append(element);
  let animation;
  try{
   animation=element.animate([

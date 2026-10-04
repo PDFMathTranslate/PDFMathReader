@@ -3,4 +3,5 @@ import App from './App.vue';
 import './style.css';
 import '@macvue/core/style.css';
 import './mac-controls.css';
+import './continuous-corners.css';
 createApp(App).mount('#app');

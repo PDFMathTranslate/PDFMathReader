@@ -31,7 +31,21 @@ export async function verifyFitWidth(window,recents){
    const height=await evaluate(`(()=>{const d=window.previewRenderDiagnostics(),r=document.querySelector('.reader'),s=getComputedStyle(r),p=document.querySelector('.page[data-page="'+d.readingView.page+'"]');return {fit:d.readingView.fit,height:p.getBoundingClientRect().height,available:r.clientHeight-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom)};})()`);
    assert.equal(height.fit,'height');assert.ok(Math.abs(height.height-height.available)<2,'Fit Height fills the available viewport '+JSON.stringify(height));
   }
+  await window.webContents.debugger.attach('1.3');
+  await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+  for(const mode of ['height','width']){
+   await evaluate(`window.fitMotionSamples=[];window.fitMotionTimer=setInterval(()=>{const a=document.getAnimations().find(a=>a.effect?.target?.closest('[aria-hidden="true"]')&&a.effect.getTiming().duration===300);if(a)window.fitMotionSamples.push({time:a.currentTime,transform:getComputedStyle(a.effect.target).transform});},10);true`);
+   await chooseFit(mode==='height'?'Fit Height':'Fit Width');
+   const samples=await evaluate(`clearInterval(window.fitMotionTimer);window.fitMotionSamples`);
+   assert.ok(samples.length>2,'Fit '+mode+' must animate');
+   assert.ok(new Set(samples.map(s=>s.transform)).size>2,'Fit '+mode+' must visibly interpolate');
+   assert.equal(await evaluate(`!!document.querySelector('.layout-transitioning')`),false,'Fit motion cleans up');
+  }
+  await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await chooseFit('Fit Height');
+  assert.equal(await evaluate(`document.getAnimations().some(a=>a.effect?.target?.closest('[aria-hidden="true"]')&&a.effect.getTiming().duration===300)`),false);
   await chooseFit('Fit Width');
+  window.webContents.debugger.detach();
   const state=()=>evaluate(`(()=>{const d=window.previewRenderDiagnostics(),r=document.querySelector('.reader'),s=getComputedStyle(r),p=document.querySelector('.page[data-page="'+d.readingView.page+'"]');return {view:d.readingView,width:p.getBoundingClientRect().width,left:p.getBoundingClientRect().left-(r.getBoundingClientRect().left+parseFloat(s.paddingLeft)),available:r.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)};})()`);
   const wide=await state();assert.equal(wide.view.page,1);assert.ok(Math.abs(wide.width-wide.available)<2);
   // Scroll into the narrower page with a known page-relative reading anchor.

@@ -9,9 +9,9 @@ const KERNEL_OPTION_NAME=/^[a-z][a-z0-9_]*$/;
 const PROTOTYPE_NAMES=new Set([...Object.getOwnPropertyNames(Object.prototype),'prototype']);
 const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- interactionMode:'comparison',
+ interactionMode:'comparison',restoreDocuments:true,reuseTranslations:true,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',sourceLanguage:'English',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,
  kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'en'
 });
 const KNOWN_KEYS=Object.freeze(Object.keys(DEFAULT_PREFERENCES));
@@ -48,6 +48,8 @@ function cloneKernelAdvancedOptions(value){
 function clonePreferences(value){return {...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};}
 
 const VALIDATORS={
+ restoreDocuments:value=>typeof value==='boolean',
+ reuseTranslations:value=>typeof value==='boolean',
  engine:value=>['pdf_inspector','pdf_math_fast','pdf_math_precise'].includes(value),
  direction:value=>['vertical','horizontal'].includes(value),
  columns:value=>[1,2,4].includes(value),
@@ -71,6 +73,8 @@ const VALIDATORS={
  uiLanguage:value=>['en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value)
 };
 const VALIDATION_MESSAGES={
+ restoreDocuments:'Invalid document restoration preference',
+ reuseTranslations:'Invalid translation reuse preference',
  translationMode:'Invalid translation mode',interactionMode:'Invalid interaction mode',direction:'Invalid layout direction',columns:'Invalid layout columns',
  engine:'Invalid translation kernel',appearance:'Invalid appearance',accentColor:'Invalid accent color',
  reduceMotion:'Invalid reduce motion preference',reduceTransparency:'Invalid reduce transparency preference',reducePadding:'Invalid reduce padding preference',

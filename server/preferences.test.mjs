@@ -7,9 +7,9 @@ import {createReaderPreferences} from '../electron/preferences.mjs';
 
 const DEFAULT_PREFERENCES={
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- interactionMode:'comparison',
+ interactionMode:'comparison',restoreDocuments:true,reuseTranslations:true,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',sourceLanguage:'English',concurrency:4,pageConcurrency:2,automatic:true,layoutVisible:false,
+ language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,
  kernelAdvancedOptions:{},
  autoHideHeader:true,uiLanguage:'en'
 };
@@ -236,4 +236,20 @@ test('all seven interface languages survive save and reopen',async()=>{
   const preferences=await createReaderPreferences(path);await preferences.save({uiLanguage});
   assert.equal((await createReaderPreferences(path)).load().uiLanguage,uiLanguage);
  }}finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('startup restoration defaults on and persists an explicit opt-out',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'reader-preferences-'));try{
+ const path=join(dir,'prefs.json'),prefs=await createReaderPreferences(path);assert.equal(prefs.load().restoreDocuments,true);
+ await prefs.save({restoreDocuments:false});assert.equal((await createReaderPreferences(path)).load().restoreDocuments,false);
+ assert.throws(()=>prefs.save({restoreDocuments:'false'}));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('translation reuse defaults on and persists an explicit opt-out',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'reader-preferences-'));try{
+ const path=join(dir,'prefs.json'),prefs=await createReaderPreferences(path);assert.equal(prefs.load().reuseTranslations,true);
+ await prefs.save({reuseTranslations:false});assert.equal((await createReaderPreferences(path)).load().reuseTranslations,false);
+ assert.throws(()=>prefs.save({reuseTranslations:'false'}),/Invalid translation reuse preference/);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });

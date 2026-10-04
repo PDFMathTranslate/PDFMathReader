@@ -29,7 +29,7 @@ test('backend fallback headers survive cache and failure, with independent launc
  const backend=await startServer(options);let session;
  try{
   session=(await (await fetch(backend.origin+'/api/config')).json()).sessionId;
-  const request=text=>fetch(backend.origin+'/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language:'French'})});
+  const request=text=>fetch(backend.origin+'/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language:'French',reuseTranslations:false})});
   let response=await request('Hello');assert.equal(response.headers.get('X-Translation-Service'),'siliconflow-free');assert.equal(response.headers.get('X-Translation-Session'),session);assert.equal(response.headers.get('X-Free-Service-Notice'),'1');assert.equal((await response.json()).translation,'free');
   response=await request('Hello');assert.equal(response.headers.get('X-Free-Service-Notice'),null);assert.equal((await response.json()).cached,true);
   key='mock';response=await request('Hello');assert.equal(response.headers.get('X-Translation-Service'),'openai');assert.equal((await response.json()).translation,'paid');

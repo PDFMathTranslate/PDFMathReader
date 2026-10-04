@@ -28,7 +28,7 @@ export async function revealPDF({canvas,page,scale,host,boxes,previous,signal,or
  }
  if(!index||signal?.aborted){URL.revokeObjectURL(image);return;}
  // A short outgoing phase precedes all incoming glyphs; the mask is opaque.
- if(previous){const old=document.createElement('canvas');old.width=previous.width;old.height=previous.height;old.className='pdf-reveal-old';old.style.width=view.width+'px';old.style.height=view.height+'px';old.getContext('2d').drawImage(previous,0,0);layer.append(old);}
+ if(previous){previous.className='pdf-reveal-old';previous.style.width=view.width+'px';previous.style.height=view.height+'px';layer.append(previous);}
  host.append(layer);const cleanup=()=>{layer.remove();URL.revokeObjectURL(image);};signal?.addEventListener('abort',cleanup,{once:true});
  await new Promise(resolve=>{const finish=()=>{clearTimeout(timer);signal?.removeEventListener('abort',finish);cleanup();resolve();};const timer=setTimeout(finish,revealDuration);signal?.addEventListener('abort',finish,{once:true});});signal?.removeEventListener('abort',cleanup);
 }

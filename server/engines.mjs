@@ -3,13 +3,15 @@ import {promisify} from 'node:util';
 import {mkdir,readFile,writeFile,mkdtemp,rm,readdir,symlink} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {homedir,tmpdir} from 'node:os';
-import {createHash} from 'node:crypto';
+import {createHash,randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {existsSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 import {PDFDocument} from 'pdf-lib';
 import {translationAdvancedArgs,decorateAdvancedOptions} from './kernel-options.mjs';
+import {createTranslationCache} from './translation-cache.mjs';
+import {replaceFile} from '../electron/atomic-file.mjs';
 const exec=promisify(execFile);
 
 export const LANGUAGE_CODES=Object.freeze({'Simplified Chinese':'zh','Traditional Chinese':'zh-TW',English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es'});
@@ -56,14 +58,16 @@ export function pythonResourcePath(name,resourcesPath=process.resourcesPath){
  return packaged&&existsSync(packaged)?packaged:fileURLToPath(new URL(`../electron/${name}`,import.meta.url));
 }
 
-export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
+export function createEngines({root,cacheDir,runtimeHomeRoot=root,appVersion='development',pythonResourcesPath,onDiagnostic,onOutput,onTiming,findUvImpl=findUv,execImpl=exec}){
  const runExec=execImpl;
- let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map();
+ let uv;const installing=new Map(),children=new Set(),advancedMetadata=new Map(),knownStates=new Map(),advancedBackground=new Map(),advancedFailures=new Map();
  const envPath=id=>join(root,id);const python=id=>kernelPythonPath(envPath(id));
+ const metadataPath=id=>join(root,'.advanced-options',id+'.json');
 
  async function check(id){
   if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');
   if(id==='pdf_inspector')return {id,label:definitions[id].label,installed:true,available:true,version:require('@firecrawl/pdf-inspector/package.json').version};
+  const known=knownStates.get(id);if(known&&performance.now()-known.at<30000&&!installing.has(id))return known.state;
   const installed=existsSync(envPath(id));
   if(!uv)uv=await findUvImpl();
   if(!uv.available)return {id,label:definitions[id].label,installed,available:false,reason:uv.message};
@@ -78,7 +82,8 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   if(!Object.hasOwn(definitions,id)||id==='pdf_inspector')throw Error('Unknown kernel');
   if(installing.has(id))return installing.get(id);
   const task=(async()=>{
-   const state=await check(id);if(state.available&&reinstall!==true)return state;
+   knownStates.delete(id);
+   const state=await check(id);if(state.available&&reinstall!==true){await advanced(id,state);return state;}
    uv=await findUvImpl();if(!uv.available)throw Error(uv.message);
    await mkdir(root,{recursive:true});
    const env={...process.env,UV_CACHE_DIR:join(root,'uv-cache')};
@@ -88,20 +93,52 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
     const pipArgs=['pip','install',...(reinstall===true?['--upgrade','--reinstall',...(source==='git'?['--refresh']:[])]:[]),'--python',python(id),reinstall===true?(source==='git'?definitions[id].gitSpec:definitions[id].updateSpec):definitions[id].spec];
     await runExec(uv.path,pipArgs,{env,timeout:600000,maxBuffer:2*1024*1024});
    }catch{throw Error('uv could not install this kernel. Check network access and retry.');}
-   if(reinstall===true){for(const key of advancedMetadata.keys())if(key.startsWith(`${id}:`))advancedMetadata.delete(key);}
-   return check(id);
+   const installed=await check(id);
+   if(installed.available){
+    // Installation owns refresh, including reinstalls with the same version.
+    await Promise.allSettled([...advancedMetadata].filter(([key])=>key.startsWith(`${id}:`)).map(([,task])=>task));
+    for(const key of advancedMetadata.keys())if(key.startsWith(`${id}:`))advancedMetadata.delete(key);
+    advancedFailures.delete(id);
+    await rm(metadataPath(id),{force:true});
+    await advanced(id,installed);
+   }
+   return installed;
   })();
   installing.set(id,task);try{return await task;}finally{installing.delete(id);}
  }
 
- async function advanced(id,knownState){
+ async function cachedAdvanced(id,state){
+  try{
+   const cached=JSON.parse(await readFile(metadataPath(id),'utf8'));
+   if(cached.schemaVersion!==1||cached.appVersion!==appVersion||cached.kernelVersion!==state.version||cached.result?.id!==id||!Array.isArray(cached.result.options)||cached.result.reason)return null;
+   const options=cached.result.options;
+   if(!options.every(option=>option&&typeof option.id==='string'&&typeof option.flag==='string'&&['boolean','number','string'].includes(option.type)))return null;
+   return {id,options:decorateAdvancedOptions(id,options)};
+  }catch{return null;}
+ }
+
+ async function advanced(id,knownState,{cacheOnly=false}={}){
   if(!Object.hasOwn(definitions,id))throw Error('Unknown kernel');
   if(id==='pdf_inspector')return {id,options:[]};
-  const state=knownState||await check(id);
-  if(!state.available)return {id,options:[],reason:state.reason};
-  const cacheKey=`${id}:${state.version}`;
+  // GUI requests only read disk; probing runs in this backend utility process.
+  const state=knownState||knownStates.get(id)?.state;
+  if(cacheOnly){
+   const cached=state?.available&&await cachedAdvanced(id,state);
+   if(cached)return cached;
+   if(state&&!state.available)return {id,options:[],reason:state.reason};
+   if(advancedFailures.has(id)){const result=advancedFailures.get(id);advancedFailures.delete(id);return result;}
+   if(!advancedBackground.has(id)){
+    const task=advanced(id,state).then(result=>{if(result.reason)advancedFailures.set(id,result);}).catch(()=>{advancedFailures.set(id,{id,options:[],reason:'Kernel advanced options could not be queried.'});}).finally(()=>advancedBackground.delete(id));
+    advancedBackground.set(id,task);
+   }
+   return {id,options:[],pending:true};
+  }
+  const current=state||await check(id);
+  if(!current.available)return {id,options:[],reason:current.reason};
+  const cacheKey=`${id}:${appVersion}:${current.version}`;
   if(advancedMetadata.has(cacheKey))return advancedMetadata.get(cacheKey);
   const task=(async()=>{
+   const cached=await cachedAdvanced(id,current);if(cached)return cached;
    const optionsHomeRoot=runtimeHomeRoot||root;await mkdir(optionsHomeRoot,{recursive:true});
    let home;
    try{
@@ -110,23 +147,23 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
     const env={...process.env,HOME:home,TMPDIR:isolatedTmp,TMP:isolatedTmp,TEMP:isolatedTmp,XDG_CONFIG_HOME:join(home,'.config'),XDG_CACHE_HOME:join(home,'.cache'),PYTHONPYCACHEPREFIX:join(optionsHomeRoot,'kernel-options-pycache')};
     await mkdir(isolatedTmp,{recursive:true});
     const {stdout}=await runExec(python(id),[pythonResourcePath('kernel-options.py',pythonResourcesPath),id],{env,cwd:home,timeout:120000,maxBuffer:4*1024*1024});
-    const raw=JSON.parse(stdout.trim());
-    return {id,options:decorateAdvancedOptions(id,raw)};
+    const raw=JSON.parse(stdout.trim());if(!Array.isArray(raw))throw Error('Invalid advanced schema');
+    const result={id,options:decorateAdvancedOptions(id,raw)};
+    const directory=join(root,'.advanced-options'),target=metadataPath(id),temporary=target+'.'+randomBytes(8).toString('hex')+'.tmp';
+    await mkdir(directory,{recursive:true});
+    try{await writeFile(temporary,JSON.stringify({schemaVersion:1,appVersion,kernelVersion:current.version,result}));await replaceFile(temporary,target);}
+    finally{await rm(temporary,{force:true});}
+    return result;
    }catch{return {id,options:[],reason:'Kernel advanced options could not be queried.'};}
    finally{if(home)await rm(home,{recursive:true,force:true});}
   })();
   advancedMetadata.set(cacheKey,task);
-  try{
-   const result=await task;
-   if(result.reason)advancedMetadata.delete(cacheKey);
-   return result;
-  }catch{
-   advancedMetadata.delete(cacheKey);
-   return {id,options:[],reason:'Kernel advanced options could not be queried.'};
-  }
+  try{return await task;}
+  catch{return {id,options:[],reason:'Kernel advanced options could not be queried.'};}
+  finally{if(advancedMetadata.get(cacheKey)===task)advancedMetadata.delete(cacheKey);}
  }
 
- async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},onPageTiming}){
+ async function translate({id,bytes,documentHash,page,language,sourceLanguage,threads,model,proxy,signal,advancedOptions={},reuseTranslations=true,onPageTiming}){
   const emitTiming=report=>{onTiming?.(report);onPageTiming?.(report);};
   const started=performance.now(),stages={};let checkpoint=started;
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
@@ -137,9 +174,12 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
   step('environmentAndOptions');
   const sourceHash=documentHash&&typeof documentHash.copy==='function'?documentHash.copy():createHash('sha256').update(bytes);
-  const key=sourceHash.update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model,prompt:2,layoutSchema:id==='pdf_math_fast'?3:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const keyFor=cacheModel=>sourceHash.copy().update(JSON.stringify({id,version:state.version,page,language,...sourceLanguage&&sourceLanguage!=='English'?{sourceLanguage}:{},model:cacheModel,prompt:2,layoutSchema:id==='pdf_math_fast'?3:2,...Object.keys(overrides).length?{advancedOptions:overrides}:{}})).digest('hex');
+  const key=keyFor(model);
+  const cache=createTranslationCache({directory:cacheDir,keyFor,readResult:async cachedKey=>{const result=await readFile(join(cacheDir,`${cachedKey}.pdf`));const metadata=JSON.parse(await readFile(join(cacheDir,cachedKey+'.layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Invalid cached layout');return result;}});
   const cached=join(cacheDir,`${key}.pdf`);
-  try{const result=await readFile(cached);await readFile(join(cacheDir,key+'.layout.json'));result.layoutKey=key;step('cacheLookup');emitTiming({engine:id,cached:true,totalMs:performance.now()-started,stages});return result;}catch{}
+  const hit=await cache.lookup(model,{reuseTranslations});
+  if(hit){const result=hit.result;result.layoutKey=hit.key;result.cached=true;result.translationModel=hit.model;step('cacheLookup');emitTiming({engine:id,cached:true,model:hit.model,totalMs:performance.now()-started,stages});return result;}
   step('cacheLookup');
   await mkdir(root,{recursive:true});
   const dir=await mkdtemp(join(root,'job-'));const input=join(dir,'input.pdf');await writeFile(input,bytes);
@@ -163,7 +203,7 @@ export function createEngines({root,cacheDir,runtimeHomeRoot=root,pythonResource
    const names=await readdir(dir);const output=names.find(n=>/mono.*\.pdf$/i.test(n)||/\.mono\.pdf$/i.test(n));if(!output)throw Error('Kernel did not produce a translated PDF');
    const raw=await readFile(join(dir,output));await onOutput?.(raw,id);const document=await PDFDocument.load(raw);const index=document.getPageCount()===1?0:page-1;if(index>=document.getPageCount())throw Error('Kernel returned an unexpected page count');
    const one=await PDFDocument.create();const [selected]=await one.copyPages(document,[index]);one.addPage(selected);const result=Buffer.from(await one.save());const metadata=JSON.parse(await readFile(join(dir,'layout.json'),'utf8'));if(!Array.isArray(metadata.paragraphs))throw Error('Kernel returned invalid layout');
-   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);result.layoutKey=key;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
+   await mkdir(cacheDir,{recursive:true});const temporary=cached+'.'+crypto.randomUUID()+'.tmp';await writeFile(temporary,result);await (await import('node:fs/promises')).rename(temporary,cached);const metaPath=join(cacheDir,key+'.layout.json'),metaTemp=metaPath+'.'+crypto.randomUUID()+'.tmp';await writeFile(metaTemp,JSON.stringify(metadata));await (await import('node:fs/promises')).rename(metaTemp,metaPath);await cache.remember(model,key).catch(()=>{});result.layoutKey=key;result.cached=false;result.translationModel=model;step('outputAndCache');emitTiming({engine:id,cached:false,totalMs:performance.now()-started,stages,worker});return result;
   }finally{await rm(dir,{recursive:true,force:true});}
  }
 

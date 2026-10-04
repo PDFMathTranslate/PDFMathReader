@@ -149,3 +149,21 @@ test('install endpoint parses reinstall requests and forwards the Git source',as
    assert.equal(pythonResourcePath(name,root),join(root,name));
   }}finally{await rm(root,{recursive:true,force:true});}
  });
+
+test('healthy kernel checks reuse their result until an explicit reinstall invalidates it',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'kernel-status-cache-'));
+ let probes=0,version='1.0.0';
+ const engines=createEngines({root,cacheDir:join(root,'cache'),findUvImpl:async()=>({available:true,path:'uv',version:'uv 1.0.0'}),execImpl:async(_path,args)=>{
+  if(args[0]==='-c'){probes++;return {stdout:version};}
+  if(args[0]==='pip')version='2.0.0';
+  return {stdout:''};
+ }});
+ try{
+  assert.equal((await engines.check('pdf_math_fast')).version,'1.0.0');
+  assert.equal((await engines.check('pdf_math_fast')).version,'1.0.0');
+  assert.equal(probes,1);
+  assert.equal((await engines.install('pdf_math_fast',{reinstall:true})).version,'2.0.0');
+  assert.equal((await engines.check('pdf_math_fast')).version,'2.0.0');
+  assert.equal(probes,3);
+ }finally{engines.close();await rm(root,{recursive:true,force:true});}
+});

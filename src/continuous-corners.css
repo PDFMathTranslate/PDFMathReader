@@ -1,0 +1,38 @@
+/* Smooth curvature where straight edges meet rounded corners. Keep the
+   existing radius sizes; unsupported browser previews retain circular arcs.
+   Zero specificity lets individual components opt into another shape. */
+@supports (corner-shape: squircle) {
+  :where(*, *::before, *::after) {
+    corner-shape: squircle;
+  }
+
+  /* Circular indicators and fully rounded capsules are intentional. */
+  :where(
+    .traffic-lights > *,
+    .linux-traffic-lights button,
+    .status-dot,
+    .kernel-traffic-light,
+    .color-swatch,
+    .preview-panel > b,
+    .parallel-ticks > i,
+    .annotation-toolbar i,
+    .badge,
+    .copy-toast,
+    .macvue-radio-control,
+    .macvue-switch-control,
+    .macvue-switch-thumb,
+    .macvue-switch-glass-lens,
+    .macvue-slider-track,
+    .macvue-slider-range,
+    .macvue-slider-thumb,
+    .macvue-slider-glass-lens,
+    .macvue-slider-tick
+  ),
+  :where(.macvue-switch-thumb, .macvue-slider-thumb)::before,
+  :where(.macvue-slider-thumb)::after,
+  :where(.error, .macvue-radio-control)::before,
+  :where(.macvue-radio-control)::after,
+  :where(*)::-webkit-scrollbar-thumb {
+    corner-shape: round;
+  }
+}
