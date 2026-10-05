@@ -119,8 +119,8 @@ PDF 渲染和版面分析在本地完成。翻译会将文档文本发送给 Ope
 
 ## 许可证
 
-PDFMathReader 采用 GNU Affero General Public License 第 3 版。完整条款见 [LICENSE](../LICENSE)。
+PDFMathReader 采用 GNU Affero General Public License 第 3 版。完整条款见 [LICENSE](../LICENSE)。 PDFMathTranslate 和 PDFMathTranslate-next 也采用 AGPL-3.0 许可证。其运行时安装保留上游许可证文件；其他依赖保留各自的许可证。
 
-PDFMathTranslate 和 PDFMathTranslate-next 也采用 AGPL-3.0 许可证。其运行时安装保留上游许可证文件；其他依赖保留各自的许可证。
+## 致谢
 
 非常感谢 [OpenAI](https://openai.com/)、[Anthropic](https://www.anthropic.com/)、[Warp](https://www.warp.dev/)、[沉浸式翻译](https://immersivetranslate.com/)和[硅基流动](https://siliconflow.cn/)提供的支持。
