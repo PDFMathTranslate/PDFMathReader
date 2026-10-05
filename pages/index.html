@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDFMathReader — Read papers in any language</title>
+<meta name="description" content="A fluid PDF reader with realtime translation that preserves formulas and layout.">
+<link rel="icon" href="assets/icon.png"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><img src="assets/icon.png" alt=""><b>PDFMathReader</b>
+<a href="#reader">Reader</a><a href="#translate">Translation</a><a href="#controls">Controls</a><a href="#how">How it works</a><a href="#settings">Settings</a>
+<a href="https://github.com/PDFMathTranslate/PDFMathReader">GitHub</a></header>
+
+<section class="hero">
+<h1>Read science in any language.<br>Translated as you scroll.</h1>
+<p class="sub">A smooth PDF reader with realtime translation that keeps formulas, tables and layout intact. Powered by PDFMathTranslate.</p>
+<a class="btn" href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">Download</a>
+<a class="btn alt" href="https://github.com/PDFMathTranslate/PDFMathReader">View on GitHub</a>
+<img class="shot" src="assets/demo.gif" alt="PDFMathReader demo">
+</section>
+
+<section id="reader">
+<h2>A reader that stays out of your way</h2>
+<p class="sub">Try it: switch layouts, zoom and scroll direction. Pages and thumbnails are virtualized, so large documents stay fast.</p>
+<div class="reader">
+<div class="bar">
+<button data-layout="v" class="on">Vertical</button><button data-layout="h">Horizontal</button>
+<button id="zo">−</button><span id="zv">100%</span><button id="zi">+</button>
+<span class="sp"></span><button id="tr" class="on">Translate</button>
+</div>
+<div class="pages" id="pages">
+<div class="page"><h4>On the Convergence of Stochastic Gradient Descent</h4>
+<div class="para" data-t="我们研究了在非凸目标下随机梯度下降的收敛性，并给出了新的收敛率上界。">We study the convergence of stochastic gradient descent under nonconvex objectives and derive a new upper bound on the rate.</div>
+<div class="eq">E‖∇f(x<sub>t</sub>)‖² ≤ O(1/√T)</div>
+<div class="para" data-t="其中 T 表示迭代次数。公式、符号与排版在翻译后保持不变。">Here T denotes the number of iterations. Formulas, symbols and layout are preserved after translation.</div></div>
+<div class="page"><h4>2. Preliminaries</h4>
+<div class="para" data-t="设 f 为 L-光滑函数。则对任意 x、y，梯度满足 Lipschitz 条件。">Let f be an L-smooth function. Then for all x, y the gradient satisfies the Lipschitz condition.</div>
+<div class="eq">‖∇f(x) − ∇f(y)‖ ≤ L‖x − y‖</div>
+<div class="para" data-t="我们假设随机梯度的方差有界。">We assume that the variance of the stochastic gradient is bounded.</div></div>
+<div class="page"><h4>3. Main Result</h4>
+<div class="para" data-t="定理 1：在上述假设下，步长取 η = 1/√T 时，算法以所述速率收敛。">Theorem 1: Under the assumptions above, with step size η = 1/√T the algorithm converges at the stated rate.</div></div>
+</div>
+<div class="hint">Zoom with − / +. Click a paragraph to toggle original ↔ translation.</div>
+</div>
+</section>
+
+<section id="translate">
+<h2>Realtime translation, paragraph by paragraph</h2>
+<p class="sub">Translation runs for nearby pages while you read — no waiting for the whole document. Click any detected paragraph to flip between original and translation.</p>
+<div class="reader"><div class="bar"><b>Live demo</b><span class="sp"></span><select id="lang"><option value="zh">简体中文</option><option value="ja">日本語</option><option value="fr">Français</option></select><button id="run">▶ Translate again</button></div>
+<div class="pages" style="height:auto"><div class="page" style="margin:0 auto">
+<div class="para" id="demo" data-src="The gradient descent method converges linearly when the objective is strongly convex.">The gradient descent method converges linearly when the objective is strongly convex.</div>
+<div class="eq">f(x<sub>k+1</sub>) − f* ≤ (1 − μ/L)(f(x<sub>k</sub>) − f*)</div></div></div></div>
+</section>
+
+<section id="controls">
+<h2>Just the right controls</h2>
+<div class="grid">
+<div class="card"><h3>Layouts</h3><p>One, two or four pages; vertical or horizontal scrolling.</p></div>
+<div class="card"><h3>Thumbnails &amp; zoom</h3><p>Jump anywhere instantly and fit pages to your screen.</p></div>
+<div class="card"><h3>Bilingual toggle</h3><p>Click paragraphs to compare original and translation.</p></div>
+<div class="card"><h3>Highlights &amp; comments</h3><p>Record notes directly on the page.</p></div>
+<div class="card"><h3>Reading links</h3><p>Bidirectional links between search results and where you read them.</p></div>
+<div class="card"><h3>Multiple windows</h3><p>Independent windows restore position and display settings.</p></div>
+</div>
+<div class="shots"><img src="assets/preview.png" alt="macOS"><img src="assets/preview-windows.png" alt="Windows"><img src="assets/preview-linux.png" alt="Linux"></div>
+</section>
+
+<section id="how">
+<h2>How it works</h2>
+<p class="sub">Rendering, layout analysis and translation run independently, so reading is never blocked.</p>
+<div class="flow">
+<div class="card"><h3>1. Open</h3><p>PDF is uploaded once to a local backend and referenced by ID.</p></div><div class="ar">→</div>
+<div class="card"><h3>2. Render</h3><p>PDF.js draws visible pages only (virtualized).</p></div><div class="ar">→</div>
+<div class="card"><h3>3. Layout</h3><p>Paragraphs, formulas and tables are detected on demand.</p></div><div class="ar">→</div>
+<div class="card"><h3>4. Translate</h3><p>Nearby pages are translated and cached; stale work is cancelled.</p></div><div class="ar">→</div>
+<div class="card"><h3>5. Overlay</h3><p>Translated text is placed back in the original layout.</p></div>
+</div>
+<div class="grid"><div class="card"><h3>Ultra fast</h3><p>Geometric paragraph grouping with text overlays.</p></div>
+<div class="card"><h3>Fast &amp; Precise</h3><p>Math translation kernels installed through <code>uv</code>.</p></div>
+<div class="card"><h3>Cached</h3><p>Identical requests reuse saved results across documents and restarts.</p></div></div>
+</section>
+
+<section id="settings">
+<h2>Settings, simplified</h2>
+<p class="sub">Explore a preview of the settings window.</p>
+<div class="settings">
+<nav><button class="on" data-p="a">Translation</button><button data-p="b">Reading</button><button data-p="c">About</button></nav>
+<div>
+<div class="pane on" id="a"><div class="row"><div>Kernel<br><span>Ultra fast, Fast or Precise</span></div><select><option>Ultra fast</option><option>Fast</option><option>Precise</option></select></div>
+<div class="row"><div>Target language<br><span>Custom language codes supported</span></div><select><option>简体中文</option><option>English</option><option>日本語</option></select></div>
+<div class="row"><div>Service<br><span>OpenAI-compatible API</span></div><input type="text" placeholder="API key" disabled></div>
+<div class="row"><div>Scope<br><span>Full document or nearby pages</span></div><select><option>Nearby pages</option><option>Full document</option></select></div></div>
+<div class="pane" id="b"><div class="row"><div>Default mode<br><span>Open documents in reading mode</span></div><select><option>Reading</option><option>Original</option></select></div>
+<div class="row"><div>Page layout<br><span>1, 2 or 4 pages</span></div><select><option>1</option><option>2</option><option>4</option></select></div>
+<div class="row"><div>Scroll direction</div><select><option>Vertical</option><option>Horizontal</option></select></div></div>
+<div class="pane" id="c"><div class="row"><div>Application<br><span>Version, installed kernels and UV</span></div><span>PDFMathReader</span></div>
+<div class="row"><div>Updates<br><span>Latest feature commits</span></div><a href="https://github.com/PDFMathTranslate/PDFMathReader/commits">View</a></div></div>
+</div></div>
+</section>
+
+<footer>PDFMathReader · <a href="https://github.com/PDFMathTranslate/PDFMathReader/blob/main/LICENSE">License</a> · <a href="https://github.com/PDFMathTranslate/PDFMathTranslate">PDFMathTranslate</a></footer>
+<script src="main.js"></script>
+</body></html>
