@@ -1,7 +1,8 @@
 <script setup>
 import { computed, ref, shallowRef, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { t, uiLanguage } from './i18n.mjs';
-import { MacButton } from './platform-controls.mjs';
+import { MacButton, MacSearchField, platform } from './platform-controls.mjs';
+const CategoryButton = platform === 'win32' ? MacButton : 'button';
 const props = defineProps({
   section: { type: String, default: 'general' },
   nativeWindow: { type: Boolean, default: false },
@@ -161,10 +162,20 @@ onBeforeUnmount(() => {
           aria-hidden="true"
           style="--symbol: url('/symbols/magnifyingglass.png')"
         ></span
-        ><input v-model="search" type="search" :placeholder="labels[2]" :aria-label="labels[2]"
+        ><MacSearchField
+          v-if="platform === 'win32'"
+          v-model="search"
+          :placeholder="labels[2]"
+          :aria-label="labels[2]" />
+        <input
+          v-else
+          v-model="search"
+          type="search"
+          :placeholder="labels[2]"
+          :aria-label="labels[2]"
       /></label>
       <nav ref="navigation" :aria-label="t('settings.title')">
-        <button
+        <CategoryButton
           v-for="(item, index) in visibleSections"
           :key="item.id"
           class="category-button"
@@ -186,7 +197,7 @@ onBeforeUnmount(() => {
               item.parentLabel
             }}</small></span
           >
-        </button>
+        </CategoryButton>
       </nav>
       <p class="effective-translation-summary" :title="effectiveTranslation" role="status">
         {{ effectiveTranslation }}
@@ -199,8 +210,14 @@ onBeforeUnmount(() => {
       >
         <h2 v-if="section !== 'providers'">{{ title }}</h2>
         <div class="workspace-actions">
+          <MacSearchField
+            v-if="!nativeWindow && platform === 'win32'"
+            v-model="search"
+            :placeholder="labels[2]"
+            :aria-label="labels[2]"
+          />
           <input
-            v-if="!nativeWindow"
+            v-else-if="!nativeWindow"
             v-model="search"
             type="search"
             :placeholder="labels[2]"
@@ -228,6 +245,44 @@ onBeforeUnmount(() => {
   </section>
 </template>
 <style scoped>
+fluent-button.category-button {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  display: block;
+  width: 100%;
+}
+fluent-button.category-button::part(content) {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 9px 10px;
+}
+fluent-button.category-button[aria-current='page'] {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+fluent-button.category-button[aria-current='page']::part(content) {
+  background: transparent;
+  color: inherit;
+}
+.workspace-actions :deep(fluent-text-input) {
+  width: 180px;
+}
+.workspace-actions :deep(fluent-button) {
+  width: 30px;
+  min-width: 30px;
+  height: 32px;
+  padding: 0;
+  flex: none;
+}
+.sidebar-search :deep(fluent-text-input) {
+  width: 100%;
+  min-width: 0;
+}
 .result-parent {
   display: block;
   margin-top: 2px;
@@ -309,6 +364,7 @@ section.settings.settings-workspace.native-settings-window[data-section] {
   display: grid;
   gap: 3px;
   overflow: auto;
+  overflow-x: hidden;
 }
 .category-button {
   display: flex;
