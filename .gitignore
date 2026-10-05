@@ -247,3 +247,4 @@ __marimo__/
 # Local editor rules and code index
 .cursor/
 .codegraph/
+dist-pages/

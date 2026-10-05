@@ -12,3 +12,4 @@ doc/**/*-optimized.json
 doc/**/*-result.json
 doc/**/*-results.json
 pages/
+dist-pages/
