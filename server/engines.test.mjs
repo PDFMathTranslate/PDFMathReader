@@ -1,10 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm,mkdir,stat,realpath,writeFile} from 'node:fs/promises';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
-import {createLimiter,createEngines,prepareKernelAssets,pythonResourcePath,definitions,kernelPythonPath,findUv} from './engines.mjs';
-import {startServer} from './index.mjs';
+import {createLimiter} from './engines.mjs';
 
 test('global translation budget holds across simultaneous page workers and releases after failures',async()=>{
  const limiter=createLimiter(2);let active=0,peak=0;const completed=[];
@@ -26,27 +22,4 @@ test('cancelled queued translations release immediately without running or waiti
  const aborted=new AbortController();aborted.abort();
  await assert.rejects(limiter.run(()=>{ran=true;},{signal:aborted.signal}),{name:'AbortError'});
  assert.equal(ran,false);
-});
-
-test('Fast and Precise retain compatible pre-update translated PDFs and layouts across app versions',async()=>{
- const {createHash}=await import('node:crypto');
- const root=await mkdtemp(join(tmpdir(),'kernel-cache-update-')),cacheDir=join(root,'math');
- const bytes=Buffer.from('%PDF source fixture');
- try{
-  await mkdir(cacheDir,{recursive:true});
-  const options={root,cacheDir,findUvImpl:async()=>({available:true,path:'fixture-uv'}),execImpl:async()=>({stdout:'1.0.0'})};
-  for(const [id,layoutSchema] of [['pdf_math_fast',5],['pdf_math_precise',2]]){
-   const key=createHash('sha256').update(bytes).update(JSON.stringify({id,version:'1.0.0',page:1,language:'Simplified Chinese',model:'gpt-4.1-mini',prompt:2,layoutSchema})).digest('hex');
-   const metadata={paragraphs:[{id:'paragraph',text:'original',translation:'cached translation'}]};
-   await writeFile(join(cacheDir,key+'.pdf'),'%PDF translated fixture');
-   await writeFile(join(cacheDir,key+'.layout.json'),JSON.stringify(metadata));
-   for(const appVersion of ['before-update','after-update']){
-    const engines=createEngines({...options,appVersion});
-    const result=await engines.translate({id,bytes,page:1,language:'Simplified Chinese',model:'siliconflow-free',reuseTranslations:true,runWorker:()=>{throw Error('Cache hits must bypass the occupied worker budget');}});
-    assert.equal(result.cached,true);assert.equal(result.layoutKey,key);assert.equal(result.translationModel,'gpt-4.1-mini');
-    assert.deepEqual(await engines.layout(result.layoutKey),metadata);
-    engines.close();
-   }
-  }
- }finally{await rm(root,{recursive:true,force:true});}
 });

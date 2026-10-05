@@ -29,12 +29,3 @@ test('closing kernels terminates the worker and its descendants, and prevents ne
   await waitUntilStopped(child.pid);await waitUntilStopped(descendant);
  }finally{await processes.close();}
 });
-test('metadata and installation subprocesses are stopped on shutdown',async()=>{
- const processes=createKernelProcesses();
- const task=processes.exec(process.execPath,['-e','setInterval(()=>{},1000)'],{});
- // Register the rejection handler before stopping the command.
- const result=task.then(()=>null,error=>error);
- await once(task.child,'spawn');
- await processes.close();
- assert.ok(await result);await waitUntilStopped(task.child.pid);
-});

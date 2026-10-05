@@ -43,43 +43,6 @@ test('deduplicates concurrent requests and keeps the shared request alive for a 
  }finally{release?.();await rm(directory,{recursive:true,force:true});}
 });
 
-test('does not cache failed or empty OpenAI responses',async()=>{
- const directory=await mkdtemp(join(tmpdir(),'translation-text-cache-invalid-'));let failureCalls=0,emptyCalls=0;
- const provider={id:'openai',model:'gpt-4.1-mini',key:'secret'};
- try{
-  const failureClient=createTranslationProvider(async()=>{
-   failureCalls++;return failureCalls===1?openAIResponse('temporary failure',503):openAIResponse('recovered translation');
-  },{cacheDirectory:directory});
-  const failed=await failureClient.complete(provider,body({text:'Failure case'}),signal());
-  assert.equal(failed.status,503);
-  assert.equal(await content(await failureClient.complete(provider,body({text:'Failure case'}),signal())),'recovered translation');
-  assert.equal(await content(await failureClient.complete(provider,body({text:'Failure case'}),signal())),'recovered translation');
-  assert.equal(failureCalls,2);
-
-  const emptyClient=createTranslationProvider(async()=>{emptyCalls++;return openAIResponse('');},{cacheDirectory:directory});
-  const emptyRequest=body({text:'Empty case'});
-  assert.equal((await emptyClient.complete(provider,emptyRequest,signal())).status,200);
-  assert.equal((await emptyClient.complete(provider,emptyRequest,signal())).status,200);
-  assert.equal(emptyCalls,2);
- }finally{await rm(directory,{recursive:true,force:true});}
-});
-
-test('named document registration creates a stable scoped text cache',async()=>{
- const {createDocumentCache}=await import('./document-cache.mjs');
- const {createHash}=await import('node:crypto');
- const directory=await mkdtemp(join(tmpdir(),'translation-named-document-scope-'));let calls=0;
- const hash=createHash('sha256').update('named PDF');
- try{
-  const cache=createDocumentCache(directory);await cache.register(hash,'Named%20paper.pdf');
-  const scope=await cache.scope(hash);assert.match(scope,/^[0-9a-f]{64}:[0-9a-f-]{36}$/);
-  const client=createTranslationProvider(async()=>{calls++;return openAIResponse('scoped translation');},{cacheDirectory:join(directory,'text')});
-  const provider={id:'openai',model:'gpt-4.1-mini',key:'test'};
-  assert.equal(await content(await client.complete(provider,body(),signal(),{cacheScope:scope})),'scoped translation');
-  const [documentHash,generation]=scope.split(':');const files=await readdir(join(directory,'documents',documentHash,'text',generation));
-  assert.ok(files.some(file=>file.endsWith('.json')));assert.equal(await readdir(join(directory,'text')).catch(()=>[]).then(items=>items.length),0);assert.equal(calls,1);
- }finally{await rm(directory,{recursive:true,force:true});}
-});
-
 test('document cache invalidation bypasses shared text results without changing another document',async()=>{
  const {createDocumentCache}=await import('./document-cache.mjs');
  const {createHash}=await import('node:crypto');

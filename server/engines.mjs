@@ -16,7 +16,7 @@ import {createKernelProcesses} from './kernel-processes.mjs';
 import {createKernelServiceCatalog,buildKernelServiceConfig} from './kernel-services.mjs';
 const exec=promisify(execFile);
 
-import {LANGUAGE_CODES,isTranslationLanguageSupported} from '../src/translation-languages.mjs';
+import {LANGUAGE_CODES,translationLanguageCode,isTranslationLanguageSupported} from '../src/translation-languages.mjs';
 export {LANGUAGE_CODES};
 
 export const definitions={
@@ -196,7 +196,7 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   const step=name=>{const now=performance.now();stages[name]=now-checkpoint;checkpoint=now;};
   if(signal?.aborted)throw Error('Cancelled');
   if(sourceLanguage!==undefined&&!isTranslationLanguageSupported(id,sourceLanguage,'source'))throw Error('Unsupported source language');
-  const lang=LANGUAGE_CODES[language];if(!isTranslationLanguageSupported(id,language))throw Error('Unsupported language for this kernel');
+  const lang=translationLanguageCode(language);if(!isTranslationLanguageSupported(id,language))throw Error('Unsupported language for this kernel');
   const known=knownStates.get(id);
   const state=known&&performance.now()-known.at<30000&&!installing.has(id)?known.state:await check(id);if(!state.available)throw Error(state.reason);
   const {overrides,args:advancedArgs}=await translationAdvancedArgs(id,advancedOptions,()=>advanced(id,state));
@@ -231,7 +231,7 @@ export function createEngines({root,cacheDir:baseCacheDir,runtimeHomeRoot=root,a
   if(service)Object.assign(env,service.env);
   if(localTranslation)env.PDFMATHREADER_LOCAL_TRANSLATION='1';
    const args=id==='pdf_math_fast'?['-m','pdf2zh.pdf2zh',input,'--mode','fast','-p',String(page),'-lo',lang,'-s',`openai:${model}`,'-t',String(threads),'-o',dir,...(Object.keys(overrides).length?advancedArgs:['--backend','cpu','--ignore-cache'])]:['-m','pdf2zh_next',input,'--openai','--pages',String(page),'--lang-out',lang,'--qps',String(threads),'--pool-max-workers',String(threads),'--output',dir,'--no-dual','--ignore-cache','--disable-config-auto-save','--watermark-output-mode','no_watermark',...advancedArgs];
-   if(sourceLanguage)args.push('--lang-in',LANGUAGE_CODES[sourceLanguage]);
+   if(sourceLanguage)args.push('--lang-in',translationLanguageCode(sourceLanguage));
    if(localTranslation&&id==='pdf_math_precise'&&!args.includes('--no-auto-extract-glossary'))args.push('--no-auto-extract-glossary');
    if(service){if(id==='pdf_math_fast'){const index=args.indexOf('-s');args.splice(index,2,...service.args);}else args.splice(args.indexOf('--openai'),1,...service.args);}
    step('prepareInput');

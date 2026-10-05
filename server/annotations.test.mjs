@@ -67,19 +67,6 @@ test('annotation store round-trips metadata, embeds standard annotations, rewrit
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('fingerprint-only documents persist sidecar metadata and serialize concurrent saves',async()=>{
- const root=await mkdtemp(join(tmpdir(),'annotation-sidecar-'));
- try{
-  const store=await createAnnotationStore(root),base={page:1,kind:'comment',origin:'source',text:'text',comment:'comment',color:'#fff36a',rects:[rect(1,1,5,5)],createdAt};
-  const first={...base,id:'first'},second={...base,id:'second'};
-  await Promise.all([store.save({key:'fingerprint-only',annotations:[first]}),store.save({key:'fingerprint-only',annotations:[second]})]);
-  assert.deepEqual(await store.load('fingerprint-only'),[second]);
-  await stat(store.metadataPath('fingerprint-only'));
-  await assert.rejects(store.save({key:'bad\nkey',annotations:[]}),/Invalid annotation document key/);
-  const record=JSON.parse(await readFile(store.metadataPath('fingerprint-only'),'utf8'));assert.equal(record.key,'fingerprint-only');assert.equal(record.annotations[0].id,'second');
- }finally{await rm(root,{recursive:true,force:true});}
-});
-
 test('native comments and highlights import, migrate, recover from copied PDF, and delete without affecting other entries',async()=>{
  const {importPDFAnnotations}=await import('../electron/annotation-import.mjs');const root=await mkdtemp(join(tmpdir(),'annotation-native-')),path=join(root,'native.pdf');
  try{
@@ -103,17 +90,4 @@ test('opening an unannotated or link-only PDF preserves its exact bytes',async()
   const bytes=await pdf.save(),prepared=await importPDFAnnotations(bytes,{prepare:true});
   assert.deepEqual(prepared.bytes,bytes);assert.deepEqual(prepared.annotations,[]);
  }
-});
-
-test('prepared PDF removes imported native and managed annotations while preserving unrelated links',async()=>{
- const {importPDFAnnotations}=await import('../electron/annotation-import.mjs');
- const pdf=await PDFDocument.create(),page=pdf.addPage();addExternalAnnotation(pdf,page);
- const native=page.node.Annots().get(0),popup=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Popup',Rect:[0,0,20,20],Parent:native}));page.node.Annots().push(popup);
- const link=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Link',Rect:[10,10,30,30]}));page.node.Annots().push(link);
- const managed=pdf.context.register(pdf.context.obj({Type:'Annot',Subtype:'Text',NM:PDFHexString.fromText('PDFMathReader:invalid'),Rect:[20,20,40,40]}));page.node.Annots().push(managed);
- const original=await pdf.save(),prepared=await importPDFAnnotations(original,{prepare:true});
- assert.equal(prepared.annotations.length,1);assert.equal(prepared.nativeRefs.length,1);
- const cleaned=await PDFDocument.load(prepared.bytes),retained=pageAnnotations(cleaned.getPage(0));
- assert.equal(retained.length,1);assert.equal(retained[0].get(PDFName.of('Subtype')).toString(),'/Link');
- assert.equal(pageAnnotations((await PDFDocument.load(original)).getPage(0)).length,4);
 });

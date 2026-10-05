@@ -120,6 +120,10 @@ const messages = {
    page: 'Page {page} · {layout}',
   },
   settings: {
+   customLanguageCode: 'Custom code…',
+   customLanguageCodeReminder: 'Check custom source and target codes carefully. Confirm that your selected kernel and translation service support them; incorrect or unsupported codes may cause translation failures or incorrect results.',
+   customLanguageCodeInvalid: 'Enter a valid language code, such as en, zh-TW, or pt-BR.',
+
    title: 'Settings',
    close: 'Close settings',
    apiKey: 'API key',
@@ -346,6 +350,10 @@ const messages = {
    page: '第 {page} 页 · {layout}',
   },
   settings: {
+   customLanguageCode: '自定义代码…',
+   customLanguageCodeReminder: '请仔细核对自定义源语言和目标语言代码，并确认所选内核及翻译服务支持这些代码；错误或不支持的代码可能导致翻译失败或结果不正确。',
+   customLanguageCodeInvalid: '请输入有效的语言代码，例如 en、zh-TW 或 pt-BR。',
+
    title: '设置',
    close: '关闭设置',
    apiKey: 'API 密钥',
@@ -572,6 +580,10 @@ const messages = {
    page: '{page} ページ · {layout}',
   },
   settings: {
+   customLanguageCode: 'カスタムコード…',
+   customLanguageCodeReminder: '原言語と翻訳先のカスタムコードを慎重に確認し、選択したカーネルと翻訳サービスが対応していることを確認してください。誤ったコードや未対応のコードは翻訳の失敗や誤った結果につながる場合があります。',
+   customLanguageCodeInvalid: 'en、zh-TW、pt-BR などの有効な言語コードを入力してください。',
+
    title: '設定',
    close: '設定を閉じる',
    apiKey: 'API キー',

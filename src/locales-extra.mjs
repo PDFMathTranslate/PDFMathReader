@@ -107,6 +107,10 @@ export const extraMessages = {
    page: '第 {page} 頁 · {layout}',
   },
   settings: {
+   customLanguageCode: '自訂代碼…',
+   customLanguageCodeReminder: '請仔細核對自訂來源和目標語言代碼，並確認所選核心及翻譯服務支援；錯誤或不支援的代碼可能導致翻譯失敗或結果不正確。',
+   customLanguageCodeInvalid: '請輸入有效的語言代碼，例如 en、zh-TW 或 pt-BR。',
+
    title: '設定',
    close: '關閉設定',
    apiKey: 'API 金鑰',
@@ -339,6 +343,10 @@ export const extraMessages = {
    page: 'Page {page} · {layout}',
   },
   settings: {
+   customLanguageCode: 'Code personnalisé…',
+   customLanguageCodeReminder: 'Vérifiez soigneusement les codes source et cible et leur prise en charge par le moteur et le service choisis. Des codes incorrects ou non pris en charge peuvent produire des erreurs de traduction.',
+   customLanguageCodeInvalid: 'Saisissez un code valide, comme en, zh-TW ou pt-BR.',
+
    title: 'Paramètres',
    close: 'Fermer les paramètres',
    apiKey: 'Clé API',
@@ -571,6 +579,10 @@ export const extraMessages = {
    page: 'Página {page} · {layout}',
   },
   settings: {
+   customLanguageCode: 'Código personalizado…',
+   customLanguageCodeReminder: 'Revise cuidadosamente los códigos de origen y destino y confirme que el motor y el servicio elegidos los admiten. Los códigos incorrectos o incompatibles pueden causar errores de traducción.',
+   customLanguageCodeInvalid: 'Introduzca un código válido, como en, zh-TW o pt-BR.',
+
    title: 'Configuración',
    close: 'Cerrar configuración',
    apiKey: 'Clave de API',
@@ -803,6 +815,10 @@ export const extraMessages = {
    page: '{page}페이지 · {layout}',
   },
   settings: {
+   customLanguageCode: '사용자 지정 코드…',
+   customLanguageCodeReminder: '원본 및 대상 언어 코드를 신중히 확인하고 선택한 커널과 번역 서비스가 지원하는지 확인하세요. 잘못되거나 지원되지 않는 코드는 번역 실패 또는 잘못된 결과를 초래할 수 있습니다.',
+   customLanguageCodeInvalid: 'en, zh-TW, pt-BR 등의 유효한 언어 코드를 입력하세요.',
+
    title: '설정',
    close: '설정 닫기',
    apiKey: 'API 키',

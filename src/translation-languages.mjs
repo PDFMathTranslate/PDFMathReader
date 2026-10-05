@@ -17,6 +17,10 @@ const entries = [
  ['Hindi','hi'],['Persian','fa'],
 ];
 export const LANGUAGE_CODES=Object.freeze(Object.fromEntries(entries));
+export function isCustomLanguageCode(value){
+ return typeof value==='string'&&!Object.hasOwn(LANGUAGE_CODES,value)&&value.length<=63&&/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(value);
+}
+export function translationLanguageCode(value){return Object.hasOwn(LANGUAGE_CODES,value)?LANGUAGE_CODES[value]:isCustomLanguageCode(value)?value:undefined;}
 const all=Object.freeze(entries.map(([name])=>name));
 const fast=Object.freeze(all.slice(0,10));
 // These scripts need shaping / right-to-left layout that the PDF kernels do not provide.
@@ -28,11 +32,11 @@ export function translationLanguagesForKernel(engine,direction='target'){
  return direction==='source'?all:targets[engine];
 }
 export function isTranslationLanguageSupported(engine,name,direction='target'){
- return translationLanguagesForKernel(engine,direction).includes(name);
+ return Object.hasOwn(targets,engine)&&(translationLanguagesForKernel(engine,direction).includes(name)||isCustomLanguageCode(name));
 }
 export function normalizeTranslationLanguage(engine,name,fallback,direction='target'){
  const languages=translationLanguagesForKernel(engine,direction);
- return languages.includes(name)?name:languages.includes(fallback)?fallback:languages[0]||'';
+ return isTranslationLanguageSupported(engine,name,direction)?name:languages.includes(fallback)?fallback:languages[0]||'';
 }
 const displayNames=new Map();
 export function translationLanguageLabel(name,locale='en'){

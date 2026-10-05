@@ -94,6 +94,9 @@
 .language-values{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Portaled menus use viewport coordinates, outside the scrolling, filtered settings panel. */
 .macvue-pop-up-button-content{width:max-content;min-width:max-content;z-index:100}
+/* Portaled options can overlap the draggable toolbar. Electron hit testing
+   needs an explicit exclusion on the menu, including its non-button items. */
+.macvue-pop-up-button-content,.macvue-pop-up-button-content *{-webkit-app-region:no-drag}
 .macvue-pop-up-button-item-text{white-space:nowrap}
 /* Tint above replacement PDF canvases as well as the surrounding page. */
 .paragraph.math::before{z-index:5;mix-blend-mode:multiply}

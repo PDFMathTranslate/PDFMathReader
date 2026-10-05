@@ -122,6 +122,8 @@ npm test
 npm run build
 ```
 
+The application suite contains 29 risk-focused tests. See [test priorities](doc/testing.md) for retained coverage and the policy for adding cases.
+
 </details>
 
 <details>

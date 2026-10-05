@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {replaceFile} from './atomic-file.mjs';
 import {dirname} from 'node:path';
 
-import {LANGUAGE_CODES} from '../src/translation-languages.mjs';
+import {LANGUAGE_CODES,isCustomLanguageCode} from '../src/translation-languages.mjs';
 const LANGUAGE_OPTIONS=Object.keys(LANGUAGE_CODES);
 const KERNEL_ENGINE_IDS=Object.freeze(['pdf_math_fast','pdf_math_precise']);
 const KERNEL_ENGINE_SET=new Set(KERNEL_ENGINE_IDS);
@@ -108,8 +108,8 @@ const VALIDATORS={
  reduceMotion:value=>typeof value==='boolean',
  reduceTransparency:value=>typeof value==='boolean',
  reducePadding:value=>typeof value==='boolean',
- language:value=>LANGUAGE_OPTIONS.includes(value),
- sourceLanguage:value=>LANGUAGE_OPTIONS.includes(value),
+ language:value=>(LANGUAGE_OPTIONS.includes(value)||isCustomLanguageCode(value)),
+ sourceLanguage:value=>(LANGUAGE_OPTIONS.includes(value)||isCustomLanguageCode(value)),
  concurrency:isValidConcurrency,
  pageConcurrency:isValidConcurrency,
  automatic:value=>typeof value==='boolean',
