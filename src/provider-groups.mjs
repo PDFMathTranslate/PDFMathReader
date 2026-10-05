@@ -36,3 +36,11 @@ export function groupProviders(services,config={},credentials={},history={},port
  }
  return groups;
 }
+
+// Reflect the shared secure credential in UI availability without exposing it.
+export function withSharedOpenAIKey(services,credentials={},configured=false){
+ if(!configured)return credentials;
+ const fields=services.find(service=>service.id==='openai')?.fields||[];
+ const shared=Object.fromEntries(fields.filter(field=>field.secret&&/api_key|^key$/i.test(field.id)).map(field=>[field.id,'configured']));
+ return {...credentials,openai:{...shared,...credentials.openai}};
+}

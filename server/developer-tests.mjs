@@ -135,7 +135,7 @@ export function developerMockCompletion(body,provider={}){
     model:provider.model,
     proxy:{url:resolveProxyUrl(proxyUrl),token:proxyToken},
     signal:runController.signal,
-    translationService:native?request.translationService:undefined,
+    translationService:native?(provider.selection||request.translationService):undefined,
     serviceIdentity:localTranslation?{service:'apple-local'}:undefined,
     localTranslation,
     advancedOptions:request.advancedOptions,

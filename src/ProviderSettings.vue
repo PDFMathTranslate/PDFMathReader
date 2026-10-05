@@ -2,7 +2,7 @@
 import {computed,ref,watch,onBeforeUnmount} from 'vue';
 import {MacButton,MacPopUpButton,MacPopUpButtonItem,MacSecureField,MacSwitch,MacTextField} from './platform-controls.mjs';
 import ProviderIcon from './ProviderIcon.vue';
-import {groupProviders,providerPortEndpoint} from './provider-groups.mjs';
+import {groupProviders,providerPortEndpoint,withSharedOpenAIKey} from './provider-groups.mjs';
 import {cloneTranslationServices,loadTranslationServiceSchema} from './translation-services.mjs';
 import {t,uiLanguage} from './i18n.mjs';
 
@@ -13,7 +13,8 @@ const props=defineProps({
  modelValue:{type:Object,default:()=>({})},
  advancedOptions:{type:Object,default:()=>({})},
  credentials:{type:Object,default:()=>({})},
- history:{type:Object,default:()=>({})}
+ history:{type:Object,default:()=>({})},
+ sharedOpenAIConfigured:{type:Boolean,default:false}
 });
 const emit=defineEmits(['update:modelValue','update:advancedOptions','update:credentials','update:request']);
 
@@ -37,7 +38,7 @@ const config=computed(()=>{
 });
 const services=computed(()=>Array.isArray(schema.value?.services)?schema.value.services:[]);
 const providerPorts=ref({});
-const providerGroups=computed(()=>groupProviders(services.value,config.value,props.credentials?.[props.engine]||{},props.history?.[props.engine]||{},providerPorts.value).filter(group=>group.id!=='error'||group.services.length>0));
+const providerGroups=computed(()=>groupProviders(services.value,config.value,withSharedOpenAIKey(services.value,props.credentials?.[props.engine]||{},props.sharedOpenAIConfigured),props.history?.[props.engine]||{},providerPorts.value).filter(group=>group.id!=='error'||group.services.length>0));
 const serviceById=id=>services.value.find(service=>service.id===id);
 // Keep this active-service derivation in lockstep with TranslationServiceOptions.
 const selectedId=computed(()=>typeof config.value.id==='string'&&message.value?config.value.id:serviceById(config.value.id)?.id||services.value[0]?.id||config.value.id||'auto');
@@ -61,7 +62,7 @@ const promptOption=computed(()=>{
 });
 const promptValue=computed(()=>props.advancedOptions?.[props.engine]?.[promptOption.value?.id]||'');
 const schemaKey=computed(()=>`${props.engine}:${props.engineState?.version||''}:${props.catalogRevision}:${retry.value}`);
-const accountVisible=computed(()=>selectedId.value==='auto'&&selectedProviderId.value==='auto');
+const accountVisible=computed(()=>selectedProviderId.value==='openai');
 
 function serviceLabel(service){
  const keys={auto:'settings.translationServiceAuto',openai:'settings.translationServiceOpenAI','apple-local':'settings.translationServiceAppleLocal','siliconflow-free':'settings.translationServiceSiliconFlowFree'};
@@ -70,7 +71,10 @@ function serviceLabel(service){
 const noConfigurationNeeded=computed(()=>selectedService.value&&(selectedService.value.fields||[]).length===0);
 const noConfigurationText=computed(()=>({en:'This service is ready to use without configuration.','zh-CN':'该服务无须配置即可使用。','zh-TW':'此服務無須設定即可使用。',ja:'このサービスは設定なしで使用できます。',ko:'이 서비스는 설정 없이 바로 사용할 수 있습니다.',fr:'Ce service peut être utilisé sans configuration.',es:'Este servicio se puede usar sin configuración.'})[uiLanguage.value]||'This service is ready to use without configuration.');
 const freeThanks=computed(()=>({en:'Thank you to SiliconFlow for providing this free translation service. No API key is required.', 'zh-CN':'感谢硅基流动提供免费翻译服务。无需配置 API 密钥。','zh-TW':'感謝矽基流動提供免費翻譯服務。無需設定 API 金鑰。',ja:'無料翻訳サービスを提供する SiliconFlow に感謝します。API キーは不要です。',ko:'무료 번역 서비스를 제공하는 SiliconFlow에 감사드립니다. API 키가 필요하지 않습니다.',fr:'Merci à SiliconFlow pour ce service de traduction gratuit. Aucune clé API requise.',es:'Gracias a SiliconFlow por este servicio de traducción gratuito. No requiere clave API.'})[uiLanguage.value]||'Thank you to SiliconFlow for providing this free translation service. No API key is required.');
-function fieldLabel(field){return field.required?`${field.label} *`:field.label;}
+function fieldLabel(field){
+ if(accountVisible.value&&field.secret&&/api_key|^key$/i.test(field.id)&&props.sharedOpenAIConfigured)return uiLanguage.value.startsWith('zh')?'此内核的密钥（可选覆盖）':'Kernel API key (optional override)';
+ return field.required?`${field.label} *`:field.label;
+}
 function fieldValue(field,serviceId=selectedProviderId.value){
  if(field.secret)return props.credentials?.[props.engine]?.[serviceId]?.[field.id]||'';
  const values=profileValuesFor(serviceId);
