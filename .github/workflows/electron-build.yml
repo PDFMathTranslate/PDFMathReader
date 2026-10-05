@@ -51,6 +51,14 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      # TranslationSession(installedSource:target:) requires the macOS 26 SDK.
+      # The Intel macOS 15 image still defaults to Xcode 16.4.
+      - name: Select Xcode 26.3
+        if: matrix.platform == 'darwin'
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
       - uses: actions/setup-node@v5
         id: node
         with:
