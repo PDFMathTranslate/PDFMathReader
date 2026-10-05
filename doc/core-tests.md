@@ -1,12 +1,12 @@
 # Core regression tests
 
-The repository retains 29 automated Node tests, reduced from 77 during the October 5, 2026 review. `npm test` runs every remaining `server/*.test.mjs` test; there is no hidden extended suite or skipped-test filter. The unused Electron recents unit suite was also removed.
+The repository retains 29 automated Node tests, reduced from 77 during the October 5, 2026 review. `bun run test` runs every remaining `server/*.test.mjs` test through Node's built-in `node:test` runtime; there is no hidden extended suite or skipped-test filter. The unused Electron recents unit suite was also removed.
 
 Selection ranks original PDF and annotation integrity first, credential protection and authenticated document access next, then translation routing, cancellation, cache persistence and document isolation. Extraction, session recovery, settings preservation, production packaging and bounded rendering complete the suite. Existing retained assertions remain intact.
 
 Removed lower-priority checks cover annotation browser filters, topic/keyword emphasis, translation spacing, outline tracking, quick links, pins, navigation helpers and row layout. Helper-level page-edit variants are replaced in the retained coverage by the existing save integration test, which checks disk contents, annotation geometry, rotation and rejection without modifying the PDF. Redundant cache variants were removed; the generic custom-model cache unit case was replaced by the topic-sentence regression below, while kernel upgrade/restart and paragraph API cache coverage remain. These areas have less automatic regression coverage; additions should replace a lower-priority case to keep the suite below 30.
 
-Run `npm run build` before `npm test`: the production-stage check consumes the built frontend. Provider requests use mocks; passing tests do not establish live translation quality or visual rendering correctness. Electron smoke scripts remain available for targeted desktop checks outside this Node suite. Historical performance reports retain their original counts.
+Run `bun run build` before `bun run test`: the production-stage check consumes the built frontend. Provider requests use mocks; passing tests do not establish live translation quality or visual rendering correctness. Electron smoke scripts remain available for targeted desktop checks outside this Node suite. Historical performance reports retain their original counts.
 
 The topic-sentence regression checks the reported indented Chinese paragraph, math-kernel source/translation geometry, column isolation, page continuations, small numbered footnotes and unchanged length rules.
 

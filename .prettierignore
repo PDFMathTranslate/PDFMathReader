@@ -6,7 +6,7 @@ release/
 .cursor/
 public/symbols/
 src/build-info.mjs
-package-lock.json
+bun.lock
 doc/**/*-baseline.json
 doc/**/*-optimized.json
 doc/**/*-result.json

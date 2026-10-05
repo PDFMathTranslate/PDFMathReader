@@ -31,7 +31,7 @@ for (const file of swift) {
   const args = [...prefix, 'format', '--configuration', '.swift-format'];
   if (mode === 'fix') run(command, [...args, '--in-place', file], { stdio: 'inherit' });
   else if (run(command, [...args, file]) !== readFileSync(file, 'utf8')) {
-    console.error(`${file}: run npm run style:fix to format Swift`);
+    console.error(`${file}: run bun run style:fix to format Swift`);
     process.exitCode = 1;
   }
 }

@@ -1,6 +1,6 @@
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
 
-# <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader (experimental)
+# <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader
 
 [![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
 <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
@@ -37,41 +37,65 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Quick start
 
-### Screenshots and installation
-
-Download the package matching your system and CPU, then extract the Actions artifact ZIP first.
-
-| Platform         | macOS                                                                                                                                                                                                                                                    | Windows                                                                                                                                              | Linux                                                                                                    |
-| :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| Screenshot       | <img src="doc/preview.png" alt="PDFMathReader reader" height="240">                                                                                                                                                                                      | <img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240">                                                                          | <img src="doc/preview-linux.png" alt="PDFMathReader reader on Linux" height="240">                       |
-| Download link    | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                                                                                                                                 | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                             | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) |
-| Installation     | Extract the macOS ZIP, move `PDFMathReader.app` to `/Applications`, and open it.                                                                                                                                                                         | Double-click `PDFMathReader-win32-x64.exe` (or the `ia32` version for 32-bit Windows).                                                               | Extract the `.tar.gz` for your CPU, then run `./PDFMathReader` from its folder.                          |
-| Additional notes | If macOS says the app is “damaged”, confirm the download is trusted, then run `sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app` in Terminal. Enter your Mac login password when prompted (it is not displayed), then reopen the app. | The portable app includes its runtime. Launching it registers the PDF **Open with PDFMathReader** menu; launch it again after moving the executable. | Choose the package matching your CPU architecture.                                                       |
-
-Open a PDF. In **Settings…**, save your OpenAI API key and choose a target language. Reading needs no key; translation does. **Ultra fast** is included. For **Fast** or **Precise**, install `uv`, then choose **Install kernel with uv** in Settings.
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="10%">Platform</th>
+      <th width="30%">macOS</th>
+      <th width="30%">Windows</th>
+      <th width="30%">Linux</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Screenshot</td>
+      <td><img src="doc/preview.png" alt="PDFMathReader reader" width="100%"></td>
+      <td><img src="doc/preview-windows.png" alt="PDFMathReader reader" width="100%"></td>
+      <td><img src="doc/preview-linux.png" alt="PDFMathReader reader on Linux" width="100%"></td>
+    </tr>
+    <tr>
+      <td>Download link</td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+    </tr>
+    <tr>
+      <td>Installation</td>
+      <td>Extract the macOS ZIP, move <code>PDFMathReader.app</code> to <code>/Applications</code>, and open it.</td>
+      <td>Double-click <code>PDFMathReader-win32-x64.exe</code> (or the <code>ia32</code> version for 32-bit Windows).</td>
+      <td>Extract the <code>.tar.gz</code> for your CPU, then run <code>./PDFMathReader</code> from its folder.</td>
+    </tr>
+    <tr>
+      <td>Additional notes</td>
+      <td>If macOS says the app is “damaged”, confirm the download is trusted, then run <code>sudo xattr -dr</code> <code>com.apple.quarantine</code> <code>/Applications/PDFMathReader.app</code> in Terminal. Enter your Mac login password when prompted (it is not displayed), then reopen the app.</td>
+      <td>The portable app includes its runtime. Launching it registers the PDF <strong>Open with PDFMathReader</strong> menu; launch it again after moving the executable.</td>
+      <td>Choose the package matching your CPU architecture.</td>
+    </tr>
+  </tbody>
+</table>
 
 ## Development
 
 <details>
 <summary>Local development</summary>
 
-Use Node.js 22. To run the desktop app from source:
+Install [Bun 1.3.14](https://bun.sh/docs/installation) and Node.js 22.22.1 or newer. To run the desktop app from source:
 
 ```sh
-npm ci
-npm run desktop
+bun install --frozen-lockfile
+bun run desktop
 ```
 
 Build on the matching platform:
 
 ```sh
 # macOS (requires a signing identity; add --unsigned to skip signing)
-npm run package:mac
+bun run package:mac
 # Windows
-npm run package:win
+bun run package:win
 ```
 
-Frontend libraries (Vue, MacVue, and Fluent UI) are build dependencies: Vite includes them in `dist`. Node dependencies used by the server or Electron main process remain runtime dependencies. Install with `npm ci` before building; `npm ci --omit=dev` cannot build or package the app.
+Frontend libraries (Vue, MacVue, and Fluent UI) are build dependencies: Vite includes them in `dist`. Node dependencies used by the server or Electron main process remain runtime dependencies. Install with `bun install --frozen-lockfile` before building; a production-only install cannot build or package the app.
 
 The About page includes GitHub Release update status, a manual check button, and an automatic check switch (enabled by default). Packaged apps check lazily after startup and every six hours; no published release is shown as a normal empty state. Stable version tags must use `vX.Y.Z` or `X.Y.Z`. Matching release assets use `PDFMathReader-<platform>-<arch>.zip` (macOS), `.exe` (Windows), or `.tar.gz` (Linux). Available updates open the matching download, or the release page when that asset is absent; installation remains manual.
 
@@ -79,11 +103,11 @@ The About page shows the application, installed kernels and UV versions. Each Vi
 
 The default Electron package bundles Express and PDF utilities into the backend/main scripts, retaining their licenses. It copies only external runtime modules into the staged `node_modules`; native PDF Inspector bindings and the PDF.js/DOMMatrix fallback for unsupported native targets remain available. Electron itself and packaging tools are supplied by the build toolchain.
 
-For browser development, set `OPENAI_API_KEY`, run `npm run dev`, and open [127.0.0.1:5173](http://127.0.0.1:5173). Use `OPENAI_MODEL` to override the default model. Desktop environment variables can be loaded with `Launch PDFMathReader.command`.
+For browser development, set `OPENAI_API_KEY`, run `bun run dev`, and open [127.0.0.1:5173](http://127.0.0.1:5173). Use `OPENAI_MODEL` to override the default model. Desktop environment variables can be loaded with `Launch PDFMathReader.command`.
 
 ```sh
-npm test
-npm run build
+bun run test
+bun run build
 ```
 
 The application suite contains 29 risk-focused tests. See [test priorities](doc/testing.md) for retained coverage and the policy for adding cases.
@@ -124,7 +148,7 @@ In browser development, Express and Vite run in a standalone Node.js process. Na
 - **Layout fidelity:** Ultra fast uses geometric paragraph grouping and text overlays. Complex tables, rotated text, unusual backgrounds, and long translations may not retain the original typography. Math-kernel output depends on upstream layout handling.
 - **Scanned documents:** scanned PDFs require OCR, which this app does not implement.
 - **Translation requirements:** translation needs an OpenAI API key and network access. Fast and Precise require separately installed math kernels through `uv`.
-- **Scope:** this is an experimental local reader and translation app, not a complete PDF editing or export tool.
+- **Scope:** this is a local reader and translation app, not a complete PDF editing or export tool.
 - **Validation:** the [30 core regression tests](doc/core-tests.md) cover backend and reader support logic. Mock-provider checks do not establish live OpenAI translation quality or API-key validity.
 
 </details>

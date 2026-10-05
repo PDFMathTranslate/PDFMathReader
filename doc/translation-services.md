@@ -11,8 +11,8 @@ On macOS 26 and later, Apple Translation is available without an API key or base
 Validation:
 
 ```sh
-npm test
-npm run build
+bun run test
+bun run build
 node_modules/.bin/electron electron/service-credentials-smoke.mjs
 node server/translation-services-smoke.mjs
 APPLE_NATIVE_SMOKE=1 node server/translation-services-smoke.mjs

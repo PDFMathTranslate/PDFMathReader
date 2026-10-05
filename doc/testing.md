@@ -1,6 +1,7 @@
 # Test priorities
 
-`npm test` runs 29 automated cases. The suite is kept below 30 by retaining
+`bun run test` runs 29 automated cases through Node's built-in `node:test` runtime.
+The suite is kept below 30 by retaining
 checks whose failure can lose user data, expose credentials, break packaged
 startup, corrupt translations or prevent a core interaction. Tests are removed
 from the source rather than hidden behind a name filter or an alternate suite.

@@ -1,6 +1,6 @@
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-# <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader（実験版）
+# <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader
 
 [![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
 <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
@@ -37,45 +37,69 @@
 
 ## クイックスタート
 
-### スクリーンショットとインストール
-
-OS と CPU に合ったパッケージをダウンロードし、まず Actions の ZIP を展開してください。
-
-| プラットフォーム   | macOS                                                                                                                                                                                                                                                                        | Windows                                                                                                                                            | Linux                                                                                                    |
-| :----------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| スクリーンショット | <img src="preview.png" alt="PDFMathReader の閲覧画面" height="240">                                                                                                                                                                                                          | <img src="preview-windows.png" alt="PDFMathReader の閲覧画面" height="240">                                                                        | <img src="preview-linux.png" alt="Linux 上の PDFMathReader の閲覧画面" height="240">                     |
-| ダウンロードリンク | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                                                                                                                                                     | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                           | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) |
-| インストール方法   | macOS の ZIP を展開し、`PDFMathReader.app` を `/Applications` に移動して開きます。                                                                                                                                                                                           | `PDFMathReader-win32-x64.exe` をダブルクリックします（32 ビット Windows では `ia32` 版）。                                                         | CPU に合った `.tar.gz` を展開し、アプリのフォルダーで `./PDFMathReader` を実行します。                   |
-| 補足               | 「アプリが壊れている」と表示される場合は、信頼できる配布元であることを確認し、ターミナルで `sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app` を実行します。求められたら Mac のログインパスワードを入力し（表示されません）、アプリを再度開いてください。 | ランタイムを含むポータブル版です。起動すると PDF の **Open with PDFMathReader** メニューが登録されます。ファイルを移動したら再度起動してください。 | CPU アーキテクチャに合ったパッケージを選んでください。                                                   |
-
-PDF を開き、**Settings…** で OpenAI API key を保存し、対象言語を選びます。閲覧にはキーは不要ですが、翻訳には必要です。**Ultra fast** は同梱されています。**Fast** または **Precise** は、`uv` をインストールしてから Settings の **Install kernel with uv** で導入します。
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="10%">プラットフォーム</th>
+      <th width="30%">macOS</th>
+      <th width="30%">Windows</th>
+      <th width="30%">Linux</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>スクリーンショット</td>
+      <td><img src="preview.png" alt="PDFMathReader の閲覧画面" width="100%"></td>
+      <td><img src="preview-windows.png" alt="PDFMathReader の閲覧画面" width="100%"></td>
+      <td><img src="preview-linux.png" alt="Linux 上の PDFMathReader の閲覧画面" width="100%"></td>
+    </tr>
+    <tr>
+      <td>ダウンロードリンク</td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+      <td><a href="https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml">GitHub Actions</a></td>
+    </tr>
+    <tr>
+      <td>インストール方法</td>
+      <td>macOS の ZIP を展開し、<code>PDFMathReader.app</code> を <code>/Applications</code> に移動して開きます。</td>
+      <td><code>PDFMathReader-win32-x64.exe</code> をダブルクリックします（32 ビット Windows では <code>ia32</code> 版）。</td>
+      <td>CPU に合った <code>.tar.gz</code> を展開し、アプリのフォルダーで <code>./PDFMathReader</code> を実行します。</td>
+    </tr>
+    <tr>
+      <td>補足</td>
+      <td>「アプリが壊れている」と表示される場合は、信頼できる配布元であることを確認し、ターミナルで <code>sudo xattr -dr</code> <code>com.apple.quarantine</code> <code>/Applications/PDFMathReader.app</code> を実行します。求められたら Mac のログインパスワードを入力し（表示されません）、アプリを再度開いてください。</td>
+      <td>ランタイムを含むポータブル版です。起動すると PDF の <strong>Open with PDFMathReader</strong> メニューが登録されます。ファイルを移動したら再度起動してください。</td>
+      <td>CPU アーキテクチャに合ったパッケージを選んでください。</td>
+    </tr>
+  </tbody>
+</table>
 
 ## 開発
 
 <details>
 <summary>ローカル開発</summary>
 
-Node.js 22 を使用してソースからデスクトップアプリを起動します。
+Bun 1.3.14 と Node.js 22.22.1 以降をインストールしてから、ソースからデスクトップアプリを起動します。
 
 ```sh
-npm ci
-npm run desktop
+bun install --frozen-lockfile
+bun run desktop
 ```
 
 各 OS 上でビルドします。
 
 ```sh
 # macOS（署名証明書が必要です。--unsigned で署名を省略できます）
-npm run package:mac
+bun run package:mac
 # Windows
-npm run package:win
+bun run package:win
 ```
 
-ブラウザ開発では `OPENAI_API_KEY` を設定し、`npm run dev` を実行して [127.0.0.1:5173](http://127.0.0.1:5173) を開きます。`OPENAI_MODEL` でモデルを指定できます。デスクトップの環境変数は `Launch PDFMathReader.command` で読み込めます。
+ブラウザ開発では `OPENAI_API_KEY` を設定し、`bun run dev` を実行して [127.0.0.1:5173](http://127.0.0.1:5173) を開きます。`OPENAI_MODEL` でモデルを指定できます。デスクトップの環境変数は `Launch PDFMathReader.command` で読み込めます。
 
 ```sh
-npm test
-npm run build
+bun run test
+bun run build
 ```
 
 </details>
@@ -112,7 +136,7 @@ PDF の描画とレイアウト解析はローカルで行います。翻訳で�
 - **レイアウトの忠実度:** Ultra fast は幾何学的な段落グループ化とテキストオーバーレイを使用します。複雑な表、回転したテキスト、特殊な背景、長い翻訳では、元のタイポグラフィを維持できない場合があります。数式カーネルの出力は、上流のレイアウト処理に依存します。
 - **スキャン文書:** スキャンされた PDF には OCR が必要ですが、このアプリは実装していません。
 - **翻訳の要件:** 翻訳には OpenAI API key とネットワークアクセスが必要です。Fast と Precise には、`uv` を通じて別途インストールした数式カーネルが必要です。
-- **範囲:** これは実験的なローカルリーダー兼翻訳アプリであり、完全な PDF 編集・書き出しツールではありません。
+- **範囲:** これはローカルリーダー兼翻訳アプリであり、完全な PDF 編集・書き出しツールではありません。
 - **検証:** 自動テストでは、バックエンドとリーダーのサポートロジックを確認します。モックプロバイダーによるチェックでは、実際の OpenAI 翻訳品質や API キーの有効性は確認できません。
 
 </details>

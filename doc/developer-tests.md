@@ -13,7 +13,7 @@ The developer bridge exposes provider labels and readiness, never credentials. T
 Validation:
 
 ```zsh
-npm run build
+bun run build
 node --test server/developer-test-runner.test.mjs server/developer-tests.test.mjs
 node_modules/.bin/electron electron/developer-quick-tests-smoke.mjs
 ```

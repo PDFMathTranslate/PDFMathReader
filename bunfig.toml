@@ -1,0 +1,3 @@
+[install]
+# The packaging code resolves and copies runtime modules from node_modules.
+linker = "hoisted"

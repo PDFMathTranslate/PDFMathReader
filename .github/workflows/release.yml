@@ -1,8 +1,8 @@
-name: Electron release
+name: Release
 
 on:
   workflow_run:
-    workflows: ['Electron test']
+    workflows: ['Packaging']
     types: [completed]
 
 permissions:

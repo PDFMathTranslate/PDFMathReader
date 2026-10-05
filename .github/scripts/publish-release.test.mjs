@@ -17,7 +17,7 @@ let value;
 if(args[0]!=='api')throw Error('Unexpected publishing or artifact download');
 const path=args.at(-1);
 if(path==='repos/'+repo)value={default_branch:'main'};
-else if(path.endsWith('/actions/runs/123'))value={status:'completed',conclusion:scenario==='failed'?'failure':'success',path:'.github/workflows/electron-build.yml',name:'Electron test',head_repository:{full_name:scenario==='fork'?'other/repo':repo},head_branch:'main',event:scenario==='pr'?'pull_request':'push',head_sha:'a'.repeat(40)};
+else if(path.endsWith('/actions/runs/123'))value={status:'completed',conclusion:scenario==='failed'?'failure':'success',path:'.github/workflows/electron-build.yml',name:'Packaging',head_repository:{full_name:scenario==='fork'?'other/repo':repo},head_branch:'main',event:scenario==='pr'?'pull_request':'push',head_sha:'a'.repeat(40)};
 else if(path.includes('/contents/package.json'))value={content:Buffer.from(JSON.stringify({version:'0.1.0'})).toString('base64')};
 else if(path.includes('/releases?'))value=[[{tag_name:'v0.1.0-beta.3',draft:false}]];
 else throw Error('Unexpected API path: '+path);
@@ -41,7 +41,7 @@ console.log(JSON.stringify(value));\n`,
         assert.match(result.stdout, /nothing to publish/);
       } else {
         assert.notEqual(result.status, 0);
-        assert.match(result.stderr, /successful default-branch Electron test/);
+        assert.match(result.stderr, /successful default-branch Packaging/);
       }
     }
   } finally {

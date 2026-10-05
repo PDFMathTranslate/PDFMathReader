@@ -1,4 +1,4 @@
-name: Electron test
+name: Packaging
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     env:
-      # Packaging downloads the target binary; npm only needs Electron metadata.
+      # Packaging downloads the target binary; Bun only needs Electron metadata.
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     strategy:
       fail-fast: false
@@ -62,18 +62,21 @@ jobs:
         id: node
         with:
           node-version: '22'
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        id: bun
+        with:
+          bun-version: 1.3.14
       # Native dependencies require the same host OS, CPU and exact Node version.
-      # No partial restores: changed lockfiles always require npm ci.
+      # No partial restores: changed lockfiles always require a frozen Bun install.
       - name: Restore installed dependencies
         uses: actions/cache@v5
         id: dependencies
         with:
           path: node_modules
-          key: modules-v1-${{ matrix.runner }}-${{ runner.arch }}-${{ steps.node.outputs.node-version }}-${{ hashFiles('package.json', 'package-lock.json') }}
+          key: modules-bun-v1-${{ matrix.runner }}-${{ runner.arch }}-${{ steps.node.outputs.node-version }}-${{ steps.bun.outputs.bun-version }}-${{ hashFiles('package.json', 'bun.lock') }}
       - name: Install dependencies
         if: steps.dependencies.outputs.cache-hit != 'true'
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: bun install --frozen-lockfile
       - name: Cache Electron downloads
         uses: actions/cache@v5
         with:
@@ -81,7 +84,7 @@ jobs:
             ~/.cache/electron
             ~/Library/Caches/electron
             ~/AppData/Local/electron/Cache
-          key: electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-${{ hashFiles('package-lock.json', '.github/workflows/electron-build.yml') }}
+          key: electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-${{ hashFiles('bun.lock', '.github/workflows/electron-build.yml') }}
           restore-keys: |
             electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-
       - name: Cache macOS icons and symbols
@@ -97,10 +100,10 @@ jobs:
           key: icons-v1-${{ matrix.runner }}-${{ hashFiles('doc/icon.png', 'electron/generate-icon.mjs', 'electron/export-symbols.swift', '.github/workflows/electron-build.yml') }}
       - name: Generate macOS icons and symbols
         if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
-        run: npm run icons:mac
+        run: bun run icons:mac
       # Both architectures share this host installation and frontend build.
       - name: Build frontend
-        run: npm run build
+        run: bun run build
       - name: Package primary architecture
         run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned --distribute
       - name: Launch packaged application

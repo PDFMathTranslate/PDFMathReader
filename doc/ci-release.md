@@ -5,7 +5,7 @@ It also supplies the packaged application metadata. CI never increments it.
 
 ## Test workflow
 
-`.github/workflows/electron-build.yml` (`Electron test`) runs on code pushes,
+`.github/workflows/electron-build.yml` (`Packaging`) runs on code pushes,
 pull requests, and manual dispatch. Commit prefixes do not control whether it runs.
 It builds macOS ARM64 and Intel, Windows x64 and ia32, and Linux x64 and ARMv7 packages.
 
@@ -20,7 +20,7 @@ separately launched on the x64 runners.
 
 ## Release workflow
 
-`.github/workflows/release.yml` (`Electron release`) follows a successful test run.
+`.github/workflows/release.yml` (`Release`) follows a successful test run.
 Only this repository's default-branch push/manual runs may publish; PRs and forks
 cannot publish. The workflow reads `package.json` from the exact tested commit
 and downloads the six archives from that same test run. It does not rebuild them.
@@ -35,18 +35,21 @@ The baseline prevents installing this workflow from publishing the existing
 Unchanged versions, version decreases, and build-metadata-only changes do not
 publish. A version with a prerelease suffix produces a GitHub prerelease.
 
-To ship a release, manually update the version, for example:
+To ship a release, manually edit the `version` field in `package.json`, then refresh the
+Bun lockfile, for example:
 
 ```sh
-npm version 0.1.1 --no-git-tag-version
+# Set "version" in package.json to 0.1.1, then run:
+bun install --lockfile-only
 ```
 
-This updates `package.json` and `package-lock.json`. Commit and push them to the
-default branch. Once every build and launch job passes, CI creates `v0.1.1` at the
-tested commit and publishes all six installation packages. No separate tag push
-or manual Release creation is needed. A failed test run cannot publish; a later
-successful run with the same increased version can publish it. Published versions
-are not replaced by subsequent fixes; bump the version again to release a fix.
+The manual edit updates `package.json`, and `bun install --lockfile-only`
+refreshes `bun.lock`. Commit and push both files to the default branch. Once every
+build and launch job passes, CI creates `v0.1.1` at the tested commit and publishes
+all six installation packages. No separate tag push or manual Release creation is
+needed. A failed test run cannot publish; a later successful run with the same
+increased version can publish it. Published versions are not replaced by subsequent
+fixes; bump the version again to release a fix.
 
 The packages retain the existing CI signing policy: macOS builds are unsigned
 and are not notarized. This workflow does not introduce signing credentials.

@@ -13,14 +13,12 @@ if (
   run.status !== 'completed' ||
   run.conclusion !== 'success' ||
   run.path !== '.github/workflows/electron-build.yml' ||
-  run.name !== 'Electron test' ||
+  run.name !== 'Packaging' ||
   run.head_repository?.full_name !== repo ||
   run.head_branch !== repository.default_branch ||
   !['push', 'workflow_dispatch'].includes(run.event)
 )
-  throw Error(
-    'Release requires a successful default-branch Electron test run from this repository',
-  );
+  throw Error('Release requires a successful default-branch Packaging run from this repository');
 const sha = run.head_sha;
 if (!/^[0-9a-f]{40}$/.test(sha)) throw Error('Invalid source commit');
 const packageFile = api(`repos/${repo}/contents/package.json?ref=${sha}`);
