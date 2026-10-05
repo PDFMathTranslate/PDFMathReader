@@ -909,14 +909,18 @@ else {
     window.webContents.on('will-navigate', (event, url) => {
       if (new URL(url).origin !== backend.origin) event.preventDefault();
     });
-    window.once('ready-to-show', () => {
+    const showLoadedWindow = () => {
       hideNativeMenuBar(window);
-      if (!backgroundRenderSmoke) {
+      if (!backgroundRenderSmoke && !window.isVisible()) {
         if (process.argv.includes('--background')) window.showInactive();
         else window.show();
       }
       updatePerformanceSampling(window);
-    });
+    };
+    window.once('ready-to-show', showLoadedWindow);
+    // Windows may finish loading the renderer without painting a hidden window.
+    // Show the actual application after load as well, preserving background tests.
+    if (process.platform === 'win32') window.webContents.once('did-finish-load', showLoadedWindow);
     window.on('focus', () => {
       updateAppearance();
       rebuildMenu();
