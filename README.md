@@ -31,13 +31,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date | Feature | Contributor |
 | --- | --- | --- |
+| 2026-10-05 | [improve settings, diagnostics and reader UX](https://github.com/PDFMathTranslate/PDFMathReader/commit/eadc9f1b89f2edfaec8ab9f97b3af522c4617494) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [configure kernel translation services and developer diagnostics](https://github.com/PDFMathTranslate/PDFMathReader/commit/7dc5fac3c5d67260fe82672ba768d62122022c71) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [localize existing advanced settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/3310855be06bf3bd171b2210b0206785ce3c60d3) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [expand translation languages by kernel with localized names](https://github.com/PDFMathTranslate/PDFMathReader/commit/add0d56890830dab44b612c1134fea47f3f52ab1) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [reduce background resource usage and default to reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/1abd72352f0fc8e59130e5a151244ab0adf869c2) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [add reading emphasis and simplify document menus](https://github.com/PDFMathTranslate/PDFMathReader/commit/9575ef499a1fb982060364f9733a5e85f804c223) | [@reycn](https://github.com/reycn) |
 | 2026-10-04 | [add persistent page edits and improve reader navigation](https://github.com/PDFMathTranslate/PDFMathReader/commit/908efd1612769e9b1a4caa8682eaa8cc735cdbb4) | [@reycn](https://github.com/reycn) |
-| 2026-10-04 | [add annotation search filters and grouping with sidebar refinements](https://github.com/PDFMathTranslate/PDFMathReader/commit/278ca22a5f6bbcb92ea72d259b7367ba86d44407) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
