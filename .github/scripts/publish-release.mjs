@@ -21,15 +21,41 @@ if (
   throw Error('Release requires a successful default-branch Packaging run from this repository');
 const sha = run.head_sha;
 if (!/^[0-9a-f]{40}$/.test(sha)) throw Error('Invalid source commit');
+const summary = (text) => {
+  console.log(text);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');
+};
+const commit = api(`repos/${repo}/commits/${sha}`);
+if (!commit.commit.message.startsWith('release')) {
+  summary('Commit message does not start with release; nothing to publish.');
+  process.exit(0);
+}
+// Wait for all independent CI workflows at this exact commit, excluding publication itself.
+const requiredWorkflows = ['Packaging', 'Code style', 'Update README recent features'];
+const deadline = Date.now() + 20 * 60 * 1000;
+while (true) {
+  const runs = JSON.parse(
+    gh('api', '--paginate', '--slurp', `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`),
+  ).flatMap((page) => page.workflow_runs);
+  const checks = requiredWorkflows.map(
+    (name) =>
+      runs
+        .filter((item) => item.name === name && item.event === run.event)
+        .sort((a, b) => b.id - a.id)[0],
+  );
+  if (checks.some((check) => check?.status === 'completed' && check.conclusion !== 'success'))
+    throw Error('All CI workflows must succeed before release');
+  if (checks.every((check) => check?.status === 'completed' && check.conclusion === 'success'))
+    break;
+  if (Date.now() >= deadline) throw Error('Timed out waiting for all CI workflows');
+  console.log('Waiting for all CI workflows at ' + sha);
+  await new Promise((resolve) => setTimeout(resolve, 15000));
+}
 const packageFile = api(`repos/${repo}/contents/package.json?ref=${sha}`);
 const { version } = JSON.parse(Buffer.from(packageFile.content, 'base64').toString());
 parseVersion(version);
 const releases = () =>
   JSON.parse(gh('api', '--paginate', '--slurp', `repos/${repo}/releases?per_page=100`)).flat();
-const summary = (text) => {
-  console.log(text);
-  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');
-};
 if (!shouldRelease(version, releases())) {
   summary(
     `Version ${version} has not increased beyond the release baseline or published releases; nothing to publish.`,

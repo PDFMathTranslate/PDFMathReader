@@ -34,5 +34,5 @@ jobs:
           node-version: '22'
       - name: Validate version gate
         run: node --test .github/scripts/*release*.test.mjs
-      - name: Publish tested packages only when version increases
+      - name: Publish release commit after all CI succeeds
         run: node .github/scripts/publish-release.mjs

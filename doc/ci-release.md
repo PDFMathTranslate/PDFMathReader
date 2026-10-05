@@ -21,6 +21,10 @@ separately launched on the x64 runners.
 ## Release workflow
 
 `.github/workflows/release.yml` (`Release`) follows a successful test run.
+The exact tested commit message must start with `release` (case-sensitive), and
+`Packaging`, `Code style`, and `Update README recent features` must all succeed
+at that same commit before publication. The release job waits for pending checks
+and rejects failed, cancelled, or skipped checks.
 Only this repository's default-branch push/manual runs may publish; PRs and forks
 cannot publish. The workflow reads `package.json` from the exact tested commit
 and downloads the six archives from that same test run. It does not rebuild them.
@@ -44,7 +48,9 @@ bun install --lockfile-only
 ```
 
 The manual edit updates `package.json`, and `bun install --lockfile-only`
-refreshes `bun.lock`. Commit and push both files to the default branch. Once every
+refreshes `bun.lock` when needed. Commit and push to the default branch using
+`git commit -m "release: 0.1.1"`. Ordinary `fix:` and `ci:` commits do not publish,
+even when the version increases. Once every
 build and launch job passes, CI creates `v0.1.1` at the tested commit and publishes
 all six installation packages. No separate tag push or manual Release creation is
 needed. A failed test run cannot publish; a later successful run with the same

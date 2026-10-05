@@ -46,7 +46,7 @@
     "vite": "^7.1.0",
     "vue": "^3.5.0"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local PDF reader with paragraph translation",
   "main": "electron/main.mjs",
   "engines": {
