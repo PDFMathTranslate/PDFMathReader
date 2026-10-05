@@ -1733,6 +1733,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:colo
 :is(.kernel-switcher,.translation-mode-switcher) button{position:relative;z-index:1;background:transparent;border:0;box-shadow:none;padding:5px 3px;min-height:28px;white-space:nowrap;font-size:12px;color:var(--text-secondary)}
 :is(.kernel-switcher,.translation-mode-switcher) button[aria-checked=true]{color:var(--text);font-weight:500}
 .desktop .sidebar{overflow:hidden;transition:flex-basis 220ms var(--motion-ease),opacity 180ms var(--motion-ease)}
+/* Empty sidebar space moves the window; navigation and resizing stay interactive. */
+.desktop .sidebar{-webkit-app-region:drag}
+.desktop .sidebar :is(button,input,select,textarea,label,.sidebar-resize-handle){-webkit-app-region:no-drag}
+.desktop .sidebar :is(.thumbnail-list,.sidebar-navigation-list)::-webkit-scrollbar{-webkit-app-region:no-drag}
 .desktop .sidebar.sidebar-motion-enter-from,.desktop .sidebar.sidebar-motion-leave-to,.sidebar.sidebar-motion-enter-from,.sidebar.sidebar-motion-leave-to{flex-basis:0;opacity:0}
 .sidebar-motion-enter-active,.sidebar-motion-leave-active{overflow:hidden;transition:flex-basis 220ms var(--motion-ease),opacity 180ms var(--motion-ease)}
 .page-navigator{position:fixed;right:22px;bottom:22px;z-index:20;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--chrome-border);border-radius:10px;background:var(--chrome);backdrop-filter:blur(20px);box-shadow:0 3px 14px #0002;color:var(--text-secondary)}
@@ -2118,3 +2122,49 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 .app .reference-return-actions>.quick-return-create{width:38px;padding:8px}
 .reference-return-actions>button:hover{background:var(--chrome-hover,var(--chrome))}
 .reference-return-actions>button:active{background:var(--chrome-pressed,var(--chrome))}
+
+/* Dedicated settings windows let AppKit own the outer frame and clipping. */
+.app.native-settings-host{width:100vw;height:100dvh;min-width:0;min-height:0;background:transparent;--toolbar-height:0px;--statusbar-height:0px;}
+
+/* Reader controls share one anchored layout while retaining separate island surfaces. */
+.reader-floating-tools{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;justify-content:flex-end;gap:8px;pointer-events:auto}
+.reader-floating-tools>:is(.floating-zoom,.page-navigator){position:static;inset:auto;transform:none;display:flex;align-items:center;gap:5px;min-height:40px;padding:5px;border:1px solid var(--chrome-border);border-radius:10px;background:var(--chrome);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 3px 14px #0002;color:var(--text-secondary);pointer-events:auto}
+.reader-floating-tools .page-navigator{right:auto;bottom:auto}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) button{display:grid;place-items:center;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;border:0;border-radius:6px;background:transparent;box-shadow:none;color:inherit;line-height:0}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) button:hover:not(:disabled){background:var(--chrome-hover);color:var(--text)}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) button:active:not(:disabled){background:var(--chrome-pressed)}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) .system-icon{display:block;width:16px;height:16px}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) form{display:flex;align-items:center;gap:4px;font-size:12px;line-height:1.2;white-space:nowrap}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) input{height:28px;padding:3px 5px;border:0;border-radius:5px;background:var(--chrome-raised);color:var(--text);font-size:12px;line-height:1.2;text-align:center;appearance:textfield}
+.reader-floating-tools .floating-zoom input{width:52px;min-width:52px}
+.reader-floating-tools .page-navigator input{width:42px;min-width:42px}
+.reader-floating-tools :is(.floating-zoom,.page-navigator) input::-webkit-inner-spin-button{appearance:none}
+.is-fullscreen .reader-floating-tools,.is-fullscreen .toolbar,.is-fullscreen .page-navigator{display:none}
+
+/* Keep the kernel recovery surface anchored to its toolbar control. */
+.toolbar:has(.kernel-error-popover){overflow:visible}
+.toolbar-kernel{position:relative;z-index:12;display:inline-flex;align-items:center;flex:0 0 auto;min-width:0}
+
+@media(max-width:700px){
+ .reader-floating-tools{right:10px;bottom:calc(var(--statusbar-height) + 12px + env(safe-area-inset-bottom,0px));gap:6px;max-width:calc(100vw - 20px)}
+ .reader-floating-tools>:is(.floating-zoom,.page-navigator){min-width:0}
+ .reader-floating-tools .floating-zoom input{width:48px;min-width:48px}
+}
+@media(max-width:420px){
+ .reader-floating-tools{right:8px;bottom:calc(var(--statusbar-height) + 10px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 16px)}
+ .reader-floating-tools>:is(.floating-zoom,.page-navigator){gap:3px;padding:4px}
+ .reader-floating-tools :is(.floating-zoom,.page-navigator) button{width:27px;height:27px;min-width:27px;min-height:27px}
+ .reader-floating-tools .floating-zoom input{width:44px;min-width:44px}
+}
+
+@media(prefers-reduced-transparency:reduce){
+ .reader-floating-tools>:is(.floating-zoom,.page-navigator){background:var(--chrome-solid);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .reader-floating-tools.navigator-motion-enter-active,.reader-floating-tools.navigator-motion-leave-active,.kernel-error-popover.settings-motion-enter-active,.kernel-error-popover.settings-motion-leave-active{transition:none!important}
+}
+.reduced-motion .reader-floating-tools.navigator-motion-enter-active,.reduced-motion .reader-floating-tools.navigator-motion-leave-active,.reduced-motion .kernel-error-popover.settings-motion-enter-active,.reduced-motion .kernel-error-popover.settings-motion-leave-active,[data-reduced-motion="true"] .reader-floating-tools.navigator-motion-enter-active,[data-reduced-motion="true"] .reader-floating-tools.navigator-motion-leave-active,[data-reduced-motion="true"] .kernel-error-popover.settings-motion-enter-active,[data-reduced-motion="true"] .kernel-error-popover.settings-motion-leave-active{transition:none!important}
+
+/* Settings labels and descriptions behave like native UI; fields stay editable. */
+.settings,.settings *{-webkit-user-select:none;user-select:none;}
+.settings :is(input,textarea,[contenteditable="true"]),.settings [contenteditable="true"] *{-webkit-user-select:text;user-select:text;}

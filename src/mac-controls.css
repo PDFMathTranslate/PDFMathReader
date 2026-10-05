@@ -196,6 +196,11 @@
 /* Continuous pages use the same zero spacing in CSS and virtual geometry. */
 :root[data-reduce-padding="true"] .app:not(.startup-page) .reader{--page-gutter:0px;padding:0;scroll-padding:0}
 :root[data-reduce-padding="true"] .page-layout{gap:0;padding:0}
+/* Keep the first vertical page clear of revealed chrome, even with reduced padding. */
+:root .app.vertical-immersive .reader,
+:root[data-reduce-padding="true"] .app.vertical-immersive .reader{padding-top:max(12px,var(--page-gutter))}
+:root .app.vertical-immersive.content-glass .reader,
+:root .desktop.app.vertical-immersive[data-platform="win32"] .reader{padding-top:calc(var(--toolbar-height) + max(12px,var(--page-gutter)));scroll-padding-top:var(--toolbar-height)}
 :root[data-reduce-padding="true"] .page{border:0;box-shadow:none}
 
 /* Crossfade theme snapshots without reflowing document pages. */
@@ -236,7 +241,7 @@
  display:block;margin:0;padding:12px 0;border-top:1px solid var(--chrome-divider);
  border-bottom:1px solid var(--chrome-divider);border-radius:0;background:transparent;
 }
-.advanced-settings:not([open])>.advanced-options{display:none}
+details.advanced-settings:not([open])>.advanced-options{display:none}
 .settings:not(.paragraph-detail) .settings-section>.advanced-settings+.kernel-status-line{padding-top:0}
 .settings:not(.paragraph-detail) .settings-section> :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting)+ :is(.setting-row,.translation-service-account,.translation-service-option,.kernel-setting){
  border-top:1px solid var(--chrome-divider);padding-top:12px;margin-top:0;
@@ -347,6 +352,27 @@
 .app[data-platform="darwin"] .toolbar input.zoom-popup{
  box-sizing:border-box;height:36px;min-height:36px;
  border-radius:12px;corner-shape:squircle;
+}
+
+/* Floating zoom uses the pager's shared island, button and input styles. */
+
+/* Keep the mode pop-up at toolbar scale rather than the library's form scale. */
+.app[data-platform="darwin"] .toolbar-kernel .macvue-pop-up-button{
+ box-sizing:border-box;min-width:76px;height:36px;min-height:36px;
+ padding-inline:12px 10px;gap:12px;border:0;
+ border-radius:12px;corner-shape:squircle;
+ font-family:inherit;font-size:13px;font-weight:500;line-height:1;
+ color:var(--text);background:var(--chrome-hover);box-shadow:none;
+ -webkit-app-region:no-drag;
+}
+.app[data-platform="darwin"] .toolbar-kernel .macvue-pop-up-button-chevron{
+ width:7px;height:11px;stroke-width:1.5;color:var(--text-secondary);
+}
+.app[data-platform="darwin"] .toolbar-kernel .macvue-pop-up-button:is(:hover,:active,[data-state="open"]):not(:disabled){
+ background:var(--chrome-pressed);
+}
+.app[data-platform="darwin"] .toolbar-kernel .macvue-pop-up-button:disabled{
+ color:var(--text-secondary);opacity:.5;
 }
 
 /* Match the palette's continuous corners in the macOS thumbnail rail. */

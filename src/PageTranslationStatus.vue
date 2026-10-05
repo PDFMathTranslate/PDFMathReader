@@ -28,13 +28,13 @@ const label=computed(()=>props.page.status==='queued'?t('pageStatus.queued'):pro
 </template>
 
 <style>
-.page-translation-progress{position:absolute;left:0;right:0;bottom:0;height:4px;overflow:hidden;background:#e5e5ea;z-index:9;pointer-events:none}
+.page-translation-progress{position:absolute;left:0;right:0;top:0;height:4px;overflow:hidden;background:#e5e5ea;z-index:9;pointer-events:none}
 .page-translation-progress-fill{display:block;width:100%;height:100%;background:var(--accent);transform-origin:left;transition:transform .2s ease}
 .page-translation-progress.cache-reading .page-translation-progress-fill{background:var(--text-secondary,#8e8e93)}
 .page-translation-progress.indeterminate .page-translation-progress-fill{width:35%;animation:page-translation-progress 1.6s ease-in-out infinite}
 .page-translation-progress.queued .page-translation-progress-fill{width:12%;animation:none;opacity:.55}
 @keyframes page-translation-progress{from{transform:translateX(-100%)}to{transform:translateX(386%)}}
-.page-translation-toast{position:absolute;right:12px;bottom:16px;box-sizing:border-box;max-width:min(380px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--chrome-border);border-radius:12px;background:var(--chrome-solid);color:var(--text);box-shadow:0 4px 18px #00000020;z-index:10;font-size:12px;line-height:1.4;text-align:left}
+.page-translation-toast{position:absolute;right:12px;bottom:16px;box-sizing:border-box;max-width:min(380px,calc(100% - 24px));max-height:calc(100% - 32px);overflow:auto;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--chrome-border);border-radius:12px;background:var(--chrome-solid);color:var(--text);box-shadow:0 4px 18px #00000020;z-index:10;font-size:12px;line-height:1.4;text-align:left}
 .page-translation-toast.error::before{content:none}
 .page-translation-toast-content{min-width:0;flex:1}
 .page-translation-toast-content strong{font-size:12px;font-weight:600}

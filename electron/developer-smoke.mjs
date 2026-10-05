@@ -11,8 +11,8 @@ export async function verifyDeveloper(reader,backend,token,createWindow){
  assert.equal((await fetch(backend.origin+'/api/developer/snapshot')).status,403);
  await wait(()=>evaluate(`!!document.querySelector('[aria-label="Translation settings"]')`));
  await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
- await wait(()=>evaluate(`!!document.querySelector('.advanced-settings')`));
- await evaluate(`document.querySelector('.advanced-settings summary').click()`);
+ await wait(()=>evaluate(`!!document.querySelector('[data-settings-category="kernel"]')`));
+ await evaluate(`document.querySelector('[data-settings-category="kernel"]').click()`);
  await wait(()=>evaluate(`!!document.querySelector('[aria-labelledby="developer-mode-label"]')`));
  await evaluate(`document.querySelector('[aria-labelledby="developer-mode-label"]').click()`);
  await wait(async()=>(await evaluate('window.previewDeveloper.enabled()'))===true);
@@ -26,6 +26,18 @@ export async function verifyDeveloper(reader,backend,token,createWindow){
  assert.ok(data.processes.some(process=>process.role==='backend'));
  assert.equal(data.backends[0].enabled,true);
  assert.ok(data.system.totalMemory>0);
+ assert.ok(data.mainOperationMetrics.operationCount>0);
+ assert.ok(Number.isFinite(data.mainOperationMetrics.averageOperationMs));
+ assert.ok(data.backendCommunicationMetrics.requestCount>0);
+ assert.ok(Number.isFinite(data.backendCommunicationMetrics.averageCommunicationMs));
+ assert.ok(data.backendCommunicationMetrics.errorRate>=0 && data.backendCommunicationMetrics.errorRate<=1);
+
+ await wait(()=>evaluate('Number.isFinite(window.previewRendererFrameMetrics?.fps)'));
+ const frameSnapshot=await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
+ const frames=frameSnapshot.backends.find(item=>item.windowId===reader.id).rendererFrameMetrics;
+ assert.ok(frames.fps>0 && Number.isFinite(frames.latencyMs),'live renderer FPS and callback latency');
+ assert.equal(await monitor.webContents.executeJavaScript('!!document.querySelector(".renderer-frame-metrics")'),true);
+
  assert.equal(await evaluate(`window.previewDeveloper.snapshot().then(()=>false,()=>true)`),true,'Readers cannot obtain monitor snapshots');
  await evaluate('window.previewDeveloper.open()');
  assert.equal(BrowserWindow.getAllWindows().length,2,'Open focuses existing monitor');
@@ -57,7 +69,12 @@ export async function verifyDeveloper(reader,backend,token,createWindow){
  assert.equal(await monitor.webContents.executeJavaScript('document.documentElement.scrollWidth<=innerWidth'),true,'Minimum width has no document overflow');
  await writeFile('/tmp/pdfmathreader-developer-compact.png',(await monitor.webContents.capturePage()).toPNG());
  const second=await createWindow();
+ await wait(()=>second.webContents.executeJavaScript('window.previewReady===true'));
+ await second.webContents.executeJavaScript(`(async()=>{const bytes=await (await fetch('/sample.pdf')).arrayBuffer();await window.previewDocuments.open(new File([bytes],'Metric sample.pdf',{type:'application/pdf'}));})()`);
+
  const later=await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
+ assert.ok(later.mainOperationMetrics.fileOpenCount>0);assert.ok(Number.isFinite(later.mainOperationMetrics.averageFileOpenMs));
+ assert.equal(await monitor.webContents.executeJavaScript('document.querySelectorAll(".resource-operation-metrics").length'),2);
  assert.equal(later.backends.length,2);assert.ok(later.backends.every(item=>item.enabled));
  await monitor.webContents.executeJavaScript('window.previewDeveloper.close()');
  await wait(async()=>!(await evaluate('window.previewDeveloper.enabled()'))&&!(await snapshot()).enabled);

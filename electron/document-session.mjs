@@ -16,6 +16,7 @@ export async function createDocumentSession(path){
   open(key,value){const document=entry(value);if(!document)throw Error('Invalid session document');live.set(key,document);last=document;return persist();},
   update(key,view){const current=live.get(key);if(current){const next={path:current.path,view:validateReadingView(view)};live.set(key,next);if(last===current)last=next;}return persist();},
   close(key){const current=live.get(key);if(current){last=current;live.delete(key);}return persist();},
+  saveOnQuit(){return persist();},
   flush:()=>writes
  };
 }

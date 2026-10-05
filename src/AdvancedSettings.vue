@@ -1,38 +1,24 @@
 <script setup>
-import {computed,ref,watch,onBeforeUnmount,onMounted} from 'vue';
+import {computed,ref,watch,onBeforeUnmount} from 'vue';
 import {MacButton,MacPopUpButton,MacPopUpButtonItem,MacSwitch,MacTextField,platform} from './platform-controls.mjs';
-import {t,uiLanguage,advancedOptionText,advancedChoiceText} from './i18n.mjs';
-import {developerText} from './developer-locales.mjs';
+import {t,advancedOptionText,advancedChoiceText} from './i18n.mjs';
+import DeveloperOptions from './DeveloperOptions.vue';
+import RecentDebugLogs from './RecentDebugLogs.vue';
 
-const developerAvailable=!!globalThis.window?.previewDeveloper;
-const developerEnabled=ref(false),developerBusy=ref(false),developerError=ref('');
-let unsubscribeDeveloper;
-const dt=key=>developerText(uiLanguage.value,'app.'+key);
-onMounted(async()=>{
- if(!window.previewDeveloper)return;
- unsubscribeDeveloper=window.previewDeveloper.onChange(value=>{developerEnabled.value=value;});
- try{developerEnabled.value=await window.previewDeveloper.enabled();}catch(error){developerError.value=error.message;}
-});
-onBeforeUnmount(()=>unsubscribeDeveloper?.());
-async function toggleDeveloper(enabled){
- if(developerBusy.value)return;
- developerBusy.value=true;developerError.value='';
- try{await window.previewDeveloper[enabled?'open':'close']();developerEnabled.value=enabled;}
- catch(error){developerError.value=error.message;}
- finally{developerBusy.value=false;}
-}
 const SUPPORTED_ENGINES=['pdf_math_fast','pdf_math_precise'];
 const INVALID=Symbol('invalid-advanced-value');
 const SERVICE_OPTIONS=['prompt','custom_system_prompt'];
 const props=defineProps({
  engine:{type:String,default:''},
  engineState:{type:Object,default:null},
+ inline:Boolean,
+ showDeveloper:{type:Boolean,default:true},
  installing:Boolean,
  uvAvailable:Boolean,
  modelValue:{type:Object,default:()=>({})}
 });
 const emit=defineEmits(['update:modelValue','reinstall']);
-const options=ref([]),busy=ref(false),message=ref(''),expanded=ref(false);
+const options=ref([]),busy=ref(false),message=ref(''),expanded=ref(props.inline);
 let generation=0,requestController;
 const eligible=computed(()=>SUPPORTED_ENGINES.includes(props.engine));
 const values=computed(()=>{
@@ -164,20 +150,17 @@ watch(schemaKey,async()=>{
  }catch(error){if(token===generation&&error.name!=='AbortError')message.value=error.message;}
  finally{if(token===generation)busy.value=false;}
 },{immediate:true});
-watch(()=>props.engine,()=>{expanded.value=false;});
+watch(()=>props.engine,()=>{expanded.value=props.inline;});
 onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=undefined;});
 </script>
 
 <template>
- <details :key="engine" class="settings-section advanced-settings" @toggle="expanded=$event.target.open">
-  <summary>{{t('advanced.section')}}</summary>
+ <component :is="inline?'section':'details'" :key="engine" :open="inline?undefined:expanded" class="settings-section advanced-settings" :aria-labelledby="inline?'settings-mode-options':undefined" @toggle="expanded=$event.target.open">
+  <summary v-if="!inline">{{t('advanced.section')}}</summary>
+  <h3 v-else id="settings-mode-options">{{t('settings.modeSettings')}}</h3>
   <div class="advanced-options">
-   <div v-if="developerAvailable" class="advanced-developer-mode">
-    <div class="setting-row"><span id="developer-mode-label">{{dt('developerMode')}}</span><MacSwitch :model-value="developerEnabled" :disabled="developerBusy" aria-labelledby="developer-mode-label" @update:model-value="toggleDeveloper"/></div>
-    <p class="muted">{{dt('developerHint')}}</p>
-    <MacButton v-if="developerEnabled" :disabled="developerBusy" @click="toggleDeveloper(true)">{{dt('openWindow')}}</MacButton>
-    <p v-if="developerError" class="muted" role="alert">{{developerError}}</p>
-   </div>
+   <DeveloperOptions v-if="showDeveloper" embedded/>
+   <p v-if="engine==='pdf_inspector'" class="muted">{{t('settings.kernelNoManualConfiguration')}}</p>
    <p v-if="busy" class="muted" role="status">{{t('advanced.loading')}}</p>
    <p v-else-if="message" class="muted" role="status">{{message}}</p>
    <div v-for="option in options" :key="option.id" class="advanced-option" :data-advanced-option="option.id">
@@ -193,16 +176,18 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
     <MacTextField v-if="option.type==='string'&&!option.choices?.length" :id="'advanced-input-'+option.id" :model-value="String(effectiveValue(option)??'')" :aria-labelledby="'advanced-'+option.id" @update:model-value="update(option,$event)"/>
     <p v-if="advancedOptionText(option,'help')" class="muted">{{advancedOptionText(option,'help')}}</p>
    </div>
-   <MacButton v-if="options.length" :disabled="!hasOverrides" :aria-label="t('advanced.restoreDefaults')" @click="reset">{{t('advanced.restoreDefaults')}}</MacButton>
-   <div class="advanced-kernel-update">
+   <MacButton v-if="options.length&&!$slots.maintenance" :disabled="!hasOverrides" :aria-label="t('advanced.restoreDefaults')" @click="reset">{{t('advanced.restoreDefaults')}}</MacButton>
+   <RecentDebugLogs :engine="engine" :debug-enabled="values.debug===true" :active="inline||expanded"/>
+   <div v-if="!$slots.maintenance" class="advanced-kernel-update" :class="{bundled:!eligible}">
     <p v-if="!eligible" class="muted">{{t('advanced.bundledKernel')}}</p>
-    <MacButton :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','release')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernel')}}</MacButton>
-    <MacButton :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','git')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernelGit')}}</MacButton>
+    <MacButton v-if="eligible||!inline" :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','release')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernel')}}</MacButton>
+    <MacButton v-if="eligible||!inline" :disabled="installing||!uvAvailable||!eligible" :aria-busy="installing" @click="emit('reinstall','git')">{{t(installing?'advanced.updatingKernel':'advanced.reinstallKernelGit')}}</MacButton>
    </div>
   </div>
- </details>
+ </component>
+ <slot name="maintenance" :reset="reset" :has-overrides="hasOverrides" :has-options="options.length>0" :eligible="eligible"/>
 </template>
 
 <style scoped>
-.advanced-developer-mode{padding-bottom:16px;margin-bottom:8px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.advanced-kernel-update.bundled{margin-top:0;padding-top:0;border-top:0}
 </style>

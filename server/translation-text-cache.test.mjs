@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createTranslationProvider,selectTranslationProvider,FREE_ENDPOINTS} from './translation-provider.mjs';
@@ -61,6 +61,22 @@ test('does not cache failed or empty OpenAI responses',async()=>{
   assert.equal((await emptyClient.complete(provider,emptyRequest,signal())).status,200);
   assert.equal((await emptyClient.complete(provider,emptyRequest,signal())).status,200);
   assert.equal(emptyCalls,2);
+ }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('named document registration creates a stable scoped text cache',async()=>{
+ const {createDocumentCache}=await import('./document-cache.mjs');
+ const {createHash}=await import('node:crypto');
+ const directory=await mkdtemp(join(tmpdir(),'translation-named-document-scope-'));let calls=0;
+ const hash=createHash('sha256').update('named PDF');
+ try{
+  const cache=createDocumentCache(directory);await cache.register(hash,'Named%20paper.pdf');
+  const scope=await cache.scope(hash);assert.match(scope,/^[0-9a-f]{64}:[0-9a-f-]{36}$/);
+  const client=createTranslationProvider(async()=>{calls++;return openAIResponse('scoped translation');},{cacheDirectory:join(directory,'text')});
+  const provider={id:'openai',model:'gpt-4.1-mini',key:'test'};
+  assert.equal(await content(await client.complete(provider,body(),signal(),{cacheScope:scope})),'scoped translation');
+  const [documentHash,generation]=scope.split(':');const files=await readdir(join(directory,'documents',documentHash,'text',generation));
+  assert.ok(files.some(file=>file.endsWith('.json')));assert.equal(await readdir(join(directory,'text')).catch(()=>[]).then(items=>items.length),0);assert.equal(calls,1);
  }finally{await rm(directory,{recursive:true,force:true});}
 });
 

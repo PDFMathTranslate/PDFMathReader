@@ -1,10 +1,171 @@
 <script setup>
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue';
+import DeveloperQuickTests from './DeveloperQuickTests.vue';
 import {developerText, normalizeDeveloperLanguage} from './developer-locales.mjs';
 
 const HISTORY_LENGTH = 28;
 const SAMPLE_INTERVAL = 1000;
 const EMPTY_VALUE = '—';
+
+const rendererMetricMessages = Object.freeze({
+  en: Object.freeze({
+    fps: 'FPS',
+    frameInterval: 'Frame interval',
+    latency: 'RAF scheduling latency',
+    fpsTooltip: 'Measured from requestAnimationFrame callbacks.',
+    frameIntervalTooltip: 'Average interval between requestAnimationFrame callbacks.',
+    latencyTooltip: 'Average callback scheduling lateness: performance.now() minus the requestAnimationFrame timestamp; this is not PDF render time.',
+    metricsAria: 'Renderer frame metrics',
+    hidden: 'Hidden',
+  }),
+  'zh-CN': Object.freeze({
+    fps: 'FPS',
+    frameInterval: '帧间隔',
+    latency: '帧回调延迟',
+    fpsTooltip: '根据 requestAnimationFrame 回调测得的每秒帧数。',
+    frameIntervalTooltip: 'requestAnimationFrame 回调之间的平均间隔。',
+    latencyTooltip: '回调调度延迟的平均值：performance.now() 减去 requestAnimationFrame 时间戳；这不是 PDF 渲染时长。',
+    metricsAria: '渲染器帧指标',
+    hidden: '隐藏',
+  }),
+  'zh-TW': Object.freeze({
+    fps: 'FPS',
+    frameInterval: '畫格間隔',
+    latency: 'RAF 排程延遲',
+    fpsTooltip: '根據 requestAnimationFrame 回呼測得的每秒畫格數。',
+    frameIntervalTooltip: 'requestAnimationFrame 回呼之間的平均間隔。',
+    latencyTooltip: '回呼排程延遲的平均值：performance.now() 減去 requestAnimationFrame 時間戳；這不是 PDF 渲染時間。',
+    metricsAria: '渲染器畫格指標',
+    hidden: '隱藏',
+  }),
+  fr: Object.freeze({
+    fps: 'FPS',
+    frameInterval: 'Intervalle entre les images',
+    latency: 'Latence de planification RAF',
+    fpsTooltip: 'Mesuré à partir des rappels requestAnimationFrame.',
+    frameIntervalTooltip: 'Intervalle moyen entre les rappels requestAnimationFrame.',
+    latencyTooltip: 'Moyenne du retard de planification du rappel : performance.now() moins l’horodatage requestAnimationFrame ; ce n’est pas la durée du rendu PDF.',
+    metricsAria: 'Mesures des images du moteur de rendu',
+    hidden: 'Masqué',
+  }),
+  es: Object.freeze({
+    fps: 'FPS',
+    frameInterval: 'Intervalo entre fotogramas',
+    latency: 'Latencia de programación de RAF',
+    fpsTooltip: 'Medidos a partir de las devoluciones de llamada de requestAnimationFrame.',
+    frameIntervalTooltip: 'Intervalo medio entre las devoluciones de llamada de requestAnimationFrame.',
+    latencyTooltip: 'Promedio del retraso de programación de la devolución de llamada: performance.now() menos la marca de tiempo de requestAnimationFrame; no es la duración del renderizado del PDF.',
+    metricsAria: 'Métricas de fotogramas del renderizador',
+    hidden: 'Oculto',
+  }),
+  ja: Object.freeze({
+    fps: 'FPS',
+    frameInterval: 'フレーム間隔',
+    latency: 'RAF スケジューリング遅延',
+    fpsTooltip: 'requestAnimationFrame コールバックから測定した値。',
+    frameIntervalTooltip: 'requestAnimationFrame コールバック間の平均間隔。',
+    latencyTooltip: 'コールバックのスケジューリング遅延の平均: performance.now() から requestAnimationFrame のタイムスタンプを引いた値。PDF のレンダリング時間ではありません。',
+    metricsAria: 'レンダラーのフレーム指標',
+    hidden: '非表示',
+  }),
+  ko: Object.freeze({
+    fps: 'FPS',
+    frameInterval: '프레임 간격',
+    latency: 'RAF 예약 지연',
+    fpsTooltip: 'requestAnimationFrame 콜백에서 측정한 값입니다.',
+    frameIntervalTooltip: 'requestAnimationFrame 콜백 사이의 평균 간격입니다.',
+    latencyTooltip: '콜백 예약 지연 평균: performance.now()에서 requestAnimationFrame 타임스탬프를 뺀 값이며 PDF 렌더링 시간이 아닙니다.',
+    metricsAria: '렌더러 프레임 지표',
+    hidden: '숨김',
+  }),
+});
+
+const operationMetricMessages = Object.freeze({
+  en: Object.freeze({
+    mainMetricsAria: 'Main process latency metrics',
+    operation: 'Avg operation latency',
+    fileOpen: 'Avg file-open latency',
+    operationTooltip: 'Average duration of completed main-process IPC handlers, excluding monitoring and performance polls.',
+    fileOpenTooltip: 'Average shell file-open delivery latency; excludes first-page rendering.',
+    backendMetricsAria: 'Backend communication metrics',
+    errorRate: 'Error rate',
+    communication: 'Avg communication duration',
+    errorRateTooltip: 'Backend requests ending in an error divided by all requests.',
+    communicationTooltip: 'Average browser-to-local-backend request round trip.',
+  }),
+  'zh-CN': Object.freeze({
+    mainMetricsAria: '主进程延迟指标',
+    operation: '平均操作延迟',
+    fileOpen: '平均文件打开延迟',
+    operationTooltip: '已完成的主进程 IPC 处理程序平均耗时，不包括监控和性能轮询。',
+    fileOpenTooltip: 'Shell 传递文件打开请求的平均延迟；不包括首屏渲染。',
+    backendMetricsAria: '后端通信指标',
+    errorRate: '错误率',
+    communication: '平均通信时长',
+    errorRateTooltip: '以错误结束的后端请求数除以请求总数。',
+    communicationTooltip: '浏览器到本地后端请求的平均往返时长。',
+  }),
+  'zh-TW': Object.freeze({
+    mainMetricsAria: '主程序延遲指標',
+    operation: '平均操作延遲',
+    fileOpen: '平均檔案開啟延遲',
+    operationTooltip: '已完成的主程序 IPC 處理常式平均耗時，不包括監控與效能輪詢。',
+    fileOpenTooltip: 'Shell 傳遞檔案開啟請求的平均延遲；不包括首頁渲染。',
+    backendMetricsAria: '後端通訊指標',
+    errorRate: '錯誤率',
+    communication: '平均通訊時長',
+    errorRateTooltip: '以錯誤結束的後端請求數除以請求總數。',
+    communicationTooltip: '瀏覽器到本機後端請求的平均往返時長。',
+  }),
+  fr: Object.freeze({
+    mainMetricsAria: 'Métriques de latence du processus principal',
+    operation: 'Latence moyenne des opérations',
+    fileOpen: "Latence moyenne d’ouverture de fichier",
+    operationTooltip: 'Durée moyenne des gestionnaires IPC terminés du processus principal, hors sondages de surveillance et de performance.',
+    fileOpenTooltip: 'Latence moyenne de remise du fichier par le shell ; hors rendu de la première page.',
+    backendMetricsAria: 'Métriques de communication du backend',
+    errorRate: "Taux d’erreur",
+    communication: 'Durée moyenne de communication',
+    errorRateTooltip: 'Nombre de requêtes backend terminées en erreur divisé par le nombre total de requêtes.',
+    communicationTooltip: 'Durée moyenne aller-retour d’une requête du navigateur vers le backend local.',
+  }),
+  es: Object.freeze({
+    mainMetricsAria: 'Métricas de latencia del proceso principal',
+    operation: 'Latencia media de operaciones',
+    fileOpen: 'Latencia media de apertura de archivos',
+    operationTooltip: 'Duración media de los controladores IPC completados del proceso principal, sin sondeos de supervisión ni rendimiento.',
+    fileOpenTooltip: 'Latencia media de entrega de apertura de archivos por el shell; no incluye el renderizado de la primera página.',
+    backendMetricsAria: 'Métricas de comunicación del backend',
+    errorRate: 'Tasa de errores',
+    communication: 'Duración media de comunicación',
+    errorRateTooltip: 'Número de solicitudes del backend terminadas con error dividido por el total de solicitudes.',
+    communicationTooltip: 'Duración media del viaje de ida y vuelta de una solicitud del navegador al backend local.',
+  }),
+  ja: Object.freeze({
+    mainMetricsAria: 'メインプロセスの遅延指標',
+    operation: '平均操作遅延',
+    fileOpen: '平均ファイルオープン遅延',
+    operationTooltip: '監視とパフォーマンスポーリングを除く、完了したメインプロセス IPC ハンドラーの平均時間。',
+    fileOpenTooltip: 'シェルからファイルオープンが渡されるまでの平均遅延。最初のページの描画時間は含みません。',
+    backendMetricsAria: 'バックエンド通信指標',
+    errorRate: 'エラー率',
+    communication: '平均通信時間',
+    errorRateTooltip: 'エラーで終了したバックエンドリクエスト数を全リクエスト数で割った値。',
+    communicationTooltip: 'ブラウザからローカルバックエンドまでのリクエスト往復時間の平均。',
+  }),
+  ko: Object.freeze({
+    mainMetricsAria: '메인 프로세스 지연 지표',
+    operation: '평균 작업 지연',
+    fileOpen: '평균 파일 열기 지연',
+    operationTooltip: '모니터링 및 성능 폴링을 제외한 완료된 메인 프로세스 IPC 핸들러의 평균 시간입니다.',
+    fileOpenTooltip: '셸에서 파일 열기 요청을 전달하는 평균 지연이며 첫 페이지 렌더링은 포함하지 않습니다.',
+    backendMetricsAria: '백엔드 통신 지표',
+    errorRate: '오류율',
+    communication: '평균 통신 시간',
+    errorRateTooltip: '오류로 끝난 백엔드 요청 수를 전체 요청 수로 나눈 값입니다.',
+    communicationTooltip: '브라우저에서 로컬 백엔드로 가는 요청의 평균 왕복 시간입니다.',
+  }),
+});
 
 const language = ref('en');
 const snapshotData = ref(null);
@@ -78,6 +239,12 @@ function nullableNonNegativeNumber(value) {
   return Number.isFinite(number) ? Math.max(0, number) : null;
 }
 
+function nullableFraction(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number.parseFloat(value);
+  return Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : null;
+}
+
 function normalizeTime(value) {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.getTime();
   if (typeof value === 'number' || (typeof value === 'string' && value.trim() && /^\d+(\.\d+)?$/.test(value.trim()))) {
@@ -101,6 +268,37 @@ function normalizeProgress(value) {
   const number = finiteNumber(value, Number.NaN);
   if (!Number.isFinite(number)) return null;
   return number >= 0 && number <= 1 ? number * 100 : Math.min(100, Math.max(0, number));
+}
+
+function normalizeRendererFrameMetrics(raw) {
+  const item = isRecord(raw) ? raw : {};
+  return {
+    fps: nullableNonNegativeNumber(item.fps),
+    frameIntervalMs: nullableNonNegativeNumber(item.frameIntervalMs),
+    latencyMs: nullableNonNegativeNumber(item.latencyMs),
+    sampledAt: normalizeTime(item.sampledAt),
+    hidden: typeof item.hidden === 'boolean' ? item.hidden : null,
+  };
+}
+
+function normalizeMainOperationMetrics(raw) {
+  const item = isRecord(raw) ? raw : {};
+  return {
+    operationCount: nullableNonNegativeNumber(item.operationCount),
+    averageOperationMs: nullableNonNegativeNumber(item.averageOperationMs),
+    fileOpenCount: nullableNonNegativeNumber(item.fileOpenCount),
+    averageFileOpenMs: nullableNonNegativeNumber(item.averageFileOpenMs),
+  };
+}
+
+function normalizeBackendCommunicationMetrics(raw) {
+  const item = isRecord(raw) ? raw : {};
+  return {
+    requestCount: nullableNonNegativeNumber(item.requestCount),
+    errorCount: nullableNonNegativeNumber(item.errorCount),
+    errorRate: nullableFraction(item.errorRate),
+    averageCommunicationMs: nullableNonNegativeNumber(item.averageCommunicationMs),
+  };
 }
 
 function roleName(value, fallback = 'unknown') {
@@ -167,6 +365,7 @@ function normalizeBackend(raw, index) {
     error: firstValue(item, ['error', 'failure', 'lastError'], null),
     processesStatus: normalizeProcessesStatus(firstValue(item, ['processesStatus', 'processStatus', 'processAvailability'], null)),
     processes: processSources.map(process => normalizeProcess(process, source, 'backend')),
+    rendererFrameMetrics: normalizeRendererFrameMetrics(firstValue(item, ['rendererFrameMetrics', 'frameMetrics'], null)),
     events,
     tasks,
     commands,
@@ -237,6 +436,24 @@ function sumBy(items, field) {
   return found ? total : null;
 }
 
+function averageBy(items, field) {
+  const values = items.map(item => item?.[field]).filter(Number.isFinite);
+  return values.length ? values.reduce((total, value) => total + value, 0) / values.length : null;
+}
+
+function rendererFrameMeasurement(data) {
+  const samples = (data?.backends || [])
+    .map(backend => backend.rendererFrameMetrics)
+    .filter(metrics => metrics && ['fps', 'frameIntervalMs', 'latencyMs'].some(key => Number.isFinite(metrics[key])));
+  return {
+    fps: averageBy(samples, 'fps'),
+    frameIntervalMs: averageBy(samples, 'frameIntervalMs'),
+    latencyMs: averageBy(samples, 'latencyMs'),
+    hidden: samples.length && samples.every(metrics => metrics.hidden === true) ? true : samples.length && samples.every(metrics => metrics.hidden === false) ? false : null,
+    sampleCount: samples.length,
+  };
+}
+
 // The compact header relies on exactly six stable, document-free diagnostics.
 function primaryMetrics(data) {
   const processes = Array.isArray(data?.processes) ? data.processes : [];
@@ -280,6 +497,8 @@ function normalizeSnapshot(input) {
   const systemSource = isRecord(source.system) ? source.system : {};
   const normalized = {
     sampledAt: normalizeTime(firstValue(source, ['sampledAt', 'timestamp', 'time'], null)),
+    mainOperationMetrics: normalizeMainOperationMetrics(firstValue(source, ['mainOperationMetrics'], null)),
+    backendCommunicationMetrics: normalizeBackendCommunicationMetrics(firstValue(source, ['backendCommunicationMetrics'], null)),
     system: {
       totalMemory: nonNegativeNumber(firstValue(systemSource, ['totalMemory', 'totalMemoryBytes', 'total'], 0)),
       freeMemory: nonNegativeNumber(firstValue(systemSource, ['freeMemory', 'freeMemoryBytes', 'free'], 0)),
@@ -313,6 +532,9 @@ function resourceMeasurement(data, key) {
     count: key === 'backend' ? backendCount : processes.length,
     enabledCount: key === 'backend' ? enabledBackendCount : processes.length,
     hasError: key === 'backend' && Boolean(data?.backends?.some(backend => backend.error)),
+    frameMetrics: key === 'renderers' ? rendererFrameMeasurement(data) : null,
+    mainOperationMetrics: key === 'main' ? data?.mainOperationMetrics : null,
+    backendCommunicationMetrics: key === 'backend' ? data?.backendCommunicationMetrics : null,
   };
 }
 
@@ -363,6 +585,67 @@ function formatBytes(value) {
 function formatCpu(value) {
   const number = nonNegativeNumber(value, Number.NaN);
   return Number.isFinite(number) ? `${number.toFixed(1)}%` : EMPTY_VALUE;
+}
+
+function rendererText(key) {
+  return rendererMetricMessages[language.value]?.[key] || rendererMetricMessages.en[key];
+}
+
+function formatMilliseconds(value) {
+  const number = nonNegativeNumber(value, Number.NaN);
+  return Number.isFinite(number) ? `${number.toFixed(1)} ms` : EMPTY_VALUE;
+}
+
+function formatFps(value) {
+  const number = nonNegativeNumber(value, Number.NaN);
+  return Number.isFinite(number) ? number.toFixed(1) : EMPTY_VALUE;
+}
+
+function rendererMetricRows(metrics) {
+  return [
+    {key: 'fps', label: rendererText('fps'), value: formatFps(metrics?.fps), title: rendererText('fpsTooltip')},
+    {key: 'frameInterval', label: rendererText('frameInterval'), value: formatMilliseconds(metrics?.frameIntervalMs), title: rendererText('frameIntervalTooltip')},
+    {key: 'latency', label: rendererText('latency'), value: formatMilliseconds(metrics?.latencyMs), title: rendererText('latencyTooltip')},
+  ];
+}
+
+function operationMetricText(key) {
+  return operationMetricMessages[language.value]?.[key] || operationMetricMessages.en[key];
+}
+
+function formatPercentage(value) {
+  const number = nullableFraction(value);
+  return number === null ? EMPTY_VALUE : `${(number * 100).toFixed(1)}%`;
+}
+
+function hasSamples(count) {
+  return Number.isFinite(count) && count > 0;
+}
+
+function formatSampledMilliseconds(value, count) {
+  return hasSamples(count) ? formatMilliseconds(value) : EMPTY_VALUE;
+}
+
+function formatSampledPercentage(value, count) {
+  return hasSamples(count) ? formatPercentage(value) : EMPTY_VALUE;
+}
+
+function operationMetricRows(card) {
+  if (card.key === 'main') {
+    const metrics = card.mainOperationMetrics || {};
+    return [
+      {key: 'operation', label: operationMetricText('operation'), value: formatSampledMilliseconds(metrics.averageOperationMs, metrics.operationCount), title: operationMetricText('operationTooltip')},
+      {key: 'fileOpen', label: operationMetricText('fileOpen'), value: formatSampledMilliseconds(metrics.averageFileOpenMs, metrics.fileOpenCount), title: operationMetricText('fileOpenTooltip')},
+    ];
+  }
+  if (card.key === 'backend') {
+    const metrics = card.backendCommunicationMetrics || {};
+    return [
+      {key: 'errorRate', label: operationMetricText('errorRate'), value: formatSampledPercentage(metrics.errorRate, metrics.requestCount), title: operationMetricText('errorRateTooltip')},
+      {key: 'communication', label: operationMetricText('communication'), value: formatSampledMilliseconds(metrics.averageCommunicationMs, metrics.requestCount), title: operationMetricText('communicationTooltip')},
+    ];
+  }
+  return [];
 }
 
 function formatCount(value) {
@@ -557,6 +840,8 @@ function diagnosticPayload() {
     sampledAt: data.sampledAt,
     system: data.system,
     primaryMetrics: primaryMetrics(data),
+    mainOperationMetrics: data.mainOperationMetrics || normalizeMainOperationMetrics(null),
+    backendCommunicationMetrics: data.backendCommunicationMetrics || normalizeBackendCommunicationMetrics(null),
     processes: (data.processes || []).map(process => ({
       pid: process.pid,
       role: process.role,
@@ -575,6 +860,7 @@ function diagnosticPayload() {
       eventCount: backend.events.length,
       taskCount: backend.tasks.length,
       processCount: backend.processes.length,
+      rendererFrameMetrics: backend.rendererFrameMetrics,
       kernels: [...new Set([...backend.events, ...backend.tasks, ...backend.commands].map(item => item.kernel).filter(Boolean))],
     })),
     events: (data.events || []).map(event => ({
@@ -682,6 +968,8 @@ onBeforeUnmount(() => {
     </div>
     <div v-if="copyFailed" class="copy-banner" role="status">{{ text('error.copy') }}</div>
 
+    <DeveloperQuickTests :language="language" />
+
     <section v-if="hasSample" class="summary-strip" :aria-label="text('resources.title')">
       <div class="summary-stat">
         <span class="summary-label">{{ text('resources.cpu') }}</span>
@@ -730,6 +1018,17 @@ onBeforeUnmount(() => {
           <div class="sparkline-stack" :aria-label="`${card.label} ${text('resources.cpu')} ${formatCpu(card.cpu)}, ${text('resources.rss')} ${formatBytes(card.rss)}`">
             <div class="sparkline-row"><span>{{ text('resources.cpu') }}</span><svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline :points="sparklinePoints(card.history.cpu)"></polyline></svg><strong>{{ formatCpu(card.cpu) }}</strong></div>
             <div class="sparkline-row sparkline-row--rss"><span>{{ text('resources.rss') }}</span><svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline :points="sparklinePoints(card.history.rss)"></polyline></svg><strong>{{ formatBytes(card.rss) }}</strong></div>
+          </div>
+          <div v-if="card.key === 'renderers'" class="renderer-frame-metrics" :aria-label="rendererText('metricsAria')">
+            <div v-for="metric in rendererMetricRows(card.frameMetrics)" :key="metric.key" class="renderer-frame-metric" :title="metric.title">
+              <span>{{ metric.label }}</span><strong>{{ metric.value }}</strong>
+            </div>
+            <span v-if="card.frameMetrics.hidden === true" class="renderer-hidden-state">{{ rendererText('hidden') }}</span>
+          </div>
+          <div v-if="card.key === 'main' || card.key === 'backend'" class="renderer-frame-metrics resource-operation-metrics" :aria-label="operationMetricText(card.key === 'main' ? 'mainMetricsAria' : 'backendMetricsAria')">
+            <div v-for="metric in operationMetricRows(card)" :key="metric.key" class="renderer-frame-metric" :title="metric.title">
+              <span>{{ metric.label }}</span><strong>{{ metric.value }}</strong>
+            </div>
           </div>
           <div v-if="card.status === 'idle'" class="resource-footnote">{{ text('resources.noProcess') }}</div>
         </article>
@@ -879,17 +1178,17 @@ onBeforeUnmount(() => {
 :global(button), :global(input), :global(select) { font: inherit; }
 
 .developer-window {
-  --dev-bg: #f4f5f8;
-  --dev-panel: rgba(255, 255, 255, .87);
+  --dev-bg: #f5f5f7;
+  --dev-panel: #fff;
   --dev-panel-solid: #fff;
   --dev-border: rgba(33, 45, 68, .1);
   --dev-border-strong: rgba(33, 45, 68, .16);
-  --dev-text: #182132;
-  --dev-muted: #6d7687;
-  --dev-faint: #9ba3b2;
+  --dev-text: #1d1d1f;
+  --dev-muted: #636366;
+  --dev-faint: #76767b;
   --dev-accent: #326bdf;
   --dev-accent-soft: #eaf0ff;
-  --dev-shadow: 0 12px 34px rgba(30, 45, 75, .08), 0 2px 8px rgba(30, 45, 75, .045);
+  --dev-shadow: 0 1px 3px rgba(0, 0, 0, .035);
   --dev-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   width: 100%;
   min-width: 760px;
@@ -898,7 +1197,7 @@ onBeforeUnmount(() => {
   overflow: auto;
   padding: 26px 30px 34px;
   color: var(--dev-text);
-  background: radial-gradient(circle at 92% -4%, rgba(89, 132, 230, .12), transparent 26rem), var(--dev-bg);
+  background: var(--dev-bg);
   color-scheme: light dark;
 }
 
@@ -920,7 +1219,7 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 .sample-status--waiting { color: var(--dev-muted); background: rgba(128, 139, 158, .1); }
 .updated-label { color: inherit; opacity: .62; font-weight: 500; }
 .icon-button, .secondary-button, .primary-button, .small-button, .banner-action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 30px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: background-color .16s ease, border-color .16s ease, transform .16s ease; }
-.icon-button:hover, .secondary-button:hover, .primary-button:hover, .small-button:hover, .banner-action:hover { transform: translateY(-1px); }
+.icon-button:hover, .secondary-button:hover, .primary-button:hover, .small-button:hover, .banner-action:hover { transform: none; background: color-mix(in srgb, var(--dev-accent) 8%, var(--dev-panel)); }
 .icon-button { width: 30px; border-color: var(--dev-border); color: var(--dev-muted); background: var(--dev-panel); font-size: 18px; }
 .secondary-button, .small-button { padding: 0 10px; border-color: var(--dev-border); color: var(--dev-text); background: var(--dev-panel); font-size: 12px; font-weight: 600; }
 .primary-button { padding: 0 12px; border-color: #326bdf; color: white; background: #326bdf; box-shadow: 0 4px 10px rgba(50,107,223,.2); font-size: 12px; font-weight: 650; }
@@ -933,7 +1232,7 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 .summary-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); max-width: 1480px; margin: 0 auto 18px; border: 1px solid var(--dev-border); border-radius: 12px; overflow: hidden; background: var(--dev-panel); box-shadow: var(--dev-shadow); }
 .summary-stat { min-width: 0; padding: 11px 15px; border-right: 1px solid var(--dev-border); }
 .summary-stat:last-child { border-right: 0; }
-.summary-label { display: block; overflow: hidden; color: var(--dev-muted); font-size: 10px; font-weight: 650; letter-spacing: .06em; line-height: 1.3; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.summary-label { display: block; overflow: hidden; color: var(--dev-muted); font-size: 10px; font-weight: 650; letter-spacing: .01em; line-height: 1.3; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
 .summary-stat strong { display: block; margin-top: 5px; color: var(--dev-text); font-family: var(--dev-mono); font-size: 15px; font-weight: 650; }
 .section-block, .panel { max-width: 1480px; margin-right: auto; margin-left: auto; }
 .section-block { margin-bottom: 18px; }
@@ -961,6 +1260,12 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 .sparkline-row polyline { fill: none; stroke: #4c7fe2; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; }
 .sparkline-row--rss polyline { stroke: #a4b9e9; }
 .sparkline-row strong { color: var(--dev-text); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.renderer-frame-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--dev-border); }
+.resource-operation-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.renderer-frame-metric { min-width: 0; cursor: help; }
+.renderer-frame-metric span { display: block; overflow: hidden; color: var(--dev-muted); font-size: 9px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.renderer-frame-metric strong { display: block; margin-top: 3px; color: var(--dev-text); font-family: var(--dev-mono); font-size: 11px; font-weight: 650; white-space: nowrap; }
+.renderer-hidden-state { grid-column: 1 / -1; color: var(--dev-faint); font-size: 9px; }
 .resource-footnote { margin-top: 7px; color: var(--dev-faint); font-size: 10px; }
 .availability-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; margin-top: 10px; padding: 8px 10px; border: 1px solid rgba(201, 138, 50, .22); border-radius: 9px; color: #8d641f; background: rgba(255, 247, 228, .82); font-size: 10px; }
 .availability-icon { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; color: #fff; background: #c98a32; font-size: 10px; font-weight: 700; }
@@ -991,7 +1296,7 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 .small-button { min-height: 29px; padding: 0 8px; font-size: 10px; }
 .console-viewport { max-height: 292px; min-height: 122px; overflow: auto; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.data-table th { position: sticky; top: 0; z-index: 1; padding: 8px 11px; border-bottom: 1px solid var(--dev-border); color: var(--dev-muted); background: color-mix(in srgb, var(--dev-panel-solid) 94%, transparent); font-size: 9px; font-weight: 700; letter-spacing: .065em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.data-table th { position: sticky; top: 0; z-index: 1; padding: 8px 11px; border-bottom: 1px solid var(--dev-border); color: var(--dev-muted); background: color-mix(in srgb, var(--dev-panel-solid) 94%, transparent); font-size: 9px; font-weight: 700; letter-spacing: .01em; text-align: left; text-transform: none; white-space: nowrap; }
 .data-table td { max-width: 0; padding: 9px 11px; border-bottom: 1px solid var(--dev-border); color: var(--dev-text); font-size: 11px; vertical-align: middle; }
 .data-table tr:last-child td { border-bottom: 0; }
 .data-table tbody tr:hover td { background: color-mix(in srgb, var(--dev-accent-soft) 52%, transparent); }
@@ -1007,7 +1312,7 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 .panel-footnote { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-top: 1px solid var(--dev-border); color: var(--dev-muted); font-size: 10px; }
 .pause-mark { font-family: var(--dev-mono); }
 .lower-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); max-width: 1480px; margin: 0 auto; gap: 14px; padding-bottom: 18px; }
-.table-panel { min-width: 0; overflow: hidden; }
+.table-panel { width: 100%; min-width: 0; overflow: hidden; }
 .panel-icon { color: var(--dev-faint); font-size: 18px; }
 .queue-counts { display: flex; align-items: center; gap: 7px; color: var(--dev-muted); font-size: 9px; white-space: nowrap; }.queue-count--failed { color: #b5534f; }
 .table-scroll { max-height: 286px; overflow: auto; }
@@ -1045,12 +1350,71 @@ h1 { font-size: 20px; letter-spacing: -.025em; font-weight: 700; }
 
 @media (prefers-color-scheme: dark) {
   :global(body) { background: #11151c; color: #e8edf6; }
-  .developer-window { --dev-bg: #11151c; --dev-panel: rgba(29, 35, 46, .9); --dev-panel-solid: #1d232e; --dev-border: rgba(220, 231, 250, .11); --dev-border-strong: rgba(220, 231, 250, .18); --dev-text: #e8edf6; --dev-muted: #9ea9bb; --dev-faint: #687487; --dev-accent: #83aaf8; --dev-accent-soft: #243452; --dev-shadow: 0 16px 36px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.15); background: radial-gradient(circle at 92% -4%, rgba(71, 112, 213, .18), transparent 26rem), var(--dev-bg); }
+  .developer-window { --dev-bg: #202022; --dev-panel: #2c2c2e; --dev-panel-solid: #2c2c2e; --dev-border: rgba(220, 231, 250, .11); --dev-border-strong: rgba(220, 231, 250, .18); --dev-text: #e8edf6; --dev-muted: #9ea9bb; --dev-faint: #687487; --dev-accent: #83aaf8; --dev-accent-soft: #243452; --dev-shadow: 0 1px 3px rgba(0,0,0,.12); background: var(--dev-bg); }
   .brand-mark { border-color: rgba(131,170,248,.22); background: linear-gradient(145deg, #243557, #1d2942); }.brand-mark span { background: #83aaf8; }
   .sample-status { color: #84c99e; background: rgba(48, 106, 72, .23); }.sample-status--paused { color: #ddb86b; background: rgba(126, 91, 25, .22); }.sample-status--waiting { color: var(--dev-muted); background: rgba(160, 174, 198, .1); }
   .primary-button { color: #101725; background: #83aaf8; border-color: #83aaf8; }.error-banner { color: #f0a39c; background: rgba(116, 45, 42, .23); border-color: rgba(240,163,156,.24); }.copy-banner { color: #a9c5ff; background: rgba(44, 73, 132, .25); border-color: rgba(131,170,248,.24); }.error-icon { color: #231216; background: #f0a39c; }.availability-strip { color: #e5bd78; background: rgba(126, 91, 25, .22); border-color: rgba(229,189,120,.22); }.availability-icon { color: #2b2112; background: #e5bd78; }
   .kind-pill { color: #aec7ff; background: #25385e; }.role-renderer { color: #c4affd; background: #362d58; }.role-backend { color: #e5bd78; background: #4a3b25; }.role-kernel, .role-kernel-worker { color: #8ad3ad; background: #254b39; }.role-main { color: #aec7ff; background: #25385e; }.task-state { color: var(--dev-muted); background: rgba(160,174,198,.12); }.task-state--running { color: #aec7ff; background: #25385e; }.task-state--queued, .task-state--waiting { color: #e5bd78; background: #4a3b25; }.task-state--completed { color: #8ad3ad; background: #254b39; }.task-state--failed { color: #f0a39c; background: #532d2b; }.toggle-track { background: #536074; }.toggle-track span { background: #d9e2f5; }
   .sparkline-row polyline { stroke: #83aaf8; }.sparkline-row--rss polyline { stroke: #536f9f; }.empty-illustration span { background: #3d527c; }.empty-illustration span:nth-child(2) { background: #83aaf8; }.empty-illustration span:nth-child(3) { background: #627fac; }
+}
+
+
+/* The control layer floats above quiet, opaque diagnostic content. */
+.developer-header {
+  position: sticky; top: -26px; z-index: 5;
+  padding: 16px 18px; margin-bottom: 24px; border-radius: 20px;
+  background: color-mix(in srgb, var(--dev-panel-solid) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--dev-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 4px 16px rgba(0,0,0,.05);
+}
+h1 { font-size: 18px; font-weight: 650; }
+.brand-mark { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; }
+.sample-status { border: 0; background: transparent; font-size: 11px; font-weight: 500; }
+.sample-status--paused, .sample-status--waiting { background: transparent; }
+.icon-button, .secondary-button, .primary-button { min-height: 32px; border-radius: 99px; }
+.icon-button { width: 32px; }
+.primary-button { color: var(--dev-text); border-color: var(--dev-border); background: var(--dev-panel); box-shadow: none; font-weight: 600; }
+.primary-button[aria-pressed="true"] { color: var(--dev-accent); background: var(--dev-accent-soft); }
+.icon-button:active:not(:disabled), .secondary-button:active:not(:disabled), .primary-button:active:not(:disabled), .small-button:active:not(:disabled), .tab-button:active { transform: scale(.97); transition-duration: 60ms; }
+button:focus-visible, select:focus-visible, .search-field:focus-within, .toggle-control:has(input:focus-visible) .toggle-track { outline: 3px solid color-mix(in srgb, var(--dev-accent) 65%, transparent); outline-offset: 3px; }
+.summary-strip { border-radius: 16px; }
+.summary-stat { padding: 14px 16px; }
+.summary-stat strong { font-family: inherit; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.resource-grid { gap: 12px; }
+.resource-card { padding: 16px; border-radius: 16px; }
+.resource-number { font-family: inherit; font-variant-numeric: tabular-nums; letter-spacing: -.025em; font-size: 28px; }
+.section-heading h2, .panel-heading h2 { font-weight: 600; }
+.panel { border-radius: 16px; }
+.console-heading { gap: 12px; padding: 12px; }
+.tab-list { align-self: center; flex-shrink: 0; gap: 2px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--dev-muted) 10%, transparent); }
+.tab-button { min-height: 28px; padding: 0 12px; border-radius: 7px; font-size: 12px; font-weight: 500; }
+.tab-button::after { content: none; }
+.tab-button.active { color: var(--dev-text); background: var(--dev-panel-solid); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.search-field { height: 32px; border-radius: 9px; }
+.kernel-select select { height: 32px; border-radius: 9px; }
+.data-table th { font-size: 11px; font-weight: 600; padding-top: 10px; padding-bottom: 10px; }
+.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--dev-muted) 4%, transparent); }
+.data-table td { border-bottom-color: color-mix(in srgb, var(--dev-border) 45%, transparent); }
+.kind-pill, .role-badge, .task-state { border-radius: 6px; font-size: 10px; }
+@media (max-width: 980px) {
+  .developer-header { top: -21px; gap: 12px; }
+  .console-tools { flex-wrap: wrap; gap: 10px; padding-bottom: 0; }
+  .search-field { flex: 1; width: auto; }
+}
+@media (prefers-color-scheme: dark) {
+  .primary-button { color: var(--dev-text); border-color: var(--dev-border); background: var(--dev-panel); }
+  .sample-status, .sample-status--paused, .sample-status--waiting { background: transparent; }
+  .resource-state { color: #84c99e; }
+  .resource-state--idle { color: var(--dev-muted); }
+  .resource-state--error { color: #f0a39c; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .developer-header { background: var(--dev-panel-solid); backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .developer-window { --dev-border: color-mix(in srgb, var(--dev-text) 45%, transparent); --dev-muted: var(--dev-text); --dev-faint: var(--dev-text); }
+  .developer-header { background: var(--dev-panel-solid); backdrop-filter: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

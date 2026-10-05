@@ -5,6 +5,11 @@ export async function verifyResourceUsage(window){
  const wait=async predicate=>{for(let i=0;i<100;i++){if(await evaluate(predicate))return;await new Promise(r=>setTimeout(r,100));}throw Error('Resource usage state timed out: '+predicate);};
  await wait('window.previewReady===true');
  assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.reduceResourceUsage)'),true);
+ assert.equal(window.webContents.getBackgroundThrottling(),true);
+ await evaluate('window.previewPreferences.save({reduceBackgroundFrameRate:false})');
+ assert.equal(window.webContents.getBackgroundThrottling(),false);
+ await evaluate('window.previewPreferences.save({reduceBackgroundFrameRate:true})');
+ assert.equal(window.webContents.getBackgroundThrottling(),true);
  await evaluate("document.querySelector('.empty .sample')?.click() || [...document.querySelectorAll('button')].find(b=>b.textContent.includes('sample'))?.click()");
  await wait('window.previewRenderDiagnostics().residentBytes>0');
  const before=await evaluate('window.previewRenderDiagnostics()');

@@ -49,6 +49,8 @@ jobs:
             extra-arch: armv7l
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         id: node
         with:

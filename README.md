@@ -20,7 +20,7 @@ Read scientific documents in any language, with realtime translation, on any pla
 - Navigate with thumbnails, zoom, fit-to-page controls, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
 - Resume recent documents with their reading position and display settings restored.
 - Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
-- Configure translation language, concurrency, and kernel-specific options in Settings. Interface language is configured separately.
+- Configure translation language, concurrency, and kernel-specific options in Settings. On macOS, Settings opens in an independent window with native window controls and draggable sidebar/header areas. General and appearance settings use a two-column layout; Providers and Kernel use a category sidebar, a service/options list, and a detail pane. Provider catalogs follow the selected kernel. The previous settings interface remains available from **Previous settings**. Both interfaces share the same preferences and credential storage. Interface language is configured separately. The **Translation** menu lists the current kernel’s source/target languages, kernel choices, interface languages, and providers that are configured, system supplied, or automatic. Menu selections share the settings state and restore saved provider profiles.
   Target languages follow the selected kernel: Inspector offers 51 choices, Fast offers its 10 upstream languages, and Precise offers 47 choices based on BabelDOC’s [supported languages](https://funstory-ai.github.io/BabelDOC/supported_languages/). Language names follow all seven interface locales; source languages use the shared 51-language catalog. Switching kernels keeps compatible selections and resets unsupported targets to Simplified Chinese.
   Existing Advanced option labels, descriptions, and font-category choices follow the interface language in all seven supported languages. Newly added kernel options fall back to their upstream text until translations are provided; saved parameter values stay unchanged.
 - Create saved bidirectional links between a search result and its reading origin, with link buttons available in both original and translated views.
@@ -108,6 +108,8 @@ npm run package:win
 ```
 
 Frontend libraries (Vue, MacVue, and Fluent UI) are build dependencies: Vite includes them in `dist`. Node dependencies used by the server or Electron main process remain runtime dependencies. Install with `npm ci` before building; `npm ci --omit=dev` cannot build or package the app.
+
+The About page shows the application, installed kernels and UV versions. Each Vite build embeds `dist/build-info.json` with the package version and the latest ten conventional `feat` commits (including scoped and breaking features); release CI checks out the full Git history. The installed app reads this snapshot without Git or network access. Builds from a source archive without Git show an empty update list.
 
 The default Electron package bundles Express and PDF utilities into the backend/main scripts, retaining their licenses. It copies only external runtime modules into the staged `node_modules`; native PDF Inspector bindings and the PDF.js/DOMMatrix fallback for unsupported native targets remain available. Electron itself and packaging tools are supplied by the build toolchain.
 

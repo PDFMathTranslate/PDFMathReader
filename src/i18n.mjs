@@ -2,8 +2,10 @@ import {ref} from 'vue';
 import {extraMessages} from './locales-extra.mjs';
 import {advancedMessages} from './advanced-locales.mjs';
 
-export const SUPPORTED_UI_LANGUAGES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'fr', 'es', 'ja', 'ko']);
-export const uiLanguage = ref('en');
+import {SUPPORTED_UI_LANGUAGES,resolveUILanguage} from './ui-language.mjs';
+export {SUPPORTED_UI_LANGUAGES};
+export const uiLanguageChoice = ref('system');
+export const uiLanguage = ref(resolveUILanguage('system'));
 
 const messages = {
  en: {
@@ -725,13 +727,13 @@ for(const [locale,[label,hint]] of Object.entries(informationLabels)){messages[l
 const resourceUsageLabels={"en": ["Reduce resource usage", "Pause background rendering and release page bitmaps when minimized or inactive. Full-document translation continues."], "zh-CN": ["降低资源占用", "窗口最小化或应用非前台时暂停绘制并释放页面位图；全文翻译继续执行。"], "zh-TW": ["降低資源佔用", "視窗最小化或應用程式非前景時暫停繪製並釋放頁面點陣圖；全文翻譯繼續執行。"], "ja": ["リソース使用量を削減", "最小化・非アクティブ時に描画を停止し、ページ画像を解放します。全文翻訳は継続します。"], "ko": ["리소스 사용량 줄이기", "최소화하거나 비활성 상태일 때 렌더링을 멈추고 페이지 이미지를 해제합니다. 전체 문서 번역은 계속됩니다."], "fr": ["Réduire l’utilisation des ressources", "Suspendre le rendu et libérer les images en arrière-plan. La traduction intégrale continue."], "es": ["Reducir el uso de recursos", "Pausar el renderizado y liberar imágenes en segundo plano. La traducción completa continúa."]};
 for(const [locale,[label,hint]] of Object.entries(resourceUsageLabels)){messages[locale].settings.reduceResourceUsage=label;messages[locale].settings.reduceResourceUsageHint=hint;}
 const translationServiceLabels={
- en:{translationService:'Translation service',translationServiceAuto:'Automatic',translationServiceOpenAI:'OpenAI compatible',translationServiceAppleLocal:'Apple Translation (on device)',translationServiceLoading:'Loading translation services…',translationServiceUnavailable:'Translation services are unavailable.',translationServiceRetry:'Retry'},
- 'zh-CN':{translationService:'翻译服务',translationServiceAuto:'自动',translationServiceOpenAI:'兼容 OpenAI',translationServiceAppleLocal:'Apple 翻译（设备端）',translationServiceLoading:'正在加载翻译服务…',translationServiceUnavailable:'翻译服务不可用。',translationServiceRetry:'重试'},
- 'zh-TW':{translationService:'翻譯服務',translationServiceAuto:'自動',translationServiceOpenAI:'相容 OpenAI',translationServiceAppleLocal:'Apple 翻譯（裝置端）',translationServiceLoading:'正在載入翻譯服務…',translationServiceUnavailable:'翻譯服務無法使用。',translationServiceRetry:'重試'},
- ja:{translationService:'翻訳サービス',translationServiceAuto:'自動',translationServiceOpenAI:'OpenAI 互換',translationServiceAppleLocal:'Apple 翻訳（デバイス上）',translationServiceLoading:'翻訳サービスを読み込み中…',translationServiceUnavailable:'翻訳サービスを利用できません。',translationServiceRetry:'再試行'},
- ko:{translationService:'번역 서비스',translationServiceAuto:'자동',translationServiceOpenAI:'OpenAI 호환',translationServiceAppleLocal:'Apple 번역 (기기에서)',translationServiceLoading:'번역 서비스 로드 중…',translationServiceUnavailable:'번역 서비스를 사용할 수 없습니다.',translationServiceRetry:'다시 시도'},
- fr:{translationService:'Service de traduction',translationServiceAuto:'Automatique',translationServiceOpenAI:'Compatible OpenAI',translationServiceAppleLocal:'Traduction Apple (sur l’appareil)',translationServiceLoading:'Chargement des services de traduction…',translationServiceUnavailable:'Services de traduction indisponibles.',translationServiceRetry:'Réessayer'},
- es:{translationService:'Servicio de traducción',translationServiceAuto:'Automático',translationServiceOpenAI:'Compatible con OpenAI',translationServiceAppleLocal:'Traducción de Apple (en el dispositivo)',translationServiceLoading:'Cargando servicios de traducción…',translationServiceUnavailable:'Los servicios de traducción no están disponibles.',translationServiceRetry:'Reintentar'}
+ en:{translationService:'Translation service',translationServiceAuto:'Automatic',translationServiceOpenAI:'OpenAI compatible',translationServiceAppleLocal:'Apple Translation (on device)',translationServiceSiliconFlowFree:'SiliconFlow free',translationServiceLoading:'Loading translation services…',translationServiceUnavailable:'Translation services are unavailable.',translationServiceRetry:'Retry'},
+ 'zh-CN':{translationService:'翻译服务',translationServiceAuto:'自动',translationServiceOpenAI:'兼容 OpenAI',translationServiceAppleLocal:'Apple 翻译（设备端）',translationServiceSiliconFlowFree:'SiliconFlow 免费服务',translationServiceLoading:'正在加载翻译服务…',translationServiceUnavailable:'翻译服务不可用。',translationServiceRetry:'重试'},
+ 'zh-TW':{translationService:'翻譯服務',translationServiceAuto:'自動',translationServiceOpenAI:'相容 OpenAI',translationServiceAppleLocal:'Apple 翻譯（裝置端）',translationServiceSiliconFlowFree:'SiliconFlow 免費服務',translationServiceLoading:'正在載入翻譯服務…',translationServiceUnavailable:'翻譯服務無法使用。',translationServiceRetry:'重試'},
+ ja:{translationService:'翻訳サービス',translationServiceAuto:'自動',translationServiceOpenAI:'OpenAI 互換',translationServiceAppleLocal:'Apple 翻訳（デバイス上）',translationServiceSiliconFlowFree:'SiliconFlow 無料サービス',translationServiceLoading:'翻訳サービスを読み込み中…',translationServiceUnavailable:'翻訳サービスを利用できません。',translationServiceRetry:'再試行'},
+ ko:{translationService:'번역 서비스',translationServiceAuto:'자동',translationServiceOpenAI:'OpenAI 호환',translationServiceAppleLocal:'Apple 번역 (기기에서)',translationServiceSiliconFlowFree:'SiliconFlow 무료 서비스',translationServiceLoading:'번역 서비스 로드 중…',translationServiceUnavailable:'번역 서비스를 사용할 수 없습니다.',translationServiceRetry:'다시 시도'},
+ fr:{translationService:'Service de traduction',translationServiceAuto:'Automatique',translationServiceOpenAI:'Compatible OpenAI',translationServiceAppleLocal:'Traduction Apple (sur l’appareil)',translationServiceSiliconFlowFree:'SiliconFlow gratuit',translationServiceLoading:'Chargement des services de traduction…',translationServiceUnavailable:'Services de traduction indisponibles.',translationServiceRetry:'Réessayer'},
+ es:{translationService:'Servicio de traducción',translationServiceAuto:'Automático',translationServiceOpenAI:'Compatible con OpenAI',translationServiceAppleLocal:'Traducción de Apple (en el dispositivo)',translationServiceSiliconFlowFree:'SiliconFlow gratuito',translationServiceLoading:'Cargando servicios de traducción…',translationServiceUnavailable:'Los servicios de traducción no están disponibles.',translationServiceRetry:'Reintentar'}
 };
 for(const [locale,labels] of Object.entries(translationServiceLabels))Object.assign(messages[locale].settings,labels);
 export const UI_MESSAGES=messages;
@@ -750,10 +752,11 @@ function supportedLanguage(code) {
 }
 
 export function setUILanguage(code) {
- uiLanguage.value = supportedLanguage(code);
+ uiLanguageChoice.value = code==='system'||SUPPORTED_UI_LANGUAGES.includes(code) ? code : 'system';
+ uiLanguage.value = resolveUILanguage(uiLanguageChoice.value);
  const documentElement = globalThis.document?.documentElement;
  if (documentElement) documentElement.lang = uiLanguage.value;
- return uiLanguage.value;
+ return uiLanguageChoice.value;
 }
 
 export function t(key, params = {}) {
@@ -775,3 +778,64 @@ export function advancedChoiceText(option, choice) {
  const key = `advanced.choices.${choice}`;
  return typeof lookup('en', key) === 'string' ? t(key) : String(choice);
 }
+
+const appearanceSectionLabels={en:['Style','Interface','Language'],'zh-CN':['样式','界面','语言'],'zh-TW':['樣式','介面','語言'],ja:['スタイル','インターフェイス','言語'],ko:['스타일','인터페이스','언어'],fr:['Style','Interface','Langue'],es:['Estilo','Interfaz','Idioma']};
+for(const [locale,[style,interfaceLabel,language]] of Object.entries(appearanceSectionLabels)){Object.assign(messages[locale].appearance,{style,interface:interfaceLabel,language});}
+
+const emphasisSectionLabels={en:'Emphasis','zh-CN':'强调','zh-TW':'強調',ja:'強調',ko:'강조',fr:'Mise en évidence',es:'Énfasis'};
+for(const [locale,label] of Object.entries(emphasisSectionLabels))messages[locale].settings.emphasis=label;
+
+const translationSectionLabels={en:['Language','Behavior','Parallelism'],'zh-CN':['语言','行为','并行'],'zh-TW':['語言','行為','平行'],ja:['言語','動作','並列処理'],ko:['언어','동작','병렬 처리'],fr:['Langue','Comportement','Parallélisme'],es:['Idioma','Comportamiento','Paralelismo']};
+for(const [locale,[languageSection,behaviorSection,parallelSection]] of Object.entries(translationSectionLabels)){Object.assign(messages[locale].settings,{languageSection,behaviorSection,parallelSection});}
+
+const dependencySectionLabels={en:'Dependencies','zh-CN':'依赖项目','zh-TW':'相依專案',ja:'依存プロジェクト',ko:'의존 프로젝트',fr:'Dépendances',es:'Dependencias'};
+for(const [locale,label] of Object.entries(dependencySectionLabels))messages[locale].settings.dependencies=label;
+
+const providerGroupLabels={en:['Configured','Not configured','Errors','None'],'zh-CN':['已经配置','尚未配置','存在错误','暂无'],'zh-TW':['已經設定','尚未設定','存在錯誤','暫無'],ja:['設定済み','未設定','エラーあり','なし'],ko:['설정됨','미설정','오류 있음','없음'],fr:['Configurés','Non configurés','En erreur','Aucun'],es:['Configurados','Sin configurar','Con errores','Ninguno']};
+for(const [locale,[configured,unconfigured,error,empty]] of Object.entries(providerGroupLabels)){messages[locale].settings.providerGroups={configured,unconfigured,error,empty};}
+
+const kernelRecoveryLabels={
+ en:['Ignore for 5 minutes','Retry','This kernel is bundled with the app. Reinstall or update the app to rebuild it.'],
+ 'zh-CN':['忽略 5 分钟','重试','此内核随应用内置；请重新安装或更新应用以重建。'],
+ 'zh-TW':['忽略 5 分鐘','重試','此核心隨應用程式內建；請重新安裝或更新應用程式以重建。'],
+ ja:['5分間無視','再試行','このカーネルはアプリに同梱されています。再インストールまたは更新してください。'],
+ ko:['5분 동안 무시','재시도','이 커널은 앱에 포함되어 있습니다. 앱을 재설치하거나 업데이트하세요.'],
+ fr:['Ignorer pendant 5 minutes','Réessayer',"Ce noyau est intégré à l’application. Réinstallez ou mettez à jour l’application."],
+ es:['Ignorar durante 5 minutos','Reintentar','Este núcleo está integrado en la aplicación. Reinstale o actualice la aplicación.']
+};
+for(const [locale,[ignore,retry,bundled]] of Object.entries(kernelRecoveryLabels))messages[locale].kernelRecovery={ignore,retry,bundled};
+
+const kernelDocumentIgnoreLabels={en:'Ignore errors in this document','zh-CN':'忽略本文档错误','zh-TW':'忽略此文件錯誤',ja:'この文書のエラーを無視',ko:'이 문서의 오류 무시',fr:'Ignorer les erreurs de ce document',es:'Ignorar errores de este documento'};
+for(const [locale,ignoreDocument] of Object.entries(kernelDocumentIgnoreLabels))messages[locale].kernelRecovery.ignoreDocument=ignoreDocument;
+
+const kernelRecoveryActions={en:['Reinstall kernel','Build latest source'],'zh-CN':['重装内核','根据最新源码重新构建'],'zh-TW':['重新安裝核心','以最新原始碼重新建置'],ja:['カーネルを再インストール','最新ソースから再ビルド'],ko:['커널 재설치','최신 소스로 다시 빌드'],fr:['Réinstaller le noyau','Compiler les dernières sources'],es:['Reinstalar núcleo','Compilar fuentes recientes']};
+for(const [locale,[reinstall,rebuild]] of Object.entries(kernelRecoveryActions))Object.assign(messages[locale].kernelRecovery,{reinstall,rebuild});
+
+const kernelNoConfigurationLabels={en:'This kernel requires no manual configuration.','zh-CN':'该内核无须手动配置','zh-TW':'此核心無須手動設定',ja:'このカーネルは手動設定不要です。',ko:'이 커널은 수동 설정이 필요하지 않습니다.',fr:'Ce noyau ne nécessite aucune configuration manuelle.',es:'Este núcleo no requiere configuración manual.'};
+for(const [locale,kernelNoManualConfiguration] of Object.entries(kernelNoConfigurationLabels))Object.assign(messages[locale].settings,{kernelNoManualConfiguration});
+
+const kernelModeLabels={en:'Kernel mode','zh-CN':'内核模式','zh-TW':'核心模式',ja:'カーネルモード',ko:'커널 모드',fr:'Mode du noyau',es:'Modo del núcleo'};
+for(const [locale,kernelMode] of Object.entries(kernelModeLabels))Object.assign(messages[locale].settings,{kernelMode});
+
+const kernelSectionLabels={en:['Mode settings','Developer options','Speed','Balance','Quality'],'zh-CN':['模式设定','开发者选项','强调速度','平衡','强调质量'],'zh-TW':['模式設定','開發者選項','強調速度','平衡','強調品質'],ja:['モード設定','開発者オプション','速度重視','バランス','品質重視'],ko:['모드 설정','개발자 옵션','속도 우선','균형','품질 우선'],fr:['Réglages du mode','Options développeur','Vitesse','Équilibre','Qualité'],es:['Ajustes del modo','Opciones de desarrollo','Velocidad','Equilibrio','Calidad']};
+for(const [locale,[modeSettings,developerOptions,speed,balance,quality]] of Object.entries(kernelSectionLabels)){Object.assign(messages[locale].settings,{modeSettings,developerOptions,kernelModes:{speed,balance,quality}});}
+
+const aboutVersionLabels={en:['Versions','App version','Recent updates','No feature updates in this build','Loading…','Unavailable'],'zh-CN':['版本','应用版本','最近更新','此构建暂无功能更新','正在读取…','无法获取'],'zh-TW':['版本','應用程式版本','最近更新','此版本暫無功能更新','正在讀取…','無法取得'],ja:['バージョン','アプリのバージョン','最近の更新','このビルドに機能更新はありません','読み込み中…','取得できません'],ko:['버전','앱 버전','최근 업데이트','이 빌드에는 기능 업데이트가 없습니다','불러오는 중…','사용 불가'],fr:['Versions','Version de l’application','Dernières mises à jour','Aucune nouveauté dans cette version','Chargement…','Indisponible'],es:['Versiones','Versión de la aplicación','Actualizaciones recientes','Sin novedades en esta compilación','Cargando…','No disponible']};
+for(const [locale,[title,app,recent,empty,loading,unavailable]] of Object.entries(aboutVersionLabels))messages[locale].aboutVersions={title,app,recent,empty,loading,unavailable};
+
+const kernelCategoryLabels={en:'Kernel','zh-CN':'内核','zh-TW':'核心',ja:'カーネル',ko:'커널',fr:'Noyau',es:'Núcleo'};
+for(const [locale,label] of Object.entries(kernelCategoryLabels))messages[locale].settings.kernel=label;
+
+const systemLanguageLabels={en:'System language','zh-CN':'系统语言','zh-TW':'系統語言',ja:'システム言語',ko:'시스템 언어',fr:'Langue du système',es:'Idioma del sistema'};
+for(const [locale,label] of Object.entries(systemLanguageLabels))messages[locale].appearance.systemLanguage=label;
+
+const documentDefaultLabels={
+ en:['Document processing','Default page crop','Applies when opening documents without a saved crop. Crops equally from both sides, up to 50% in total per direction. Does not change the source file.','Horizontal','Vertical','Automatically align document widths','On opening, scales pages to the most common page width and saves the changes to the source file.'],
+ 'zh-CN':['文档处理','默认页面裁剪','打开没有已保存裁剪设置的文档时生效。横向、纵向均从两侧等量裁剪，每个方向合计不超过 50%。不影响源文件。','横向','纵向','自动对齐文档宽度','打开文档时，将各页等比例缩放至最常见的页面宽度，并保存修改。此功能会修改源文件。'],
+ 'zh-TW':['文件處理','預設頁面裁剪','開啟沒有已儲存裁剪設定的文件時生效。橫向、縱向均從兩側等量裁剪，每個方向合計不超過 50%。不影響原始檔案。','橫向','縱向','自動對齊文件寬度','開啟文件時，將各頁等比例縮放至最常見的頁面寬度並儲存。此功能會修改原始檔案。'],
+ ja:['ドキュメント処理','既定のページ切り抜き','保存済みの切り抜き設定がない文書を開く際に適用。各方向の両端を均等に、合計50%まで切り抜きます。元のファイルは変更しません。','横方向','縦方向','文書の幅を自動で揃える','文書を開く際に各ページを最も多い幅に比例拡大・縮小して保存します。元のファイルが変更されます。'],
+ ko:['문서 처리','기본 페이지 자르기','저장된 자르기 설정이 없는 문서를 열 때 적용됩니다. 각 방향의 양쪽을 균등하게 총 50%까지 자릅니다. 원본 파일은 변경하지 않습니다.','가로','세로','문서 너비 자동 맞춤','문서를 열 때 각 페이지를 가장 흔한 너비로 비례 조정하고 저장합니다. 원본 파일이 변경됩니다.'],
+ fr:['Traitement des documents','Recadrage par défaut','Appliqué à l’ouverture sans recadrage enregistré. Retire une part égale des deux côtés, au maximum 50 % au total par direction. Le fichier source reste inchangé.','Horizontal','Vertical','Aligner automatiquement les largeurs','À l’ouverture, redimensionne proportionnellement les pages à la largeur la plus fréquente et enregistre les modifications dans le fichier source.'],
+ es:['Procesamiento de documentos','Recorte de página predeterminado','Se aplica al abrir documentos sin recorte guardado. Recorta ambos lados por igual, hasta un 50 % en total por dirección. No modifica el archivo original.','Horizontal','Vertical','Alinear los anchos automáticamente','Al abrir, ajusta proporcionalmente las páginas al ancho más frecuente y guarda los cambios en el archivo original.']
+};
+for(const [locale,[documentDefaults,defaultPageCrop,defaultPageCropHint,cropHorizontal,cropVertical,autoAlignDocumentWidth,autoAlignDocumentWidthHint]] of Object.entries(documentDefaultLabels))Object.assign(messages[locale].settings,{documentDefaults,defaultPageCrop,defaultPageCropHint,cropHorizontal,cropVertical,autoAlignDocumentWidth,autoAlignDocumentWidthHint});

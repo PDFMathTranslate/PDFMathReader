@@ -1,8 +1,10 @@
 # Custom translation services
 
-The Translation section selects a service independently for Inspector, Legacy and Next. The fields come from each installed Python kernel's translator definitions and CLI parser; updating or reinstalling that kernel invalidates its cached schema. Schema discovery is lazy and shared between concurrent requests, with an on-disk cache keyed by app and kernel version. The settings panel also caches loaded schemas.
+The Translation Services page selects a service independently for Inspector, Legacy and Next. The fields come from each installed Python kernel's translator definitions and CLI parser; updating or reinstalling that kernel invalidates its cached schema. Schema discovery is lazy and shared between concurrent requests, with an on-disk cache keyed by app and kernel version. The settings panel also caches loaded schemas.
 
 Automatic retains the existing OpenAI key / SiliconFlow free fallback. Explicit Python services run using their own upstream service selector and environment parameters. Inspector offers an OpenAI compatible endpoint with API key, base URL and model. Each service remembers its own inputs. Desktop secret fields are encrypted with Electron safeStorage and stored separately from ordinary reader preferences.
+
+The provider list is divided into Configured, Not configured and Errors. Configuration checks use the kernel's required fields, saved non-secret values and separately encrypted credentials. Only recorded service failures appear under Errors; request validation, PDF processing, cancellation and cache reads do not mark a service as failed. A later real successful call clears the error status. History stores only the last outcome and timestamp per kernel and service, without error messages or credentials.
 
 On macOS 26 and later, Apple Translation is available without an API key or base URL. It translates on device using Apple's Translation framework. Both language models must already be installed. Missing models produce an actionable error and do not fall back to a cloud provider. Legacy and Next send raw text through an app-owned adapter; Next uses its text translation path and disables automatic LLM glossary extraction for this service. LLM prompts do not apply to Apple Translation.
 

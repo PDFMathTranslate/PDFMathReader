@@ -1,3 +1,4 @@
+import {cloneTranslationServiceHistory,isValidTranslationServiceHistory,mergeTranslationServiceHistory} from '../src/provider-history.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {replaceFile} from './atomic-file.mjs';
 import {dirname} from 'node:path';
@@ -13,19 +14,20 @@ const SERVICE_FIELD_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const PROTOTYPE_NAMES=new Set([...Object.getOwnPropertyNames(Object.prototype),'prototype']);
 const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,
+ cacheLimitMB:null,documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reduceBackgroundFrameRate:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
- language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,
- kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'en'
+ language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,defaultPageCropEnabled:false,defaultPageCropX:0,defaultPageCropY:0,autoAlignDocumentWidth:false,
+ kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'system'
 });
 const KNOWN_KEYS=Object.freeze(Object.keys(DEFAULT_PREFERENCES));
-const OPTIONAL_KEYS=Object.freeze(['translationServices']);
+const OPTIONAL_KEYS=Object.freeze(['translationServices','translationServiceHistory']);
 const PREFERENCE_KEYS=Object.freeze([...KNOWN_KEYS,...OPTIONAL_KEYS]);
 const KNOWN_KEY_SET=new Set(PREFERENCE_KEYS);
 
 function isObject(value){return value!==null&&typeof value==='object'&&!Array.isArray(value);}
 function isRecord(value){if(!isObject(value))return false;const prototype=Object.getPrototypeOf(value);return prototype===Object.prototype||prototype===null;}
 function isValidZoom(value){return Number.isFinite(value)&&value>=.1&&value<=4;}
+function isValidPageCropRatio(value){return Number.isFinite(value)&&value>=0&&value<=.5;}
 function isValidAccentColor(value){return value==='system'||(typeof value==='string'&&/^#[\da-f]{6}$/i.test(value));}
 function isValidConcurrency(value){return Number.isInteger(value)&&value>=1&&value<=12;}
 function isValidKernelOptionValue(value){return Number.isFinite(value)||typeof value==='boolean'||(typeof value==='string'&&value.length<=4000);}
@@ -78,12 +80,14 @@ function cloneTranslationServices(value){
  }
  return clone;
 }
-function clonePreferences(value){const clone={...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};if(Object.prototype.hasOwnProperty.call(value||{},'translationServices'))clone.translationServices=cloneTranslationServices(value.translationServices);return clone;}
+function clonePreferences(value){const clone={...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};if(Object.prototype.hasOwnProperty.call(value||{},'translationServices'))clone.translationServices=cloneTranslationServices(value.translationServices);if(Object.hasOwn(value||{},'translationServiceHistory'))clone.translationServiceHistory=cloneTranslationServiceHistory(value.translationServiceHistory);return clone;}
 
 const VALIDATORS={
+ cacheLimitMB:value=>value===null||[512,1024,2048,5120,10240].includes(value),
  documentOpenMode:value=>['translation','original','manual'].includes(value),
  restoreDocuments:value=>typeof value==='boolean',
  reduceResourceUsage:value=>typeof value==='boolean',
+ reduceBackgroundFrameRate:value=>typeof value==='boolean',
  reuseTranslations:value=>typeof value==='boolean',
  emphasizeTopicSentences:value=>typeof value==='boolean',
  emphasizeInformation:value=>typeof value==='boolean',
@@ -105,9 +109,14 @@ const VALIDATORS={
  pageConcurrency:isValidConcurrency,
  automatic:value=>typeof value==='boolean',
  layoutVisible:value=>typeof value==='boolean',
+ defaultPageCropEnabled:value=>typeof value==='boolean',
+ defaultPageCropX:isValidPageCropRatio,
+ defaultPageCropY:isValidPageCropRatio,
+ autoAlignDocumentWidth:value=>typeof value==='boolean',
  kernelAdvancedOptions:isValidKernelAdvancedOptions,
  autoHideHeader:value=>typeof value==='boolean',
- uiLanguage:value=>['en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value),
+ uiLanguage:value=>['system','en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value),
+ translationServiceHistory:isValidTranslationServiceHistory,
  translationServices:isValidTranslationServices
 };
 const VALIDATION_MESSAGES={
@@ -119,9 +128,9 @@ const VALIDATION_MESSAGES={
  reduceMotion:'Invalid reduce motion preference',reduceTransparency:'Invalid reduce transparency preference',reducePadding:'Invalid reduce padding preference',
  sourceLanguage:'Invalid source language preference',language:'Invalid language preference',concurrency:'Invalid concurrency preference',
  pageConcurrency:'Invalid page concurrency preference',automatic:'Invalid automatic translation preference',
- layoutVisible:'Invalid layout visibility preference',kernelAdvancedOptions:'Invalid kernel advanced options',
+ layoutVisible:'Invalid layout visibility preference',defaultPageCropEnabled:'Invalid default page crop enabled preference',defaultPageCropX:'Invalid default page crop X preference',defaultPageCropY:'Invalid default page crop Y preference',autoAlignDocumentWidth:'Invalid auto-align document width preference',kernelAdvancedOptions:'Invalid kernel advanced options',
  autoHideHeader:'Invalid auto-hide header preference',
- uiLanguage:'Invalid UI language preference',translationServices:'Invalid translation service preferences'
+ translationServiceHistory:'Invalid translation service history',uiLanguage:'Invalid UI language preference',translationServices:'Invalid translation service preferences'
 };
 
 function copyUnknown(value){
@@ -135,7 +144,7 @@ function upgrade(value){
  const next={...DEFAULT_PREFERENCES,...copyUnknown(value)};
  next.kernelAdvancedOptions=cloneKernelAdvancedOptions(DEFAULT_PREFERENCES.kernelAdvancedOptions);
  if(!isObject(value))return next;
- for(const key of PREFERENCE_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):key==='translationServices'?cloneTranslationServices(value[key]):value[key];
+ for(const key of PREFERENCE_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):key==='translationServices'?cloneTranslationServices(value[key]):key==='translationServiceHistory'?cloneTranslationServiceHistory(value[key]):value[key];
  if(!VALIDATORS.sourceLanguage(value.sourceLanguage)){const entry=Object.entries(LANGUAGE_CODES).find(([,code])=>code===value.kernelAdvancedOptions?.pdf_math_fast?.lang_in);if(entry)next.sourceLanguage=entry[0];}
  if(next.kernelAdvancedOptions.pdf_math_fast)delete next.kernelAdvancedOptions.pdf_math_fast.lang_in;
  return next;
@@ -161,6 +170,7 @@ export async function createReaderPreferences(path){
   save(value){
    const next={...state,...(isObject(value)?value:{})};
    validate(value,true);
+   if(Object.hasOwn(value||{},'translationServiceHistory'))next.translationServiceHistory=mergeTranslationServiceHistory(state.translationServiceHistory,value.translationServiceHistory);
    validate(next);
    if(Object.prototype.hasOwnProperty.call(next,'translationServices'))next.translationServices=cloneTranslationServices(next.translationServices);
    const saved=clonePreferences(next);

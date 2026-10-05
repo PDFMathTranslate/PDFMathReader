@@ -1,12 +1,15 @@
 const {contextBridge,ipcRenderer,webUtils}=require('electron');
+contextBridge.exposeInMainWorld('previewSystemLocale',process.argv.find(arg=>arg.startsWith('--preview-system-locale='))?.slice('--preview-system-locale='.length)||navigator.language);
 contextBridge.exposeInMainWorld('previewCredentials',Object.freeze({
  status:()=>ipcRenderer.invoke('credentials:status'),
+ onChange:callback=>{const listener=()=>callback();ipcRenderer.on('credentials:changed',listener);return ()=>ipcRenderer.removeListener('credentials:changed',listener);},
  save:key=>ipcRenderer.invoke('credentials:save',key),
  clear:()=>ipcRenderer.invoke('credentials:clear')
 }));
 
 contextBridge.exposeInMainWorld('previewServiceCredentials',Object.freeze({
  status:()=>ipcRenderer.invoke('serviceCredentials:status'),
+ onChange:callback=>{const listener=()=>callback();ipcRenderer.on('serviceCredentials:changed',listener);return ()=>ipcRenderer.removeListener('serviceCredentials:changed',listener);},
  load:selection=>ipcRenderer.invoke('serviceCredentials:load',selection),
  save:value=>ipcRenderer.invoke('serviceCredentials:save',value),
  clear:value=>ipcRenderer.invoke('serviceCredentials:clear',value)
@@ -22,6 +25,7 @@ contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
 
 contextBridge.exposeInMainWorld('previewDocuments',Object.freeze({
  next:()=>ipcRenderer.invoke('documents:next'),
+ claim:file=>ipcRenderer.invoke('documents:claim',webUtils.getPathForFile(file)),
  editPages:value=>ipcRenderer.invoke('documents:editPages',value),
  closed:()=>ipcRenderer.invoke('documents:closed'),
  saveView:view=>ipcRenderer.invoke('documents:view',view),
@@ -52,6 +56,10 @@ contextBridge.exposeInMainWorld('previewPreferences',Object.freeze({load:()=>ipc
 
 contextBridge.exposeInMainWorld('previewWindow',Object.freeze({
  new:()=>ipcRenderer.invoke('window:new'),
+ settings:section=>ipcRenderer.invoke('window:settings',section),
+ settingsInline:process.argv.includes('--preview-inline-settings'),
+ onSettingsSection:callback=>{const listener=(_event,section)=>callback(section);ipcRenderer.on('settings:section',listener);return ()=>ipcRenderer.removeListener('settings:section',listener);},
+ registerOptions:value=>ipcRenderer.invoke('window:register-options',value),
  menu:()=>ipcRenderer.invoke('window:menu'),
  menuAction:path=>ipcRenderer.invoke('window:menu-action',path),
  minimize:()=>ipcRenderer.invoke('window:minimize'),
@@ -95,6 +103,12 @@ contextBridge.exposeInMainWorld('previewDeveloper',Object.freeze({
  close:()=>ipcRenderer.invoke('developer:close'),
  enabled:()=>ipcRenderer.invoke('developer:enabled'),
  snapshot:()=>ipcRenderer.invoke('developer:snapshot'),
+ testContext:windowId=>ipcRenderer.invoke('developer:test-context',windowId),
+ runTest:options=>ipcRenderer.invoke('developer:run-test',options),
+ testStatus:()=>ipcRenderer.invoke('developer:test-status'),
+ cancelTest:()=>ipcRenderer.invoke('developer:cancel-test'),
  copy:text=>ipcRenderer.invoke('developer:copy',text),
  onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('developer:changed',listener);return ()=>ipcRenderer.removeListener('developer:changed',listener);}
 }));
+
+contextBridge.exposeInMainWorld('previewCache',Object.freeze({clear:()=>ipcRenderer.invoke('cache:clear')}));
