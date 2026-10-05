@@ -77,6 +77,16 @@ Read scientific documents in any language, with realtime translation, on any pla
 ## Development
 
 <details>
+<summary>Contributing</summary>
+
+- **Tooling:** Bun manages dependencies and scripts; Vue/Vite build the UI, while Electron and Express run on Node.js. Commit `bun.lock` when changing dependencies.
+- **Tests:** run `bun run build`, then `bun run test`; CI scripts use `node --test .github/scripts/*.test.*`. Add focused regression coverage for behavior changes; see [test priorities](doc/testing.md).
+- **CI:** **Code style** checks formatting and lint; **Packaging** builds and launches apps on macOS, Windows and Linux. **Release** publishes successful default-branch packages when the version increases.
+- **Style:** run `bun run style:fix` before committing. Husky automatically formats and checks staged files, blocking unresolved errors. Prettier/ESLint cover JS and Vue, Ruff covers Python, and swift-format covers Swift; see [setup and rules](doc/code-style.md).
+
+</details>
+
+<details>
 <summary>Local development</summary>
 
 Install [Bun 1.3.14](https://bun.sh/docs/installation) and Node.js 22.22.1 or newer. To run the desktop app from source:

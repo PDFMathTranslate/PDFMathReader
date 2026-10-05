@@ -77,6 +77,16 @@
 ## 开发
 
 <details>
+<summary>贡献说明</summary>
+
+- **脚手架：** Bun 管理依赖与脚本，Vue/Vite 构建界面，Electron 和 Express 使用 Node.js。依赖变更时同步提交 `bun.lock`。
+- **测试：** 先运行 `bun run build`，再运行 `bun run test`；CI 脚本测试用 `node --test .github/scripts/*.test.*`。行为变更应补充针对性的回归测试，参见[测试原则](testing.md)。
+- **CI：** **Code style** 检查格式与 lint；**Packaging** 在 macOS、Windows、Linux 构建并启动应用；**Release** 在版本递增后发布默认分支构建成功的安装包。
+- **代码风格：** 提交前运行 `bun run style:fix`。Husky 会自动格式化并检查暂存文件，未解决的错误阻止提交。JS/Vue 使用 Prettier/ESLint，Python 使用 Ruff，Swift 使用 swift-format，参见[工具安装与规则](code-style.md)。
+
+</details>
+
+<details>
 <summary>本地开发</summary>
 
 运行前请先安装 Bun 1.3.14 和 Node.js 22.22.1 或更高版本，然后从源码启动桌面应用：

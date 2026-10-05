@@ -77,6 +77,16 @@
 ## 開発
 
 <details>
+<summary>コントリビュート</summary>
+
+- **ツール：** Bun で依存関係とスクリプトを管理し、Vue/Vite で UI を構築します。Electron と Express は Node.js で動作します。依存関係を変更したら `bun.lock` もコミットしてください。
+- **テスト：** `bun run build` の後に `bun run test` を実行します。CI スクリプトは `node --test .github/scripts/*.test.*` で検証します。動作変更には対象を絞った回帰テストを追加してください。[テスト方針](testing.md)を参照。
+- **CI：** **Code style** が書式と lint を検証し、**Packaging** が macOS・Windows・Linux でビルドと起動を確認します。**Release** はバージョン更新時にデフォルトブランチの成功したビルドを公開します。
+- **コードスタイル：** コミット前に `bun run style:fix` を実行してください。Husky がステージ済みファイルを自動整形・検証し、未解決のエラーがあるとコミットを停止します。JS/Vue は Prettier/ESLint、Python は Ruff、Swift は swift-format を使います。[セットアップと規則](code-style.md)を参照。
+
+</details>
+
+<details>
 <summary>ローカル開発</summary>
 
 Bun 1.3.14 と Node.js 22.22.1 以降をインストールしてから、ソースからデスクトップアプリを起動します。
