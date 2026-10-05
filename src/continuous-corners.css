@@ -39,11 +39,11 @@
 
 /* macOS floating surfaces use rounded rectangles; capsules must retain
    semicircular ends rather than inheriting the global superellipse. */
-.app[data-platform="darwin"] :is(.document-search,.settings,.page-navigator,.copy-toast,.error-banner),
+.app[data-platform="darwin"] :is(.document-search,.settings,.floating-zoom,.page-navigator,.copy-toast,.error-banner),
 .annotation-ui[data-platform="darwin"] {
   corner-shape:round;
 }
-.app[data-platform="darwin"] :is(.document-search,.settings,.page-navigator) {
+.app[data-platform="darwin"] :is(.document-search,.settings,.floating-zoom,.page-navigator) {
   border-radius:12px;
 }
 .app[data-platform="darwin"] .document-search>.macvue-field,
@@ -51,6 +51,6 @@
   border-radius:999px;
   corner-shape:round;
 }
-.app[data-platform="darwin"] :is(.search-navigation,.search-done,.page-navigator button,.page-navigator input) {
+.app[data-platform="darwin"] :is(.search-navigation,.search-done,.floating-zoom button,.floating-zoom input,.page-navigator button,.page-navigator input) {
   corner-shape:round;
 }
