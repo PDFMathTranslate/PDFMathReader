@@ -2,6 +2,7 @@
 import { computed, watch, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { t, uiLanguage } from './i18n.mjs';
 import { annotationSections, annotationChapters } from './annotation-browser.mjs';
+import { platform, MacSegmentedControl, MacSegment } from './platform-controls.mjs';
 const props = defineProps({
   mode: String,
   outline: Array,
@@ -325,8 +326,17 @@ watch(
       </div>
     </div>
   </div>
+  <MacSegmentedControl
+    v-if="platform === 'win32' && (outline.length || annotations.length)"
+    class="sidebar-navigation-switch fluent-sidebar-switch"
+    :model-value="mode"
+    :aria-label="t('sidebar.view')"
+    @update:model-value="emit('update:mode', $event)"
+  >
+    <MacSegment v-for="tab in tabs" :key="tab" :value="tab">{{ t('sidebar.' + tab) }}</MacSegment>
+  </MacSegmentedControl>
   <div
-    v-if="outline.length || annotations.length"
+    v-else-if="outline.length || annotations.length"
     class="sidebar-navigation-switch"
     role="group"
     :aria-label="t('sidebar.view')"
@@ -350,6 +360,18 @@ watch(
   </div>
 </template>
 <style>
+.fluent-sidebar-switch {
+  display: flex;
+  width: 100%;
+}
+.fluent-sidebar-switch > fluent-tab {
+  flex: 1;
+  min-width: 0;
+}
+.fluent-sidebar-switch > fluent-tab {
+  padding: 6px 4px;
+  font-size: 11px;
+}
 .sidebar-view {
   display: flex;
   flex-direction: column;

@@ -5,7 +5,10 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 export async function verifySidebar(window, recents) {
-  const run = (code) => window.webContents.executeJavaScript(code);
+  const run = (code) =>
+    window.webContents.executeJavaScript(code).catch((error) => {
+      throw Error('Sidebar script failed: ' + code, { cause: error });
+    });
   async function wait(code) {
     for (let i = 0; i < 200; i++) {
       if (await run(code)) return;
@@ -25,7 +28,9 @@ export async function verifySidebar(window, recents) {
   const folder = await mkdtemp(join(tmpdir(), 'sidebar-smoke-'));
   try {
     await wait('window.previewReady');
-    await run(`window.previewPreferences.save({interactionMode:'reading',automatic:false})`);
+    await run(
+      `window.previewPreferences.save({interactionMode:'reading',automatic:false,uiLanguage:'en'})`,
+    );
     const pdf = await PDFDocument.load(
       await readFile(new URL('../public/sample.pdf', import.meta.url)),
     );
@@ -66,11 +71,49 @@ export async function verifySidebar(window, recents) {
     await wait('window.previewReady');
     await run(`document.querySelector('[data-recent-id="${id}"]').click()`);
     await wait(
-      `!window.previewRenderDiagnostics().opening&&document.querySelectorAll('.sidebar-navigation-switch button').length===3`,
+      `!window.previewRenderDiagnostics().opening&&document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)').length===3`,
     );
+    if (await run(`window.previewAppearance.platform==='win32'`)) {
+      window.show();
+      window.focus();
+      window.webContents.focus();
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      assert.equal(
+        await run(
+          `getComputedStyle(document.querySelector('.sidebar-navigation-switch fluent-tab')).getPropertyValue('-webkit-app-region')`,
+        ),
+        'no-drag',
+      );
+      const point = await run(
+        `(()=>{const r=document.querySelectorAll('.sidebar-navigation-switch fluent-tab')[1].getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`,
+      );
+      window.webContents.sendInputEvent({ type: 'mouseMove', ...point });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      window.webContents.sendInputEvent({
+        type: 'mouseDown',
+        button: 'left',
+        clickCount: 1,
+        ...point,
+      });
+      window.webContents.sendInputEvent({
+        type: 'mouseUp',
+        button: 'left',
+        clickCount: 1,
+        ...point,
+      });
+      await wait(
+        `document.querySelectorAll('.sidebar-navigation-switch fluent-tab')[1].dataset.state==='on'`,
+      );
+      await run(`document.querySelectorAll('.sidebar-navigation-switch fluent-tab')[0].click()`);
+      await wait(
+        `document.querySelectorAll('.sidebar-navigation-switch fluent-tab')[0].dataset.state==='on'`,
+      );
+    }
     async function verifyKeys() {
       // Arrow navigation follows clicked items, not the reader's scroll position.
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[0].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[0].click()`,
+      );
       await wait(`!!document.querySelector('.thumb[data-page-number="1"]')`);
       await run(`document.querySelector('.thumb[data-page-number="1"]').click()`);
       await wait(`document.activeElement?.dataset.pageNumber==='1'`);
@@ -98,7 +141,9 @@ export async function verifySidebar(window, recents) {
         );
       }
 
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[1].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[1].click()`,
+      );
       await wait(`document.querySelectorAll('.sidebar-outline-item').length===2`);
       await run(`document.querySelector('.sidebar-outline-item').click()`);
       await wait(
@@ -116,7 +161,9 @@ export async function verifySidebar(window, recents) {
       await wait(
         `document.activeElement?.textContent.includes('Original chapter')&&window.previewRenderDiagnostics().active===2`,
       );
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[2].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[2].click()`,
+      );
       await wait(`document.querySelectorAll('.sidebar-annotation-item').length===2`);
       await run(`document.querySelector('.sidebar-annotation-item').click()`);
       await wait(
@@ -143,11 +190,13 @@ export async function verifySidebar(window, recents) {
     }
     assert.equal(
       await run(
-        `document.querySelector('.sidebar-navigation-switch button[aria-pressed=true]').textContent`,
+        `document.querySelector('.sidebar-navigation-switch :is(button,fluent-tab):is([aria-pressed=true],[data-state=on])').textContent`,
       ),
       'Thumbnails',
     );
-    await run(`document.querySelectorAll('.sidebar-navigation-switch button')[1].click()`);
+    await run(
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[1].click()`,
+    );
     await wait(`!!document.querySelector('.sidebar-outline-item')`);
     assert.equal(
       await run(`document.querySelector('.sidebar-outline-item').textContent`),
@@ -176,7 +225,9 @@ export async function verifySidebar(window, recents) {
     await wait(
       `!document.querySelector('.document-motion-snapshot,.sidebar-motion-enter-active,.sidebar-view-motion-enter-active,.workspace.document-opening')`,
     );
-    await run(`document.querySelectorAll('.sidebar-navigation-switch button')[0].click()`);
+    await run(
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[0].click()`,
+    );
     await wait(
       `!!document.querySelector('.thumbnail-list')&&!document.querySelector('.sidebar-view-motion-enter-active')`,
     );
@@ -216,7 +267,9 @@ export async function verifySidebar(window, recents) {
     );
     await wait(`document.querySelector('.sidebar').getBoundingClientRect().width>${expanded + 10}`);
     for (const tab of [1, 2, 0, 1]) {
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[${tab}].click()`,
+      );
       await wait(`!document.querySelector('.sidebar-view-motion-enter-active')`);
       assert.ok(
         Math.abs(
@@ -248,7 +301,9 @@ export async function verifySidebar(window, recents) {
     await wait(
       `window.previewRenderDiagnostics().active===2&&!!document.querySelector('.reference-return-button')`,
     );
-    await run(`document.querySelectorAll('.sidebar-navigation-switch button')[2].click()`);
+    await run(
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[2].click()`,
+    );
     await wait(`document.querySelectorAll('.sidebar-annotation-item').length===2`);
     assert.equal(
       await run(
@@ -296,13 +351,15 @@ export async function verifySidebar(window, recents) {
       `window.previewRenderDiagnostics().active===2&&!!document.querySelector('.reference-return-button')`,
     );
     await run(
-      `document.querySelectorAll('.sidebar-navigation-switch button')[1].click();document.querySelector('.sidebar-outline-item')?.click()`,
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[1].click();document.querySelector('.sidebar-outline-item')?.click()`,
     );
     await wait(`!!document.querySelector('.sidebar-outline-item')`);
     await run(`document.querySelector('.sidebar-outline-item').click()`);
     await wait(`window.previewRenderDiagnostics().active===2`);
     assert.equal(await run(`window.previewRenderDiagnostics().readingView.showTranslations`), true);
-    await run(`document.querySelectorAll('.sidebar-navigation-switch button')[2].click()`);
+    await run(
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[2].click()`,
+    );
     await wait(`document.querySelectorAll('.sidebar-annotation-item').length===2`);
     await new Promise((r) => setTimeout(r, 250));
     await writeFile(
@@ -314,15 +371,21 @@ export async function verifySidebar(window, recents) {
     );
     assert.equal(footer.within, true);
     assert.ok(footer.gap < 16);
-    await run(`document.querySelector('.sidebar-navigation-switch button').click()`);
+    await run(
+      `document.querySelector('.sidebar-navigation-switch :is(button,fluent-tab)').click()`,
+    );
     assert.ok(
-      await run(`document.querySelector('.sidebar-tab-indicator').getAnimations().length>0`),
+      await run(
+        `window.previewAppearance?.platform==='win32'?!!document.querySelector('.sidebar-navigation-switch fluent-tab[data-state=on]'):document.querySelector('.sidebar-tab-indicator').getAnimations().length>0`,
+      ),
       'tab selection animates',
     );
     await wait(`window.previewRenderDiagnostics().thumbnails.length>0`);
     await run(`window.sidebarThumbnailNode=document.querySelector('.thumbnail-list')`);
     for (const tab of [1, 2, 0, 2, 1, 0]) {
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[${tab}].click()`,
+      );
       await new Promise((r) => setTimeout(r, 35));
     }
     await wait(
@@ -349,7 +412,9 @@ export async function verifySidebar(window, recents) {
       ),
       'switch remains at the bottom after rapid switching',
     );
-    await run(`document.querySelectorAll('.sidebar-navigation-switch button')[1].click()`);
+    await run(
+      `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[1].click()`,
+    );
     await wait(
       `!!document.querySelector('.sidebar-outline-item')&&!document.querySelector('.sidebar-view-motion-enter-active')`,
     );
@@ -376,7 +441,9 @@ export async function verifySidebar(window, recents) {
       'resized sidebar width survives hide/show',
     );
     for (const tab of [0, 1, 2]) {
-      await run(`document.querySelectorAll('.sidebar-navigation-switch button')[${tab}].click()`);
+      await run(
+        `document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)')[${tab}].click()`,
+      );
       await new Promise((r) => setTimeout(r, 220));
       const motion = await run(
         `(async()=>{const app=document.querySelector('.app'),sidebar=document.querySelector('.sidebar');const padding=()=>parseFloat(getComputedStyle(sidebar).paddingTop);const start=padding();app.classList.add('immersive-header-hidden');await new Promise(r=>setTimeout(r,70));const middle=padding();await new Promise(r=>setTimeout(r,160));const hidden=padding();app.classList.remove('immersive-header-hidden');await new Promise(r=>setTimeout(r,70));const returning=padding();await new Promise(r=>setTimeout(r,160));return {start,middle,hidden,returning,end:padding()};})()`,

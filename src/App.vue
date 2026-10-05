@@ -269,6 +269,7 @@ import {
   MacPopUpButtonItem,
   MacSecureField,
   MacSearchField,
+  MacTextField,
 } from './platform-controls.mjs';
 import { createPerformanceRecorder } from './performance-recorder.mjs';
 const performanceRecorder = createPerformanceRecorder({
@@ -1903,11 +1904,19 @@ function submitZoom(event) {
   if (event?.target && event.target.value !== zoomEntry.value) event.target.value = zoomEntry.value;
 }
 const scrubbers = new Map();
+function nativeReaderInput(control) {
+  const input = control?.getInput?.() || control;
+  if (input && control?.el) {
+    input.inputMode = control.el.getAttribute('inputmode') || 'text';
+    input.dataset.scrub = control.el.dataset.scrub;
+  }
+  return input;
+}
 function syncScrubInputs() {
   const specs = [
     [
       'page',
-      pageInput.value,
+      nativeReaderInput(pageInput.value),
       {
         getValue: () => Number(pageEntry.value) || active.value,
         setValue: (value) => {
@@ -1923,7 +1932,7 @@ function syncScrubInputs() {
     ],
     [
       'zoom',
-      zoomInput.value,
+      nativeReaderInput(zoomInput.value),
       {
         getValue: () => zoom.value,
         setValue: (value) => {
@@ -4626,7 +4635,9 @@ watch(zoom, async () => {
   revealControllers.forEach((c) => c.abort());
   revealControllers.clear();
   localStorage.setItem('readerZoom', String(zoom.value));
-  if (document.activeElement !== zoomInput.value) zoomEntry.value = formatPercentValue(zoom.value);
+  const input = nativeReaderInput(zoomInput.value);
+  if (document.activeElement !== input && document.activeElement !== zoomInput.value?.el)
+    zoomEntry.value = formatPercentValue(zoom.value);
   const request = zoomRequest;
   zoomRequest = null;
   if (request && !pinching.value && !fitResizing) {
@@ -5475,8 +5486,29 @@ onBeforeUnmount(() => {
                 aria-hidden="true"
                 data-symbol="minus.magnifyingglass"
                 style="--symbol: url('/symbols/minus.magnifyingglass.png')"
-              ></span></MacButton
-            ><input
+              ></span
+            ></MacButton>
+            <MacTextField
+              v-if="platform === 'win32'"
+              ref="zoomInput"
+              v-model="zoomEntry"
+              class="zoom-popup scrub-input"
+              data-scrub="zoom"
+              size="small"
+              inputmode="decimal"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Zoom percentage"
+              :aria-valuenow="Math.round(zoom * 100)"
+              aria-valuemin="10"
+              aria-valuemax="400"
+              :title="t('toolbar.chooseZoomPercentage')"
+              @change="submitZoom"
+              @focusout="submitZoom"
+              @keydown.enter.prevent="submitZoom"
+            />
+            <input
+              v-else
               ref="zoomInput"
               class="zoom-popup scrub-input"
               data-scrub="zoom"
@@ -5509,7 +5541,8 @@ onBeforeUnmount(() => {
             ></MacButton>
           </div>
           <nav class="page-navigator" :aria-label="t('navigator.pageNavigator')">
-            <button
+            <component
+              :is="platform === 'win32' ? MacButton : 'button'"
               :aria-label="t('navigator.previousPage')"
               :disabled="active <= 1"
               @click="go(active - 1, { animate: true })"
@@ -5519,9 +5552,22 @@ onBeforeUnmount(() => {
                 aria-hidden="true"
                 style="--symbol: url('/symbols/chevron.up.png')"
               ></span>
-            </button>
+            </component>
             <form @submit.prevent="submitPage">
+              <MacTextField
+                v-if="platform === 'win32'"
+                ref="pageInput"
+                v-model="pageEntry"
+                class="scrub-input"
+                data-scrub="page"
+                size="small"
+                inputmode="numeric"
+                :aria-label="t('navigator.pageNumber')"
+                @change="submitPage"
+                @keydown.enter.prevent="submitPage"
+              />
               <input
+                v-else
                 ref="pageInput"
                 v-model.number="pageEntry"
                 class="scrub-input"
@@ -5533,7 +5579,8 @@ onBeforeUnmount(() => {
                 @change="submitPage"
               /><span>/ {{ pages.length }}</span>
             </form>
-            <button
+            <component
+              :is="platform === 'win32' ? MacButton : 'button'"
               :aria-label="t('navigator.nextPage')"
               :disabled="active >= pages.length"
               @click="go(active + 1, { animate: true })"
@@ -5543,7 +5590,7 @@ onBeforeUnmount(() => {
                 aria-hidden="true"
                 style="--symbol: url('/symbols/chevron.down.png')"
               ></span>
-            </button>
+            </component>
           </nav></div
       ></Transition>
       <Transition name="copy-toast"

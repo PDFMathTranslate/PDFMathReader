@@ -1,6 +1,7 @@
 <script setup>
 import { nextTick, ref } from 'vue';
 import { t } from './i18n.mjs';
+import { platform, MacSegmentedControl, MacSegment } from './platform-controls.mjs';
 const props = defineProps({ modelValue: String, disabled: Boolean });
 const emit = defineEmits(['update:modelValue']);
 const el = ref();
@@ -38,34 +39,73 @@ defineExpose({ el });
   <div
     ref="el"
     class="kernel-mode-switcher mac-mode-control"
-    role="radiogroup"
+    :role="platform === 'win32' ? undefined : 'radiogroup'"
     :aria-label="t('settings.mode')"
   >
-    <button
-      v-for="(mode, index) in modes"
-      :key="mode.id"
-      type="button"
-      role="radio"
-      :aria-checked="modelValue === mode.id"
-      :tabindex="modelValue === mode.id ? 0 : -1"
+    <MacSegmentedControl
+      v-if="platform === 'win32'"
+      class="fluent-kernel-modes"
+      :model-value="modelValue"
       :disabled="disabled"
-      :data-kernel-mode="mode.id"
-      @click="choose(mode.id)"
-      @keydown="keyboard($event, index)"
+      :aria-label="t('settings.mode')"
+      @update:model-value="choose"
     >
-      <span class="kernel-mode-preview"
-        ><img
-          :src="'/kernel-modes/' + mode.icon + '.svg'"
-          width="148"
-          height="100"
-          alt=""
-          aria-hidden="true"
-      /></span>
-      <span>{{ t('settings.kernelModes.' + mode.label) }}</span>
-    </button>
+      <MacSegment
+        v-for="mode in modes"
+        :key="mode.id"
+        :value="mode.id"
+        :disabled="disabled"
+        :data-kernel-mode="mode.id"
+      >
+        <span class="fluent-kernel-label">
+          <span class="kernel-mode-preview"
+            ><img
+              :src="'/kernel-modes/' + mode.icon + '.svg'"
+              width="148"
+              height="100"
+              alt=""
+              aria-hidden="true"
+          /></span>
+          <span>{{ t('settings.kernelModes.' + mode.label) }}</span>
+        </span>
+      </MacSegment>
+    </MacSegmentedControl>
+    <template v-else
+      ><button
+        v-for="(mode, index) in modes"
+        :key="mode.id"
+        type="button"
+        role="radio"
+        :aria-checked="modelValue === mode.id"
+        :tabindex="modelValue === mode.id ? 0 : -1"
+        :disabled="disabled"
+        :data-kernel-mode="mode.id"
+        @click="choose(mode.id)"
+        @keydown="keyboard($event, index)"
+      >
+        <span class="kernel-mode-preview"
+          ><img
+            :src="'/kernel-modes/' + mode.icon + '.svg'"
+            width="148"
+            height="100"
+            alt=""
+            aria-hidden="true"
+        /></span>
+        <span>{{ t('settings.kernelModes.' + mode.label) }}</span>
+      </button></template
+    >
   </div>
 </template>
 <style scoped>
+.fluent-kernel-modes {
+  width: 100%;
+}
+.fluent-kernel-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
 .kernel-mode-switcher {
   display: flex;
   align-items: start;

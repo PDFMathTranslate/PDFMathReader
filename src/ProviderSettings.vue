@@ -7,7 +7,9 @@ import {
   MacSecureField,
   MacSwitch,
   MacTextField,
+  platform,
 } from './platform-controls.mjs';
+const ProviderButton = platform === 'win32' ? MacButton : 'button';
 import ProviderIcon from './ProviderIcon.vue';
 import { groupProviders, providerPortEndpoint, withSharedOpenAIKey } from './provider-groups.mjs';
 import { cloneTranslationServices, loadTranslationServiceSchema } from './translation-services.mjs';
@@ -471,7 +473,7 @@ onBeforeUnmount(() => {
             role="listbox"
             :aria-label="t('settings.providerGroups.' + group.id)"
           >
-            <button
+            <ProviderButton
               v-for="service in group.services"
               :key="service.id"
               type="button"
@@ -497,7 +499,7 @@ onBeforeUnmount(() => {
                 class="provider-selection-dot"
                 aria-hidden="true"
               ></span>
-            </button>
+            </ProviderButton>
           </div>
           <p v-else class="muted provider-group-empty">{{ t('settings.providerGroups.empty') }}</p>
         </section>
@@ -753,6 +755,18 @@ onBeforeUnmount(() => {
     background-color var(--motion-duration) var(--motion-ease),
     border-color var(--motion-duration) var(--motion-ease),
     color var(--motion-duration) var(--motion-ease);
+}
+fluent-button.provider-list-item {
+  display: flex;
+}
+fluent-button.provider-list-item::part(content) {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
 }
 .provider-list-item:hover {
   color: var(--text);

@@ -2359,7 +2359,25 @@
   .desktop .sidebar {
     -webkit-app-region: drag;
   }
-  .desktop .sidebar :is(button, input, select, textarea, label, .sidebar-resize-handle) {
+  .desktop
+    .sidebar
+    :is(
+      button,
+      input,
+      select,
+      textarea,
+      label,
+      fluent-button,
+      fluent-tablist,
+      fluent-tab,
+      fluent-text-input,
+      .sidebar-resize-handle
+    ) {
+    -webkit-app-region: no-drag;
+  }
+  /* The Windows rail extends behind the toolbar. Its native drag rectangle
+     otherwise covers the menu and sidebar toggle despite their stacking order. */
+  .desktop[data-platform='win32'] .sidebar {
     -webkit-app-region: no-drag;
   }
   .desktop .sidebar :is(.thumbnail-list, .sidebar-navigation-list)::-webkit-scrollbar {
@@ -3526,6 +3544,9 @@
   }
   .desktop[data-platform='win32'] .toolbar button,
   .desktop[data-platform='win32'] .toolbar fluent-button,
+  .desktop[data-platform='win32'] .toolbar fluent-dropdown,
+  .desktop[data-platform='win32'] .toolbar fluent-listbox,
+  .desktop[data-platform='win32'] .toolbar fluent-option,
   .windows-menu {
     -webkit-app-region: no-drag;
   }
@@ -4043,6 +4064,34 @@
 .reader-floating-tools .page-navigator input {
   width: 42px;
   min-width: 42px;
+}
+.app[data-platform='win32'] .reader-floating-tools fluent-button {
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+}
+.app[data-platform='win32'] .reader-floating-tools fluent-button::part(content) {
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.app[data-platform='win32'] .reader-floating-tools fluent-text-input {
+  height: 28px;
+  min-width: 0;
+  font-size: 12px;
+}
+.app[data-platform='win32'] .reader-floating-tools .floating-zoom fluent-text-input {
+  width: 62px;
+}
+.app[data-platform='win32'] .reader-floating-tools .page-navigator fluent-text-input {
+  width: 42px;
+}
+.app[data-platform='win32'] .reader-floating-tools fluent-text-input::part(control) {
+  padding-inline: 4px;
+  text-align: center;
+  font-size: 12px;
 }
 .reader-floating-tools :is(.floating-zoom, .page-navigator) input::-webkit-inner-spin-button {
   appearance: none;

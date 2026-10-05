@@ -2417,6 +2417,15 @@ else {
           await (await import('./settings-menu-smoke.mjs')).verifySettingsMenu(window, windows);
         else if (smoke === 'settings-native')
           await (await import('./settings-native-smoke.mjs')).verifyNativeSettings(window, windows);
+        else if (
+          [
+            'windows-controls',
+            'windows-kernel-menu',
+            'windows-reader-controls',
+            'windows-chrome',
+          ].includes(smoke)
+        )
+          await (await import('./windows-controls-smoke.mjs')).verifyWindowsControls(window);
         else if (smoke === 'settings-workspace')
           await (await import('./settings-workspace-smoke.mjs')).verifySettingsWorkspace(window);
         else if (smoke === 'layout-settings')
