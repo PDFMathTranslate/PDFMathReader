@@ -1,0 +1,146 @@
+[
+  [
+    {
+      "id": 0,
+      "text": "FIELD NOTES / READING & LANGUAGE",
+      "x": 60,
+      "y": 59,
+      "width": 173.54700000000008,
+      "height": 9,
+      "fontSize": 9,
+      "bold": false
+    },
+    {
+      "id": 1,
+      "text": "A quieter way to read",
+      "x": 60,
+      "y": 92,
+      "width": 278.28000000000003,
+      "height": 30,
+      "fontSize": 30,
+      "bold": true
+    },
+    {
+      "id": 2,
+      "text": "Reading should feel effortless. A document has its own rhythm: a heading, a thought, a pause. Translation can follow that rhythm without taking you away from the page.",
+      "x": 60,
+      "y": 170,
+      "width": 487.99800000000005,
+      "height": 35,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 3,
+      "text": "When you stop scrolling, this reader identifies the text on the page. Each paragraph is translated independently and returns to its original position. The surrounding figures and the shape of the document remain familiar.",
+      "x": 60,
+      "y": 238,
+      "width": 479.0240000000001,
+      "height": 56,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 4,
+      "text": "Click a translated paragraph to see its original wording. You can move between languages at your own pace, keeping the context close at hand.",
+      "x": 60,
+      "y": 327,
+      "width": 445.9700000000001,
+      "height": 35,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 5,
+      "text": "A document. A pause. A new perspective.",
+      "x": 83,
+      "y": 580,
+      "width": 286.569,
+      "height": 17,
+      "fontSize": 17,
+      "bold": false
+    },
+    {
+      "id": 6,
+      "text": "1",
+      "x": 300,
+      "y": 737,
+      "width": 5.560000000000002,
+      "height": 10,
+      "fontSize": 10,
+      "bold": false
+    }
+  ],
+  [
+    {
+      "id": 0,
+      "text": "FIELD NOTES / READING & LANGUAGE",
+      "x": 60,
+      "y": 59,
+      "width": 173.54700000000008,
+      "height": 9,
+      "fontSize": 9,
+      "bold": false
+    },
+    {
+      "id": 1,
+      "text": "The space between words",
+      "x": 60,
+      "y": 92,
+      "width": 325.8,
+      "height": 30,
+      "fontSize": 30,
+      "bold": true
+    },
+    {
+      "id": 2,
+      "text": "Good tools give people room to think. A calm reading environment keeps the document at the center, with controls nearby when they are needed.",
+      "x": 60,
+      "y": 170,
+      "width": 433.56600000000003,
+      "height": 35,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 3,
+      "text": "Translations are saved locally after they arrive. Returning to a paragraph uses the saved result, so the same passage does not need another API request.",
+      "x": 60,
+      "y": 238,
+      "width": 489.87400000000014,
+      "height": 35,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 4,
+      "text": "Try the zoom controls, open Translation settings, or switch the target language. New results arrive one paragraph at a time while the document stays responsive.",
+      "x": 60,
+      "y": 306,
+      "width": 473.98400000000015,
+      "height": 35,
+      "fontSize": 14,
+      "bold": false
+    },
+    {
+      "id": 5,
+      "text": "A document. A pause. A new perspective.",
+      "x": 83,
+      "y": 580,
+      "width": 286.569,
+      "height": 17,
+      "fontSize": 17,
+      "bold": false
+    },
+    {
+      "id": 6,
+      "text": "2",
+      "x": 300,
+      "y": 737,
+      "width": 5.560000000000002,
+      "height": 10,
+      "fontSize": 10,
+      "bold": false
+    }
+  ]
+]
