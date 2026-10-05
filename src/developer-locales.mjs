@@ -91,7 +91,8 @@ const english = Object.freeze({
   'state.waiting': 'Waiting',
   'state.unknown': 'Unknown',
   'empty.title': 'Waiting for developer data',
-  'empty.body': 'The console will show live resource samples, processes, events, and queued tasks when the preview window is ready.',
+  'empty.body':
+    'The console will show live resource samples, processes, events, and queued tasks when the preview window is ready.',
   'error.snapshot': 'Could not read the latest developer snapshot.',
   'error.noBridge': 'This window was opened without the developer bridge.',
   'error.copy': 'Could not copy diagnostics to the clipboard.',
@@ -409,7 +410,8 @@ const french = Object.freeze({
   'state.waiting': 'En attente',
   'state.unknown': 'Inconnu',
   'empty.title': 'En attente des données développeur',
-  'empty.body': 'La console affichera les ressources, processus, événements et tâches en direct dès que la fenêtre de prévisualisation sera prête.',
+  'empty.body':
+    'La console affichera les ressources, processus, événements et tâches en direct dès que la fenêtre de prévisualisation sera prête.',
   'error.snapshot': 'Impossible de lire le dernier instantané développeur.',
   'error.noBridge': 'Cette fenêtre a été ouverte sans pont développeur.',
   'error.copy': 'Impossible de copier les diagnostics dans le presse-papiers.',
@@ -515,7 +517,8 @@ const spanish = Object.freeze({
   'state.waiting': 'En espera',
   'state.unknown': 'Desconocido',
   'empty.title': 'Esperando datos del desarrollador',
-  'empty.body': 'La consola mostrará recursos, procesos, eventos y tareas en directo cuando la ventana de vista previa esté lista.',
+  'empty.body':
+    'La consola mostrará recursos, procesos, eventos y tareas en directo cuando la ventana de vista previa esté lista.',
   'error.snapshot': 'No se pudo leer la última instantánea del desarrollador.',
   'error.noBridge': 'Esta ventana se abrió sin el puente de desarrollador.',
   'error.copy': 'No se pudo copiar el diagnóstico al portapapeles.',
@@ -621,7 +624,8 @@ const japanese = Object.freeze({
   'state.waiting': '待機中',
   'state.unknown': '不明',
   'empty.title': '開発者データを待機中',
-  'empty.body': 'プレビューウィンドウの準備ができると、ライブリソース、プロセス、イベント、タスクキューが表示されます。',
+  'empty.body':
+    'プレビューウィンドウの準備ができると、ライブリソース、プロセス、イベント、タスクキューが表示されます。',
   'error.snapshot': '最新の開発者スナップショットを読み取れませんでした。',
   'error.noBridge': 'このウィンドウは開発者ブリッジなしで開かれました。',
   'error.copy': '診断情報をクリップボードにコピーできませんでした。',
@@ -727,7 +731,8 @@ const korean = Object.freeze({
   'state.waiting': '대기 중',
   'state.unknown': '알 수 없음',
   'empty.title': '개발자 데이터를 기다리는 중',
-  'empty.body': '프리뷰 창이 준비되면 콘솔에 실시간 리소스 샘플, 프로세스, 이벤트 및 작업 큐가 표시됩니다.',
+  'empty.body':
+    '프리뷰 창이 준비되면 콘솔에 실시간 리소스 샘플, 프로세스, 이벤트 및 작업 큐가 표시됩니다.',
   'error.snapshot': '최신 개발자 스냅샷을 읽을 수 없습니다.',
   'error.noBridge': '이 창은 개발자 브리지 없이 열렸습니다.',
   'error.copy': '진단 정보를 클립보드에 복사할 수 없습니다.',
@@ -756,7 +761,7 @@ export function normalizeDeveloperLanguage(language) {
   const value = String(language || '').trim();
   if (DEVELOPER_LANGUAGES.includes(value)) return value;
   const lower = value.toLowerCase();
-  const match = DEVELOPER_LANGUAGES.find(candidate => candidate.toLowerCase() === lower);
+  const match = DEVELOPER_LANGUAGES.find((candidate) => candidate.toLowerCase() === lower);
   return match || 'en';
 }
 
@@ -764,7 +769,8 @@ export function developerText(language, key, values = {}) {
   const locale = messages[normalizeDeveloperLanguage(language)] || english;
   const template = locale[key] ?? english[key] ?? key;
   return String(template).replace(/\{([\w-]+)\}/g, (_match, name) => {
-    const value = values && Object.prototype.hasOwnProperty.call(values, name) ? values[name] : `{${name}}`;
+    const value =
+      values && Object.prototype.hasOwnProperty.call(values, name) ? values[name] : `{${name}}`;
     return String(value);
   });
 }

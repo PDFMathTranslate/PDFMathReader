@@ -1,98 +1,254 @@
 import assert from 'node:assert/strict';
-import {app,systemPreferences} from 'electron';
-import {PDFDocument,StandardFonts} from 'pdf-lib';
-import {mkdtemp,writeFile,rm} from 'node:fs/promises';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
-export async function verifyInformationEmphasis(window,recents){
- window.show();app.focus({steal:true});window.focus();window.webContents.focus();
- const evaluate=code=>window.webContents.executeJavaScript(code).catch(error=>{console.error('Failed UI expression:',code);throw error;}),pause=ms=>new Promise(r=>setTimeout(r,ms));
- const wait=async code=>{for(let i=0;i<250;i++){if(await evaluate(code))return;await pause(60);}console.log(await evaluate('JSON.stringify({diagnostics:window.previewRenderDiagnostics?.(),layer:document.querySelector(".reading-text-layer")?.outerHTML.slice(0,700),errors:document.querySelector(".error-banner")?.textContent,prefs:undefined})'));throw Error('Information emphasis smoke timed out: '+code);};
- const focus=()=>{window.show();app.focus({steal:true});window.focus();window.webContents.focus();};
- const reload=async()=>{const loaded=new Promise(resolve=>window.webContents.once('did-finish-load',resolve));window.webContents.reload();await loaded;focus();await wait('window.previewReady===true');};
- await wait('window.previewReady===true');
- assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.emphasizeInformation)'),false);
- const folder=await mkdtemp(join(tmpdir(),'information-emphasis-')),path=join(folder,'Portrait and landscape.pdf');
- const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica),page=pdf.addPage([612,792]);
- page.drawText('First, results suggest a higher effect. These unsupported ideas remain.',{x:48,y:700,size:14,font});
- page.drawText('However, findings support the hypothesis. Ordinary text remains here.',{x:48,y:660,size:14,font});
- await writeFile(path,await pdf.save());await recents.remember(path);const id=recents.list()[0].id;
- await evaluate('window.previewPreferences.save({automatic:false,documentOpenMode:"original",interactionMode:"reading"})');
- await reload();
- await evaluate(`document.querySelector('[data-recent-id="${id}"]').click();true`);
- focus();
- await wait('document.querySelector(".page canvas")?.width>0&&!window.previewRenderDiagnostics().opening&&!!document.querySelector(".reader .reading-text-layer span")');
- await pause(300);
- const source=await evaluate('Array.from(document.querySelectorAll(".reader .reading-text-layer span"),s=>s.textContent).join("")');
- await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
- await wait('!!document.querySelector("[data-setting=information-emphasis] input[type=range]")');
- assert.equal(await evaluate('document.querySelector("[data-setting=information-emphasis] input").getAttribute("aria-valuetext")'),'Off');
- await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
- await wait('document.querySelectorAll(".information-highlight-rect").length>=7');
- const keywords=await evaluate('Array.from(document.querySelectorAll(".pdf-information-keyword"),s=>s.textContent)');
- for(const word of ['First','results','suggest','higher','However','findings','support'])assert.ok(keywords.includes(word),word);
- assert.ok(!keywords.some(word=>word.includes('unsupported')),'whole-word matching');
- const categoryCases=[['emphasizeResearchFindings',['results','higher','findings']],['emphasizeOrdinals',['First']],['emphasizeKeyVerbs',['suggest','support']],['emphasizeLogicalConnectives',['However']]];
- for(const [key,excluded] of categoryCases){
-  await evaluate(`document.querySelector('[data-setting="${key}"] input').click()`);
-  await wait(`window.previewPreferences.load().then(p=>p.${key}===false)`);
-  const remaining=await evaluate('Array.from(document.querySelectorAll(".pdf-information-keyword"),s=>s.textContent)');
-  for(const word of excluded)assert.ok(!remaining.includes(word),`${key} removes ${word}`);
-  for(const word of keywords.filter(word=>!excluded.includes(word)))assert.ok(remaining.includes(word),`${key} preserves ${word}`);
-  await evaluate(`document.querySelector('[data-setting="${key}"] input').click()`);
-  await wait(`window.previewPreferences.load().then(p=>p.${key}===true)`);
- }
+import { app, systemPreferences } from 'electron';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+export async function verifyInformationEmphasis(window, recents) {
+  window.show();
+  app.focus({ steal: true });
+  window.focus();
+  window.webContents.focus();
+  const evaluate = (code) =>
+      window.webContents.executeJavaScript(code).catch((error) => {
+        console.error('Failed UI expression:', code);
+        throw error;
+      }),
+    pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const wait = async (code) => {
+    for (let i = 0; i < 250; i++) {
+      if (await evaluate(code)) return;
+      await pause(60);
+    }
+    console.log(
+      await evaluate(
+        'JSON.stringify({diagnostics:window.previewRenderDiagnostics?.(),layer:document.querySelector(".reading-text-layer")?.outerHTML.slice(0,700),errors:document.querySelector(".error-banner")?.textContent,prefs:undefined})',
+      ),
+    );
+    throw Error('Information emphasis smoke timed out: ' + code);
+  };
+  const focus = () => {
+    window.show();
+    app.focus({ steal: true });
+    window.focus();
+    window.webContents.focus();
+  };
+  const reload = async () => {
+    const loaded = new Promise((resolve) => window.webContents.once('did-finish-load', resolve));
+    window.webContents.reload();
+    await loaded;
+    focus();
+    await wait('window.previewReady===true');
+  };
+  await wait('window.previewReady===true');
+  assert.equal(
+    await evaluate('window.previewPreferences.load().then(p=>p.emphasizeInformation)'),
+    false,
+  );
+  const folder = await mkdtemp(join(tmpdir(), 'information-emphasis-')),
+    path = join(folder, 'Portrait and landscape.pdf');
+  const pdf = await PDFDocument.create(),
+    font = await pdf.embedFont(StandardFonts.Helvetica),
+    page = pdf.addPage([612, 792]);
+  page.drawText('First, results suggest a higher effect. These unsupported ideas remain.', {
+    x: 48,
+    y: 700,
+    size: 14,
+    font,
+  });
+  page.drawText('However, findings support the hypothesis. Ordinary text remains here.', {
+    x: 48,
+    y: 660,
+    size: 14,
+    font,
+  });
+  await writeFile(path, await pdf.save());
+  await recents.remember(path);
+  const id = recents.list()[0].id;
+  await evaluate(
+    'window.previewPreferences.save({automatic:false,documentOpenMode:"original",interactionMode:"reading"})',
+  );
+  await reload();
+  await evaluate(`document.querySelector('[data-recent-id="${id}"]').click();true`);
+  focus();
+  await wait(
+    'document.querySelector(".page canvas")?.width>0&&!window.previewRenderDiagnostics().opening&&!!document.querySelector(".reader .reading-text-layer span")',
+  );
+  await pause(300);
+  const source = await evaluate(
+    'Array.from(document.querySelectorAll(".reader .reading-text-layer span"),s=>s.textContent).join("")',
+  );
+  await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
+  await wait('!!document.querySelector("[data-setting=information-emphasis] input[type=range]")');
+  assert.equal(
+    await evaluate(
+      'document.querySelector("[data-setting=information-emphasis] input").getAttribute("aria-valuetext")',
+    ),
+    'Off',
+  );
+  await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
+  await wait('document.querySelectorAll(".information-highlight-rect").length>=7');
+  const keywords = await evaluate(
+    'Array.from(document.querySelectorAll(".pdf-information-keyword"),s=>s.textContent)',
+  );
+  for (const word of ['First', 'results', 'suggest', 'higher', 'However', 'findings', 'support'])
+    assert.ok(keywords.includes(word), word);
+  assert.ok(!keywords.some((word) => word.includes('unsupported')), 'whole-word matching');
+  const categoryCases = [
+    ['emphasizeResearchFindings', ['results', 'higher', 'findings']],
+    ['emphasizeOrdinals', ['First']],
+    ['emphasizeKeyVerbs', ['suggest', 'support']],
+    ['emphasizeLogicalConnectives', ['However']],
+  ];
+  for (const [key, excluded] of categoryCases) {
+    await evaluate(`document.querySelector('[data-setting="${key}"] input').click()`);
+    await wait(`window.previewPreferences.load().then(p=>p.${key}===false)`);
+    const remaining = await evaluate(
+      'Array.from(document.querySelectorAll(".pdf-information-keyword"),s=>s.textContent)',
+    );
+    for (const word of excluded) assert.ok(!remaining.includes(word), `${key} removes ${word}`);
+    for (const word of keywords.filter((word) => !excluded.includes(word)))
+      assert.ok(remaining.includes(word), `${key} preserves ${word}`);
+    await evaluate(`document.querySelector('[data-setting="${key}"] input').click()`);
+    await wait(`window.previewPreferences.load().then(p=>p.${key}===true)`);
+  }
 
- assert.equal(await evaluate('Array.from(document.querySelectorAll(".reader .reading-text-layer span"),s=>s.textContent).join("")'),source,'source text and selection offsets are unchanged');
- const systemAccent='#'+systemPreferences.getAccentColor().slice(0,6);
- assert.equal(await evaluate('document.documentElement.style.getPropertyValue("--system-accent")'),systemAccent);
- const before=await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor');
- window.webContents.send('appearance:changed',{accent:'#af52deff'});
- await wait('document.documentElement.style.getPropertyValue("--system-accent")==="#af52de"');
- assert.notEqual(await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor'),before,'existing highlights follow system accent changes');
- await evaluate('document.querySelector("[data-setting=topic-sentences] input").click()');
- await wait('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences===true)');
- assert.ok(!await evaluate('!!document.querySelector(".topic-sentence-overlay")'),'short paragraphs do not receive topic emphasis');
- await wait('!!document.querySelector(".information-highlight-rect")');
- const systemHighlight=await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor');
+  assert.equal(
+    await evaluate(
+      'Array.from(document.querySelectorAll(".reader .reading-text-layer span"),s=>s.textContent).join("")',
+    ),
+    source,
+    'source text and selection offsets are unchanged',
+  );
+  const systemAccent = '#' + systemPreferences.getAccentColor().slice(0, 6);
+  assert.equal(
+    await evaluate('document.documentElement.style.getPropertyValue("--system-accent")'),
+    systemAccent,
+  );
+  const before = await evaluate(
+    'getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor',
+  );
+  window.webContents.send('appearance:changed', { accent: '#af52deff' });
+  await wait('document.documentElement.style.getPropertyValue("--system-accent")==="#af52de"');
+  assert.notEqual(
+    await evaluate(
+      'getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor',
+    ),
+    before,
+    'existing highlights follow system accent changes',
+  );
+  await evaluate('document.querySelector("[data-setting=topic-sentences] input").click()');
+  await wait('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences===true)');
+  assert.ok(
+    !(await evaluate('!!document.querySelector(".topic-sentence-overlay")')),
+    'short paragraphs do not receive topic emphasis',
+  );
+  await wait('!!document.querySelector(".information-highlight-rect")');
+  const systemHighlight = await evaluate(
+    'getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor',
+  );
 
- await evaluate('document.querySelectorAll(".color-choice")[3].click()');
- await wait('window.previewPreferences.load().then(p=>p.accentColor!=="system")');
+  await evaluate('document.querySelectorAll(".color-choice")[3].click()');
+  await wait('window.previewPreferences.load().then(p=>p.accentColor!=="system")');
 
- await wait('!!document.querySelector(".information-highlight-rect")');
- await wait('!!document.querySelector(".information-highlight-rect")&&getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor!=='+JSON.stringify(systemHighlight));
- const customHighlight=await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor');
- assert.notEqual(customHighlight,systemHighlight,'custom accent updates existing information emphasis');
- window.webContents.send('appearance:changed',{accent:'#ff9500ff'});
- await wait('document.documentElement.style.getPropertyValue("--system-accent")==="#ff9500"');
- assert.equal(await evaluate('getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor'),customHighlight,'custom accent takes precedence over system accent');
- await evaluate('document.querySelector(".settings-heading button").click()');await pause(350);
- await writeFile('/tmp/pdfmathreader-information-original.png',(await window.webContents.capturePage()).toPNG());
- await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
- await wait('!!document.querySelector("[data-setting=information-emphasis] input")');
- await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
- await wait('!document.querySelector(".information-highlight-rect")&&!document.querySelector(".pdf-information-keyword")');
- assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences)'),true,'independent topic sentence setting');
- await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
- await wait('window.previewPreferences.load().then(p=>p.emphasizeInformation===true)');
- await evaluate('window.previewCredentials.save("sk-information-test-only")');
- await evaluate('window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading"})');
- await recents.clear();
- await reload();
- assert.equal(await evaluate('window.previewPreferences.load().then(p=>p.emphasizeInformation)'),true);
- await evaluate('document.querySelector(".sample-button").click()');
- await wait('!!document.querySelector(".reading-paragraph .information-keyword")');
- const translated=await evaluate('Array.from(document.querySelectorAll(".reading-paragraph .information-keyword"),s=>s.textContent)');
- for(const word of ['首先','结果','表明','支持','然而','发现','高于'])assert.ok(translated.includes(word),word);
- assert.ok(await evaluate('document.querySelector(".reading-paragraph .paragraph-text").textContent.includes("普通内容保持不变")'));
- await writeFile('/tmp/pdfmathreader-information-translated.png',(await window.webContents.capturePage()).toPNG());
- await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
- focus();
- await wait('document.querySelectorAll(\'[aria-label="Interaction mode"] .macvue-segment\').length>=2');
- await evaluate('document.querySelectorAll(\'[aria-label="Interaction mode"] .macvue-segment\')[1].click()');
- await wait('!!document.querySelector(".paragraph.translated .information-keyword")&&!document.querySelector(".reading-paragraph")');
- await pause(500);
- assert.ok(await evaluate('!!document.querySelector(".paragraph.translated .information-keyword")'));
- await rm(folder,{recursive:true,force:true});
- console.log('Information emphasis smoke passed',JSON.stringify({defaultOff:true,originalPDF:true,translatedParagraph:true,comparisonMode:true,wholeWords:true,systemAccent:true,liveAccentChanges:true,combinedTopicEmphasis:true,unchangedSourceText:true,toggleReversible:true,persisted:true}));app.exit(0);
+  await wait('!!document.querySelector(".information-highlight-rect")');
+  await wait(
+    '!!document.querySelector(".information-highlight-rect")&&getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor!==' +
+      JSON.stringify(systemHighlight),
+  );
+  const customHighlight = await evaluate(
+    'getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor',
+  );
+  assert.notEqual(
+    customHighlight,
+    systemHighlight,
+    'custom accent updates existing information emphasis',
+  );
+  window.webContents.send('appearance:changed', { accent: '#ff9500ff' });
+  await wait('document.documentElement.style.getPropertyValue("--system-accent")==="#ff9500"');
+  assert.equal(
+    await evaluate(
+      'getComputedStyle(document.querySelector(".information-highlight-rect")).backgroundColor',
+    ),
+    customHighlight,
+    'custom accent takes precedence over system accent',
+  );
+  await evaluate('document.querySelector(".settings-heading button").click()');
+  await pause(350);
+  await writeFile(
+    '/tmp/pdfmathreader-information-original.png',
+    (await window.webContents.capturePage()).toPNG(),
+  );
+  await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
+  await wait('!!document.querySelector("[data-setting=information-emphasis] input")');
+  await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
+  await wait(
+    '!document.querySelector(".information-highlight-rect")&&!document.querySelector(".pdf-information-keyword")',
+  );
+  assert.equal(
+    await evaluate('window.previewPreferences.load().then(p=>p.emphasizeTopicSentences)'),
+    true,
+    'independent topic sentence setting',
+  );
+  await evaluate('document.querySelector("[data-setting=information-emphasis] input").click()');
+  await wait('window.previewPreferences.load().then(p=>p.emphasizeInformation===true)');
+  await evaluate('window.previewCredentials.save("sk-information-test-only")');
+  await evaluate(
+    'window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading"})',
+  );
+  await recents.clear();
+  await reload();
+  assert.equal(
+    await evaluate('window.previewPreferences.load().then(p=>p.emphasizeInformation)'),
+    true,
+  );
+  await evaluate('document.querySelector(".sample-button").click()');
+  await wait('!!document.querySelector(".reading-paragraph .information-keyword")');
+  const translated = await evaluate(
+    'Array.from(document.querySelectorAll(".reading-paragraph .information-keyword"),s=>s.textContent)',
+  );
+  for (const word of ['首先', '结果', '表明', '支持', '然而', '发现', '高于'])
+    assert.ok(translated.includes(word), word);
+  assert.ok(
+    await evaluate(
+      'document.querySelector(".reading-paragraph .paragraph-text").textContent.includes("普通内容保持不变")',
+    ),
+  );
+  await writeFile(
+    '/tmp/pdfmathreader-information-translated.png',
+    (await window.webContents.capturePage()).toPNG(),
+  );
+  await evaluate('document.querySelector(\'[aria-label="Translation settings"]\').click()');
+  focus();
+  await wait(
+    'document.querySelectorAll(\'[aria-label="Interaction mode"] .macvue-segment\').length>=2',
+  );
+  await evaluate(
+    'document.querySelectorAll(\'[aria-label="Interaction mode"] .macvue-segment\')[1].click()',
+  );
+  await wait(
+    '!!document.querySelector(".paragraph.translated .information-keyword")&&!document.querySelector(".reading-paragraph")',
+  );
+  await pause(500);
+  assert.ok(
+    await evaluate('!!document.querySelector(".paragraph.translated .information-keyword")'),
+  );
+  await rm(folder, { recursive: true, force: true });
+  console.log(
+    'Information emphasis smoke passed',
+    JSON.stringify({
+      defaultOff: true,
+      originalPDF: true,
+      translatedParagraph: true,
+      comparisonMode: true,
+      wholeWords: true,
+      systemAccent: true,
+      liveAccentChanges: true,
+      combinedTopicEmphasis: true,
+      unchangedSourceText: true,
+      toggleReversible: true,
+      persisted: true,
+    }),
+  );
+  app.exit(0);
 }

@@ -3,10 +3,10 @@
 # <img src="icon.png" alt="PDFMathReader 应用图标" style="height: 1em; width: auto;"> PDFMathReader（实验性）
 
 [![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
-  <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
-    <img src="https://img.shields.io/badge/contributions-welcome-green"></a>
-  <a href="../LICENSE">
-    <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
+<a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
+<img src="https://img.shields.io/badge/contributions-welcome-green"></a>
+<a href="../LICENSE">
+<img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
 在任何平台上，通过实时翻译阅读任何语言的科学文档。由 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) 提供支持。
 
@@ -14,74 +14,39 @@
 
 ## 功能
 
-- **开发者模式：** 在高级设定中开启独立监控窗口，实时查看主程序、渲染进程、翻译 kernel 的资源占用、任务队列、命令行输出和命令传输。支持筛选、暂停显示和复制诊断信息，关闭窗口即停止采集。
-
-- 在独立窗口中打开不超过 50 MiB 的 PDF，支持拖放及 macOS Finder/Dock 打开方式。
-- 使用缩略图、缩放、适应页面、横向或纵向滚动，以及单页、双页或四页布局阅读。
-- 重新打开最近文档时恢复阅读位置和显示设置。
-- 选择整份文档或邻近页面翻译，单击已检测段落即可切换原文与译文。
-- 在设置中调整翻译语言、并发数和内核选项；界面语言单独设置。
-  既有高级设置的标签、说明和字体类别选项支持全部七种界面语言。未来新增的内核选项暂时显示上游原文；保存的参数值不受界面翻译影响。
+- **保留排版**: 翻译时尽可能保留 PDF 的公式、表格和原有布局，保留关键信息。
+- **实时翻译**: 阅读时实时检测布局并翻译，无须等待整份文档处理完成。
+- **翻译配置**: 自由选择翻译内核、服务和语言，支持整份文档或邻近页面翻译。
+- **双语阅读**: 单击已检测段落即可切换原文与译文，方便对照阅读。
+- **灵活阅读**: 支持缩略图导航、缩放、横纵滚动及单页、双页、四页布局。
+- **多文档管理**: 在独立窗口中打开 PDF，重新打开时恢复阅读位置和显示设置。
+- **阅读链接**: 保存搜索结果与阅读起点之间的双向链接，方便往返查阅。
+- **高亮和批注**: 高亮重点段落并添加批注，记录阅读笔记。
 
 ## 最近更新
 
-| 日期 | 功能变更 | 贡献者 |
-| --- | --- | --- |
-| 2026-10-03 | [新增自定义菜单和左侧红黄绿窗口按钮](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [提供可运行的 CI 安装包，改进阅读界面的布局动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [缓存依赖、Electron 和图标，加快 CI 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [改进 Windows 控件，新增页面适应快捷键](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [新增 Windows PDF 右键菜单和打开方式入口](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305) | [@reycn](https://github.com/reycn) |
-| 2026-10-03 | [改进段落分组、预览和文档动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769) | [@reycn](https://github.com/reycn) |
+| 日期       | 功能变更                                                                                                                                               | 贡献者                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| 2026-10-03 | [新增自定义菜单和左侧红黄绿窗口按钮](https://github.com/PDFMathTranslate/PDFMathReader/commit/b144cbfe577c1e6787b01edafb9cdf2b2043fa4f)                | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [提供可运行的 CI 安装包，改进阅读界面的布局动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/04f76caf8fe966bb33721ad981d902de8cae62c8)    | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [缓存依赖、Electron 和图标，加快 CI 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/a9324f4cc40eb8585d760bda4d56f83bf62b74e2)           | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [改进 Windows 控件，新增页面适应快捷键](https://github.com/PDFMathTranslate/PDFMathReader/commit/04519de3448b5d707f8ecffd0fdabc695c2155ef)             | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [新增 Windows PDF 右键菜单和打开方式入口](https://github.com/PDFMathTranslate/PDFMathReader/commit/f4da6ea1d1ec225b333722703ab87b7010538305)           | [@reycn](https://github.com/reycn) |
+| 2026-10-03 | [改进段落分组、预览和文档动画](https://github.com/PDFMathTranslate/PDFMathReader/commit/46cf3fb126102ad507fa203dc4aa707f2c5f7769)                      | [@reycn](https://github.com/reycn) |
 | 2026-10-03 | [新增 Intel Mac、32 位 Windows 和 Linux ARMv7 构建](https://github.com/PDFMathTranslate/PDFMathReader/commit/ed4b4567f381123cff49d20a710c2a94c034d81f) | [@reycn](https://github.com/reycn) |
 
 ## 快速开始
 
-### 截图
+### 截图与安装
 
-| macOS | Windows | Linux |
-| :---: | :---: | :---: |
-| <img src="preview.png" alt="PDFMathReader 阅读界面" height="240"> | <img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240"> | <img src="preview-linux.png" alt="PDFMathReader Linux 阅读界面" height="240"> |
+下载与你的系统和 CPU 匹配的包，先解压 Actions 下载的 ZIP。
 
-### 安装
-
-从 [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 下载与你的系统和 CPU 匹配的包。先解压 Actions 下载的 ZIP。
-
-<details>
-<summary>macOS</summary>
-
-解压 macOS ZIP，将 `PDFMathReader.app` 移到 `/Applications`，然后打开。
-
-<details>
-<summary>macOS 提示应用“已损坏”</summary>
-
-确认应用来自可信来源后，在终端执行以下命令。按提示输入 Mac 登录密码（不会显示），然后重新打开应用：
-
-```zsh
-sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
-```
-
-</details>
-
-</details>
-
-<details>
-<summary>Windows</summary>
-
-双击 `PDFMathReader-win32-x64.exe`（32 位 Windows 使用 `ia32` 版本）。便携版自带运行时，启动后会注册 PDF 的 **Open with PDFMathReader** 右键菜单；移动可执行文件后，再启动一次以更新路径。
-
-</details>
-
-<details>
-<summary>Linux</summary>
-
-解压与你的 CPU 匹配的 `.tar.gz`，进入应用目录运行：
-
-```sh
-./PDFMathReader
-```
-
-</details>
+| 平台名称 | macOS                                                                                                                                                                                 | Windows                                                                                                              | Linux                                                                                                    |
+| :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| 运行截图 | <img src="preview.png" alt="PDFMathReader 阅读界面" height="240">                                                                                                                     | <img src="preview-windows.png" alt="PDFMathReader 阅读界面" height="240">                                            | <img src="preview-linux.png" alt="PDFMathReader Linux 阅读界面" height="240">                            |
+| 安装链接 | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                                                              | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)             | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) |
+| 安装方式 | 解压 macOS ZIP，将 `PDFMathReader.app` 移到 `/Applications`，然后打开。                                                                                                               | 双击 `PDFMathReader-win32-x64.exe`（32 位 Windows 使用 `ia32` 版本）。                                               | 解压与你的 CPU 匹配的 `.tar.gz`，进入应用目录运行 `./PDFMathReader`。                                    |
+| 额外说明 | 若提示应用“已损坏”，确认应用来自可信来源后，在终端执行 `sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app`。按提示输入 Mac 登录密码（不会显示），然后重新打开应用。 | 便携版自带运行时。启动后会注册 PDF 的 **Open with PDFMathReader** 右键菜单；移动可执行文件后，再启动一次以更新路径。 | 选择与你的 CPU 架构匹配的包。                                                                            |
 
 打开 PDF，在 **Settings…** 中保存 OpenAI API 密钥并选择目标语言。阅读无需密钥，翻译需要。**Ultra fast** 已内置；使用 **Fast** 或 **Precise** 前，安装 `uv`，再在设置中点击 **Install kernel with uv**。
 
@@ -124,11 +89,11 @@ PDFMathReader 使用 Vue 3 和 PDF.js 构建阅读界面，Electron 提供桌面
 
 渲染、版面分析和翻译独立运行。页面和缩略图按可见区域虚拟化，PDF.js 和版面分析按需加载，渲染缓存有内存上限。每份文档仅上传到本地后端一次，后续请求使用文档 ID。切换文档、语言或内核时取消过时的翻译任务。
 
-| 设置选项 | 引擎 | 输出方式 |
-| --- | --- | --- |
-| Ultra fast | PDF Inspector | 在原 PDF 上覆盖段落译文 |
-| Fast | PDFMathTranslate | 生成保留公式的翻译后 PDF 页面 |
-| Precise | PDFMathTranslate-next | 生成排版处理更细致的翻译后 PDF 页面 |
+| 设置选项   | 引擎                  | 输出方式                            |
+| ---------- | --------------------- | ----------------------------------- |
+| Ultra fast | PDF Inspector         | 在原 PDF 上覆盖段落译文             |
+| Fast       | PDFMathTranslate      | 生成保留公式的翻译后 PDF 页面       |
+| Precise    | PDFMathTranslate-next | 生成排版处理更细致的翻译后 PDF 页面 |
 
 PDF 渲染和版面分析在本地完成。翻译会将文档文本发送给 OpenAI，可能产生 API 费用。Fast 和 Precise 使用通过 `uv` 安装、由应用管理的独立 Python 环境，并通过后端代理访问 OpenAI。API 密钥不会传入渲染进程。
 
@@ -140,7 +105,8 @@ PDF 渲染和版面分析在本地完成。翻译会将文档文本发送给 Ope
 
 </details>
 
-## 已知限制
+<details>
+<summary>已知限制</summary>
 
 - **平台支持：** 已测试的平台为 macOS。Windows 和 Linux 已有平台专用样式，但原生运行验证仍待完成。打包命令面向 macOS arm64 和 Windows x64。
 - **版面保真：** Ultra fast 使用几何规则划分段落，并以文本覆盖层显示译文。复杂表格、旋转文本、特殊背景和较长译文可能无法保留原始排版。数学翻译内核的输出取决于上游版面处理能力。
@@ -148,6 +114,8 @@ PDF 渲染和版面分析在本地完成。翻译会将文档文本发送给 Ope
 - **翻译要求：** 翻译需要 OpenAI API 密钥和网络连接。Fast 和 Precise 需要通过 `uv` 另行安装数学翻译内核。
 - **功能范围：** 这是一款实验性的本地阅读与翻译应用，并非完整的 PDF 编辑或导出工具。
 - **验证范围：** 自动化测试覆盖后端和阅读器辅助逻辑。使用模拟服务的检查无法验证真实 OpenAI 翻译质量或 API 密钥是否有效。
+
+</details>
 
 ## 许可证
 

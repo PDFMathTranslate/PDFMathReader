@@ -20,9 +20,21 @@ test('reader preferences save and reload custom target and source language codes
   for (const code of CUSTOM_LANGUAGE_CODES) {
     assert.equal(isCustomLanguageCode(code), true, `${code} should be accepted`);
     for (const engine of ENGINES) {
-      assert.equal(isTranslationLanguageSupported(engine, code), true, `${engine} should support ${code}`);
-      assert.equal(normalizeTranslationLanguage(engine, code, 'English'), code, `${engine} should preserve ${code}`);
-      assert.equal(normalizeTranslationLanguage(engine, code, 'English', 'source'), code, `${engine} source should preserve ${code}`);
+      assert.equal(
+        isTranslationLanguageSupported(engine, code),
+        true,
+        `${engine} should support ${code}`,
+      );
+      assert.equal(
+        normalizeTranslationLanguage(engine, code, 'English'),
+        code,
+        `${engine} should preserve ${code}`,
+      );
+      assert.equal(
+        normalizeTranslationLanguage(engine, code, 'English', 'source'),
+        code,
+        `${engine} source should preserve ${code}`,
+      );
     }
   }
   for (const value of invalidCodes) {
@@ -41,7 +53,10 @@ test('reader preferences save and reload custom target and source language codes
     assert.equal(saved.sourceLanguage, 'zh-Hant');
     for (const key of ['language', 'sourceLanguage']) {
       for (const value of invalidCodes) {
-        assert.throws(() => preferences.save({ [key]: value }), /Invalid (?:source )?language preference/);
+        assert.throws(
+          () => preferences.save({ [key]: value }),
+          /Invalid (?:source )?language preference/,
+        );
         assert.equal(preferences.load()[key], saved[key]);
       }
     }

@@ -9,7 +9,14 @@
     "desktop": "npm run build && electron .",
     "package:mac": "npm run icons:mac && npm run build && node electron/package.mjs --distribute",
     "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols",
-    "package:win": "npm run build && node electron/package.mjs --platform=win32 --arch=x64 --distribute"
+    "package:win": "npm run build && node electron/package.mjs --platform=win32 --arch=x64 --distribute",
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
+    "style:check": "npm run lint && npm run format:check && node scripts/native-style.mjs check",
+    "style:fix": "npm run lint:fix && npm run format && node scripts/native-style.mjs fix"
   },
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",
@@ -20,6 +27,7 @@
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
+    "@eslint/js": "10.0.1",
     "@fluentui/tokens": "^1.0.0-alpha.24",
     "@fluentui/web-components": "^3.1.3",
     "@macvue/core": "^0.1.0",
@@ -27,10 +35,20 @@
     "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-vue": "10.11.1",
+    "globals": "17.13.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "prettier": "3.9.9",
     "vite": "^7.1.0",
     "vue": "^3.5.0"
   },
   "version": "0.1.0",
   "description": "Local PDF reader with paragraph translation",
-  "main": "electron/main.mjs"
+  "main": "electron/main.mjs",
+  "engines": {
+    "node": ">=22.22.1"
+  }
 }

@@ -108,8 +108,7 @@ def _human_label(value: str) -> str:
         "url",
     }
     return " ".join(
-        word.upper() if word.lower() in acronyms else word.capitalize()
-        for word in words
+        word.upper() if word.lower() in acronyms else word.capitalize() for word in words
     )
 
 
@@ -181,7 +180,12 @@ def _field_schema(field_id: str, field: Any, required: bool) -> dict[str, Any]:
     # metadata.  Keep the exclusive variants too; clients that only support
     # inclusive bounds can still use min/max conservatively.
     for detail in getattr(field, "metadata", ()):
-        for source, target in (("ge", "min"), ("le", "max"), ("gt", "exclusiveMin"), ("lt", "exclusiveMax")):
+        for source, target in (
+            ("ge", "min"),
+            ("le", "max"),
+            ("gt", "exclusiveMin"),
+            ("lt", "exclusiveMax"),
+        ):
             value = getattr(detail, source, None)
             if value is not None:
                 result[target] = _json_value(value)
@@ -203,7 +207,9 @@ def _version(package_name: str, module: Any) -> str:
         return "unknown"
 
 
-def _service_result(service_id: str, label: str, fields: Iterable[dict[str, Any]]) -> dict[str, Any]:
+def _service_result(
+    service_id: str, label: str, fields: Iterable[dict[str, Any]]
+) -> dict[str, Any]:
     if service_id in EXCLUDED_SERVICE_IDS:
         raise ValueError(f"excluded service: {service_id}")
     return {
@@ -272,8 +278,7 @@ def _fast_services() -> tuple[str, list[dict[str, Any]]]:
     services: list[dict[str, Any]] = []
     seen: set[str] = set()
     candidates = [
-        getattr(converter, name, getattr(translators, name, None))
-        for name in converter_names
+        getattr(converter, name, getattr(translators, name, None)) for name in converter_names
     ]
     for candidate in candidates:
         if not isinstance(candidate, type):
@@ -295,7 +300,11 @@ def _fast_services() -> tuple[str, list[dict[str, Any]]]:
             {
                 "id": _fast_field_id(service_id, key),
                 "label": _human_label(_fast_field_id(service_id, key)),
-                "type": "number" if isinstance(value, (int, float)) and not isinstance(value, bool) else "boolean" if isinstance(value, bool) else "string",
+                "type": "number"
+                if isinstance(value, (int, float)) and not isinstance(value, bool)
+                else "boolean"
+                if isinstance(value, bool)
+                else "string",
                 "secret": _is_secret(key),
                 "default": _json_value(value),
                 "required": key in required,
@@ -305,7 +314,9 @@ def _fast_services() -> tuple[str, list[dict[str, Any]]]:
             if isinstance(key, str)
         ]
         if service_id not in EXCLUDED_SERVICE_IDS:
-            service = _service_result(service_id, _human_label(candidate.__name__.removesuffix("Translator")), fields)
+            service = _service_result(
+                service_id, _human_label(candidate.__name__.removesuffix("Translator")), fields
+            )
             service["supportsPrompt"] = bool(getattr(candidate, "CustomPrompt", False))
             services.append(service)
             seen.add(service_id)
@@ -314,16 +325,12 @@ def _fast_services() -> tuple[str, list[dict[str, Any]]]:
 
 def _precise_services() -> tuple[str, list[dict[str, Any]]]:
     package = importlib.import_module("pdf2zh_next")
-    model_module = importlib.import_module(
-        "pdf2zh_next.config.translate_engine_model"
-    )
+    model_module = importlib.import_module("pdf2zh_next.config.translate_engine_model")
     parser_module = importlib.import_module("pdf2zh_next.config.main")
     parser, _ = parser_module.build_args_parser()
     actions = {action.dest: action for action in parser._actions}
     metadata = getattr(model_module, "TRANSLATION_ENGINE_METADATA", ())
-    unsupported = getattr(
-        model_module, "NOT_SUPPORTED_TRANSLATION_ENGINE_SETTING_TYPE", None
-    )
+    unsupported = getattr(model_module, "NOT_SUPPORTED_TRANSLATION_ENGINE_SETTING_TYPE", None)
     services: list[dict[str, Any]] = []
     for entry in metadata:
         service_id = str(getattr(entry, "cli_flag_name", ""))
@@ -339,7 +346,10 @@ def _precise_services() -> tuple[str, list[dict[str, Any]]]:
             except (TypeError, ValueError):
                 pass
         provider_action = actions.get(service_id)
-        if provider_action is None or f"--{service_id.replace('_', '-')}" not in provider_action.option_strings:
+        if (
+            provider_action is None
+            or f"--{service_id.replace('_', '-')}" not in provider_action.option_strings
+        ):
             continue
         fields = []
         required_names = PRECISE_REQUIRED_FIELDS.get(service_id, set())

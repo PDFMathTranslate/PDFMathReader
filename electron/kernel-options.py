@@ -9,8 +9,17 @@ import sys
 
 SAFE_OPTIONS = {
     "pdf_math_fast": {
-        "debug", "vfont", "vchar", "lang_in", "prompt", "compatible",
-        "onnx", "backend", "config", "skip_subset_fonts", "ignore_cache",
+        "debug",
+        "vfont",
+        "vchar",
+        "lang_in",
+        "prompt",
+        "compatible",
+        "onnx",
+        "backend",
+        "config",
+        "skip_subset_fonts",
+        "ignore_cache",
     },
     "pdf_math_precise": {
         "min_text_length",
@@ -79,11 +88,7 @@ def option_metadata(kind):
             continue
         boolean = isinstance(action, (argparse._StoreTrueAction, argparse._StoreFalseAction))
         option_type = (
-            "boolean"
-            if boolean
-            else "number"
-            if action.type in (int, float)
-            else "string"
+            "boolean" if boolean else "number" if action.type in (int, float) else "string"
         )
         option = {
             "id": action.dest,

@@ -1,0 +1,10 @@
+# Minimal correctness checks; no naming, docstring, complexity or import-order rules.
+line-length = 100
+indent-width = 4
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = ["F401", "F841", "E402"]
+
+[format]
+quote-style = "double"

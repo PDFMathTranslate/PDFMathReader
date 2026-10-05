@@ -2,11 +2,11 @@
 
 Live sampling of the existing /Applications installation (not the modified build):
 
-| Process | PID | Physical footprint |
-| --- | --- | --- |
-| GPU Helper | 61340 | 850.0 MiB |
-| Reader Renderer | 61344 | 766.7 MiB |
-| Node utility | 61343 | 69.3 MiB |
+| Process         | PID   | Physical footprint |
+| --------------- | ----- | ------------------ |
+| GPU Helper      | 61340 | 850.0 MiB          |
+| Reader Renderer | 61344 | 766.7 MiB          |
+| Node utility    | 61343 | 69.3 MiB           |
 
 GPU IOSurface allocations accounted for 748.7 MiB. vmmap could not inspect Electron's PartitionAlloc malloc zone; this establishes the graphics-heavy footprint, not complete object-level attribution. RSS from ps is not comparable to Activity Monitor physical footprint. Do not add these numbers as a deduplicated whole-system memory total.
 

@@ -5,18 +5,18 @@ checks whose failure can lose user data, expose credentials, break packaged
 startup, corrupt translations or prevent a core interaction. Tests are removed
 from the source rather than hidden behind a name filter or an alternate suite.
 
-| Risk | Cases | Retained checks |
-| --- | ---: | --- |
-| Credential safety | 4 | OS-backed encryption, no plaintext persistence, overrides, clearing, concurrent profile saves |
-| PDF data integrity | 4 | Annotation round trips, native annotation migration, unchanged unannotated PDFs, page edits saved to source |
-| Desktop and packaging | 2 | Private authenticated backend lifecycle, bundled startup and PDF extraction |
-| Work lifecycle | 3 | Worker and descendant shutdown, global translation limit, queued cancellation |
-| Cache and provider isolation | 4 | Cleanup protects active work and outside files, shared request cancellation, document invalidation, configured provider routing without fallback requests after cancellation |
-| Kernel configuration | 2 | Fast and Precise environment field mapping and secret-free cache identity, invalid configuration rejection |
-| Preferences, documents and sessions | 4 | Partial writes preserve settings, portable page coordinates, multiple-document restore, capacity never evicts active documents |
-| Information emphasis | 3 | Category selection and unchanged text, phrases spanning PDF runs, persisted category preferences |
-| Translation languages | 1 | Custom code validation, engine support and preference round trips |
-| Release updates | 2 | Correct release/error status and safe URLs, shared checks and cached release revalidation |
+| Risk                                | Cases | Retained checks                                                                                                                                                              |
+| ----------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credential safety                   |     4 | OS-backed encryption, no plaintext persistence, overrides, clearing, concurrent profile saves                                                                                |
+| PDF data integrity                  |     4 | Annotation round trips, native annotation migration, unchanged unannotated PDFs, page edits saved to source                                                                  |
+| Desktop and packaging               |     2 | Private authenticated backend lifecycle, bundled startup and PDF extraction                                                                                                  |
+| Work lifecycle                      |     3 | Worker and descendant shutdown, global translation limit, queued cancellation                                                                                                |
+| Cache and provider isolation        |     4 | Cleanup protects active work and outside files, shared request cancellation, document invalidation, configured provider routing without fallback requests after cancellation |
+| Kernel configuration                |     2 | Fast and Precise environment field mapping and secret-free cache identity, invalid configuration rejection                                                                   |
+| Preferences, documents and sessions |     4 | Partial writes preserve settings, portable page coordinates, multiple-document restore, capacity never evicts active documents                                               |
+| Information emphasis                |     3 | Category selection and unchanged text, phrases spanning PDF runs, persisted category preferences                                                                             |
+| Translation languages               |     1 | Custom code validation, engine support and preference round trips                                                                                                            |
+| Release updates                     |     2 | Correct release/error status and safe URLs, shared checks and cached release revalidation                                                                                    |
 
 Removed coverage includes detailed telemetry counters, log presentation,
 exhaustive language labels, static build metadata, duplicate preference boundary

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import {Menu} from 'electron';
-import {PDFDocument} from 'pdf-lib';
-import {writeFile} from 'node:fs/promises';
+import { Menu } from 'electron';
+import { PDFDocument } from 'pdf-lib';
+import { writeFile } from 'node:fs/promises';
 
 export async function verifyCropStatus(window) {
-  const evaluate = code => window.webContents.executeJavaScript(code);
-  const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  const evaluate = (code) => window.webContents.executeJavaScript(code);
+  const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
   let lastCondition = '';
 
   async function wait(condition, label = condition) {
@@ -20,12 +20,14 @@ export async function verifyCropStatus(window) {
     }
     let diagnostic = '';
     try {
-      diagnostic = JSON.stringify(await evaluate(`({
+      diagnostic = JSON.stringify(
+        await evaluate(`({
         ready: window.previewReady,
         mock: window.cropStatusSmoke,
         diagnostics: window.previewRenderDiagnostics?.(),
         body: document.body.innerText.slice(-1200)
-      })`));
+      })`),
+      );
     } catch {
       diagnostic = 'renderer diagnostics unavailable';
     }
@@ -37,17 +39,22 @@ export async function verifyCropStatus(window) {
     assert.ok(child.left >= parent.left - 1, `${label} left edge is inside the cropped frame`);
     assert.ok(child.top >= parent.top - 1, `${label} top edge is inside the cropped frame`);
     assert.ok(child.right <= parent.right + 1, `${label} right edge is inside the cropped frame`);
-    assert.ok(child.bottom <= parent.bottom + 1, `${label} bottom edge is inside the cropped frame`);
+    assert.ok(
+      child.bottom <= parent.bottom + 1,
+      `${label} bottom edge is inside the cropped frame`,
+    );
   }
 
   const pdf = await PDFDocument.create();
-  pdf.addPage([800, 1000]).drawText('Crop status regression smoke fixture', {x: 72, y: 860, size: 20});
+  pdf
+    .addPage([800, 1000])
+    .drawText('Crop status regression smoke fixture', { x: 72, y: 860, size: 20 });
   const fixture = Buffer.from(await pdf.save()).toString('base64');
   const errorText = [
     'Mocked layout extraction failed for the cropped page.',
     'This deliberately long diagnostic verifies that the retry toast wraps inside the visible page frame.',
     'The request is expected to fail so the smoke can exercise the real error and recovery controls.',
-    'Keep this message visible across several lines so a regression cannot hide its lower edge behind the shifted PDF page.'
+    'Keep this message visible across several lines so a regression cannot hide its lower edge behind the shifted PDF page.',
   ].join(' ');
   const requestDelay = 1200;
 
@@ -105,23 +112,36 @@ export async function verifyCropStatus(window) {
     await wait('!!document.querySelector(".sample-button")', 'sample button');
     await evaluate('document.querySelector(".sample-button").click(); true');
     await wait('window.cropStatusSmoke.sampleCalls === 1', 'fixture sample request');
-    await wait(`(() => {
+    await wait(
+      `(() => {
       const diagnostics = window.previewRenderDiagnostics?.();
       return diagnostics?.totalPages === 1 && !diagnostics.opening && document.querySelector('.page canvas')?.width > 0;
-    })()`, 'sample page rendered');
-    await wait('window.cropStatusSmoke.layoutCalls === 1 && window.cropStatusSmoke.layoutPending === 1', 'delayed layout request');
+    })()`,
+      'sample page rendered',
+    );
+    await wait(
+      'window.cropStatusSmoke.layoutCalls === 1 && window.cropStatusSmoke.layoutPending === 1',
+      'delayed layout request',
+    );
     await wait('!!document.querySelector(".page-translation-progress")', 'initial page progress');
 
     const menu = Menu.getApplicationMenu();
     menu.getMenuItemById('crop-x-more').click();
-    await wait('window.previewRenderDiagnostics()?.readingView?.cropX === 0.05', 'horizontal crop applied');
+    await wait(
+      'window.previewRenderDiagnostics()?.readingView?.cropX === 0.05',
+      'horizontal crop applied',
+    );
     menu.getMenuItemById('crop-y-more').click();
-    await wait(`(() => {
+    await wait(
+      `(() => {
       const view = window.previewRenderDiagnostics()?.readingView;
       return view?.cropX === 0.05 && view?.cropY === 0.05;
-    })()`, 'vertical crop applied');
+    })()`,
+      'vertical crop applied',
+    );
 
-    const snapshot = () => evaluate(`(() => {
+    const snapshot = () =>
+      evaluate(`(() => {
       const rect = element => {
         if (!element) return null;
         const bounds = element.getBoundingClientRect();
@@ -156,20 +176,23 @@ export async function verifyCropStatus(window) {
       progressPending: window.cropStatusSmoke?.layoutPending || 0
       };
     })()`);
-    const scrollToastIntoView = async label => {
+    const scrollToastIntoView = async (label) => {
       await evaluate(`(() => {
         const toast = document.querySelector('.page-translation-toast');
         toast?.scrollIntoView({block: 'center', inline: 'nearest'});
         return !!toast;
       })()`);
-      await wait(`(() => {
+      await wait(
+        `(() => {
         const reader = document.querySelector('.reader');
         const toast = document.querySelector('.page-translation-toast');
         if (!reader || !toast) return false;
         const readerBounds = reader.getBoundingClientRect();
         const toastBounds = toast.getBoundingClientRect();
         return toastBounds.top >= readerBounds.top + 8 && toastBounds.bottom <= readerBounds.bottom - 8;
-      })()`, label);
+      })()`,
+        label,
+      );
     };
 
     const progressState = await snapshot();
@@ -177,15 +200,30 @@ export async function verifyCropStatus(window) {
     assert.equal(progressState.view.cropY, 0.05);
     assert.equal(progressState.progressPending, 1);
     assertInside(progressState.progress, progressState.wrap, 'page translation progress');
-    assert.ok(Math.abs(progressState.progress.top - progressState.wrap.top) <= 1, 'progress aligns with the cropped frame top');
-    assert.ok(Math.abs(progressState.progress.left - progressState.wrap.left) <= 1, 'progress starts at the cropped frame left edge');
-    assert.ok(Math.abs(progressState.progress.right - progressState.wrap.right) <= 1, 'progress reaches the cropped frame right edge');
+    assert.ok(
+      Math.abs(progressState.progress.top - progressState.wrap.top) <= 1,
+      'progress aligns with the cropped frame top',
+    );
+    assert.ok(
+      Math.abs(progressState.progress.left - progressState.wrap.left) <= 1,
+      'progress starts at the cropped frame left edge',
+    );
+    assert.ok(
+      Math.abs(progressState.progress.right - progressState.wrap.right) <= 1,
+      'progress reaches the cropped frame right edge',
+    );
 
-    await wait('window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector(".page-translation-toast")', 'failed layout toast');
+    await wait(
+      'window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector(".page-translation-toast")',
+      'failed layout toast',
+    );
     await pause(250);
     const failedState = await snapshot();
     assertInside(failedState.toast, failedState.wrap, 'translation failure toast');
-    assert.ok(failedState.toastText.includes('deliberately long diagnostic'), 'toast contains the mocked long diagnostic');
+    assert.ok(
+      failedState.toastText.includes('deliberately long diagnostic'),
+      'toast contains the mocked long diagnostic',
+    );
     assert.ok(failedState.retry?.width > 0 && failedState.retry?.height > 0, 'retry is visible');
     assert.notEqual(failedState.retryStyle?.visibility, 'hidden', 'retry is visible');
     assert.notEqual(failedState.retryStyle?.pointerEvents, 'none', 'retry is clickable');
@@ -201,22 +239,55 @@ export async function verifyCropStatus(window) {
       return {x, y, hit: hit === button || button.contains(hit)};
     })()`);
     assert.ok(retryPoint?.hit, 'retry center is hit by the page pointer');
-    window.webContents.sendInputEvent({type: 'mouseMove', x: retryPoint.x, y: retryPoint.y, button: 'left'});
-    window.webContents.sendInputEvent({type: 'mouseDown', x: retryPoint.x, y: retryPoint.y, button: 'left', clickCount: 1});
-    window.webContents.sendInputEvent({type: 'mouseUp', x: retryPoint.x, y: retryPoint.y, button: 'left', clickCount: 1});
-    await wait('window.cropStatusSmoke.layoutCalls === 2 && window.cropStatusSmoke.layoutPending === 1', 'retry layout request');
+    window.webContents.sendInputEvent({
+      type: 'mouseMove',
+      x: retryPoint.x,
+      y: retryPoint.y,
+      button: 'left',
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseDown',
+      x: retryPoint.x,
+      y: retryPoint.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseUp',
+      x: retryPoint.x,
+      y: retryPoint.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await wait(
+      'window.cropStatusSmoke.layoutCalls === 2 && window.cropStatusSmoke.layoutPending === 1',
+      'retry layout request',
+    );
     await wait('!!document.querySelector(".page-translation-progress")', 'retry page progress');
     const retryProgressState = await snapshot();
     assert.equal(retryProgressState.progressPending, 1);
-    assertInside(retryProgressState.progress, retryProgressState.wrap, 'retry page translation progress');
-    assert.ok(Math.abs(retryProgressState.progress.top - retryProgressState.wrap.top) <= 1, 'retry progress aligns with the cropped frame top');
+    assertInside(
+      retryProgressState.progress,
+      retryProgressState.wrap,
+      'retry page translation progress',
+    );
+    assert.ok(
+      Math.abs(retryProgressState.progress.top - retryProgressState.wrap.top) <= 1,
+      'retry progress aligns with the cropped frame top',
+    );
 
-    await wait('window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector(".page-translation-toast")', 'retry failure toast');
+    await wait(
+      'window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector(".page-translation-toast")',
+      'retry failure toast',
+    );
     await pause(250);
     await scrollToastIntoView('retry failure toast scrolled into view');
     const finalState = await snapshot();
     assertInside(finalState.toast, finalState.wrap, 'retry failure toast');
-    assert.ok(finalState.retry?.width > 0 && finalState.retry?.height > 0, 'retry remains visible after the second failure');
+    assert.ok(
+      finalState.retry?.width > 0 && finalState.retry?.height > 0,
+      'retry remains visible after the second failure',
+    );
     // Advance only the five-minute dismissal timer, without slowing this smoke.
     await evaluate(`(() => {
       const original = window.setTimeout;
@@ -225,19 +296,33 @@ export async function verifyCropStatus(window) {
         return original(callback, delay, ...args);
       };
     })()`);
-    const ignoreLabel = () => evaluate(`document.querySelector('.kernel-error-actions button')?.textContent.trim()`);
+    const ignoreLabel = () =>
+      evaluate(`document.querySelector('.kernel-error-actions button')?.textContent.trim()`);
     assert.equal(await ignoreLabel(), 'Ignore for 5 minutes');
     await evaluate(`document.querySelector('.kernel-error-actions button').click()`);
     await wait(`!document.querySelector('.kernel-error-popover')`, 'first dismissal');
-    assert.equal(await evaluate(`!!document.querySelector('.page-translation-toast button')`), true);
+    assert.equal(
+      await evaluate(`!!document.querySelector('.page-translation-toast button')`),
+      true,
+    );
     await evaluate(`window.expireKernelIgnore()`);
-    await wait(`!!document.querySelector('.kernel-error-popover')`, 'five-minute dismissal expired');
+    await wait(
+      `!!document.querySelector('.kernel-error-popover')`,
+      'five-minute dismissal expired',
+    );
     assert.equal(await ignoreLabel(), 'Ignore errors in this document');
     await evaluate(`document.querySelector('.kernel-error-actions button').click()`);
     await wait(`!document.querySelector('.kernel-error-popover')`, 'document dismissal');
     await evaluate(`document.querySelector('.page-translation-toast button').click()`);
-    await wait(`window.cropStatusSmoke.layoutCalls === 3 && window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector('.page-translation-toast button')`, 'page retry after document dismissal');
-    assert.equal(await evaluate(`!!document.querySelector('.kernel-error-popover')`), false, 'document dismissal suppresses only the header popover');
+    await wait(
+      `window.cropStatusSmoke.layoutCalls === 3 && window.cropStatusSmoke.layoutPending === 0 && !!document.querySelector('.page-translation-toast button')`,
+      'page retry after document dismissal',
+    );
+    assert.equal(
+      await evaluate(`!!document.querySelector('.kernel-error-popover')`),
+      false,
+      'document dismissal suppresses only the header popover',
+    );
     menu.getMenuItemById('file-close-document').click();
     await wait(`window.previewRenderDiagnostics()?.totalPages === 0`, 'document closed');
     await evaluate(`(() => {
@@ -247,19 +332,32 @@ export async function verifyCropStatus(window) {
       const input = document.querySelector('input[type=file]');input.files = transfer.files;
       input.dispatchEvent(new Event('change', {bubbles:true}));
     })()`);
-    await wait(`!!document.querySelector('.kernel-error-popover') && !!document.querySelector('.page-translation-toast')`, 'new document reports errors again');
-    assert.equal(await ignoreLabel(), 'Ignore for 5 minutes', 'new document resets the ignore choice');
-    await writeFile('/tmp/pdfmathreader-crop-status.png', (await window.webContents.capturePage()).toPNG());
-    console.log('Crop status smoke passed:', JSON.stringify({
-      cropX: finalState.view.cropX,
-      cropY: finalState.view.cropY,
-      toastInsideFrame: true,
-      retryClickable: true,
-      progressAligned: true,
-      documentIgnore: true,
-      newDocumentReset: true,
-      screenshot: '/tmp/pdfmathreader-crop-status.png'
-    }));
+    await wait(
+      `!!document.querySelector('.kernel-error-popover') && !!document.querySelector('.page-translation-toast')`,
+      'new document reports errors again',
+    );
+    assert.equal(
+      await ignoreLabel(),
+      'Ignore for 5 minutes',
+      'new document resets the ignore choice',
+    );
+    await writeFile(
+      '/tmp/pdfmathreader-crop-status.png',
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    console.log(
+      'Crop status smoke passed:',
+      JSON.stringify({
+        cropX: finalState.view.cropX,
+        cropY: finalState.view.cropY,
+        toastInsideFrame: true,
+        retryClickable: true,
+        progressAligned: true,
+        documentIgnore: true,
+        newDocumentReset: true,
+        screenshot: '/tmp/pdfmathreader-crop-status.png',
+      }),
+    );
   } finally {
     window.close();
   }

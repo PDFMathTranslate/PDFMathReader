@@ -1,43 +1,123 @@
 import assert from 'node:assert/strict';
-import {writeFile} from 'node:fs/promises';
-export async function verifyAdvanced(window){
- const evaluate=code=>window.webContents.executeJavaScript(code),pause=ms=>new Promise(r=>setTimeout(r,ms));
- const wait=async code=>{for(let n=0;n<500;n++){if(await evaluate(code))return;await pause(50);}await writeFile('/tmp/pdfmathreader-advanced-failure.png',(await window.webContents.capturePage()).toPNG());throw Error('Advanced UI timed out: '+code);};
- await wait(`!!document.querySelector('[data-popover-trigger][aria-label="Translation settings"]')`);
- await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
- await wait(`!!document.querySelector('.mac-mode-control')`);
- assert.equal(await evaluate(`!!document.querySelector('.advanced-settings')`),false,'Ultra fast has no unrelated kernel options');
- const select=async label=>{await evaluate(`(()=>{const button=[...document.querySelectorAll('.mac-mode-control button')].find(button=>button.textContent.trim()===${JSON.stringify(label)});button.focus();button.click();})()`);await wait(`!!document.querySelector('.advanced-settings')`);};
- assert.equal(await evaluate(`(()=>{const source=document.querySelector('[aria-label="Source language"]');return !!source&&!source.hasAttribute('disabled')})()`),true,'Inspector source language is editable');
- await select('Fast');
- assert.equal(await evaluate(`document.querySelector('.advanced-settings').nextElementSibling.getAttribute('aria-labelledby')`),'settings-about','Advanced sits immediately before About');
- assert.equal(await evaluate(`document.querySelector('.advanced-settings').open`),false,'advanced defaults collapsed');
- assert.equal(await evaluate(`document.querySelectorAll('.advanced-option').length`),0,'collapsed advanced does not load parser metadata');
- await evaluate(`document.querySelector('.advanced-settings summary').click()`);
- await wait(`document.querySelectorAll('.advanced-option').length===9`);
- assert.equal(await evaluate(`!!document.querySelector('[data-advanced-option="lang_in"]')`),false,'source language belongs to Translation');
- await wait(`!!document.querySelector('input[aria-labelledby="advanced-vfont"]')`);
- await evaluate(`(()=>{const input=document.querySelector('input[aria-labelledby="advanced-vfont"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'a^');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));})()`);
- await wait(`(async()=> (await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_fast?.vfont==='a^')()`);
- await select('Precise');
- assert.equal(await evaluate(`document.querySelector('.advanced-settings').open`),false,'kernel change resets collapsed state');
- await evaluate(`document.querySelector('.advanced-settings summary').click()`);
- await wait(`document.querySelectorAll('.advanced-option').length>=19`);
- await wait(`!!document.querySelector('[aria-labelledby="advanced-split_short_lines"]')`);
- await evaluate(`document.querySelector('[aria-labelledby="advanced-split_short_lines"]').click()`);
- await wait(`(async()=> (await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_precise?.split_short_lines===true)()`);
- assert.equal((await evaluate(`window.previewPreferences.load()`)).kernelAdvancedOptions.pdf_math_fast.vfont,'a^');
- await writeFile('/tmp/pdfmathreader-advanced-settings.png',(await window.webContents.capturePage()).toPNG());
- await new Promise(resolve=>{window.webContents.once('did-finish-load',resolve);window.webContents.reload();});
- await wait(`!!document.querySelector('[aria-label="Translation settings"]')`);
- await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
- await wait(`!!document.querySelector('.advanced-settings')`);
- assert.equal(await evaluate(`document.querySelector('.advanced-settings').open`),false,'reload keeps Advanced collapsed');
- await evaluate(`document.querySelector('.advanced-settings summary').click()`);
- await wait(`document.querySelectorAll('.advanced-option').length>=19`);
- await evaluate(`[...document.querySelectorAll('.advanced-settings button')].find(button=>button.textContent.trim()==='Restore defaults').click()`);
- await wait(`(async()=> Object.keys((await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_precise||{}).length===0)()`);
- assert.equal((await evaluate(`window.previewPreferences.load()`)).kernelAdvancedOptions.pdf_math_fast.vfont,'a^');
- console.log('Advanced UI passed: installed parser options, collapsed defaults, dynamic mode change, independent saved overrides, reload and reset.');
- window.close();
+import { writeFile } from 'node:fs/promises';
+export async function verifyAdvanced(window) {
+  const evaluate = (code) => window.webContents.executeJavaScript(code),
+    pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const wait = async (code) => {
+    for (let n = 0; n < 500; n++) {
+      if (await evaluate(code)) return;
+      await pause(50);
+    }
+    await writeFile(
+      '/tmp/pdfmathreader-advanced-failure.png',
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    throw Error('Advanced UI timed out: ' + code);
+  };
+  await wait(
+    `!!document.querySelector('[data-popover-trigger][aria-label="Translation settings"]')`,
+  );
+  await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
+  await wait(`!!document.querySelector('.mac-mode-control')`);
+  assert.equal(
+    await evaluate(`!!document.querySelector('.advanced-settings')`),
+    false,
+    'Ultra fast has no unrelated kernel options',
+  );
+  const select = async (label) => {
+    await evaluate(
+      `(()=>{const button=[...document.querySelectorAll('.mac-mode-control button')].find(button=>button.textContent.trim()===${JSON.stringify(label)});button.focus();button.click();})()`,
+    );
+    await wait(`!!document.querySelector('.advanced-settings')`);
+  };
+  assert.equal(
+    await evaluate(
+      `(()=>{const source=document.querySelector('[aria-label="Source language"]');return !!source&&!source.hasAttribute('disabled')})()`,
+    ),
+    true,
+    'Inspector source language is editable',
+  );
+  await select('Fast');
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.advanced-settings').nextElementSibling.getAttribute('aria-labelledby')`,
+    ),
+    'settings-about',
+    'Advanced sits immediately before About',
+  );
+  assert.equal(
+    await evaluate(`document.querySelector('.advanced-settings').open`),
+    false,
+    'advanced defaults collapsed',
+  );
+  assert.equal(
+    await evaluate(`document.querySelectorAll('.advanced-option').length`),
+    0,
+    'collapsed advanced does not load parser metadata',
+  );
+  await evaluate(`document.querySelector('.advanced-settings summary').click()`);
+  await wait(`document.querySelectorAll('.advanced-option').length===9`);
+  assert.equal(
+    await evaluate(`!!document.querySelector('[data-advanced-option="lang_in"]')`),
+    false,
+    'source language belongs to Translation',
+  );
+  await wait(`!!document.querySelector('input[aria-labelledby="advanced-vfont"]')`);
+  await evaluate(
+    `(()=>{const input=document.querySelector('input[aria-labelledby="advanced-vfont"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'a^');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));})()`,
+  );
+  await wait(
+    `(async()=> (await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_fast?.vfont==='a^')()`,
+  );
+  await select('Precise');
+  assert.equal(
+    await evaluate(`document.querySelector('.advanced-settings').open`),
+    false,
+    'kernel change resets collapsed state',
+  );
+  await evaluate(`document.querySelector('.advanced-settings summary').click()`);
+  await wait(`document.querySelectorAll('.advanced-option').length>=19`);
+  await wait(`!!document.querySelector('[aria-labelledby="advanced-split_short_lines"]')`);
+  await evaluate(
+    `document.querySelector('[aria-labelledby="advanced-split_short_lines"]').click()`,
+  );
+  await wait(
+    `(async()=> (await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_precise?.split_short_lines===true)()`,
+  );
+  assert.equal(
+    (await evaluate(`window.previewPreferences.load()`)).kernelAdvancedOptions.pdf_math_fast.vfont,
+    'a^',
+  );
+  await writeFile(
+    '/tmp/pdfmathreader-advanced-settings.png',
+    (await window.webContents.capturePage()).toPNG(),
+  );
+  await new Promise((resolve) => {
+    window.webContents.once('did-finish-load', resolve);
+    window.webContents.reload();
+  });
+  await wait(`!!document.querySelector('[aria-label="Translation settings"]')`);
+  await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
+  await wait(`!!document.querySelector('.advanced-settings')`);
+  assert.equal(
+    await evaluate(`document.querySelector('.advanced-settings').open`),
+    false,
+    'reload keeps Advanced collapsed',
+  );
+  await evaluate(`document.querySelector('.advanced-settings summary').click()`);
+  await wait(`document.querySelectorAll('.advanced-option').length>=19`);
+  await evaluate(
+    `[...document.querySelectorAll('.advanced-settings button')].find(button=>button.textContent.trim()==='Restore defaults').click()`,
+  );
+  await wait(
+    `(async()=> Object.keys((await window.previewPreferences.load()).kernelAdvancedOptions?.pdf_math_precise||{}).length===0)()`,
+  );
+  assert.equal(
+    (await evaluate(`window.previewPreferences.load()`)).kernelAdvancedOptions.pdf_math_fast.vfont,
+    'a^',
+  );
+  console.log(
+    'Advanced UI passed: installed parser options, collapsed defaults, dynamic mode change, independent saved overrides, reload and reset.',
+  );
+  window.close();
 }

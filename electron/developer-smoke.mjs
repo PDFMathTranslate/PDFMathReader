@@ -1,84 +1,201 @@
 import assert from 'node:assert/strict';
-import {BrowserWindow,clipboard,nativeTheme} from 'electron';
-import {writeFile} from 'node:fs/promises';
+import { BrowserWindow, clipboard, nativeTheme } from 'electron';
+import { writeFile } from 'node:fs/promises';
 
-export async function verifyDeveloper(reader,backend,token,createWindow){
- const evaluate=code=>reader.webContents.executeJavaScript(code);
- const wait=async(test)=>{for(let i=0;i<100;i++){if(await test())return;await new Promise(resolve=>setTimeout(resolve,100));}throw Error('Developer smoke condition timed out');};
- const headers={'X-Preview-Token':token};
- const snapshot=async()=>{const response=await fetch(backend.origin+'/api/developer/snapshot',{headers});assert.equal(response.status,200);return response.json();};
- assert.equal((await snapshot()).enabled,false);
- assert.equal((await fetch(backend.origin+'/api/developer/snapshot')).status,403);
- await wait(()=>evaluate(`!!document.querySelector('[aria-label="Translation settings"]')`));
- await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
- await wait(()=>evaluate(`!!document.querySelector('[data-settings-category="kernel"]')`));
- await evaluate(`document.querySelector('[data-settings-category="kernel"]').click()`);
- await wait(()=>evaluate(`!!document.querySelector('[aria-labelledby="developer-mode-label"]')`));
- await evaluate(`document.querySelector('[aria-labelledby="developer-mode-label"]').click()`);
- await wait(async()=>(await evaluate('window.previewDeveloper.enabled()'))===true);
- const monitor=BrowserWindow.getAllWindows().find(window=>window!==reader);
- assert.ok(monitor,'Independent diagnostics window exists');
- await wait(()=>monitor.webContents.executeJavaScript(`!!document.querySelector('.developer-window')`));
- await wait(()=>monitor.webContents.executeJavaScript(`document.querySelectorAll('tbody tr').length>0`));
- const data=await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
- assert.ok(data.processes.some(process=>process.role==='main'&&process.rssBytes>0));
- assert.ok(data.processes.some(process=>process.role==='renderer'&&process.rssBytes>0));
- assert.ok(data.processes.some(process=>process.role==='backend'));
- assert.equal(data.backends[0].enabled,true);
- assert.ok(data.system.totalMemory>0);
- assert.ok(data.mainOperationMetrics.operationCount>0);
- assert.ok(Number.isFinite(data.mainOperationMetrics.averageOperationMs));
- assert.ok(data.backendCommunicationMetrics.requestCount>0);
- assert.ok(Number.isFinite(data.backendCommunicationMetrics.averageCommunicationMs));
- assert.ok(data.backendCommunicationMetrics.errorRate>=0 && data.backendCommunicationMetrics.errorRate<=1);
+export async function verifyDeveloper(reader, backend, token, createWindow) {
+  const evaluate = (code) => reader.webContents.executeJavaScript(code);
+  const wait = async (test) => {
+    for (let i = 0; i < 100; i++) {
+      if (await test()) return;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw Error('Developer smoke condition timed out');
+  };
+  const headers = { 'X-Preview-Token': token };
+  const snapshot = async () => {
+    const response = await fetch(backend.origin + '/api/developer/snapshot', { headers });
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  assert.equal((await snapshot()).enabled, false);
+  assert.equal((await fetch(backend.origin + '/api/developer/snapshot')).status, 403);
+  await wait(() => evaluate(`!!document.querySelector('[aria-label="Translation settings"]')`));
+  await evaluate(`document.querySelector('[aria-label="Translation settings"]').click()`);
+  await wait(() => evaluate(`!!document.querySelector('[data-settings-category="kernel"]')`));
+  await evaluate(`document.querySelector('[data-settings-category="kernel"]').click()`);
+  await wait(() =>
+    evaluate(`!!document.querySelector('[aria-labelledby="developer-mode-label"]')`),
+  );
+  await evaluate(`document.querySelector('[aria-labelledby="developer-mode-label"]').click()`);
+  await wait(async () => (await evaluate('window.previewDeveloper.enabled()')) === true);
+  const monitor = BrowserWindow.getAllWindows().find((window) => window !== reader);
+  assert.ok(monitor, 'Independent diagnostics window exists');
+  await wait(() =>
+    monitor.webContents.executeJavaScript(`!!document.querySelector('.developer-window')`),
+  );
+  await wait(() =>
+    monitor.webContents.executeJavaScript(`document.querySelectorAll('tbody tr').length>0`),
+  );
+  const data = await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
+  assert.ok(data.processes.some((process) => process.role === 'main' && process.rssBytes > 0));
+  assert.ok(data.processes.some((process) => process.role === 'renderer' && process.rssBytes > 0));
+  assert.ok(data.processes.some((process) => process.role === 'backend'));
+  assert.equal(data.backends[0].enabled, true);
+  assert.ok(data.system.totalMemory > 0);
+  assert.ok(data.mainOperationMetrics.operationCount > 0);
+  assert.ok(Number.isFinite(data.mainOperationMetrics.averageOperationMs));
+  assert.ok(data.backendCommunicationMetrics.requestCount > 0);
+  assert.ok(Number.isFinite(data.backendCommunicationMetrics.averageCommunicationMs));
+  assert.ok(
+    data.backendCommunicationMetrics.errorRate >= 0 &&
+      data.backendCommunicationMetrics.errorRate <= 1,
+  );
 
- await wait(()=>evaluate('Number.isFinite(window.previewRendererFrameMetrics?.fps)'));
- const frameSnapshot=await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
- const frames=frameSnapshot.backends.find(item=>item.windowId===reader.id).rendererFrameMetrics;
- assert.ok(frames.fps>0 && Number.isFinite(frames.latencyMs),'live renderer FPS and callback latency');
- assert.equal(await monitor.webContents.executeJavaScript('!!document.querySelector(".renderer-frame-metrics")'),true);
+  await wait(() => evaluate('Number.isFinite(window.previewRendererFrameMetrics?.fps)'));
+  const frameSnapshot = await monitor.webContents.executeJavaScript(
+    'window.previewDeveloper.snapshot()',
+  );
+  const frames = frameSnapshot.backends.find(
+    (item) => item.windowId === reader.id,
+  ).rendererFrameMetrics;
+  assert.ok(
+    frames.fps > 0 && Number.isFinite(frames.latencyMs),
+    'live renderer FPS and callback latency',
+  );
+  assert.equal(
+    await monitor.webContents.executeJavaScript(
+      '!!document.querySelector(".renderer-frame-metrics")',
+    ),
+    true,
+  );
 
- assert.equal(await evaluate(`window.previewDeveloper.snapshot().then(()=>false,()=>true)`),true,'Readers cannot obtain monitor snapshots');
- await evaluate('window.previewDeveloper.open()');
- assert.equal(BrowserWindow.getAllWindows().length,2,'Open focuses existing monitor');
- await wait(()=>monitor.webContents.executeJavaScript(`!!document.querySelector('.summary-strip')`));
- await new Promise(resolve=>setTimeout(resolve,250));
+  assert.equal(
+    await evaluate(`window.previewDeveloper.snapshot().then(()=>false,()=>true)`),
+    true,
+    'Readers cannot obtain monitor snapshots',
+  );
+  await evaluate('window.previewDeveloper.open()');
+  assert.equal(BrowserWindow.getAllWindows().length, 2, 'Open focuses existing monitor');
+  await wait(() =>
+    monitor.webContents.executeJavaScript(`!!document.querySelector('.summary-strip')`),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 250));
 
- const fixtures=[1,2].map(index=>fetch(backend.origin+'/api/translate',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({text:'private developer fixture '+index,language:'French',concurrency:1,reuseTranslations:false})}).then(response=>response.status,()=>0));
- await wait(async()=>{const data=await snapshot();return data.tasks.some(task=>task.state==='queued')&&data.tasks.some(task=>task.state==='running');});
- await wait(()=>monitor.webContents.executeJavaScript(`document.querySelectorAll('.task-table tbody tr:not(.empty-row)').length>=2`));
- await writeFile('/tmp/pdfmathreader-developer-queue.png',(await monitor.webContents.capturePage()).toPNG());
- assert.deepEqual(await Promise.all(fixtures),[200,200]);
- await wait(async()=>{const data=await snapshot();return data.tasks.length===0&&data.events.some(event=>event.kind==='http-response');});
- await wait(()=>monitor.webContents.executeJavaScript(`document.querySelectorAll('.console-table tbody tr:not(.empty-row)').length>0`));
- const payload=await monitor.webContents.executeJavaScript(`(()=>{document.querySelector('[title="Copy diagnostics"]').click();return true;})()`);
- assert.equal(payload,true);
- await wait(()=>monitor.webContents.executeJavaScript(`document.querySelector('[title="Copy diagnostics"]').textContent.includes('Diagnostics copied')`));
- const exported=JSON.parse(await clipboard.readText());
- assert.ok(exported.events.some(event=>event.message.includes('/api/translate')));
- assert.ok(!JSON.stringify(exported).includes('private developer fixture'));
- assert.ok(!JSON.stringify(exported).includes('local-smoke-placeholder'));
- await monitor.webContents.executeJavaScript(`document.querySelector('[title="Pause sampling"]').click();document.querySelectorAll('.tab-button')[1].click();document.querySelector('.small-button').click()`);
- assert.equal(await monitor.webContents.executeJavaScript(`document.querySelectorAll('.commands-table tbody tr:not(.empty-row)').length`),0,'Clear commands hides rows');
- await monitor.webContents.executeJavaScript(`document.querySelectorAll('.tab-button')[0].click()`);
- await new Promise(resolve=>setTimeout(resolve,200));
- await writeFile('/tmp/pdfmathreader-developer-light.png',(await monitor.webContents.capturePage()).toPNG());
- nativeTheme.themeSource='dark';await new Promise(resolve=>setTimeout(resolve,200));
- await writeFile('/tmp/pdfmathreader-developer-dark.png',(await monitor.webContents.capturePage()).toPNG());
- monitor.setSize(780,600);await new Promise(resolve=>setTimeout(resolve,200));
- assert.equal(await monitor.webContents.executeJavaScript('document.documentElement.scrollWidth<=innerWidth'),true,'Minimum width has no document overflow');
- await writeFile('/tmp/pdfmathreader-developer-compact.png',(await monitor.webContents.capturePage()).toPNG());
- const second=await createWindow();
- await wait(()=>second.webContents.executeJavaScript('window.previewReady===true'));
- await second.webContents.executeJavaScript(`(async()=>{const bytes=await (await fetch('/sample.pdf')).arrayBuffer();await window.previewDocuments.open(new File([bytes],'Metric sample.pdf',{type:'application/pdf'}));})()`);
+  const fixtures = [1, 2].map((index) =>
+    fetch(backend.origin + '/api/translate', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: 'private developer fixture ' + index,
+        language: 'French',
+        concurrency: 1,
+        reuseTranslations: false,
+      }),
+    }).then(
+      (response) => response.status,
+      () => 0,
+    ),
+  );
+  await wait(async () => {
+    const data = await snapshot();
+    return (
+      data.tasks.some((task) => task.state === 'queued') &&
+      data.tasks.some((task) => task.state === 'running')
+    );
+  });
+  await wait(() =>
+    monitor.webContents.executeJavaScript(
+      `document.querySelectorAll('.task-table tbody tr:not(.empty-row)').length>=2`,
+    ),
+  );
+  await writeFile(
+    '/tmp/pdfmathreader-developer-queue.png',
+    (await monitor.webContents.capturePage()).toPNG(),
+  );
+  assert.deepEqual(await Promise.all(fixtures), [200, 200]);
+  await wait(async () => {
+    const data = await snapshot();
+    return data.tasks.length === 0 && data.events.some((event) => event.kind === 'http-response');
+  });
+  await wait(() =>
+    monitor.webContents.executeJavaScript(
+      `document.querySelectorAll('.console-table tbody tr:not(.empty-row)').length>0`,
+    ),
+  );
+  const payload = await monitor.webContents.executeJavaScript(
+    `(()=>{document.querySelector('[title="Copy diagnostics"]').click();return true;})()`,
+  );
+  assert.equal(payload, true);
+  await wait(() =>
+    monitor.webContents.executeJavaScript(
+      `document.querySelector('[title="Copy diagnostics"]').textContent.includes('Diagnostics copied')`,
+    ),
+  );
+  const exported = JSON.parse(await clipboard.readText());
+  assert.ok(exported.events.some((event) => event.message.includes('/api/translate')));
+  assert.ok(!JSON.stringify(exported).includes('private developer fixture'));
+  assert.ok(!JSON.stringify(exported).includes('local-smoke-placeholder'));
+  await monitor.webContents.executeJavaScript(
+    `document.querySelector('[title="Pause sampling"]').click();document.querySelectorAll('.tab-button')[1].click();document.querySelector('.small-button').click()`,
+  );
+  assert.equal(
+    await monitor.webContents.executeJavaScript(
+      `document.querySelectorAll('.commands-table tbody tr:not(.empty-row)').length`,
+    ),
+    0,
+    'Clear commands hides rows',
+  );
+  await monitor.webContents.executeJavaScript(
+    `document.querySelectorAll('.tab-button')[0].click()`,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  await writeFile(
+    '/tmp/pdfmathreader-developer-light.png',
+    (await monitor.webContents.capturePage()).toPNG(),
+  );
+  nativeTheme.themeSource = 'dark';
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  await writeFile(
+    '/tmp/pdfmathreader-developer-dark.png',
+    (await monitor.webContents.capturePage()).toPNG(),
+  );
+  monitor.setSize(780, 600);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(
+    await monitor.webContents.executeJavaScript('document.documentElement.scrollWidth<=innerWidth'),
+    true,
+    'Minimum width has no document overflow',
+  );
+  await writeFile(
+    '/tmp/pdfmathreader-developer-compact.png',
+    (await monitor.webContents.capturePage()).toPNG(),
+  );
+  const second = await createWindow();
+  await wait(() => second.webContents.executeJavaScript('window.previewReady===true'));
+  await second.webContents.executeJavaScript(
+    `(async()=>{const bytes=await (await fetch('/sample.pdf')).arrayBuffer();await window.previewDocuments.open(new File([bytes],'Metric sample.pdf',{type:'application/pdf'}));})()`,
+  );
 
- const later=await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
- assert.ok(later.mainOperationMetrics.fileOpenCount>0);assert.ok(Number.isFinite(later.mainOperationMetrics.averageFileOpenMs));
- assert.equal(await monitor.webContents.executeJavaScript('document.querySelectorAll(".resource-operation-metrics").length'),2);
- assert.equal(later.backends.length,2);assert.ok(later.backends.every(item=>item.enabled));
- await monitor.webContents.executeJavaScript('window.previewDeveloper.close()');
- await wait(async()=>!(await evaluate('window.previewDeveloper.enabled()'))&&!(await snapshot()).enabled);
- assert.deepEqual((await snapshot()).events,[],'Closing clears collection');
- second.close();reader.close();
- console.log('Developer smoke passed: settings, singleton window, real process metrics, IPC authorization, responsive layout, new reader coverage, shutdown.');
+  const later = await monitor.webContents.executeJavaScript('window.previewDeveloper.snapshot()');
+  assert.ok(later.mainOperationMetrics.fileOpenCount > 0);
+  assert.ok(Number.isFinite(later.mainOperationMetrics.averageFileOpenMs));
+  assert.equal(
+    await monitor.webContents.executeJavaScript(
+      'document.querySelectorAll(".resource-operation-metrics").length',
+    ),
+    2,
+  );
+  assert.equal(later.backends.length, 2);
+  assert.ok(later.backends.every((item) => item.enabled));
+  await monitor.webContents.executeJavaScript('window.previewDeveloper.close()');
+  await wait(
+    async () =>
+      !(await evaluate('window.previewDeveloper.enabled()')) && !(await snapshot()).enabled,
+  );
+  assert.deepEqual((await snapshot()).events, [], 'Closing clears collection');
+  second.close();
+  reader.close();
+  console.log(
+    'Developer smoke passed: settings, singleton window, real process metrics, IPC authorization, responsive layout, new reader coverage, shutdown.',
+  );
 }

@@ -8,14 +8,14 @@ Paragraph capture now injects one callback before the upstream paragraph output 
 
 ## Measurements
 
-| Metric (median of three uncached requests) | Baseline | Optimized |
-| --- | ---: | ---: |
-| Uncached page response + layout | 6205.7 ms | 3369.0 ms |
-| Font resource insertion | 1341.6 ms | 49.1 ms |
-| Font subset (mono + unused dual → mono only) | 2264.0 ms | 895.7 ms |
-| Paragraph parse | 14.7 ms | 3.9 ms |
-| Typesetting | 6.0 ms | 1.9 ms |
-| Cache-hit response + layout (one request) | 70.2 ms | 4.8 ms |
+| Metric (median of three uncached requests)   |  Baseline | Optimized |
+| -------------------------------------------- | --------: | --------: |
+| Uncached page response + layout              | 6205.7 ms | 3369.0 ms |
+| Font resource insertion                      | 1341.6 ms |   49.1 ms |
+| Font subset (mono + unused dual → mono only) | 2264.0 ms |  895.7 ms |
+| Paragraph parse                              |   14.7 ms |    3.9 ms |
+| Typesetting                                  |    6.0 ms |    1.9 ms |
+| Cache-hit response + layout (one request)    |   70.2 ms |    4.8 ms |
 
 Page-response latency fell 45.7% in this fixture.
 

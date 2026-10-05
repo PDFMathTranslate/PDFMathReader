@@ -2,11 +2,11 @@
 
 # <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader (experimental)
 
-  [![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) 
-  <a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
-    <img src="https://img.shields.io/badge/contributions-welcome-green"></a>
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>  
+[![Electron compile](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml/badge.svg)](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)
+<a href="https://github.com/PDFMathTranslate/PDFMathReader/pulls">
+<img src="https://img.shields.io/badge/contributions-welcome-green"></a>
+<a href="./LICENSE">
+<img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
 Read scientific documents in any language, with realtime translation, on any platform. Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate).
 
@@ -14,80 +14,44 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Features
 
-- **Developer mode:** Enable it in Advanced settings to open an independent live resource and diagnostics window. Inspect app/renderer/kernel processes, task queues, kernel output, and command traffic; filter, pause, or copy diagnostics. Collection stops when the window closes.
-
-- Open PDFs up to 50 MiB in independent windows, with drag-and-drop and macOS Finder/Dock support.
-- Navigate with thumbnails, zoom, fit-to-page controls, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
-- Resume recent documents with their reading position and display settings restored.
-- Choose full-document or nearby-page translation, and click detected paragraphs to toggle original text and translation.
-- Configure translation language, concurrency, and kernel-specific options in Settings. On macOS, Settings opens in an independent window with native window controls and draggable sidebar/header areas. General and appearance settings use a two-column layout; Providers and Kernel use a category sidebar, a service/options list, and a detail pane. Provider catalogs follow the selected kernel. The previous settings interface remains available from **Previous settings**. Both interfaces share the same preferences and credential storage. Interface language is configured separately. The **Translation** menu lists the current kernel’s source/target languages, kernel choices, interface languages, and providers that are configured, system supplied, or automatic. Menu selections share the settings state and restore saved provider profiles.
-  Target languages follow the selected kernel: Inspector offers 51 choices, Fast offers its 10 upstream languages, and Precise offers 47 choices based on BabelDOC’s [supported languages](https://funstory-ai.github.io/BabelDOC/supported_languages/). Language names follow all seven interface locales; source languages use the shared 51-language catalog. Switching kernels keeps compatible selections and resets unsupported targets to Simplified Chinese.
-  Existing Advanced option labels, descriptions, and font-category choices follow the interface language in all seven supported languages. Newly added kernel options fall back to their upstream text until translations are provided; saved parameter values stay unchanged.
-- Create saved bidirectional links between a search result and its reading origin, with link buttons available in both original and translated views.
-- Use evenly spaced annotation palettes and synchronized titlebar animations across thumbnail, outline, and annotation sidebars.
-- Read cached translations with neutral gray progress indicators; active translation uses the selected accent color.
+- **Layout preservation**: Preserve formulas, tables, and key information while keeping translated pages close to the original layout.
+- **Realtime translation**: Detect layouts and translate as you read, without waiting for the entire document to finish.
+- **Translation options**: Choose translation engines, services, languages, and full-document or nearby-page translation.
+- **Bilingual reading**: Click detected paragraphs to switch between original text and translation.
+- **Flexible navigation**: Read with thumbnails, zoom, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
+- **Multiple documents**: Open PDFs in independent windows and restore reading positions and display settings when reopening them.
+- **Reading links**: Save bidirectional links between search results and their reading origins for easy reference.
+- **Highlights and comments**: Highlight key passages and add comments to record your reading notes.
 
 ## Recent updates
 
-| Date | Feature | Contributor |
-| --- | --- | --- |
-| 2026-10-05 | [support custom language codes and streamline regression tests](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ead51359470f680471be1b387f6a4083072d57b) | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                                    | Contributor                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-05 | [support custom language codes and streamline regression tests](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ead51359470f680471be1b387f6a4083072d57b)         | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [add information categories, release updates and provider availability](https://github.com/PDFMathTranslate/PDFMathReader/commit/1da70d073f778ad300901503e5dd41cf91c8318e) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [improve settings, diagnostics and reader UX](https://github.com/PDFMathTranslate/PDFMathReader/commit/eadc9f1b89f2edfaec8ab9f97b3af522c4617494) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [configure kernel translation services and developer diagnostics](https://github.com/PDFMathTranslate/PDFMathReader/commit/7dc5fac3c5d67260fe82672ba768d62122022c71) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [localize existing advanced settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/3310855be06bf3bd171b2210b0206785ce3c60d3) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [expand translation languages by kernel with localized names](https://github.com/PDFMathTranslate/PDFMathReader/commit/add0d56890830dab44b612c1134fea47f3f52ab1) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [reduce background resource usage and default to reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/1abd72352f0fc8e59130e5a151244ab0adf869c2) | [@reycn](https://github.com/reycn) |
+| 2026-10-05 | [improve settings, diagnostics and reader UX](https://github.com/PDFMathTranslate/PDFMathReader/commit/eadc9f1b89f2edfaec8ab9f97b3af522c4617494)                           | [@reycn](https://github.com/reycn) |
+| 2026-10-05 | [configure kernel translation services and developer diagnostics](https://github.com/PDFMathTranslate/PDFMathReader/commit/7dc5fac3c5d67260fe82672ba768d62122022c71)       | [@reycn](https://github.com/reycn) |
+| 2026-10-05 | [localize existing advanced settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/3310855be06bf3bd171b2210b0206785ce3c60d3)                                   | [@reycn](https://github.com/reycn) |
+| 2026-10-05 | [expand translation languages by kernel with localized names](https://github.com/PDFMathTranslate/PDFMathReader/commit/add0d56890830dab44b612c1134fea47f3f52ab1)           | [@reycn](https://github.com/reycn) |
+| 2026-10-05 | [reduce background resource usage and default to reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/1abd72352f0fc8e59130e5a151244ab0adf869c2)          | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
-### Screenshots
-| macOS | Windows | Linux |
-| :---: | :---: | :---: |
-| <img src="doc/preview.png" alt="PDFMathReader reader" height="240"> | <img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240"> | <img src="doc/preview-linux.png" alt="PDFMathReader reader on Linux" height="240"> |
+### Screenshots and installation
 
-### Installation
-Download the package for your system and CPU from [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml). Extract the Actions artifact ZIP first.
+Download the package matching your system and CPU, then extract the Actions artifact ZIP first.
 
-<details>
-<summary>macOS</summary>
-
-Extract the macOS ZIP, move `PDFMathReader.app` to `/Applications`, and open it.
-
-<details>
-<summary>macOS says the app is “damaged”</summary>
-
-For a download you trust, run this in Terminal, enter your Mac login password when prompted (it is not displayed), then reopen the app:
-
-```zsh
-sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app
-```
-
-</details>
-
-</details>
-
-<details>
-<summary>Windows</summary>
-
-Double-click `PDFMathReader-win32-x64.exe` (or the `ia32` version for 32-bit Windows). The portable app includes its runtime. Launching it registers the PDF **Open with PDFMathReader** menu; launch it again after moving the executable.
-
-</details>
-
-<details>
-<summary>Linux</summary>
-
-Extract the `.tar.gz` for your CPU, then run the app from its folder:
-
-```sh
-./PDFMathReader
-```
-
-</details>
+| Platform         | macOS                                                                                                                                                                                                                                                    | Windows                                                                                                                                              | Linux                                                                                                    |
+| :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| Screenshot       | <img src="doc/preview.png" alt="PDFMathReader reader" height="240">                                                                                                                                                                                      | <img src="doc/preview-windows.png" alt="PDFMathReader reader" height="240">                                                                          | <img src="doc/preview-linux.png" alt="PDFMathReader reader on Linux" height="240">                       |
+| Download link    | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                                                                                                                                 | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml)                                             | [GitHub Actions](https://github.com/PDFMathTranslate/PDFMathReader/actions/workflows/electron-build.yml) |
+| Installation     | Extract the macOS ZIP, move `PDFMathReader.app` to `/Applications`, and open it.                                                                                                                                                                         | Double-click `PDFMathReader-win32-x64.exe` (or the `ia32` version for 32-bit Windows).                                                               | Extract the `.tar.gz` for your CPU, then run `./PDFMathReader` from its folder.                          |
+| Additional notes | If macOS says the app is “damaged”, confirm the download is trusted, then run `sudo xattr -dr com.apple.quarantine /Applications/PDFMathReader.app` in Terminal. Enter your Mac login password when prompted (it is not displayed), then reopen the app. | The portable app includes its runtime. Launching it registers the PDF **Open with PDFMathReader** menu; launch it again after moving the executable. | Choose the package matching your CPU architecture.                                                       |
 
 Open a PDF. In **Settings…**, save your OpenAI API key and choose a target language. Reading needs no key; translation does. **Ultra fast** is included. For **Fast** or **Precise**, install `uv`, then choose **Install kernel with uv** in Settings.
 
 ## Development
+
 <details>
 <summary>Local development</summary>
 
@@ -137,11 +101,11 @@ Rendering, layout analysis, and translation run independently. Pages and thumbna
 
 Translation text is cached across documents and app restarts. Identical requests to the same service and model reuse the saved result, including requests from the math translation kernels. Languages, prompts, and other translation options remain part of the cache key. Concurrent identical requests share one service call; failed or empty responses are not cached.
 
-| Setting | Engine | Output |
-| --- | --- | --- |
-| Ultra fast | PDF Inspector | Paragraph overlays on the original PDF |
-| Fast | PDFMathTranslate | Translated PDF pages with formula preservation |
-| Precise | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
+| Setting    | Engine                | Output                                              |
+| ---------- | --------------------- | --------------------------------------------------- |
+| Ultra fast | PDF Inspector         | Paragraph overlays on the original PDF              |
+| Fast       | PDFMathTranslate      | Translated PDF pages with formula preservation      |
+| Precise    | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
 
 PDF rendering and layout analysis stay local. Translation sends document text to OpenAI and may incur API charges. Fast and Precise run in separate app-managed Python environments installed with `uv`, and access OpenAI through the backend proxy. API keys remain outside the renderer.
 
@@ -153,7 +117,8 @@ In browser development, Express and Vite run in a standalone Node.js process. Na
 
 </details>
 
-## Limitations
+<details>
+<summary>Limitations</summary>
 
 - **Platform support:** macOS is the tested platform. Windows and Linux have platform-specific styles, but native runtime validation is pending. Packaging commands target macOS arm64 and Windows x64.
 - **Layout fidelity:** Ultra fast uses geometric paragraph grouping and text overlays. Complex tables, rotated text, unusual backgrounds, and long translations may not retain the original typography. Math-kernel output depends on upstream layout handling.
@@ -161,6 +126,8 @@ In browser development, Express and Vite run in a standalone Node.js process. Na
 - **Translation requirements:** translation needs an OpenAI API key and network access. Fast and Precise require separately installed math kernels through `uv`.
 - **Scope:** this is an experimental local reader and translation app, not a complete PDF editing or export tool.
 - **Validation:** the [30 core regression tests](doc/core-tests.md) cover backend and reader support logic. Mock-provider checks do not establish live OpenAI translation quality or API-key validity.
+
+</details>
 
 ## License
 

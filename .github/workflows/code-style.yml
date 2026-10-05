@@ -1,0 +1,21 @@
+name: Code style
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  style:
+    runs-on: xcode-27
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: astral-sh/setup-uv@v7
+      - run: npm ci --no-audit --no-fund
+      - run: npm run style:check

@@ -18,13 +18,19 @@ function emptySnapshot(documentRef) {
   };
 }
 
-function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
+function startRendererFrameMetrics({ windowRef = globalThis.window } = {}) {
   const documentRef = windowRef?.document;
   const developer = windowRef?.previewDeveloper;
   const requestFrame = windowRef?.requestAnimationFrame?.bind(windowRef);
   const cancelFrame = windowRef?.cancelAnimationFrame?.bind(windowRef);
 
-  if (!windowRef || !documentRef || !developer || typeof developer.enabled !== 'function' || typeof requestFrame !== 'function') {
+  if (
+    !windowRef ||
+    !documentRef ||
+    !developer ||
+    typeof developer.enabled !== 'function' ||
+    typeof requestFrame !== 'function'
+  ) {
     if (windowRef) windowRef.previewRendererFrameMetrics = emptySnapshot(documentRef);
     return () => {};
   }
@@ -40,8 +46,12 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
   const latencies = [];
 
   const publish = () => {
-    const frameIntervalMs = intervals.length ? intervals.reduce((total, value) => total + value, 0) / intervals.length : null;
-    const latencyMs = latencies.length ? latencies.reduce((total, value) => total + value, 0) / latencies.length : null;
+    const frameIntervalMs = intervals.length
+      ? intervals.reduce((total, value) => total + value, 0) / intervals.length
+      : null;
+    const latencyMs = latencies.length
+      ? latencies.reduce((total, value) => total + value, 0) / latencies.length
+      : null;
     windowRef.previewRendererFrameMetrics = {
       fps: frameIntervalMs === null ? null : 1000 / frameIntervalMs,
       frameIntervalMs,
@@ -72,9 +82,9 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
     resetSnapshot();
   };
 
-  const schedule = token => {
+  const schedule = (token) => {
     if (!running || disposed || token !== generation) return;
-    frameHandle = requestFrame(timestamp => {
+    frameHandle = requestFrame((timestamp) => {
       frameHandle = null;
       if (!running || disposed || token !== generation) return;
       const now = windowRef.performance?.now?.() ?? performance.now();
@@ -106,7 +116,7 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
     schedule(generation);
   };
 
-  const sync = async value => {
+  const sync = async (value) => {
     const revision = ++syncRevision;
     if (disposed) return;
     let enabled = value;
@@ -124,7 +134,10 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
   };
 
   try {
-    if (typeof developer.onChange === 'function') unsubscribe = developer.onChange(value => { void sync(value); });
+    if (typeof developer.onChange === 'function')
+      unsubscribe = developer.onChange((value) => {
+        void sync(value);
+      });
   } catch {
     unsubscribe = null;
   }
@@ -139,7 +152,7 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
       resetFrameTiming();
     }
   };
-  documentRef.addEventListener?.('visibilitychange', onVisibilityChange, {passive: true});
+  documentRef.addEventListener?.('visibilitychange', onVisibilityChange, { passive: true });
 
   return () => {
     if (disposed) return;
@@ -150,4 +163,4 @@ function startRendererFrameMetrics({windowRef = globalThis.window} = {}) {
   };
 }
 
-export {startRendererFrameMetrics};
+export { startRendererFrameMetrics };

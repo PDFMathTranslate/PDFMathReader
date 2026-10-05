@@ -1,254 +1,965 @@
-import {createAppUpdates,releaseLink} from './app-updates.mjs';
-import {createOperationMetrics,trackBackendCommunications} from './developer-operation-metrics.mjs';
-import {resolveUILanguage} from '../src/ui-language.mjs';
-import {dependencyProjects} from '../src/dependency-projects.mjs';
-import {createDeveloperMonitor} from './developer-monitor.mjs';
-import {createQuickLinkStore} from './quick-links.mjs';
-import {app,BrowserWindow,dialog,Menu,ShareMenu,ipcMain,shell,clipboard,safeStorage,systemPreferences,nativeTheme} from 'electron';
-import {randomBytes} from 'node:crypto';
-import {execFile} from 'node:child_process';
-import {promisify} from 'node:util';
-const developerOperationMetrics=createOperationMetrics();
-function handleMeasuredIPC(channel,handler){ipcMain.handle(channel,async(...args)=>{const started=performance.now();try{return await handler(...args);}finally{if(!/^(developer:|performance:|activity:|appearance:)/.test(channel)&&!/(?:current|load|status|enabled|fullscreen|maximized|progress)$/.test(channel))developerOperationMetrics.operation(performance.now()-started);}});}
-const runFile=promisify(execFile);
-import {join} from 'node:path';
-import {mkdtempSync,realpathSync,statSync} from 'node:fs';
-import {tmpdir,release} from 'node:os';
-const windowsBuild=process.platform==='win32'?Number(release().split('.')[2]):0;
-// AppKit otherwise inserts a second full-screen item beside our togglefullscreen role.
-if(process.platform==='darwin')systemPreferences.setUserDefault('NSFullScreenMenuItemEverywhere','boolean',false);
-const smoke=process.argv.find(a=>a.startsWith('--smoke-test='))?.split('=')[1];
-const ciLaunchCheck=process.argv.includes('--ci-launch-check');
-const ciLaunchPassMarker='PDFMATHREADER_CI_LAUNCH_CHECK_PASS';
-const ciLaunchTimeoutMs=Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS)>0?Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS):45000;
-if(smoke&&app.isPackaged&&!process.execPath.includes('PDFMathReader Tests.app'))throw Error('Mock tests require the isolated test application.');
-if(smoke||ciLaunchCheck){
- app.setPath('userData',mkdtempSync(join(tmpdir(),smoke?'preview-smoke-':'preview-ci-launch-')));
-}
-import {startBackendService} from './backend-service.mjs';
-import {createCredentials} from './credentials.mjs';
-import {createServiceCredentials} from './service-credentials.mjs';
-import {createDocumentSession} from './document-session.mjs';
-import {createRecents} from './recents.mjs';
-import {createReaderPreferences} from './preferences.mjs';
-import {fileURLToPath} from 'node:url';
-import {readSystemPDF,validateSystemPDF,pdfLaunchPaths} from './documents.mjs';
-import {writeFile} from 'node:fs/promises';
-import {menuLabel} from './menu-i18n.mjs';
-import {createHaptics} from './haptics.mjs';
-import {registerWindowsPDF} from './windows-file-association.mjs';
-import {windowChromeOptions,commandAccelerator,closeWindowAccelerator,shortcutAction,serializeApplicationMenu,menuPathItems} from './window-chrome.mjs';
-import {appendPerformanceReport,loadPerformanceReports,memoryMetricToBytes,MAX_PERFORMANCE_REPORTS,sumMemoryMetrics,validatePerformanceReport,writePerformanceReports} from './performance-tracker.mjs';
-import {importPDFAnnotations} from './annotation-import.mjs';
-import {createAnnotationStore,stripManagedAnnotations} from './annotations.mjs';
-
-const recentContextMenuLabels={
- en:{open:'Open',openWindow:'Open in New Window',hide:'Remove from Recents',copy:'Copy File Location',reveal:'Reveal in Finder',status:'View Translation Status'},
- 'zh-CN':{open:'打开',openWindow:'在新窗口打开',hide:'从最近记录中删除',copy:'复制文件位置',reveal:'在访达中显示',status:'查看翻译状态'},
- 'zh-TW':{open:'開啟',openWindow:'在新視窗開啟',hide:'從最近記錄中移除',copy:'複製檔案位置',reveal:'在 Finder 中顯示',status:'檢視翻譯狀態'},
- fr:{open:'Ouvrir',openWindow:'Ouvrir dans une nouvelle fenêtre',hide:'Retirer des documents récents',copy:'Copier l’emplacement du fichier',reveal:'Révéler dans le Finder',status:'Afficher l’état de la traduction'},
- es:{open:'Abrir',openWindow:'Abrir en una ventana nueva',hide:'Eliminar de recientes',copy:'Copiar ubicación del archivo',reveal:'Mostrar en Finder',status:'Ver estado de la traducción'},
- ja:{open:'開く',openWindow:'新しいウインドウで開く',hide:'最近の項目から削除',copy:'ファイルの場所をコピー',reveal:'Finder で表示',status:'翻訳状況を表示'},
- ko:{open:'열기',openWindow:'새 창에서 열기',hide:'최근 항목에서 제거',copy:'파일 위치 복사',reveal:'Finder에서 보기',status:'번역 상태 보기'},
-};
-const recentExtraLabels={
- en:{pin:'Pin',unpin:'Unpin',clearCache:'Clear Translation Cache'},
- 'zh-CN':{pin:'置顶',unpin:'取消置顶',clearCache:'清除翻译缓存'},
- 'zh-TW':{pin:'置頂',unpin:'取消置頂',clearCache:'清除翻譯快取'},
- ja:{pin:'ピン留め',unpin:'ピン留め解除',clearCache:'翻訳キャッシュを削除'},
- ko:{pin:'고정',unpin:'고정 해제',clearCache:'번역 캐시 지우기'},
- fr:{pin:'Épingler',unpin:'Désépingler',clearCache:'Effacer le cache de traduction'},
- es:{pin:'Fijar',unpin:'Desfijar',clearCache:'Borrar caché de traducción'}
-};
-const fileManagerRevealLabels={en:'Show in File Manager','zh-CN':'在文件管理器中显示','zh-TW':'在檔案管理員中顯示',fr:'Afficher dans le gestionnaire de fichiers',es:'Mostrar en el administrador de archivos',ja:'ファイルマネージャーで表示',ko:'파일 관리자에서 표시'};
-const recentContextMenuLabelsFor=locale=>{
- const labels=recentContextMenuLabels[locale]||recentContextMenuLabels.en;
- return process.platform==='darwin'?labels:{...labels,reveal:fileManagerRevealLabels[locale]||fileManagerRevealLabels.en};
-};
-const haptics=createHaptics({packaged:app.isPackaged});app.on('will-quit',()=>haptics.close());
-const pendingFiles=[];
-function enqueueFiles(paths){for(const path of paths)if(!pendingFiles.includes(path))pendingFiles.push(path);if(paths.length)notifyDocuments();}
-let notifyDocuments=()=>{};
-app.on('open-file',(event,path)=>{event.preventDefault();if(smoke&&smoke!=='file-open'&&smoke!=='multi-window')return;enqueueFiles([path]);});
-app.setName(smoke?'PDFMathReader Tests':'PDFMathReader');if(!smoke&&!ciLaunchCheck)app.setPath('userData',join(app.getPath('appData'),'PDFMathReader'));
-if((!smoke&&!ciLaunchCheck)||smoke==='file-open')enqueueFiles(pdfLaunchPaths(process.argv.slice(1),process.cwd()));if(process.platform==='darwin'&&['resize','file-open'].includes(smoke))app.setActivationPolicy('prohibited');
-if(!app.requestSingleInstanceLock())app.quit();
-else {
- let backend,window,credentials,serviceCredentialStore,preferences,recents,annotations,documentSession,appUpdates;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
- const WINDOW_LOCAL_PREFERENCES=['engine','direction','columns','fit','zoom','translationMode'];
- const SETTINGS_PREFERENCES=['autoCheckUpdates','reduceBackgroundFrameRate','cacheLimitMB','documentOpenMode','reuseTranslations','reduceResourceUsage','restoreDocuments','interactionMode','language','sourceLanguage','concurrency','pageConcurrency','automatic','layoutVisible','emphasizeTopicSentences','emphasizeInformation','emphasizeResearchFindings','emphasizeOrdinals','emphasizeKeyVerbs','emphasizeLogicalConnectives','autoHideHeader','uiLanguage','kernelAdvancedOptions','translationServices','translationServiceHistory'];
- const APPEARANCE_PREFERENCES=['appearance','accentColor','reduceMotion','reduceTransparency','reducePadding'];
- const preferenceSnapshot=state=>Object.fromEntries(APPEARANCE_PREFERENCES.map(key=>[key,state?.[key]]));
- const samePreferences=(left,right)=>APPEARANCE_PREFERENCES.every(key=>left[key]===right[key]);
- const mergeWindowPreferences=(next,current,value,isSender)=>{
-  const result={...next};
-  for(const key of WINDOW_LOCAL_PREFERENCES)if(current?.[key]!==undefined)result[key]=current[key];
-  if(isSender)for(const key of WINDOW_LOCAL_PREFERENCES)if(value&&Object.prototype.hasOwnProperty.call(value,key)&&value[key]!==undefined)result[key]=next[key];
-  return result;
- };
- const setWindowVibrancy=(target,reduceTransparency)=>{
-  if(process.platform==='win32'&&windowsBuild>=22621){
-   target.setBackgroundMaterial(reduceTransparency?'none':'acrylic');
-   target.setBackgroundColor(reduceTransparency?'#f7f7f9':'#00000000');
-   return;
-  }
-  if(process.platform!=='darwin'||typeof target?.setVibrancy!=='function')return;
-  try{target.setVibrancy(reduceTransparency?null:windowChromeOptions('darwin').vibrancy);}catch{}
- };
- const chromeOptions=()=>{
-  const options=windowChromeOptions(process.platform,{windowsBuild,reduceTransparency:!!preferences?.load?.().reduceTransparency});
-  if(process.platform==='darwin'&&preferences?.load?.().reduceTransparency)delete options.vibrancy;
-  return options;
- };
- const backgroundRenderSmoke=['resize','file-open','crop','crop-status','information-categories'].includes(smoke)||(process.platform==='win32'&&['fit-width','windows-settings'].includes(smoke));
- const focusedWindow=()=>{const focused=BrowserWindow.getFocusedWindow();return windows.has(focused)?windows.get(focused).settingsOwner||focused:[...windows.keys()].filter(target=>!windows.get(target).settingsOwner).at(-1);};
- const annotationSourceForDocument=document=>{
-  if(typeof document==='string')return {path:document,reliable:true,preserveWithoutPath:false};
-  if(document?.bytes instanceof Uint8Array)return {bytes:Buffer.from(document.bytes),reliable:false,preserveWithoutPath:true};
-  return null;
- };
- const annotationSourceForWindow=(state,key)=>state?.annotationSources?.get(key)||state?.unkeyedAnnotationSource;
- const trustedWindow=event=>{const target=BrowserWindow.fromWebContents(event.sender),state=windows.get(target);if(!state||event.senderFrame!==target.webContents.mainFrame||new URL(event.senderFrame.url).origin!==state.backend.origin)throw Error('Window request rejected.');return target;};
- const normalizeMenuPath=value=>{
-  const path=Array.isArray(value)?value:typeof value==='string'?[value]:null;
-  if(!path||path.length===0||path.length>32||!path.every(segment=>(Number.isSafeInteger(segment)&&segment>=0&&segment<=10000)||(typeof segment==='string'&&/^[\da-z][\da-z:._-]{0,127}$/i.test(segment))))throw Error('Invalid menu path.');
-  return path;
- };
- const activateMenuItem=(item,target)=>{
-  if(!item||item.visible===false)throw Error('Menu item not found.');
-  if(item.type==='separator'||item.enabled===false)throw Error('Menu item is not actionable.');
-  if(item.submenu?.items?.length&&!item.click)throw Error('Menu item opens a submenu.');
-  const authoredAction=menuActions.get(item.id);
-  if(authoredAction){authoredAction(item,target,undefined);return true;}
-  const role=String(item.role||''),contents=target?.webContents;
-  const normalizedRole=role.toLowerCase();
-  if(normalizedRole==='about'){app.showAboutPanel?.();return true;}
-  if(normalizedRole==='quit'){app.quit();return true;}
-  if(normalizedRole==='close'){target.close();return true;}
-  if(normalizedRole==='minimize'){target.minimize();return true;}
-  if(normalizedRole==='maximize'){target.isMaximized()?target.unmaximize():target.maximize();return true;}
-  if(normalizedRole==='togglefullscreen'){target.setFullScreen(!target.isFullScreen());return true;}
-  const roleMethod={copy:'copy',cut:'cut',paste:'paste',selectall:'selectAll',undo:'undo',redo:'redo',reload:'reload',forcereload:'reloadIgnoringCache'}[normalizedRole];
-  if(contents&&roleMethod&&typeof contents[roleMethod]==='function'){contents[roleMethod]();return true;}
-  throw Error('Menu item is not actionable.');
- };
- let rebuildMenu=()=>{},applicationMenu=null,menuActions=new Map();
- const updateMenu=window=>{const state=windows.get(window)?.preferences;if(!state)return;const menu=applicationMenu||Menu.getApplicationMenu();if(!menu)return;const item=id=>menu.getMenuItemById(id),layout=item('layout-'+(state.direction||'vertical')),columns=item('columns-'+(state.columns||1));if(layout)layout.checked=true;for(const count of [1,2,4]){const choice=item('columns-'+count);if(choice)choice.enabled=state.direction!=='horizontal';}if(columns)columns.checked=true;for(const id of ['edit-rotate-page','edit-align-width','edit-align-height']){const choice=item(id);if(choice)choice.enabled=!!windows.get(window)?.performance.hasDocument;}};
- const updateWindowButtons=target=>{if(process.platform!=='darwin'||!target||target.isDestroyed())return;const visible=!target.isFullScreen()&&!windows.get(target)?.headerHidden;target.setWindowButtonVisibility(visible);if(visible)target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);};
- const hideNativeMenuBar=target=>{if(!['win32','linux'].includes(process.platform)||!target||target.isDestroyed())return;target.setAutoHideMenuBar?.(true);target.setMenuBarVisibility?.(false);};
- const windowActive=window=>!window.isMinimized()&&(backgroundRenderSmoke||(window.isVisible()&&window.isFocused()));
- const stopPerformanceSampling=window=>{const state=windows.get(window);if(!state?.performance)return;if(state.performance.timer){clearInterval(state.performance.timer);state.performance.timer=null;}state.performance.samples=0;};
- const performanceMemory=value=>{const memory=memoryMetricToBytes(value);return {...memory,rssEstimateBytes:memory.workingSetBytes,workingSetKind:'rss-estimate',processPeakWorkingSetBytes:memory.peakWorkingSetBytes};};
- const samplePerformance=window=>{
-  const state=windows.get(window);if(!state||window.isDestroyed())return null;
-  let metrics=[];try{metrics=app.getAppMetrics();}catch{}
-  const rendererPid=window.webContents.getOSProcessId(),backendPid=state.backend.processId;
-  const find=pid=>metrics.find(metric=>metric?.pid===pid);
-  const observe=(key,value)=>{const current=value.workingSetBytes||0,previous=state.performance.peaks.get(key)||0;state.performance.peaks.set(key,Math.max(previous,current));return {...value,peakWorkingSetBytes:Math.max(previous,current)};};
-  const rendererRaw=performanceMemory(find(rendererPid)),backendRaw=performanceMemory(find(backendPid)),mainRaw=performanceMemory(find(process.pid));
-  const gpuRaw=metrics.filter(metric=>metric?.type==='GPU').map(performanceMemory);
-  const renderer=observe('renderer',rendererRaw),backend=observe('backend',backendRaw),main=observe('main',mainRaw),gpu=gpuRaw.map((value,index)=>observe(`gpu:${metrics.filter(metric=>metric?.type==='GPU')[index]?.pid||index}`,value));
-  const scopedCurrent=sumMemoryMetrics([rendererRaw,backendRaw]),sharedCurrent=sumMemoryMetrics([mainRaw,...gpuRaw]),aggregateCurrent=sumMemoryMetrics([scopedCurrent,sharedCurrent]);
-  const scopedTotal=observe('scoped-total',scopedCurrent),sharedTotal=observe('shared-total',sharedCurrent),aggregate=observe('aggregate',aggregateCurrent);
-  return {schemaVersion:1,sampledAtMs:Date.now(),scope:{rendererPid,backendPid,mainPid:process.pid,gpuPids:metrics.filter(metric=>metric?.type==='GPU'&&Number.isInteger(metric.pid)).map(metric=>metric.pid)},scoped:{renderer,backend,total:scopedTotal},shared:{main,gpu,total:sharedTotal},aggregate};
- };
- const updatePerformanceSampling=window=>{
-  const state=windows.get(window);if(!state?.performance?.hasDocument||!windowActive(window)){stopPerformanceSampling(window);return;}
-  if(state.performance.timer)return;
-  state.performance.samples=0;state.performance.timer=setInterval(()=>{if(!windows.has(window)||window.isDestroyed()||!windowActive(window)||state.performance.samples>=12000){stopPerformanceSampling(window);return;}state.performance.samples++;try{samplePerformance(window);}catch{}},smoke&&smoke!=='resource-benchmark'?250:5000);state.performance.timer.unref?.();
- };
- async function handleBackendFailure(error){
-  if(quitting||backendFailureHandled)return;backendFailureHandled=true;
-  const key=credentials?.getKey?.();const detail=error?.message&&key?error.message.replaceAll(key,'[redacted]'):error?.message;
-  if(smoke||ciLaunchCheck){console.error(ciLaunchCheck?'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL':'Desktop smoke backend failed:',detail||'The backend utility process stopped unexpectedly.');app.exit(1);return;}
-  dialog.showErrorBox('PDFMathReader',`The local reader backend stopped unexpectedly.${detail?`\n\n${detail}`:''}\n\nQuit and reopen PDFMathReader.`);app.quit();
- }
- notifyDocuments=()=>{if(!documentsReady)return;void deliverPendingFiles().catch(handleBackendFailure);};
- async function deliverPendingFiles(){while(pendingFiles.length){const path=pendingFiles.shift();await openExternalDocument(path);}}
- const token=randomBytes(32).toString('hex');
- const developerMonitor=createDeveloperMonitor({windows,token,operationMetrics:developerOperationMetrics,loadServiceCredentials:()=>serviceCredentialStore.load()});
- const appearance=()=>{const state=preferences?.load?.()||{};return {platform:process.platform,accent:'#'+systemAccent(),appearance:state.appearance||'system',accentColor:state.accentColor||'system',reduceMotion:!!state.reduceMotion,reduceTransparency:!!state.reduceTransparency,reducePadding:!!state.reducePadding,dark:!!nativeTheme.shouldUseDarkColors};};
- const systemAccent=()=>{try{const value=String(systemPreferences.getAccentColor?.()||'').replace(/^#/,'');if(/^[\da-f]{6}$/i.test(value))return value+'ff';if(/^[\da-f]{8}$/i.test(value))return value;}catch{}return '007affff';};
- const updateAppearance=()=>{for(const target of windows.keys())target.webContents.send('appearance:changed',appearance());};
- async function saveWindowReadingView(window){if(!window||window.isDestroyed())return;try{await window.webContents.executeJavaScript('window.previewSaveReadingView?.()');}catch{}}
- const documentIdentity=path=>{const canonical=realpathSync(path),info=statSync(canonical,{bigint:true});return info.ino?`${info.dev}:${info.ino}`:canonical;};
- const focusDocumentWindow=target=>{if(target.isMinimized())target.restore();if(!backgroundRenderSmoke){target.show();target.focus();}return target;};
- const findDocumentWindow=identity=>identity&&[...windows].find(([target,state])=>!state.settingsOwner&&!state.closing&&!target.isDestroyed()&&state.documentIdentity===identity)?.[0];
- const isBlankStartPage=target=>{const state=windows.get(target);return !!state&&!state.settingsOwner&&!target.isDestroyed()&&!state.closing&&!state.performance.hasDocument&&!state.documents.length&&!state.documentIdentity;};
- async function openExternalDocument(path){
-  const target=await openDocumentWindow(path);
-  for(const other of windows.keys())if(other!==target&&isBlankStartPage(other))other.close();
-  return focusDocumentWindow(target);
- }
- const openingDocuments=new Map();
- async function openDocumentWindow(document,preferredWindow,restoreView){
-  const started=performance.now();try{return await deliverDocumentWindow(document,preferredWindow,restoreView);}finally{developerOperationMetrics.fileOpen(performance.now()-started);}
- }
- async function deliverDocumentWindow(document,preferredWindow,restoreView){
-  const identity=typeof document==='string'?documentIdentity(document):null;
-  const existing=findDocumentWindow(identity);if(existing)return focusDocumentWindow(existing);
-  if(identity&&openingDocuments.has(identity))return focusDocumentWindow(await openingDocuments.get(identity));
-  const operation=(async()=>{
-   const candidates=[preferredWindow,focusedWindow(),...windows.keys()];
-   const target=candidates.find(isBlankStartPage);
-   if(!target)return createWindow(document,restoreView);
-   const state=windows.get(target);
-   state.documentIdentity=identity;state.documents.push(document);state.unkeyedAnnotationSource=annotationSourceForDocument(document);state.performance.hasDocument=true;
-   target.webContents.send('documents:available');
-   return focusDocumentWindow(target);
-  })();
-  if(identity)openingDocuments.set(identity,operation);
-  try{return await operation;}finally{if(identity)openingDocuments.delete(identity);}
- }
- async function createWindow(document,restoreView,settingsOwner=null,settingsSection='general'){
-  let window;
-  const backend=settingsOwner?windows.get(settingsOwner).backend:await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke||ciLaunchCheck){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
-  window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:settingsOwner?'PDFMathReader Settings':'PDFMathReader',...(settingsOwner?{width:920,height:780,minWidth:680,minHeight:500,parent:settingsOwner,modal:false}:{}),icon:fileURLToPath(new URL('./AppIcon.png',import.meta.url)),...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:preferences.load().reduceBackgroundFrameRate,additionalArguments:[`--preview-system-locale=${app.getPreferredSystemLanguages()[0]||app.getLocale()}`,...(process.platform==='win32'&&windowsBuild>=22621?['--preview-windows-glass']:[]),...(smoke?['--preview-test-mode',...(smoke==='settings-native'?[]:['--preview-inline-settings'])]:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
-  hideNativeMenuBar(window);
-  windows.set(window,{backend,settingsOwner,restoreView,documentIdentity:typeof document==='string'?documentIdentity(document):null,documents:document?[document]:[],tickets:new Map(),annotationSources:new Map(),unkeyedAnnotationSource:annotationSourceForDocument(document),preferences:settingsOwner?{...windows.get(settingsOwner).preferences}:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
-  const fullscreenChanged=()=>{if(!window||window.isDestroyed())return;const full=window.isFullScreen();updateWindowButtons(window);window.webContents.send('window:fullscreen',full);};
-  const activityChanged=()=>{if(!window||window.isDestroyed())return;window.webContents.send('activity:changed',windowActive(window));updatePerformanceSampling(window);};
-  let resizing=false;
-  const resizeStart=()=>{if(resizing||!window||window.isDestroyed())return;resizing=true;window.webContents.send('window:resize-start');};
-  const resizeEnd=()=>{if(!resizing||!window||window.isDestroyed())return;resizing=false;window.webContents.send('window:resize-end');};
-  if(process.platform==='darwin'){window.on('will-resize',resizeStart);window.on('resized',resizeEnd);}
-  window.on('show',()=>updateWindowButtons(window));window.on('restore',()=>updateWindowButtons(window));window.on('resized',()=>updateWindowButtons(window));
-  window.on('enter-full-screen',fullscreenChanged);window.on('leave-full-screen',fullscreenChanged);
-  const maximizedChanged=()=>{if(!window.isDestroyed())window.webContents.send('window:maximized',window.isMaximized());};
-  window.on('maximize',maximizedChanged);window.on('unmaximize',maximizedChanged);
-  for(const event of ['minimize','restore','hide','show','focus','blur'])window.on(event,activityChanged);
-  window.webContents.setZoomFactor(1);
-  window.webContents.setVisualZoomLevelLimits(1,1);
-  window.webContents.on('before-input-event',(event,input)=>{if(windows.get(window)?.preferences?.interactionMode==='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.copy();return;}if(windows.get(window)?.preferences?.interactionMode!=='reading'&&input.type==='keyDown'&&(process.platform==='darwin'?input.meta:input.control)&&!input.alt&&!input.shift&&String(input.key).toLowerCase()==='c'){event.preventDefault();window.webContents.send('reader:action','copy-paragraph');return;}const action=shortcutAction(process.platform,input);if(action==='page-previous'||action==='page-next')return;if(action==='new-window'){event.preventDefault();void createWindow().catch(handleBackendFailure);return;}if(action==='toggle-fullscreen'){event.preventDefault();window.setFullScreen(!window.isFullScreen());return;}if(action==='close-window'){event.preventDefault();window.close();return;}if(action){event.preventDefault();window.webContents.send('reader:action',action);}});
-  window.webContents.on('context-menu',(_event,params)=>{
-   if(windows.get(window)?.preferences?.interactionMode!=='reading'||typeof params?.selectionText!=='string'||!params.selectionText.trim())return;
-   const template=[{role:'copy'},{role:'selectAll'},{type:'separator'},{label:menuLabel('Search in Document',resolveUILanguage(windows.get(window)?.preferences?.uiLanguage||'system',app.getPreferredSystemLanguages()[0]||app.getLocale())),click:()=>window.webContents.send('reader:action','search-selection',params.selectionText)}];
-   if(process.platform==='darwin'&&typeof window.webContents.showDefinitionForSelection==='function'){
-    template.push({type:'separator'},{label:'Look Up Selection',click:()=>window.webContents.showDefinitionForSelection()});
-   }
-   const query=encodeURIComponent(params.selectionText.trim());
-   template.push({type:'separator'},
-    {label:'Search on Google',click:()=>void shell.openExternal(`https://www.google.com/search?q=${query}`)},
-    {label:'Search on Google Scholar',click:()=>void shell.openExternal(`https://scholar.google.com/scholar?q=${query}`)});
-   Menu.buildFromTemplate(template).popup({window});
+import { createAppUpdates, releaseLink } from './app-updates.mjs';
+import {
+  createOperationMetrics,
+  trackBackendCommunications,
+} from './developer-operation-metrics.mjs';
+import { resolveUILanguage } from '../src/ui-language.mjs';
+import { dependencyProjects } from '../src/dependency-projects.mjs';
+import { createDeveloperMonitor } from './developer-monitor.mjs';
+import { createQuickLinkStore } from './quick-links.mjs';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  Menu,
+  ShareMenu,
+  ipcMain,
+  shell,
+  clipboard,
+  safeStorage,
+  systemPreferences,
+  nativeTheme,
+} from 'electron';
+import { randomBytes } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const developerOperationMetrics = createOperationMetrics();
+function handleMeasuredIPC(channel, handler) {
+  ipcMain.handle(channel, async (...args) => {
+    const started = performance.now();
+    try {
+      return await handler(...args);
+    } finally {
+      if (
+        !/^(developer:|performance:|activity:|appearance:)/.test(channel) &&
+        !/(?:current|load|status|enabled|fullscreen|maximized|progress)$/.test(channel)
+      )
+        developerOperationMetrics.operation(performance.now() - started);
+    }
   });
-  const ses=window.webContents.session;
-  const stopCommunicationMetrics=trackBackendCommunications(ses,backend.origin,developerOperationMetrics);
-  window.once('closed',stopCommunicationMetrics);
-  ses.setPermissionRequestHandler((_wc,_permission,reply)=>reply(false));
-  ses.setPermissionCheckHandler(()=>false);
-  ses.webRequest.onBeforeSendHeaders({urls:[`${backend.origin}/*`]},(details,reply)=>reply({requestHeaders:{...details.requestHeaders,'X-Preview-Token':token}}));
-  window.webContents.setWindowOpenHandler(({url})=>{if(url==='https://siliconflow.cn/'||url==='https://github.com/PDFMathTranslate/PDFMathReader'||dependencyProjects.some(project=>project.url===url))void shell.openExternal(url);return {action:'deny'};});
-  window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==backend.origin)event.preventDefault();});
-  window.once('ready-to-show',()=>{hideNativeMenuBar(window);if(!backgroundRenderSmoke){if(process.argv.includes('--background'))window.showInactive();else window.show();}updatePerformanceSampling(window);});
-  window.on('focus',()=>{updateAppearance();rebuildMenu();updateMenu(window);});
-  let closing=false;window.on('close',event=>{if(closing||quitting)return;event.preventDefault();closing=true;windows.get(window).closing=true;void saveWindowReadingView(window).then(()=>documentSession.close(window.id)).finally(()=>{if(window&&!window.isDestroyed())window.close();});});
-  window.on('closed',()=>{stopPerformanceSampling(window);windows.get(window)?.performance.peaks.clear();windows.delete(window);if(!settingsOwner){const closing=backend.close();closingBackends.add(closing);void closing.finally(()=>closingBackends.delete(closing));}if(!windows.size){developerMonitor.close();app.quit();}});
-  await developerMonitor.sync(windows.get(window));
-  await window.loadURL(settingsOwner?backend.origin+'/?settingsWindow=1&section='+encodeURIComponent(settingsSection):backend.origin);
-  if(settingsOwner){const closeWithOwner=()=>{if(!window.isDestroyed())window.close();};settingsOwner.once('closed',closeWithOwner);window.once('closed',()=>settingsOwner.removeListener('closed',closeWithOwner));}activityChanged();return window;
- }
- const settingsWindows=new Map();
+}
+const runFile = promisify(execFile);
+import { join } from 'node:path';
+import { mkdtempSync, realpathSync, statSync } from 'node:fs';
+import { tmpdir, release } from 'node:os';
+const windowsBuild = process.platform === 'win32' ? Number(release().split('.')[2]) : 0;
+// AppKit otherwise inserts a second full-screen item beside our togglefullscreen role.
+if (process.platform === 'darwin')
+  systemPreferences.setUserDefault('NSFullScreenMenuItemEverywhere', 'boolean', false);
+const smoke = process.argv.find((a) => a.startsWith('--smoke-test='))?.split('=')[1];
+const ciLaunchCheck = process.argv.includes('--ci-launch-check');
+const ciLaunchPassMarker = 'PDFMATHREADER_CI_LAUNCH_CHECK_PASS';
+const ciLaunchTimeoutMs =
+  Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS) > 0
+    ? Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS)
+    : 45000;
+if (smoke && app.isPackaged && !process.execPath.includes('PDFMathReader Tests.app'))
+  throw Error('Mock tests require the isolated test application.');
+if (smoke || ciLaunchCheck) {
+  app.setPath(
+    'userData',
+    mkdtempSync(join(tmpdir(), smoke ? 'preview-smoke-' : 'preview-ci-launch-')),
+  );
+}
+import { startBackendService } from './backend-service.mjs';
+import { createCredentials } from './credentials.mjs';
+import { createServiceCredentials } from './service-credentials.mjs';
+import { createDocumentSession } from './document-session.mjs';
+import { createRecents } from './recents.mjs';
+import { createReaderPreferences } from './preferences.mjs';
+import { fileURLToPath } from 'node:url';
+import { readSystemPDF, validateSystemPDF, pdfLaunchPaths } from './documents.mjs';
+import { writeFile } from 'node:fs/promises';
+import { menuLabel } from './menu-i18n.mjs';
+import { createHaptics } from './haptics.mjs';
+import { registerWindowsPDF } from './windows-file-association.mjs';
+import {
+  windowChromeOptions,
+  commandAccelerator,
+  closeWindowAccelerator,
+  shortcutAction,
+  serializeApplicationMenu,
+  menuPathItems,
+} from './window-chrome.mjs';
+import {
+  appendPerformanceReport,
+  loadPerformanceReports,
+  memoryMetricToBytes,
+  MAX_PERFORMANCE_REPORTS,
+  sumMemoryMetrics,
+  validatePerformanceReport,
+  writePerformanceReports,
+} from './performance-tracker.mjs';
+import { importPDFAnnotations } from './annotation-import.mjs';
+import { createAnnotationStore, stripManagedAnnotations } from './annotations.mjs';
+
+const recentContextMenuLabels = {
+  en: {
+    open: 'Open',
+    openWindow: 'Open in New Window',
+    hide: 'Remove from Recents',
+    copy: 'Copy File Location',
+    reveal: 'Reveal in Finder',
+    status: 'View Translation Status',
+  },
+  'zh-CN': {
+    open: '打开',
+    openWindow: '在新窗口打开',
+    hide: '从最近记录中删除',
+    copy: '复制文件位置',
+    reveal: '在访达中显示',
+    status: '查看翻译状态',
+  },
+  'zh-TW': {
+    open: '開啟',
+    openWindow: '在新視窗開啟',
+    hide: '從最近記錄中移除',
+    copy: '複製檔案位置',
+    reveal: '在 Finder 中顯示',
+    status: '檢視翻譯狀態',
+  },
+  fr: {
+    open: 'Ouvrir',
+    openWindow: 'Ouvrir dans une nouvelle fenêtre',
+    hide: 'Retirer des documents récents',
+    copy: 'Copier l’emplacement du fichier',
+    reveal: 'Révéler dans le Finder',
+    status: 'Afficher l’état de la traduction',
+  },
+  es: {
+    open: 'Abrir',
+    openWindow: 'Abrir en una ventana nueva',
+    hide: 'Eliminar de recientes',
+    copy: 'Copiar ubicación del archivo',
+    reveal: 'Mostrar en Finder',
+    status: 'Ver estado de la traducción',
+  },
+  ja: {
+    open: '開く',
+    openWindow: '新しいウインドウで開く',
+    hide: '最近の項目から削除',
+    copy: 'ファイルの場所をコピー',
+    reveal: 'Finder で表示',
+    status: '翻訳状況を表示',
+  },
+  ko: {
+    open: '열기',
+    openWindow: '새 창에서 열기',
+    hide: '최근 항목에서 제거',
+    copy: '파일 위치 복사',
+    reveal: 'Finder에서 보기',
+    status: '번역 상태 보기',
+  },
+};
+const recentExtraLabels = {
+  en: { pin: 'Pin', unpin: 'Unpin', clearCache: 'Clear Translation Cache' },
+  'zh-CN': { pin: '置顶', unpin: '取消置顶', clearCache: '清除翻译缓存' },
+  'zh-TW': { pin: '置頂', unpin: '取消置頂', clearCache: '清除翻譯快取' },
+  ja: { pin: 'ピン留め', unpin: 'ピン留め解除', clearCache: '翻訳キャッシュを削除' },
+  ko: { pin: '고정', unpin: '고정 해제', clearCache: '번역 캐시 지우기' },
+  fr: { pin: 'Épingler', unpin: 'Désépingler', clearCache: 'Effacer le cache de traduction' },
+  es: { pin: 'Fijar', unpin: 'Desfijar', clearCache: 'Borrar caché de traducción' },
+};
+const fileManagerRevealLabels = {
+  en: 'Show in File Manager',
+  'zh-CN': '在文件管理器中显示',
+  'zh-TW': '在檔案管理員中顯示',
+  fr: 'Afficher dans le gestionnaire de fichiers',
+  es: 'Mostrar en el administrador de archivos',
+  ja: 'ファイルマネージャーで表示',
+  ko: '파일 관리자에서 표시',
+};
+const recentContextMenuLabelsFor = (locale) => {
+  const labels = recentContextMenuLabels[locale] || recentContextMenuLabels.en;
+  return process.platform === 'darwin'
+    ? labels
+    : { ...labels, reveal: fileManagerRevealLabels[locale] || fileManagerRevealLabels.en };
+};
+const haptics = createHaptics({ packaged: app.isPackaged });
+app.on('will-quit', () => haptics.close());
+const pendingFiles = [];
+function enqueueFiles(paths) {
+  for (const path of paths) if (!pendingFiles.includes(path)) pendingFiles.push(path);
+  if (paths.length) notifyDocuments();
+}
+let notifyDocuments = () => {};
+app.on('open-file', (event, path) => {
+  event.preventDefault();
+  if (smoke && smoke !== 'file-open' && smoke !== 'multi-window') return;
+  enqueueFiles([path]);
+});
+app.setName(smoke ? 'PDFMathReader Tests' : 'PDFMathReader');
+if (!smoke && !ciLaunchCheck)
+  app.setPath('userData', join(app.getPath('appData'), 'PDFMathReader'));
+if ((!smoke && !ciLaunchCheck) || smoke === 'file-open')
+  enqueueFiles(pdfLaunchPaths(process.argv.slice(1), process.cwd()));
+if (process.platform === 'darwin' && ['resize', 'file-open'].includes(smoke))
+  app.setActivationPolicy('prohibited');
+if (!app.requestSingleInstanceLock()) app.quit();
+else {
+  let backend,
+    window,
+    credentials,
+    serviceCredentialStore,
+    preferences,
+    recents,
+    annotations,
+    documentSession,
+    appUpdates;
+  const windows = new Map(),
+    closingBackends = new Set();
+  let backendOptions,
+    documentsReady = false;
+  let quitting = false,
+    backendFailureHandled = false;
+  let performanceReports = [];
+  let performanceWrite = Promise.resolve();
+  const WINDOW_LOCAL_PREFERENCES = [
+    'engine',
+    'direction',
+    'columns',
+    'fit',
+    'zoom',
+    'translationMode',
+  ];
+  const SETTINGS_PREFERENCES = [
+    'autoCheckUpdates',
+    'reduceBackgroundFrameRate',
+    'cacheLimitMB',
+    'documentOpenMode',
+    'reuseTranslations',
+    'reduceResourceUsage',
+    'restoreDocuments',
+    'interactionMode',
+    'language',
+    'sourceLanguage',
+    'concurrency',
+    'pageConcurrency',
+    'automatic',
+    'layoutVisible',
+    'emphasizeTopicSentences',
+    'emphasizeInformation',
+    'emphasizeResearchFindings',
+    'emphasizeOrdinals',
+    'emphasizeKeyVerbs',
+    'emphasizeLogicalConnectives',
+    'autoHideHeader',
+    'uiLanguage',
+    'kernelAdvancedOptions',
+    'translationServices',
+    'translationServiceHistory',
+  ];
+  const APPEARANCE_PREFERENCES = [
+    'appearance',
+    'accentColor',
+    'reduceMotion',
+    'reduceTransparency',
+    'reducePadding',
+  ];
+  const preferenceSnapshot = (state) =>
+    Object.fromEntries(APPEARANCE_PREFERENCES.map((key) => [key, state?.[key]]));
+  const samePreferences = (left, right) =>
+    APPEARANCE_PREFERENCES.every((key) => left[key] === right[key]);
+  const mergeWindowPreferences = (next, current, value, isSender) => {
+    const result = { ...next };
+    for (const key of WINDOW_LOCAL_PREFERENCES)
+      if (current?.[key] !== undefined) result[key] = current[key];
+    if (isSender)
+      for (const key of WINDOW_LOCAL_PREFERENCES)
+        if (value && Object.prototype.hasOwnProperty.call(value, key) && value[key] !== undefined)
+          result[key] = next[key];
+    return result;
+  };
+  const setWindowVibrancy = (target, reduceTransparency) => {
+    if (process.platform === 'win32' && windowsBuild >= 22621) {
+      target.setBackgroundMaterial(reduceTransparency ? 'none' : 'acrylic');
+      target.setBackgroundColor(reduceTransparency ? '#f7f7f9' : '#00000000');
+      return;
+    }
+    if (process.platform !== 'darwin' || typeof target?.setVibrancy !== 'function') return;
+    try {
+      target.setVibrancy(reduceTransparency ? null : windowChromeOptions('darwin').vibrancy);
+    } catch {}
+  };
+  const chromeOptions = () => {
+    const options = windowChromeOptions(process.platform, {
+      windowsBuild,
+      reduceTransparency: !!preferences?.load?.().reduceTransparency,
+    });
+    if (process.platform === 'darwin' && preferences?.load?.().reduceTransparency)
+      delete options.vibrancy;
+    return options;
+  };
+  const backgroundRenderSmoke =
+    ['resize', 'file-open', 'crop', 'crop-status', 'information-categories'].includes(smoke) ||
+    (process.platform === 'win32' && ['fit-width', 'windows-settings'].includes(smoke));
+  const focusedWindow = () => {
+    const focused = BrowserWindow.getFocusedWindow();
+    return windows.has(focused)
+      ? windows.get(focused).settingsOwner || focused
+      : [...windows.keys()].filter((target) => !windows.get(target).settingsOwner).at(-1);
+  };
+  const annotationSourceForDocument = (document) => {
+    if (typeof document === 'string')
+      return { path: document, reliable: true, preserveWithoutPath: false };
+    if (document?.bytes instanceof Uint8Array)
+      return { bytes: Buffer.from(document.bytes), reliable: false, preserveWithoutPath: true };
+    return null;
+  };
+  const annotationSourceForWindow = (state, key) =>
+    state?.annotationSources?.get(key) || state?.unkeyedAnnotationSource;
+  const trustedWindow = (event) => {
+    const target = BrowserWindow.fromWebContents(event.sender),
+      state = windows.get(target);
+    if (
+      !state ||
+      event.senderFrame !== target.webContents.mainFrame ||
+      new URL(event.senderFrame.url).origin !== state.backend.origin
+    )
+      throw Error('Window request rejected.');
+    return target;
+  };
+  const normalizeMenuPath = (value) => {
+    const path = Array.isArray(value) ? value : typeof value === 'string' ? [value] : null;
+    if (
+      !path ||
+      path.length === 0 ||
+      path.length > 32 ||
+      !path.every(
+        (segment) =>
+          (Number.isSafeInteger(segment) && segment >= 0 && segment <= 10000) ||
+          (typeof segment === 'string' && /^[\da-z][\da-z:._-]{0,127}$/i.test(segment)),
+      )
+    )
+      throw Error('Invalid menu path.');
+    return path;
+  };
+  const activateMenuItem = (item, target) => {
+    if (!item || item.visible === false) throw Error('Menu item not found.');
+    if (item.type === 'separator' || item.enabled === false)
+      throw Error('Menu item is not actionable.');
+    if (item.submenu?.items?.length && !item.click) throw Error('Menu item opens a submenu.');
+    const authoredAction = menuActions.get(item.id);
+    if (authoredAction) {
+      authoredAction(item, target, undefined);
+      return true;
+    }
+    const role = String(item.role || ''),
+      contents = target?.webContents;
+    const normalizedRole = role.toLowerCase();
+    if (normalizedRole === 'about') {
+      app.showAboutPanel?.();
+      return true;
+    }
+    if (normalizedRole === 'quit') {
+      app.quit();
+      return true;
+    }
+    if (normalizedRole === 'close') {
+      target.close();
+      return true;
+    }
+    if (normalizedRole === 'minimize') {
+      target.minimize();
+      return true;
+    }
+    if (normalizedRole === 'maximize') {
+      target.isMaximized() ? target.unmaximize() : target.maximize();
+      return true;
+    }
+    if (normalizedRole === 'togglefullscreen') {
+      target.setFullScreen(!target.isFullScreen());
+      return true;
+    }
+    const roleMethod = {
+      copy: 'copy',
+      cut: 'cut',
+      paste: 'paste',
+      selectall: 'selectAll',
+      undo: 'undo',
+      redo: 'redo',
+      reload: 'reload',
+      forcereload: 'reloadIgnoringCache',
+    }[normalizedRole];
+    if (contents && roleMethod && typeof contents[roleMethod] === 'function') {
+      contents[roleMethod]();
+      return true;
+    }
+    throw Error('Menu item is not actionable.');
+  };
+  let rebuildMenu = () => {},
+    applicationMenu = null,
+    menuActions = new Map();
+  const updateMenu = (window) => {
+    const state = windows.get(window)?.preferences;
+    if (!state) return;
+    const menu = applicationMenu || Menu.getApplicationMenu();
+    if (!menu) return;
+    const item = (id) => menu.getMenuItemById(id),
+      layout = item('layout-' + (state.direction || 'vertical')),
+      columns = item('columns-' + (state.columns || 1));
+    if (layout) layout.checked = true;
+    for (const count of [1, 2, 4]) {
+      const choice = item('columns-' + count);
+      if (choice) choice.enabled = state.direction !== 'horizontal';
+    }
+    if (columns) columns.checked = true;
+    for (const id of ['edit-rotate-page', 'edit-align-width', 'edit-align-height']) {
+      const choice = item(id);
+      if (choice) choice.enabled = !!windows.get(window)?.performance.hasDocument;
+    }
+  };
+  const updateWindowButtons = (target) => {
+    if (process.platform !== 'darwin' || !target || target.isDestroyed()) return;
+    const visible = !target.isFullScreen() && !windows.get(target)?.headerHidden;
+    target.setWindowButtonVisibility(visible);
+    if (visible) target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);
+  };
+  const hideNativeMenuBar = (target) => {
+    if (!['win32', 'linux'].includes(process.platform) || !target || target.isDestroyed()) return;
+    target.setAutoHideMenuBar?.(true);
+    target.setMenuBarVisibility?.(false);
+  };
+  const windowActive = (window) =>
+    !window.isMinimized() && (backgroundRenderSmoke || (window.isVisible() && window.isFocused()));
+  const stopPerformanceSampling = (window) => {
+    const state = windows.get(window);
+    if (!state?.performance) return;
+    if (state.performance.timer) {
+      clearInterval(state.performance.timer);
+      state.performance.timer = null;
+    }
+    state.performance.samples = 0;
+  };
+  const performanceMemory = (value) => {
+    const memory = memoryMetricToBytes(value);
+    return {
+      ...memory,
+      rssEstimateBytes: memory.workingSetBytes,
+      workingSetKind: 'rss-estimate',
+      processPeakWorkingSetBytes: memory.peakWorkingSetBytes,
+    };
+  };
+  const samplePerformance = (window) => {
+    const state = windows.get(window);
+    if (!state || window.isDestroyed()) return null;
+    let metrics = [];
+    try {
+      metrics = app.getAppMetrics();
+    } catch {}
+    const rendererPid = window.webContents.getOSProcessId(),
+      backendPid = state.backend.processId;
+    const find = (pid) => metrics.find((metric) => metric?.pid === pid);
+    const observe = (key, value) => {
+      const current = value.workingSetBytes || 0,
+        previous = state.performance.peaks.get(key) || 0;
+      state.performance.peaks.set(key, Math.max(previous, current));
+      return { ...value, peakWorkingSetBytes: Math.max(previous, current) };
+    };
+    const rendererRaw = performanceMemory(find(rendererPid)),
+      backendRaw = performanceMemory(find(backendPid)),
+      mainRaw = performanceMemory(find(process.pid));
+    const gpuRaw = metrics.filter((metric) => metric?.type === 'GPU').map(performanceMemory);
+    const renderer = observe('renderer', rendererRaw),
+      backend = observe('backend', backendRaw),
+      main = observe('main', mainRaw),
+      gpu = gpuRaw.map((value, index) =>
+        observe(
+          `gpu:${metrics.filter((metric) => metric?.type === 'GPU')[index]?.pid || index}`,
+          value,
+        ),
+      );
+    const scopedCurrent = sumMemoryMetrics([rendererRaw, backendRaw]),
+      sharedCurrent = sumMemoryMetrics([mainRaw, ...gpuRaw]),
+      aggregateCurrent = sumMemoryMetrics([scopedCurrent, sharedCurrent]);
+    const scopedTotal = observe('scoped-total', scopedCurrent),
+      sharedTotal = observe('shared-total', sharedCurrent),
+      aggregate = observe('aggregate', aggregateCurrent);
+    return {
+      schemaVersion: 1,
+      sampledAtMs: Date.now(),
+      scope: {
+        rendererPid,
+        backendPid,
+        mainPid: process.pid,
+        gpuPids: metrics
+          .filter((metric) => metric?.type === 'GPU' && Number.isInteger(metric.pid))
+          .map((metric) => metric.pid),
+      },
+      scoped: { renderer, backend, total: scopedTotal },
+      shared: { main, gpu, total: sharedTotal },
+      aggregate,
+    };
+  };
+  const updatePerformanceSampling = (window) => {
+    const state = windows.get(window);
+    if (!state?.performance?.hasDocument || !windowActive(window)) {
+      stopPerformanceSampling(window);
+      return;
+    }
+    if (state.performance.timer) return;
+    state.performance.samples = 0;
+    state.performance.timer = setInterval(
+      () => {
+        if (
+          !windows.has(window) ||
+          window.isDestroyed() ||
+          !windowActive(window) ||
+          state.performance.samples >= 12000
+        ) {
+          stopPerformanceSampling(window);
+          return;
+        }
+        state.performance.samples++;
+        try {
+          samplePerformance(window);
+        } catch {}
+      },
+      smoke && smoke !== 'resource-benchmark' ? 250 : 5000,
+    );
+    state.performance.timer.unref?.();
+  };
+  async function handleBackendFailure(error) {
+    if (quitting || backendFailureHandled) return;
+    backendFailureHandled = true;
+    const key = credentials?.getKey?.();
+    const detail =
+      error?.message && key ? error.message.replaceAll(key, '[redacted]') : error?.message;
+    if (smoke || ciLaunchCheck) {
+      console.error(
+        ciLaunchCheck ? 'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL' : 'Desktop smoke backend failed:',
+        detail || 'The backend utility process stopped unexpectedly.',
+      );
+      app.exit(1);
+      return;
+    }
+    dialog.showErrorBox(
+      'PDFMathReader',
+      `The local reader backend stopped unexpectedly.${detail ? `\n\n${detail}` : ''}\n\nQuit and reopen PDFMathReader.`,
+    );
+    app.quit();
+  }
+  notifyDocuments = () => {
+    if (!documentsReady) return;
+    void deliverPendingFiles().catch(handleBackendFailure);
+  };
+  async function deliverPendingFiles() {
+    while (pendingFiles.length) {
+      const path = pendingFiles.shift();
+      await openExternalDocument(path);
+    }
+  }
+  const token = randomBytes(32).toString('hex');
+  const developerMonitor = createDeveloperMonitor({
+    windows,
+    token,
+    operationMetrics: developerOperationMetrics,
+    loadServiceCredentials: () => serviceCredentialStore.load(),
+  });
+  const appearance = () => {
+    const state = preferences?.load?.() || {};
+    return {
+      platform: process.platform,
+      accent: '#' + systemAccent(),
+      appearance: state.appearance || 'system',
+      accentColor: state.accentColor || 'system',
+      reduceMotion: !!state.reduceMotion,
+      reduceTransparency: !!state.reduceTransparency,
+      reducePadding: !!state.reducePadding,
+      dark: !!nativeTheme.shouldUseDarkColors,
+    };
+  };
+  const systemAccent = () => {
+    try {
+      const value = String(systemPreferences.getAccentColor?.() || '').replace(/^#/, '');
+      if (/^[\da-f]{6}$/i.test(value)) return value + 'ff';
+      if (/^[\da-f]{8}$/i.test(value)) return value;
+    } catch {}
+    return '007affff';
+  };
+  const updateAppearance = () => {
+    for (const target of windows.keys())
+      target.webContents.send('appearance:changed', appearance());
+  };
+  async function saveWindowReadingView(window) {
+    if (!window || window.isDestroyed()) return;
+    try {
+      await window.webContents.executeJavaScript('window.previewSaveReadingView?.()');
+    } catch {}
+  }
+  const documentIdentity = (path) => {
+    const canonical = realpathSync(path),
+      info = statSync(canonical, { bigint: true });
+    return info.ino ? `${info.dev}:${info.ino}` : canonical;
+  };
+  const focusDocumentWindow = (target) => {
+    if (target.isMinimized()) target.restore();
+    if (!backgroundRenderSmoke) {
+      target.show();
+      target.focus();
+    }
+    return target;
+  };
+  const findDocumentWindow = (identity) =>
+    identity &&
+    [...windows].find(
+      ([target, state]) =>
+        !state.settingsOwner &&
+        !state.closing &&
+        !target.isDestroyed() &&
+        state.documentIdentity === identity,
+    )?.[0];
+  const isBlankStartPage = (target) => {
+    const state = windows.get(target);
+    return (
+      !!state &&
+      !state.settingsOwner &&
+      !target.isDestroyed() &&
+      !state.closing &&
+      !state.performance.hasDocument &&
+      !state.documents.length &&
+      !state.documentIdentity
+    );
+  };
+  async function openExternalDocument(path) {
+    const target = await openDocumentWindow(path);
+    for (const other of windows.keys())
+      if (other !== target && isBlankStartPage(other)) other.close();
+    return focusDocumentWindow(target);
+  }
+  const openingDocuments = new Map();
+  async function openDocumentWindow(document, preferredWindow, restoreView) {
+    const started = performance.now();
+    try {
+      return await deliverDocumentWindow(document, preferredWindow, restoreView);
+    } finally {
+      developerOperationMetrics.fileOpen(performance.now() - started);
+    }
+  }
+  async function deliverDocumentWindow(document, preferredWindow, restoreView) {
+    const identity = typeof document === 'string' ? documentIdentity(document) : null;
+    const existing = findDocumentWindow(identity);
+    if (existing) return focusDocumentWindow(existing);
+    if (identity && openingDocuments.has(identity))
+      return focusDocumentWindow(await openingDocuments.get(identity));
+    const operation = (async () => {
+      const candidates = [preferredWindow, focusedWindow(), ...windows.keys()];
+      const target = candidates.find(isBlankStartPage);
+      if (!target) return createWindow(document, restoreView);
+      const state = windows.get(target);
+      state.documentIdentity = identity;
+      state.documents.push(document);
+      state.unkeyedAnnotationSource = annotationSourceForDocument(document);
+      state.performance.hasDocument = true;
+      target.webContents.send('documents:available');
+      return focusDocumentWindow(target);
+    })();
+    if (identity) openingDocuments.set(identity, operation);
+    try {
+      return await operation;
+    } finally {
+      if (identity) openingDocuments.delete(identity);
+    }
+  }
+  async function createWindow(
+    document,
+    restoreView,
+    settingsOwner = null,
+    settingsSection = 'general',
+  ) {
+    let window;
+    const backend = settingsOwner
+      ? windows.get(settingsOwner).backend
+      : await startBackendService({
+          ...backendOptions,
+          onCrash: (error) => {
+            if (quitting) return;
+            if (smoke || ciLaunchCheck) {
+              void handleBackendFailure(error);
+              return;
+            }
+            dialog.showErrorBox(
+              'PDFMathReader',
+              'This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.',
+            );
+            window?.close();
+          },
+        });
+    window = new BrowserWindow({
+      width: 1200,
+      height: 850,
+      minWidth: 720,
+      minHeight: 500,
+      title: settingsOwner ? 'PDFMathReader Settings' : 'PDFMathReader',
+      ...(settingsOwner
+        ? {
+            width: 920,
+            height: 780,
+            minWidth: 680,
+            minHeight: 500,
+            parent: settingsOwner,
+            modal: false,
+          }
+        : {}),
+      icon: fileURLToPath(new URL('./AppIcon.png', import.meta.url)),
+      ...chromeOptions(),
+      show: false,
+      webPreferences: {
+        partition: 'window-' + randomBytes(16).toString('hex'),
+        backgroundThrottling: ['resize', 'file-open'].includes(smoke)
+          ? false
+          : preferences.load().reduceBackgroundFrameRate,
+        additionalArguments: [
+          `--preview-system-locale=${app.getPreferredSystemLanguages()[0] || app.getLocale()}`,
+          ...(process.platform === 'win32' && windowsBuild >= 22621
+            ? ['--preview-windows-glass']
+            : []),
+          ...(smoke
+            ? [
+                '--preview-test-mode',
+                ...(smoke === 'settings-native' ? [] : ['--preview-inline-settings']),
+              ]
+            : []),
+          ...(smoke === 'fluent' ? ['--preview-ui-platform=win32'] : []),
+          ...(backgroundRenderSmoke ? ['--preview-background-render'] : []),
+        ],
+        preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+      },
+    });
+    hideNativeMenuBar(window);
+    windows.set(window, {
+      backend,
+      settingsOwner,
+      restoreView,
+      documentIdentity: typeof document === 'string' ? documentIdentity(document) : null,
+      documents: document ? [document] : [],
+      tickets: new Map(),
+      annotationSources: new Map(),
+      unkeyedAnnotationSource: annotationSourceForDocument(document),
+      preferences: settingsOwner
+        ? { ...windows.get(settingsOwner).preferences }
+        : preferences.load(),
+      performance: { peaks: new Map(), timer: null, samples: 0, hasDocument: !!document },
+    });
+    const fullscreenChanged = () => {
+      if (!window || window.isDestroyed()) return;
+      const full = window.isFullScreen();
+      updateWindowButtons(window);
+      window.webContents.send('window:fullscreen', full);
+    };
+    const activityChanged = () => {
+      if (!window || window.isDestroyed()) return;
+      window.webContents.send('activity:changed', windowActive(window));
+      updatePerformanceSampling(window);
+    };
+    let resizing = false;
+    const resizeStart = () => {
+      if (resizing || !window || window.isDestroyed()) return;
+      resizing = true;
+      window.webContents.send('window:resize-start');
+    };
+    const resizeEnd = () => {
+      if (!resizing || !window || window.isDestroyed()) return;
+      resizing = false;
+      window.webContents.send('window:resize-end');
+    };
+    if (process.platform === 'darwin') {
+      window.on('will-resize', resizeStart);
+      window.on('resized', resizeEnd);
+    }
+    window.on('show', () => updateWindowButtons(window));
+    window.on('restore', () => updateWindowButtons(window));
+    window.on('resized', () => updateWindowButtons(window));
+    window.on('enter-full-screen', fullscreenChanged);
+    window.on('leave-full-screen', fullscreenChanged);
+    const maximizedChanged = () => {
+      if (!window.isDestroyed()) window.webContents.send('window:maximized', window.isMaximized());
+    };
+    window.on('maximize', maximizedChanged);
+    window.on('unmaximize', maximizedChanged);
+    for (const event of ['minimize', 'restore', 'hide', 'show', 'focus', 'blur'])
+      window.on(event, activityChanged);
+    window.webContents.setZoomFactor(1);
+    window.webContents.setVisualZoomLevelLimits(1, 1);
+    window.webContents.on('before-input-event', (event, input) => {
+      if (
+        windows.get(window)?.preferences?.interactionMode === 'reading' &&
+        input.type === 'keyDown' &&
+        (process.platform === 'darwin' ? input.meta : input.control) &&
+        !input.alt &&
+        !input.shift &&
+        String(input.key).toLowerCase() === 'c'
+      ) {
+        event.preventDefault();
+        window.webContents.copy();
+        return;
+      }
+      if (
+        windows.get(window)?.preferences?.interactionMode !== 'reading' &&
+        input.type === 'keyDown' &&
+        (process.platform === 'darwin' ? input.meta : input.control) &&
+        !input.alt &&
+        !input.shift &&
+        String(input.key).toLowerCase() === 'c'
+      ) {
+        event.preventDefault();
+        window.webContents.send('reader:action', 'copy-paragraph');
+        return;
+      }
+      const action = shortcutAction(process.platform, input);
+      if (action === 'page-previous' || action === 'page-next') return;
+      if (action === 'new-window') {
+        event.preventDefault();
+        void createWindow().catch(handleBackendFailure);
+        return;
+      }
+      if (action === 'toggle-fullscreen') {
+        event.preventDefault();
+        window.setFullScreen(!window.isFullScreen());
+        return;
+      }
+      if (action === 'close-window') {
+        event.preventDefault();
+        window.close();
+        return;
+      }
+      if (action) {
+        event.preventDefault();
+        window.webContents.send('reader:action', action);
+      }
+    });
+    window.webContents.on('context-menu', (_event, params) => {
+      if (
+        windows.get(window)?.preferences?.interactionMode !== 'reading' ||
+        typeof params?.selectionText !== 'string' ||
+        !params.selectionText.trim()
+      )
+        return;
+      const template = [
+        { role: 'copy' },
+        { role: 'selectAll' },
+        { type: 'separator' },
+        {
+          label: menuLabel(
+            'Search in Document',
+            resolveUILanguage(
+              windows.get(window)?.preferences?.uiLanguage || 'system',
+              app.getPreferredSystemLanguages()[0] || app.getLocale(),
+            ),
+          ),
+          click: () =>
+            window.webContents.send('reader:action', 'search-selection', params.selectionText),
+        },
+      ];
+      if (
+        process.platform === 'darwin' &&
+        typeof window.webContents.showDefinitionForSelection === 'function'
+      ) {
+        template.push(
+          { type: 'separator' },
+          {
+            label: 'Look Up Selection',
+            click: () => window.webContents.showDefinitionForSelection(),
+          },
+        );
+      }
+      const query = encodeURIComponent(params.selectionText.trim());
+      template.push(
+        { type: 'separator' },
+        {
+          label: 'Search on Google',
+          click: () => void shell.openExternal(`https://www.google.com/search?q=${query}`),
+        },
+        {
+          label: 'Search on Google Scholar',
+          click: () => void shell.openExternal(`https://scholar.google.com/scholar?q=${query}`),
+        },
+      );
+      Menu.buildFromTemplate(template).popup({ window });
+    });
+    const ses = window.webContents.session;
+    const stopCommunicationMetrics = trackBackendCommunications(
+      ses,
+      backend.origin,
+      developerOperationMetrics,
+    );
+    window.once('closed', stopCommunicationMetrics);
+    ses.setPermissionRequestHandler((_wc, _permission, reply) => reply(false));
+    ses.setPermissionCheckHandler(() => false);
+    ses.webRequest.onBeforeSendHeaders({ urls: [`${backend.origin}/*`] }, (details, reply) =>
+      reply({ requestHeaders: { ...details.requestHeaders, 'X-Preview-Token': token } }),
+    );
+    window.webContents.setWindowOpenHandler(({ url }) => {
+      if (
+        url === 'https://siliconflow.cn/' ||
+        url === 'https://github.com/PDFMathTranslate/PDFMathReader' ||
+        dependencyProjects.some((project) => project.url === url)
+      )
+        void shell.openExternal(url);
+      return { action: 'deny' };
+    });
+    window.webContents.on('will-navigate', (event, url) => {
+      if (new URL(url).origin !== backend.origin) event.preventDefault();
+    });
+    window.once('ready-to-show', () => {
+      hideNativeMenuBar(window);
+      if (!backgroundRenderSmoke) {
+        if (process.argv.includes('--background')) window.showInactive();
+        else window.show();
+      }
+      updatePerformanceSampling(window);
+    });
+    window.on('focus', () => {
+      updateAppearance();
+      rebuildMenu();
+      updateMenu(window);
+    });
+    let closing = false;
+    window.on('close', (event) => {
+      if (closing || quitting) return;
+      event.preventDefault();
+      closing = true;
+      windows.get(window).closing = true;
+      void saveWindowReadingView(window)
+        .then(() => documentSession.close(window.id))
+        .finally(() => {
+          if (window && !window.isDestroyed()) window.close();
+        });
+    });
+    window.on('closed', () => {
+      stopPerformanceSampling(window);
+      windows.get(window)?.performance.peaks.clear();
+      windows.delete(window);
+      if (!settingsOwner) {
+        const closing = backend.close();
+        closingBackends.add(closing);
+        void closing.finally(() => closingBackends.delete(closing));
+      }
+      if (!windows.size) {
+        developerMonitor.close();
+        app.quit();
+      }
+    });
+    await developerMonitor.sync(windows.get(window));
+    await window.loadURL(
+      settingsOwner
+        ? backend.origin + '/?settingsWindow=1&section=' + encodeURIComponent(settingsSection)
+        : backend.origin,
+    );
+    if (settingsOwner) {
+      const closeWithOwner = () => {
+        if (!window.isDestroyed()) window.close();
+      };
+      settingsOwner.once('closed', closeWithOwner);
+      window.once('closed', () => settingsOwner.removeListener('closed', closeWithOwner));
+    }
+    activityChanged();
+    return window;
+  }
+  const settingsWindows = new Map();
   const waitForCILaunch = (target) =>
     new Promise((resolve, reject) => {
       let settled = false,
@@ -308,314 +1019,1474 @@ else {
       target.webContents.on('render-process-gone', onRenderProcessGone);
       void poll();
     });
- async function openSettingsWindow(owner,section='general'){
-  if(!['general','performance','appearance','translation','providers','kernel','about'].includes(section))throw Error('Invalid settings section.');
-  owner=windows.get(owner)?.settingsOwner||owner;
-  let pending=settingsWindows.get(owner);
-  if(!pending){pending=createWindow(null,null,owner,section);settingsWindows.set(owner,pending);pending.then(target=>target.once('closed',()=>{if(settingsWindows.get(owner)===pending)settingsWindows.delete(owner);}),()=>{});pending.catch(()=>{if(settingsWindows.get(owner)===pending)settingsWindows.delete(owner);});}
-  const target=await pending;
-  if(target.isDestroyed()){settingsWindows.delete(owner);return openSettingsWindow(owner,section);}
-  target.webContents.send('settings:section',section);if(target.isMinimized())target.restore();target.show();target.focus();return target;
- }
- app.on('second-instance',(_event,args,cwd)=>{const paths=pdfLaunchPaths(args.slice(1),cwd);if((!smoke||['file-open','multi-window'].includes(smoke))&&paths.length)enqueueFiles(paths);else {focusedWindow()?.show();focusedWindow()?.focus();}});
- app.whenReady().then(async()=>{
-  await registerWindowsPDF({packaged:app.isPackaged,smoke:!!smoke||ciLaunchCheck}).catch(error=>console.error('Windows PDF menu registration failed:',error.message));
-  if(process.platform==='darwin'&&!app.isPackaged&&!smoke)app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png',import.meta.url)));
-  const commandId=action=>`action-${String(action).replace(/[^a-z\d]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}`;
-  const command=(label,accelerator,action,id=commandId(action))=>({id,label,accelerator,click:(_item,target)=>{const receiver=target||focusedWindow();receiver?.webContents.send('reader:action',action);}});
-  const accelerator=key=>commandAccelerator(process.platform,key);
-  const recentDocumentItems=()=>{
-   const entries=recents?.list()||[];
-   if(!entries.length)return [{id:'file-recents-empty',label:'No Recent Documents',enabled:false}];
-   return entries.map(entry=>({id:'recent-document-'+entry.id,label:entry.name,click:async(_item,target)=>{
-    try{const path=recents.path(entry.id);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);await openDocumentWindow(path,target||focusedWindow());}
-    catch(error){dialog.showErrorBox('PDFMathReader',error.message);}
-   }}));
-  };
-  const optionMenu=()=>{
-   const focused=BrowserWindow.getFocusedWindow(),target=windows.has(focused)?focused:focusedWindow();
-   const registry=windows.get(target)?.menuOptions||{};
-   return Object.entries({engine:'Kernel',sourceLanguage:'Source Language',language:'Target Language',provider:'Service Provider',uiLanguage:'Interface Language'}).map(([group,label])=>({id:'translation-options-'+group,label,enabled:!!registry[group]?.options.length,submenu:(registry[group]?.options||[]).map((choice,index)=>({id:`translation-choice-${group}-${index}`,label:choice.label,type:'radio',checked:choice.value===registry[group].selected,click:(_item,window)=>{
-    const receiver=window&&windows.has(window)?window:target;
-    if(!receiver||receiver.isDestroyed())return;
-    if(!windows.get(receiver)?.menuOptions?.[group]?.options.some(item=>item.value===choice.value))return;
-    receiver.webContents.send('reader:action','menu-option',{group,value:choice.value});
-   }}))}));
-  };
-  rebuildMenu=()=>{const template=[
-   {id:'app-menu',label:smoke?app.name:'PDFMathReader',submenu:[{id:'app-about',role:'about'},command('Settings…',accelerator(','),'settings','app-settings'),{type:'separator'},{id:'app-quit',role:'quit'}]},
-   {id:'file-menu',label:'File',submenu:[{id:'file-new-window',label:'New Window',accelerator:accelerator('N'),click:()=>{void createWindow().catch(handleBackendFailure);}},command('Open PDF…',accelerator('O'),'open','file-open'),{type:'separator'},{id:'file-recents',label:'Recent Documents',enabled:false},...recentDocumentItems(),{type:'separator'},command('Close Document',accelerator('W'),'close-document','file-close-document'),{id:'file-close-window',label:'Close Window',accelerator:closeWindowAccelerator(process.platform),click:(_item,target)=>(target||focusedWindow())?.close()}]},
-   {id:'edit-menu',label:'Edit',submenu:[command('Preference',undefined,'preferences','edit-preferences'),{type:'separator'},{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'},{type:'separator'},{...command('Rotate Current Page',undefined,'page-edit:rotate','edit-rotate-page'),enabled:false},{...command('Align Page Widths',undefined,'page-edit:align-width','edit-align-width'),enabled:false},{...command('Align Page Heights',undefined,'page-edit:align-height','edit-align-height'),enabled:false}]},
-   {id:'view-menu',label:'View',submenu:[command('Find…',accelerator('F'),'search','view-search'),command('Show Original / Translation',accelerator('R'),'translation','view-translation'),command('Zoom In',accelerator('='),'zoom-in','view-zoom-in'),command('Zoom Out',accelerator('-'),'zoom-out','view-zoom-out'),command('Fit Width',accelerator('0'),'fit-width','view-fit-width'),command('Fit Height',accelerator('9'),'fit-height','view-fit-height'),command('Toggle Sidebar',accelerator('B'),'sidebar','view-sidebar'),{type:'separator'},{id:'view-crop',label:'Page Crop',enabled:false},command('Crop More Horizontally',undefined,'crop:x:more','crop-x-more'),command('Crop Less Horizontally',undefined,'crop:x:less','crop-x-less'),command('Crop More Vertically',undefined,'crop:y:more','crop-y-more'),command('Crop Less Vertically',undefined,'crop:y:less','crop-y-less'),command('Reset Crop',undefined,'crop:reset','crop-reset'),{type:'separator'},{id:'view-layout',label:'Layout',enabled:false},...['vertical','horizontal'].map(direction=>({id:'layout-'+direction,label:direction==='vertical'?'Vertical':'Horizontal',type:'radio',checked:direction==='vertical',click:(_item,target)=>(target||focusedWindow())?.webContents.send('reader:action','layout:'+direction)})),{type:'separator'},{label:'Pages per Row',id:'layout-columns',enabled:false},...[1,2,4].map(columns=>({id:'columns-'+columns,label:({1:'One Side',2:'Two Sides',4:'Quad Side'})[columns],accelerator:accelerator(columns===4?3:columns),type:'radio',checked:columns===1,click:(_item,target)=>(target||focusedWindow())?.webContents.send('reader:action','columns:'+columns)})),{type:'separator'},{id:'view-fullscreen',role:'togglefullscreen'}]},
-   {id:'go-menu',label:'Go',submenu:[command('Previous Page',undefined,'page-previous','go-previous'),command('Next Page',undefined,'page-next','go-next'),{type:'separator'},...Array.from({length:9},(_,i)=>command(`Go to ${(i+1)*10}%`,accelerator('Shift+'+(i+1)),`percent:${(i+1)*10}`,`go-percent-${(i+1)*10}`)),command('Go to 100%',accelerator('Shift+0'),'percent:100','go-percent-100')]},
-   {id:'translation-menu',label:'Translation',submenu:[...optionMenu(),{type:'separator'},command('Choose Language…',accelerator('L'),'language','translation-language'),command('Choose Kernel…',accelerator('K'),'kernel','translation-kernel')]},...(process.platform==='win32'?[]:[{id:'window-menu',role:'windowMenu'}])];const locale=resolveUILanguage(preferences?.load?.().uiLanguage||'system',app.getPreferredSystemLanguages()[0]||app.getLocale());const localize=items=>items.map(item=>({...item,...item.label?{label:(item.id?.startsWith('recent-document-')||item.id?.startsWith('translation-choice-'))?item.label:menuLabel(item.label,locale)}:{},...Array.isArray(item.submenu)?{submenu:localize(item.submenu)}:{}}));// Promote frequent actions in the Windows/Linux custom menu only.
-  let platformTemplate=template;
-  if(['win32','linux'].includes(process.platform)){
-   const appItems=template.find(item=>item.id==='app-menu').submenu;
-   const fileItems=template.find(item=>item.id==='file-menu').submenu;
-   const promotedIds=['file-open','file-close-document','file-close-window','app-settings'];
-   const promoted=promotedIds.map(id=>[...fileItems,...appItems].find(item=>item.id===id));
-   platformTemplate=[...promoted,{type:'separator'},...template.filter(item=>item.id!=='app-menu').map(item=>item.id==='file-menu'?{...item,submenu:fileItems.filter(entry=>!promotedIds.includes(entry.id))}:item),{type:'separator'},...appItems.filter(item=>item.type!=='separator'&&!promotedIds.includes(item.id))];
+  async function openSettingsWindow(owner, section = 'general') {
+    if (
+      ![
+        'general',
+        'performance',
+        'appearance',
+        'translation',
+        'providers',
+        'kernel',
+        'about',
+      ].includes(section)
+    )
+      throw Error('Invalid settings section.');
+    owner = windows.get(owner)?.settingsOwner || owner;
+    let pending = settingsWindows.get(owner);
+    if (!pending) {
+      pending = createWindow(null, null, owner, section);
+      settingsWindows.set(owner, pending);
+      pending.then(
+        (target) =>
+          target.once('closed', () => {
+            if (settingsWindows.get(owner) === pending) settingsWindows.delete(owner);
+          }),
+        () => {},
+      );
+      pending.catch(() => {
+        if (settingsWindows.get(owner) === pending) settingsWindows.delete(owner);
+      });
+    }
+    const target = await pending;
+    if (target.isDestroyed()) {
+      settingsWindows.delete(owner);
+      return openSettingsWindow(owner, section);
+    }
+    target.webContents.send('settings:section', section);
+    if (target.isMinimized()) target.restore();
+    target.show();
+    target.focus();
+    return target;
   }
-  const localized=localize(platformTemplate),actions=new Map(),indexActions=items=>{for(const item of items){if(item.id&&typeof item.click==='function')actions.set(item.id,item.click);if(Array.isArray(item.submenu))indexActions(item.submenu);}};indexActions(localized);menuActions=actions;applicationMenu=Menu.buildFromTemplate(localized);Menu.setApplicationMenu(['win32','linux'].includes(process.platform)?null:applicationMenu);if(['win32','linux'].includes(process.platform))for(const target of windows.keys())hideNativeMenuBar(target);updateMenu(focusedWindow());};rebuildMenu();
-  const credentialOptions={path:join(app.getPath('userData'),'openai-key.enc'),safeStorage};
-  if(['present','kernels','ux','animation','coverage','search','advanced','advanced-cache','developer'].includes(smoke))credentialOptions.environment=()=> 'local-smoke-placeholder';
-  const credentialStore=await createCredentials(credentialOptions);
-  serviceCredentialStore=await createServiceCredentials({path:join(app.getPath('userData'),'translation-service-credentials.enc'),safeStorage});
-  backendOptions={port:0,development:false,appVersion:app.getVersion(),pythonResourcesPath:process.resourcesPath,cacheDir:join(app.getPath('userData'),'translations'),cacheLimitMB:preferences?.load().cacheLimitMB??null,token,smoke,diagnostics:!!smoke,credentials:{getKey:credentialStore.getKey,status:credentialStore.status},onCrash:handleBackendFailure,...(['kernels','animation','layout-region','advanced','advanced-cache','kernel-settings','about'].includes(smoke)?{enginesRoot:join(app.getPath('appData'),'PDFMathReader','engines'),runtimeHomeRoot:join(tmpdir(),'preview-kernel-test-homes')}: {})};
-  credentials={
-   getKey:credentialStore.getKey,
-   status:credentialStore.status,
-   save:async key=>{const status=await credentialStore.save(key);await Promise.all([...windows.values()].map(state=>state.backend.setCredentials(credentialStore.getKey(),status)));return status;},
-   clear:async()=>{const status=await credentialStore.clear();await Promise.all([...windows.values()].map(state=>state.backend.setCredentials(credentialStore.getKey(),status)));return status;}
-  };
-  handleMeasuredIPC('documents:next',async event=>{
-   const window=trustedWindow(event);
-   const state=windows.get(window),path=state.documents.shift();if(!path)return null;if(typeof path!=='string'){state.unkeyedAnnotationSource=annotationSourceForDocument(path);return path;}
-   try{const document=await readSystemPDF(path),source={path,reliable:true,preserveWithoutPath:false,bytes:Buffer.from(document.bytes)};state.unkeyedAnnotationSource=source;state.annotationSources.set(path,source);const ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,path);return {...document,ticket};}catch{state.documentIdentity=null;state.performance.hasDocument=false;return {error:'Could not open this PDF. Check file access and the 50 MB limit.'};}
+  app.on('second-instance', (_event, args, cwd) => {
+    const paths = pdfLaunchPaths(args.slice(1), cwd);
+    if ((!smoke || ['file-open', 'multi-window'].includes(smoke)) && paths.length)
+      enqueueFiles(paths);
+    else {
+      focusedWindow()?.show();
+      focusedWindow()?.focus();
+    }
   });
-  handleMeasuredIPC('documents:editPages',async(event,value)=>{
-   const target=trustedWindow(event),state=windows.get(target),source=annotationSourceForWindow(state,value?.key);
-   const result=await annotations.editPages(value,source);
-   if(source)source.bytes=Buffer.from(result.bytes);
-   let ticket;
-   if(source?.path&&source.reliable){ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,source.path);}
-   return {...result,ticket};
-  });
-  handleMeasuredIPC('previewAnnotations:prepare',async(event,value)=>{const target=trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');const imported=await importPDFAnnotations(value,{prepare:true});windows.get(target).unkeyedAnnotationSource={bytes:Buffer.from(value),reliable:false,preserveWithoutPath:true};return imported;});
-  handleMeasuredIPC('previewAnnotations:confirmDelete',async(event,kind)=>{
-    const target=trustedWindow(event);
-    if(!['highlight','comment'].includes(kind))throw Error('Invalid annotation kind.');
-    const {response}=await dialog.showMessageBox(target,{type:'warning',message:`删除这条${kind==='highlight'?'高亮':'批注'}？`,buttons:['取消','删除'],defaultId:0,cancelId:0,noLink:true});
-    return response===1;
-  });
-  handleMeasuredIPC('recents:statusDialog',async(event,value)=>{
-    const target=trustedWindow(event);
-    if(!value||typeof value.title!=='string'||value.title.length>200||typeof value.detail!=='string'||value.detail.length>12000||typeof value.close!=='string'||value.close.length>100)throw Error('Invalid status dialog.');
-    await dialog.showMessageBox(target,{type:'info',message:value.title,detail:value.detail,buttons:[value.close],defaultId:0,cancelId:0,noLink:true});
-  });
-  handleMeasuredIPC('previewAnnotations:palette',async event=>{trustedWindow(event);return annotations.palette();});
-  handleMeasuredIPC('previewAnnotations:search',(event,{provider,text}={})=>{
-   trustedWindow(event);
-   if(!['google','scholar'].includes(provider)||typeof text!=='string'||!text.trim())throw Error('Invalid search.');
-   const base=provider==='scholar'?'https://scholar.google.com/scholar':'https://www.google.com/search';
-   return shell.openExternal(`${base}?q=${encodeURIComponent(text.trim())}`);
-  });
-  handleMeasuredIPC('previewAnnotations:contextMenu',(event,kind)=>{
-   const target=trustedWindow(event);
-   if(process.platform!=='darwin')return null;
-   if(!['highlight','comment'].includes(kind))throw Error('Invalid annotation kind.');
-   return new Promise(resolve=>{
-    let selected=null;
-    const item=label=>({label,click:()=>{selected=label;}});
-    const template=[item('复制'),item('分享'),...(kind==='highlight'?[item('谷歌搜索'),item('谷歌学术搜索')]:[]),item('Hand over to AI'),{type:'separator'},...(kind==='comment'?[item('修改')]:[]),item('删除')];
-    Menu.buildFromTemplate(template).popup({window:target,callback:()=>resolve(selected)});
-   });
-  });
-  handleMeasuredIPC('previewAnnotations:markDeleteHint',async event=>{trustedWindow(event);return annotations.markDeleteHint();});
-  const quickLinks=createQuickLinkStore(join(app.getPath('userData'),'quick-links'));
-  handleMeasuredIPC('quickLinks:load',(event,key)=>{trustedWindow(event);return quickLinks.load(key);});
-  handleMeasuredIPC('quickLinks:save',(event,{key,links})=>{trustedWindow(event);return quickLinks.save(key,links);});
-  handleMeasuredIPC('previewAnnotations:loadState',async(event,key)=>{trustedWindow(event);return annotations.loadState(key);});
-  handleMeasuredIPC('previewAnnotations:load',async(event,key)=>{const target=trustedWindow(event);return annotations.load(key);});
-  handleMeasuredIPC('previewAnnotations:save',async(event,value)=>{const target=trustedWindow(event),state=windows.get(target);return annotations.save(value,annotationSourceForWindow(state,value?.key));});
-  handleMeasuredIPC('previewAnnotations:clean',async(event,value)=>{trustedWindow(event);if(!(value instanceof Uint8Array)||value.byteLength>50*1024*1024)throw Error('Invalid annotation PDF bytes.');return new Uint8Array(await stripManagedAnnotations(value));});
-  handleMeasuredIPC('previewAnnotations:share',async(event,text)=>{const target=trustedWindow(event);if(process.platform!=='darwin')return false;if(typeof text!=='string'||!text.trim()||text.length>1000000)throw Error('Invalid share text.');new ShareMenu({texts:[text]}).popup({window:target});return true;});
-  handleMeasuredIPC('previewAnnotations:handover',async(event,text)=>{
-   const target=trustedWindow(event);
-   if(typeof text!=='string'||!text.trim()||text.length>1000000)throw Error('Invalid handover text.');
-   if(process.platform!=='darwin')throw Error('本机 AI 客户端交接目前仅支持 macOS。');
-   const client=await new Promise(resolve=>{
-    let selected=null;
-    const menu=Menu.buildFromTemplate(['ChatGPT','Claude'].map(label=>({label,click:()=>{selected=label;}})));
-    menu.popup({window:target,callback:()=>resolve(selected)});
-   });
-   if(!client)return {cancelled:true};
-   // Resolve the installed app before modifying the clipboard. Never submit automatically.
-   try{await runFile('/usr/bin/open',['-Ra',client],{timeout:10000});}
-   catch{throw Error(`未找到本机 ${client} 客户端，请先安装。`);}
-   clipboard.writeText(text);
-   try{await runFile('/usr/bin/open',['-a',client],{timeout:10000});}
-   catch{throw Error(`内容已复制，但无法打开 ${client} 客户端。`);}
-   return {client};
-  });
-  handleMeasuredIPC('clipboard:write-text',async(event,text)=>{trustedWindow(event);if(typeof text!=='string'||text.length>1000000)throw Error('Invalid clipboard text');await clipboard.writeText(text);return true;});
-  handleMeasuredIPC('window:register-options',(event,value)=>{
-   const target=trustedWindow(event),registry={};
-   for(const group of ['engine','sourceLanguage','language','provider','uiLanguage']){
-    const entry=value?.[group];if(!entry||!Array.isArray(entry.options)||entry.options.length>100)throw Error('Invalid menu options.');
-    if(typeof entry.selected!=='string'||entry.selected.length>128)throw Error('Invalid menu selection.');
-    const seen=new Set();
-    const options=entry.options.map(option=>{
-     if(!option||typeof option.value!=='string'||!option.value||option.value.length>128||typeof option.label!=='string'||!option.label||option.label.length>200||/[\r\n\x00]/.test(option.label)||seen.has(option.value))throw Error('Invalid menu option.');
-     seen.add(option.value);return {value:option.value,label:option.label};
-    });registry[group]={selected:entry.selected,options};
-   }
-   const state=windows.get(target),changed=JSON.stringify(state.menuOptions)!==JSON.stringify(registry);state.menuOptions=registry;
-   if(changed&&(target===BrowserWindow.getFocusedWindow()||target===focusedWindow()))rebuildMenu();return true;
-  });
-  handleMeasuredIPC('window:menu',event=>{const target=trustedWindow(event);updateMenu(target);return serializeApplicationMenu(applicationMenu);});
-  handleMeasuredIPC('window:menu-action',(event,path)=>{
-   const target=trustedWindow(event),items=menuPathItems(applicationMenu,normalizeMenuPath(path));
-   if(!items||items.some(item=>item.visible===false||item.enabled===false))throw Error('Menu item is disabled.');
-   activateMenuItem(items.at(-1),target);updateMenu(target);return true;
-  });
-  handleMeasuredIPC('window:minimize',event=>{const target=trustedWindow(event);target.minimize();return true;});
-  handleMeasuredIPC('window:maximize',event=>{const target=trustedWindow(event);if(target.isMaximized())target.unmaximize();else target.maximize();return target.isMaximized();});
-  handleMeasuredIPC('window:maximized',event=>trustedWindow(event).isMaximized());
-  handleMeasuredIPC('window:close',event=>{const target=trustedWindow(event);target.close();return true;});
-  handleMeasuredIPC('window:close-start-page',event=>{
-   const target=trustedWindow(event);
-   target.close();
-   if(![...windows].some(([other,state])=>other!==target&&(state.performance.hasDocument||state.documents.length)))app.quit();
-   return true;
-  });
-  handleMeasuredIPC('window:header-hidden',(event,hidden)=>{const target=trustedWindow(event);if(typeof hidden!=='boolean')throw Error('Invalid header state');windows.get(target).headerHidden=hidden;updateWindowButtons(target);});
-  handleMeasuredIPC('window:fullscreen',event=>{const window=trustedWindow(event);return window.isFullScreen();});
-  handleMeasuredIPC('window:activity',event=>{const window=trustedWindow(event);return windowActive(window);});
-  handleMeasuredIPC('previewPerformance:sample',event=>{
-   return samplePerformance(trustedWindow(event));
-  });
-  handleMeasuredIPC('previewPerformance:reset',event=>{const window=trustedWindow(event),state=windows.get(window);state.performance.peaks.clear();state.performance.hasDocument=true;updatePerformanceSampling(window);updateMenu(window);return {reset:true};});
-  handleMeasuredIPC('previewPerformance:end',event=>{const window=trustedWindow(event),state=windows.get(window);state.performance.hasDocument=false;stopPerformanceSampling(window);updateMenu(window);return {ended:true};});
-  handleMeasuredIPC('previewPerformance:save',async(event,value)=>{
-   trustedWindow(event);
-   const report=validatePerformanceReport(value);
-   const operation=performanceWrite.then(async()=>{performanceReports=appendPerformanceReport(performanceReports,report);await writePerformanceReports(join(app.getPath('userData'),'performance.json'),performanceReports);return {saved:true,count:performanceReports.length,maxReports:MAX_PERFORMANCE_REPORTS};});
-   performanceWrite=operation.catch(()=>{});return operation;
-  });
-  handleMeasuredIPC('previewResize:capture',async(event,value)=>{
-   const window=trustedWindow(event);if(window.isDestroyed()||window.isMinimized())return null;
-   const [contentWidth,contentHeight]=window.getContentSize();const input=value&&typeof value==='object'?value:{};
-   const rawX=input.x===undefined?0:Number(input.x),rawY=input.y===undefined?0:Number(input.y),rawWidth=input.width===undefined?contentWidth:Number(input.width),rawHeight=input.height===undefined?contentHeight:Number(input.height);
-   if(![rawX,rawY,rawWidth,rawHeight].every(Number.isFinite)||rawX<0||rawY<0||rawWidth<=0||rawHeight<=0)throw Error('Invalid resize capture bounds.');
-   const x=Math.min(contentWidth,Math.floor(rawX)),y=Math.min(contentHeight,Math.floor(rawY)),width=Math.min(contentWidth-x,Math.floor(rawWidth)),height=Math.min(contentHeight-y,Math.floor(rawHeight));
-   if(!width||!height)return null;
-   let image=await window.webContents.capturePage({x,y,width,height}),size=image.getSize();const maxPixels=4*1024*1024;if(size.width*size.height>maxPixels){const scale=Math.sqrt(maxPixels/(size.width*size.height));size={width:Math.max(1,Math.floor(size.width*scale)),height:Math.max(1,Math.floor(size.height*scale))};image=image.resize({...size,quality:'good'});}let png=image.toPNG();const maxDataUrlBytes=10*1024*1024;
-   for(let attempt=0;Buffer.byteLength(`data:image/png;base64,${png.toString('base64')}`,'utf8')>maxDataUrlBytes&&attempt<16;attempt++){
-    const scale=Math.max(.1,Math.min(.8,Math.sqrt(maxDataUrlBytes/Math.max(1,Buffer.byteLength(`data:image/png;base64,${png.toString('base64')}`,'utf8')))*.9));
-    size={width:Math.max(1,Math.floor(size.width*scale)),height:Math.max(1,Math.floor(size.height*scale))};image=image.resize({...size,quality:'good'});png=image.toPNG();
-   }
-   const dataUrl=`data:image/png;base64,${png.toString('base64')}`;if(Buffer.byteLength(dataUrl,'utf8')>maxDataUrlBytes)throw Error('Resize capture exceeds the 10 MiB limit.');return {width:size.width,height:size.height,dataUrl};
-  });
-  handleMeasuredIPC('haptics:tick',event=>{const window=trustedWindow(event);if(!window.isFocused())return false;return haptics.tick();});
-  handleMeasuredIPC('appearance:current',event=>{
-   const window=trustedWindow(event);
-   return appearance();
-  });
-  nativeTheme.on('updated',updateAppearance);
-  if(process.platform==='darwin'){
-   for(const notification of ['AppleColorPreferencesChangedNotification','AppleAquaColorVariantChanged'])systemPreferences.subscribeNotification(notification,updateAppearance);
-   systemPreferences.subscribeLocalNotification('NSSystemColorsDidChangeNotification',updateAppearance);
-  }
-  for(const action of ['status','save','clear'])handleMeasuredIPC(`credentials:${action}`,async(event,value)=>{
-   const window=trustedWindow(event);
-   if(action==='status')return credentials.status();
-   const result=await (action==='save'?credentials.save(value):credentials.clear());for(const target of windows.keys())if(!target.isDestroyed())target.webContents.send('credentials:changed');return result;
-  });
-  for(const action of ['status','load','save','clear'])handleMeasuredIPC(`serviceCredentials:${action}`,async(event,value)=>{
-   trustedWindow(event);
-   if(action==='status')return serviceCredentialStore.status();
-   if(action==='load')return serviceCredentialStore.load(value);
-   const result=await (action==='save'?serviceCredentialStore.save(value):serviceCredentialStore.clear(value));for(const target of windows.keys())if(!target.isDestroyed())target.webContents.send('serviceCredentials:changed');return result;
-  });
-  preferences=await createReaderPreferences(join(app.getPath('userData'),'reader-preferences.json'));
-  appUpdates=await createAppUpdates({...smoke==='app-updates'?{fetchImpl:(await import('./app-updates-smoke.mjs')).updateFetchFixture}: {},currentVersion:app.getVersion(),automatic:preferences.load().autoCheckUpdates,path:join(app.getPath('userData'),'app-updates.json'),onChange:state=>{for(const target of windows.keys())if(!target.isDestroyed())target.webContents.send('updates:changed',state);}});
-  handleMeasuredIPC('updates:status',event=>{trustedWindow(event);return appUpdates.status();});
-  handleMeasuredIPC('updates:check',event=>{trustedWindow(event);return appUpdates.check();});
-  handleMeasuredIPC('updates:automatic',async(event,value)=>{
-   trustedWindow(event);if(typeof value!=='boolean')throw Error('Invalid automatic update setting');
-   await preferences.save({autoCheckUpdates:value});for(const state of windows.values())state.preferences.autoCheckUpdates=value;
-   return appUpdates.setAutomatic(value);
-  });
-  handleMeasuredIPC('updates:openRelease',async event=>{
-   trustedWindow(event);const state=appUpdates.status();const url=releaseLink(state.downloadUrl,{download:true})||releaseLink(state.releaseUrl);
-   if(!url)throw Error('No published update');await shell.openExternal(url);
-  });
-  backendOptions.cacheLimitMB=preferences.load().cacheLimitMB;
-  nativeTheme.themeSource=preferences.load().appearance;rebuildMenu();
-  for(const action of ['load','save'])handleMeasuredIPC(`preferences:${action}`,async(event,value)=>{
-   const window=trustedWindow(event);
-   if(action==='load')return windows.get(window).preferences;
-   const senderBefore={...windows.get(window).preferences};
-   const previous=preferences.load(),write=preferences.save(value),next=preferences.load();
-   if(previous.autoCheckUpdates!==next.autoCheckUpdates)appUpdates.setAutomatic(next.autoCheckUpdates);
-   if(previous.cacheLimitMB!==next.cacheLimitMB){backendOptions.cacheLimitMB=next.cacheLimitMB;await Promise.all([...new Set([...windows.values()].map(state=>state.backend))].map(service=>fetch(service.origin+'/api/cache/limit',{method:'POST',headers:{'Content-Type':'application/json','X-Preview-Token':token},body:JSON.stringify({limitMB:next.cacheLimitMB})})));}
-   nativeTheme.themeSource=next.appearance;if(previous.uiLanguage!==next.uiLanguage)rebuildMenu();
-   for(const [target,state] of windows){
-    state.preferences=mergeWindowPreferences(next,state.preferences,value,target===window);
-    setWindowVibrancy(target,state.preferences.reduceTransparency);
-    target.webContents.setBackgroundThrottling(state.preferences.reduceBackgroundFrameRate);
-   }
-   if(!samePreferences(preferenceSnapshot(previous),preferenceSnapshot(next)))updateAppearance();
-   if(SETTINGS_PREFERENCES.some(key=>['kernelAdvancedOptions','translationServices','translationServiceHistory'].includes(key)?JSON.stringify(previous[key])!==JSON.stringify(next[key]):previous[key]!==next[key]))for(const target of windows.keys())if(target!==window)target.webContents.send('preferences:changed',Object.fromEntries(SETTINGS_PREFERENCES.map(key=>[key,next[key]])));
-   const senderState=windows.get(window),owner=senderState.settingsOwner||window;
-   const localChanges=Object.fromEntries(WINDOW_LOCAL_PREFERENCES.filter(key=>Object.prototype.hasOwnProperty.call(value||{},key)&&senderBefore[key]!==senderState.preferences[key]).map(key=>[key,senderState.preferences[key]]));
-   if(Object.keys(localChanges).length)for(const [target,state] of windows){if(target!==window&&(target===owner||state.settingsOwner===owner)){Object.assign(state.preferences,localChanges);target.webContents.send('preferences:changed',localChanges);}}
-   if(window===focusedWindow())updateMenu(window);
-   return write;
-  });
-  handleMeasuredIPC('cache:clear',async event=>{
-   const target=trustedWindow(event),services=[...new Set([...windows.values()].map(state=>state.backend))];
-   const statuses=await Promise.all(services.map(async service=>{const response=await fetch(service.origin+'/api/cache',{headers:{'X-Preview-Token':token}});if(!response.ok)throw Error('Unable to inspect cache.');return response.json();}));
-   if(statuses.some(status=>status.busy))throw Error('409: Cache is in use. Try again after translation finishes.');
-   const response=await fetch(windows.get(target).backend.origin+'/api/cache/clear',{method:'POST',headers:{'X-Preview-Token':token,'Content-Type':'application/json'},body:'{}'});
-   if(!response.ok)throw Error(response.status+': Unable to clear cache.');return response.json();
-  });
-  documentSession=await createDocumentSession(join(app.getPath('userData'),'document-session.json'));
-  handleMeasuredIPC('documents:closed',event=>{const target=trustedWindow(event);windows.get(target).documentIdentity=null;return documentSession.close(target.id);});
-  handleMeasuredIPC('documents:claim',async(event,path)=>{const target=trustedWindow(event);if(!path)return true;await validateSystemPDF(path);const identity=documentIdentity(path),existing=findDocumentWindow(identity)|| (openingDocuments.has(identity)?await openingDocuments.get(identity):null);if(existing){focusDocumentWindow(existing);return false;}windows.get(target).documentIdentity=identity;return true;});
-  handleMeasuredIPC('documents:view',async(event,view)=>{const target=trustedWindow(event);await documentSession.update(target.id,view);return true;});
-  recents=await createRecents(join(app.getPath('userData'),'recent-documents.json'));
-  for(const action of ['remember','setPinned','remove','clear']){const mutate=recents[action].bind(recents);recents[action]=async(...args)=>{const result=await mutate(...args);rebuildMenu();return result;};}
-  rebuildMenu();
-  annotations=await createAnnotationStore(join(app.getPath('userData'),'annotations'));
-  performanceReports=await loadPerformanceReports(join(app.getPath('userData'),'performance.json'));
-  for(const action of ['list','open','openWindow','remember','clear','preview','contextMenu','setThumbnail','setView','setTranslationStatus'])handleMeasuredIPC('recents:'+action,async(event,value)=>{
-   const window=trustedWindow(event);
-   if(action==='list')return recents.list();if(action==='clear'){app.clearRecentDocuments();return recents.clear();}
-   if(action==='contextMenu'){
-    const id=value,path=typeof id==='string'?recents.path(id):undefined;
-    if(typeof id!=='string'||!id||typeof path!=='string'||!path)throw Error('Document no longer in history.');
-    const locale=resolveUILanguage(preferences?.load?.().uiLanguage||'system',app.getPreferredSystemLanguages()[0]||app.getLocale()),labels={...recentContextMenuLabelsFor(locale),...(recentExtraLabels[locale]||recentExtraLabels.en)},entry=recents.list().find(item=>item.id===id);
-    return new Promise((resolve,reject)=>{
-     let selected=null,pending=Promise.resolve();
-     const template=[
-      {label:labels.open,click:()=>{selected='open';}},
-      {label:labels.openWindow,click:()=>{selected='openWindow';}},
-      {label:entry?.pinned?labels.unpin:labels.pin,click:()=>{pending=recents.setPinned(id,!entry?.pinned).then(()=>{selected='pin';});}},
-      {label:labels.hide,click:()=>{pending=recents.remove(id).then(()=>{selected='hide';});}},
-      {type:'separator'},
-      {label:labels.copy,click:()=>{pending=Promise.resolve().then(()=>clipboard.writeText(path));}},
-      {label:labels.reveal,click:()=>{pending=Promise.resolve().then(()=>shell.showItemInFolder(path));}},
-      {type:'separator'},
-      {label:labels.status,click:()=>{selected='status';}},
-      {type:'separator'},
-      {label:labels.clearCache,click:()=>{pending=(async()=>{const document=await readSystemPDF(path);const response=await fetch(windows.get(window).backend.origin+'/api/translation-cache/clear',{method:'POST',headers:{'Content-Type':'application/pdf','X-Preview-Token':token},body:document.bytes});if(!response.ok)throw Error('Could not clear translation cache.');await recents.clearTranslationStatus(id);selected='clearCache';})();}},
-     ];
-     try{Menu.buildFromTemplate(template).popup({window,callback:()=>{pending.then(()=>resolve(selected),reject);}});}catch(error){reject(error);}
+  app
+    .whenReady()
+    .then(async () => {
+      await registerWindowsPDF({ packaged: app.isPackaged, smoke: !!smoke || ciLaunchCheck }).catch(
+        (error) => console.error('Windows PDF menu registration failed:', error.message),
+      );
+      if (process.platform === 'darwin' && !app.isPackaged && !smoke)
+        app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png', import.meta.url)));
+      const commandId = (action) =>
+        `action-${String(action)
+          .replace(/[^a-z\d]+/gi, '-')
+          .replace(/^-|-$/g, '')
+          .toLowerCase()}`;
+      const command = (label, accelerator, action, id = commandId(action)) => ({
+        id,
+        label,
+        accelerator,
+        click: (_item, target) => {
+          const receiver = target || focusedWindow();
+          receiver?.webContents.send('reader:action', action);
+        },
+      });
+      const accelerator = (key) => commandAccelerator(process.platform, key);
+      const recentDocumentItems = () => {
+        const entries = recents?.list() || [];
+        if (!entries.length)
+          return [{ id: 'file-recents-empty', label: 'No Recent Documents', enabled: false }];
+        return entries.map((entry) => ({
+          id: 'recent-document-' + entry.id,
+          label: entry.name,
+          click: async (_item, target) => {
+            try {
+              const path = recents.path(entry.id);
+              if (!path) throw Error('Document no longer in history.');
+              await validateSystemPDF(path);
+              await openDocumentWindow(path, target || focusedWindow());
+            } catch (error) {
+              dialog.showErrorBox('PDFMathReader', error.message);
+            }
+          },
+        }));
+      };
+      const optionMenu = () => {
+        const focused = BrowserWindow.getFocusedWindow(),
+          target = windows.has(focused) ? focused : focusedWindow();
+        const registry = windows.get(target)?.menuOptions || {};
+        return Object.entries({
+          engine: 'Kernel',
+          sourceLanguage: 'Source Language',
+          language: 'Target Language',
+          provider: 'Service Provider',
+          uiLanguage: 'Interface Language',
+        }).map(([group, label]) => ({
+          id: 'translation-options-' + group,
+          label,
+          enabled: !!registry[group]?.options.length,
+          submenu: (registry[group]?.options || []).map((choice, index) => ({
+            id: `translation-choice-${group}-${index}`,
+            label: choice.label,
+            type: 'radio',
+            checked: choice.value === registry[group].selected,
+            click: (_item, window) => {
+              const receiver = window && windows.has(window) ? window : target;
+              if (!receiver || receiver.isDestroyed()) return;
+              if (
+                !windows
+                  .get(receiver)
+                  ?.menuOptions?.[group]?.options.some((item) => item.value === choice.value)
+              )
+                return;
+              receiver.webContents.send('reader:action', 'menu-option', {
+                group,
+                value: choice.value,
+              });
+            },
+          })),
+        }));
+      };
+      rebuildMenu = () => {
+        const template = [
+          {
+            id: 'app-menu',
+            label: smoke ? app.name : 'PDFMathReader',
+            submenu: [
+              { id: 'app-about', role: 'about' },
+              command('Settings…', accelerator(','), 'settings', 'app-settings'),
+              { type: 'separator' },
+              { id: 'app-quit', role: 'quit' },
+            ],
+          },
+          {
+            id: 'file-menu',
+            label: 'File',
+            submenu: [
+              {
+                id: 'file-new-window',
+                label: 'New Window',
+                accelerator: accelerator('N'),
+                click: () => {
+                  void createWindow().catch(handleBackendFailure);
+                },
+              },
+              command('Open PDF…', accelerator('O'), 'open', 'file-open'),
+              { type: 'separator' },
+              { id: 'file-recents', label: 'Recent Documents', enabled: false },
+              ...recentDocumentItems(),
+              { type: 'separator' },
+              command('Close Document', accelerator('W'), 'close-document', 'file-close-document'),
+              {
+                id: 'file-close-window',
+                label: 'Close Window',
+                accelerator: closeWindowAccelerator(process.platform),
+                click: (_item, target) => (target || focusedWindow())?.close(),
+              },
+            ],
+          },
+          {
+            id: 'edit-menu',
+            label: 'Edit',
+            submenu: [
+              command('Preference', undefined, 'preferences', 'edit-preferences'),
+              { type: 'separator' },
+              { role: 'undo' },
+              { role: 'redo' },
+              { type: 'separator' },
+              { role: 'cut' },
+              { role: 'copy' },
+              { role: 'paste' },
+              { role: 'selectAll' },
+              { type: 'separator' },
+              {
+                ...command(
+                  'Rotate Current Page',
+                  undefined,
+                  'page-edit:rotate',
+                  'edit-rotate-page',
+                ),
+                enabled: false,
+              },
+              {
+                ...command(
+                  'Align Page Widths',
+                  undefined,
+                  'page-edit:align-width',
+                  'edit-align-width',
+                ),
+                enabled: false,
+              },
+              {
+                ...command(
+                  'Align Page Heights',
+                  undefined,
+                  'page-edit:align-height',
+                  'edit-align-height',
+                ),
+                enabled: false,
+              },
+            ],
+          },
+          {
+            id: 'view-menu',
+            label: 'View',
+            submenu: [
+              command('Find…', accelerator('F'), 'search', 'view-search'),
+              command(
+                'Show Original / Translation',
+                accelerator('R'),
+                'translation',
+                'view-translation',
+              ),
+              command('Zoom In', accelerator('='), 'zoom-in', 'view-zoom-in'),
+              command('Zoom Out', accelerator('-'), 'zoom-out', 'view-zoom-out'),
+              command('Fit Width', accelerator('0'), 'fit-width', 'view-fit-width'),
+              command('Fit Height', accelerator('9'), 'fit-height', 'view-fit-height'),
+              command('Toggle Sidebar', accelerator('B'), 'sidebar', 'view-sidebar'),
+              { type: 'separator' },
+              { id: 'view-crop', label: 'Page Crop', enabled: false },
+              command('Crop More Horizontally', undefined, 'crop:x:more', 'crop-x-more'),
+              command('Crop Less Horizontally', undefined, 'crop:x:less', 'crop-x-less'),
+              command('Crop More Vertically', undefined, 'crop:y:more', 'crop-y-more'),
+              command('Crop Less Vertically', undefined, 'crop:y:less', 'crop-y-less'),
+              command('Reset Crop', undefined, 'crop:reset', 'crop-reset'),
+              { type: 'separator' },
+              { id: 'view-layout', label: 'Layout', enabled: false },
+              ...['vertical', 'horizontal'].map((direction) => ({
+                id: 'layout-' + direction,
+                label: direction === 'vertical' ? 'Vertical' : 'Horizontal',
+                type: 'radio',
+                checked: direction === 'vertical',
+                click: (_item, target) =>
+                  (target || focusedWindow())?.webContents.send(
+                    'reader:action',
+                    'layout:' + direction,
+                  ),
+              })),
+              { type: 'separator' },
+              { label: 'Pages per Row', id: 'layout-columns', enabled: false },
+              ...[1, 2, 4].map((columns) => ({
+                id: 'columns-' + columns,
+                label: { 1: 'One Side', 2: 'Two Sides', 4: 'Quad Side' }[columns],
+                accelerator: accelerator(columns === 4 ? 3 : columns),
+                type: 'radio',
+                checked: columns === 1,
+                click: (_item, target) =>
+                  (target || focusedWindow())?.webContents.send(
+                    'reader:action',
+                    'columns:' + columns,
+                  ),
+              })),
+              { type: 'separator' },
+              { id: 'view-fullscreen', role: 'togglefullscreen' },
+            ],
+          },
+          {
+            id: 'go-menu',
+            label: 'Go',
+            submenu: [
+              command('Previous Page', undefined, 'page-previous', 'go-previous'),
+              command('Next Page', undefined, 'page-next', 'go-next'),
+              { type: 'separator' },
+              ...Array.from({ length: 9 }, (_, i) =>
+                command(
+                  `Go to ${(i + 1) * 10}%`,
+                  accelerator('Shift+' + (i + 1)),
+                  `percent:${(i + 1) * 10}`,
+                  `go-percent-${(i + 1) * 10}`,
+                ),
+              ),
+              command('Go to 100%', accelerator('Shift+0'), 'percent:100', 'go-percent-100'),
+            ],
+          },
+          {
+            id: 'translation-menu',
+            label: 'Translation',
+            submenu: [
+              ...optionMenu(),
+              { type: 'separator' },
+              command('Choose Language…', accelerator('L'), 'language', 'translation-language'),
+              command('Choose Kernel…', accelerator('K'), 'kernel', 'translation-kernel'),
+            ],
+          },
+          ...(process.platform === 'win32' ? [] : [{ id: 'window-menu', role: 'windowMenu' }]),
+        ];
+        const locale = resolveUILanguage(
+          preferences?.load?.().uiLanguage || 'system',
+          app.getPreferredSystemLanguages()[0] || app.getLocale(),
+        );
+        const localize = (items) =>
+          items.map((item) => ({
+            ...item,
+            ...(item.label
+              ? {
+                  label:
+                    item.id?.startsWith('recent-document-') ||
+                    item.id?.startsWith('translation-choice-')
+                      ? item.label
+                      : menuLabel(item.label, locale),
+                }
+              : {}),
+            ...(Array.isArray(item.submenu) ? { submenu: localize(item.submenu) } : {}),
+          })); // Promote frequent actions in the Windows/Linux custom menu only.
+        let platformTemplate = template;
+        if (['win32', 'linux'].includes(process.platform)) {
+          const appItems = template.find((item) => item.id === 'app-menu').submenu;
+          const fileItems = template.find((item) => item.id === 'file-menu').submenu;
+          const promotedIds = [
+            'file-open',
+            'file-close-document',
+            'file-close-window',
+            'app-settings',
+          ];
+          const promoted = promotedIds.map((id) =>
+            [...fileItems, ...appItems].find((item) => item.id === id),
+          );
+          platformTemplate = [
+            ...promoted,
+            { type: 'separator' },
+            ...template
+              .filter((item) => item.id !== 'app-menu')
+              .map((item) =>
+                item.id === 'file-menu'
+                  ? {
+                      ...item,
+                      submenu: fileItems.filter((entry) => !promotedIds.includes(entry.id)),
+                    }
+                  : item,
+              ),
+            { type: 'separator' },
+            ...appItems.filter(
+              (item) => item.type !== 'separator' && !promotedIds.includes(item.id),
+            ),
+          ];
+        }
+        const localized = localize(platformTemplate),
+          actions = new Map(),
+          indexActions = (items) => {
+            for (const item of items) {
+              if (item.id && typeof item.click === 'function') actions.set(item.id, item.click);
+              if (Array.isArray(item.submenu)) indexActions(item.submenu);
+            }
+          };
+        indexActions(localized);
+        menuActions = actions;
+        applicationMenu = Menu.buildFromTemplate(localized);
+        Menu.setApplicationMenu(
+          ['win32', 'linux'].includes(process.platform) ? null : applicationMenu,
+        );
+        if (['win32', 'linux'].includes(process.platform))
+          for (const target of windows.keys()) hideNativeMenuBar(target);
+        updateMenu(focusedWindow());
+      };
+      rebuildMenu();
+      const credentialOptions = {
+        path: join(app.getPath('userData'), 'openai-key.enc'),
+        safeStorage,
+      };
+      if (
+        [
+          'present',
+          'kernels',
+          'ux',
+          'animation',
+          'coverage',
+          'search',
+          'advanced',
+          'advanced-cache',
+          'developer',
+        ].includes(smoke)
+      )
+        credentialOptions.environment = () => 'local-smoke-placeholder';
+      const credentialStore = await createCredentials(credentialOptions);
+      serviceCredentialStore = await createServiceCredentials({
+        path: join(app.getPath('userData'), 'translation-service-credentials.enc'),
+        safeStorage,
+      });
+      backendOptions = {
+        port: 0,
+        development: false,
+        appVersion: app.getVersion(),
+        pythonResourcesPath: process.resourcesPath,
+        cacheDir: join(app.getPath('userData'), 'translations'),
+        cacheLimitMB: preferences?.load().cacheLimitMB ?? null,
+        token,
+        smoke,
+        diagnostics: !!smoke,
+        credentials: { getKey: credentialStore.getKey, status: credentialStore.status },
+        onCrash: handleBackendFailure,
+        ...([
+          'kernels',
+          'animation',
+          'layout-region',
+          'advanced',
+          'advanced-cache',
+          'kernel-settings',
+          'about',
+        ].includes(smoke)
+          ? {
+              enginesRoot: join(app.getPath('appData'), 'PDFMathReader', 'engines'),
+              runtimeHomeRoot: join(tmpdir(), 'preview-kernel-test-homes'),
+            }
+          : {}),
+      };
+      credentials = {
+        getKey: credentialStore.getKey,
+        status: credentialStore.status,
+        save: async (key) => {
+          const status = await credentialStore.save(key);
+          await Promise.all(
+            [...windows.values()].map((state) =>
+              state.backend.setCredentials(credentialStore.getKey(), status),
+            ),
+          );
+          return status;
+        },
+        clear: async () => {
+          const status = await credentialStore.clear();
+          await Promise.all(
+            [...windows.values()].map((state) =>
+              state.backend.setCredentials(credentialStore.getKey(), status),
+            ),
+          );
+          return status;
+        },
+      };
+      handleMeasuredIPC('documents:next', async (event) => {
+        const window = trustedWindow(event);
+        const state = windows.get(window),
+          path = state.documents.shift();
+        if (!path) return null;
+        if (typeof path !== 'string') {
+          state.unkeyedAnnotationSource = annotationSourceForDocument(path);
+          return path;
+        }
+        try {
+          const document = await readSystemPDF(path),
+            source = {
+              path,
+              reliable: true,
+              preserveWithoutPath: false,
+              bytes: Buffer.from(document.bytes),
+            };
+          state.unkeyedAnnotationSource = source;
+          state.annotationSources.set(path, source);
+          const ticket = randomBytes(16).toString('hex');
+          state.tickets.set(ticket, path);
+          return { ...document, ticket };
+        } catch {
+          state.documentIdentity = null;
+          state.performance.hasDocument = false;
+          return { error: 'Could not open this PDF. Check file access and the 50 MB limit.' };
+        }
+      });
+      handleMeasuredIPC('documents:editPages', async (event, value) => {
+        const target = trustedWindow(event),
+          state = windows.get(target),
+          source = annotationSourceForWindow(state, value?.key);
+        const result = await annotations.editPages(value, source);
+        if (source) source.bytes = Buffer.from(result.bytes);
+        let ticket;
+        if (source?.path && source.reliable) {
+          ticket = randomBytes(16).toString('hex');
+          state.tickets.set(ticket, source.path);
+        }
+        return { ...result, ticket };
+      });
+      handleMeasuredIPC('previewAnnotations:prepare', async (event, value) => {
+        const target = trustedWindow(event);
+        if (!(value instanceof Uint8Array) || value.byteLength > 50 * 1024 * 1024)
+          throw Error('Invalid annotation PDF bytes.');
+        const imported = await importPDFAnnotations(value, { prepare: true });
+        windows.get(target).unkeyedAnnotationSource = {
+          bytes: Buffer.from(value),
+          reliable: false,
+          preserveWithoutPath: true,
+        };
+        return imported;
+      });
+      handleMeasuredIPC('previewAnnotations:confirmDelete', async (event, kind) => {
+        const target = trustedWindow(event);
+        if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
+        const { response } = await dialog.showMessageBox(target, {
+          type: 'warning',
+          message: `删除这条${kind === 'highlight' ? '高亮' : '批注'}？`,
+          buttons: ['取消', '删除'],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true,
+        });
+        return response === 1;
+      });
+      handleMeasuredIPC('recents:statusDialog', async (event, value) => {
+        const target = trustedWindow(event);
+        if (
+          !value ||
+          typeof value.title !== 'string' ||
+          value.title.length > 200 ||
+          typeof value.detail !== 'string' ||
+          value.detail.length > 12000 ||
+          typeof value.close !== 'string' ||
+          value.close.length > 100
+        )
+          throw Error('Invalid status dialog.');
+        await dialog.showMessageBox(target, {
+          type: 'info',
+          message: value.title,
+          detail: value.detail,
+          buttons: [value.close],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true,
+        });
+      });
+      handleMeasuredIPC('previewAnnotations:palette', async (event) => {
+        trustedWindow(event);
+        return annotations.palette();
+      });
+      handleMeasuredIPC('previewAnnotations:search', (event, { provider, text } = {}) => {
+        trustedWindow(event);
+        if (!['google', 'scholar'].includes(provider) || typeof text !== 'string' || !text.trim())
+          throw Error('Invalid search.');
+        const base =
+          provider === 'scholar'
+            ? 'https://scholar.google.com/scholar'
+            : 'https://www.google.com/search';
+        return shell.openExternal(`${base}?q=${encodeURIComponent(text.trim())}`);
+      });
+      handleMeasuredIPC('previewAnnotations:contextMenu', (event, kind) => {
+        const target = trustedWindow(event);
+        if (process.platform !== 'darwin') return null;
+        if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
+        return new Promise((resolve) => {
+          let selected = null;
+          const item = (label) => ({
+            label,
+            click: () => {
+              selected = label;
+            },
+          });
+          const template = [
+            item('复制'),
+            item('分享'),
+            ...(kind === 'highlight' ? [item('谷歌搜索'), item('谷歌学术搜索')] : []),
+            item('Hand over to AI'),
+            { type: 'separator' },
+            ...(kind === 'comment' ? [item('修改')] : []),
+            item('删除'),
+          ];
+          Menu.buildFromTemplate(template).popup({
+            window: target,
+            callback: () => resolve(selected),
+          });
+        });
+      });
+      handleMeasuredIPC('previewAnnotations:markDeleteHint', async (event) => {
+        trustedWindow(event);
+        return annotations.markDeleteHint();
+      });
+      const quickLinks = createQuickLinkStore(join(app.getPath('userData'), 'quick-links'));
+      handleMeasuredIPC('quickLinks:load', (event, key) => {
+        trustedWindow(event);
+        return quickLinks.load(key);
+      });
+      handleMeasuredIPC('quickLinks:save', (event, { key, links }) => {
+        trustedWindow(event);
+        return quickLinks.save(key, links);
+      });
+      handleMeasuredIPC('previewAnnotations:loadState', async (event, key) => {
+        trustedWindow(event);
+        return annotations.loadState(key);
+      });
+      handleMeasuredIPC('previewAnnotations:load', async (event, key) => {
+        const target = trustedWindow(event);
+        return annotations.load(key);
+      });
+      handleMeasuredIPC('previewAnnotations:save', async (event, value) => {
+        const target = trustedWindow(event),
+          state = windows.get(target);
+        return annotations.save(value, annotationSourceForWindow(state, value?.key));
+      });
+      handleMeasuredIPC('previewAnnotations:clean', async (event, value) => {
+        trustedWindow(event);
+        if (!(value instanceof Uint8Array) || value.byteLength > 50 * 1024 * 1024)
+          throw Error('Invalid annotation PDF bytes.');
+        return new Uint8Array(await stripManagedAnnotations(value));
+      });
+      handleMeasuredIPC('previewAnnotations:share', async (event, text) => {
+        const target = trustedWindow(event);
+        if (process.platform !== 'darwin') return false;
+        if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
+          throw Error('Invalid share text.');
+        new ShareMenu({ texts: [text] }).popup({ window: target });
+        return true;
+      });
+      handleMeasuredIPC('previewAnnotations:handover', async (event, text) => {
+        const target = trustedWindow(event);
+        if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
+          throw Error('Invalid handover text.');
+        if (process.platform !== 'darwin') throw Error('本机 AI 客户端交接目前仅支持 macOS。');
+        const client = await new Promise((resolve) => {
+          let selected = null;
+          const menu = Menu.buildFromTemplate(
+            ['ChatGPT', 'Claude'].map((label) => ({
+              label,
+              click: () => {
+                selected = label;
+              },
+            })),
+          );
+          menu.popup({ window: target, callback: () => resolve(selected) });
+        });
+        if (!client) return { cancelled: true };
+        // Resolve the installed app before modifying the clipboard. Never submit automatically.
+        try {
+          await runFile('/usr/bin/open', ['-Ra', client], { timeout: 10000 });
+        } catch {
+          throw Error(`未找到本机 ${client} 客户端，请先安装。`);
+        }
+        clipboard.writeText(text);
+        try {
+          await runFile('/usr/bin/open', ['-a', client], { timeout: 10000 });
+        } catch {
+          throw Error(`内容已复制，但无法打开 ${client} 客户端。`);
+        }
+        return { client };
+      });
+      handleMeasuredIPC('clipboard:write-text', async (event, text) => {
+        trustedWindow(event);
+        if (typeof text !== 'string' || text.length > 1000000)
+          throw Error('Invalid clipboard text');
+        await clipboard.writeText(text);
+        return true;
+      });
+      handleMeasuredIPC('window:register-options', (event, value) => {
+        const target = trustedWindow(event),
+          registry = {};
+        for (const group of ['engine', 'sourceLanguage', 'language', 'provider', 'uiLanguage']) {
+          const entry = value?.[group];
+          if (!entry || !Array.isArray(entry.options) || entry.options.length > 100)
+            throw Error('Invalid menu options.');
+          if (typeof entry.selected !== 'string' || entry.selected.length > 128)
+            throw Error('Invalid menu selection.');
+          const seen = new Set();
+          const options = entry.options.map((option) => {
+            if (
+              !option ||
+              typeof option.value !== 'string' ||
+              !option.value ||
+              option.value.length > 128 ||
+              typeof option.label !== 'string' ||
+              !option.label ||
+              option.label.length > 200 ||
+              /[\r\n\x00]/.test(option.label) ||
+              seen.has(option.value)
+            )
+              throw Error('Invalid menu option.');
+            seen.add(option.value);
+            return { value: option.value, label: option.label };
+          });
+          registry[group] = { selected: entry.selected, options };
+        }
+        const state = windows.get(target),
+          changed = JSON.stringify(state.menuOptions) !== JSON.stringify(registry);
+        state.menuOptions = registry;
+        if (changed && (target === BrowserWindow.getFocusedWindow() || target === focusedWindow()))
+          rebuildMenu();
+        return true;
+      });
+      handleMeasuredIPC('window:menu', (event) => {
+        const target = trustedWindow(event);
+        updateMenu(target);
+        return serializeApplicationMenu(applicationMenu);
+      });
+      handleMeasuredIPC('window:menu-action', (event, path) => {
+        const target = trustedWindow(event),
+          items = menuPathItems(applicationMenu, normalizeMenuPath(path));
+        if (!items || items.some((item) => item.visible === false || item.enabled === false))
+          throw Error('Menu item is disabled.');
+        activateMenuItem(items.at(-1), target);
+        updateMenu(target);
+        return true;
+      });
+      handleMeasuredIPC('window:minimize', (event) => {
+        const target = trustedWindow(event);
+        target.minimize();
+        return true;
+      });
+      handleMeasuredIPC('window:maximize', (event) => {
+        const target = trustedWindow(event);
+        if (target.isMaximized()) target.unmaximize();
+        else target.maximize();
+        return target.isMaximized();
+      });
+      handleMeasuredIPC('window:maximized', (event) => trustedWindow(event).isMaximized());
+      handleMeasuredIPC('window:close', (event) => {
+        const target = trustedWindow(event);
+        target.close();
+        return true;
+      });
+      handleMeasuredIPC('window:close-start-page', (event) => {
+        const target = trustedWindow(event);
+        target.close();
+        if (
+          ![...windows].some(
+            ([other, state]) =>
+              other !== target && (state.performance.hasDocument || state.documents.length),
+          )
+        )
+          app.quit();
+        return true;
+      });
+      handleMeasuredIPC('window:header-hidden', (event, hidden) => {
+        const target = trustedWindow(event);
+        if (typeof hidden !== 'boolean') throw Error('Invalid header state');
+        windows.get(target).headerHidden = hidden;
+        updateWindowButtons(target);
+      });
+      handleMeasuredIPC('window:fullscreen', (event) => {
+        const window = trustedWindow(event);
+        return window.isFullScreen();
+      });
+      handleMeasuredIPC('window:activity', (event) => {
+        const window = trustedWindow(event);
+        return windowActive(window);
+      });
+      handleMeasuredIPC('previewPerformance:sample', (event) => {
+        return samplePerformance(trustedWindow(event));
+      });
+      handleMeasuredIPC('previewPerformance:reset', (event) => {
+        const window = trustedWindow(event),
+          state = windows.get(window);
+        state.performance.peaks.clear();
+        state.performance.hasDocument = true;
+        updatePerformanceSampling(window);
+        updateMenu(window);
+        return { reset: true };
+      });
+      handleMeasuredIPC('previewPerformance:end', (event) => {
+        const window = trustedWindow(event),
+          state = windows.get(window);
+        state.performance.hasDocument = false;
+        stopPerformanceSampling(window);
+        updateMenu(window);
+        return { ended: true };
+      });
+      handleMeasuredIPC('previewPerformance:save', async (event, value) => {
+        trustedWindow(event);
+        const report = validatePerformanceReport(value);
+        const operation = performanceWrite.then(async () => {
+          performanceReports = appendPerformanceReport(performanceReports, report);
+          await writePerformanceReports(
+            join(app.getPath('userData'), 'performance.json'),
+            performanceReports,
+          );
+          return {
+            saved: true,
+            count: performanceReports.length,
+            maxReports: MAX_PERFORMANCE_REPORTS,
+          };
+        });
+        performanceWrite = operation.catch(() => {});
+        return operation;
+      });
+      handleMeasuredIPC('previewResize:capture', async (event, value) => {
+        const window = trustedWindow(event);
+        if (window.isDestroyed() || window.isMinimized()) return null;
+        const [contentWidth, contentHeight] = window.getContentSize();
+        const input = value && typeof value === 'object' ? value : {};
+        const rawX = input.x === undefined ? 0 : Number(input.x),
+          rawY = input.y === undefined ? 0 : Number(input.y),
+          rawWidth = input.width === undefined ? contentWidth : Number(input.width),
+          rawHeight = input.height === undefined ? contentHeight : Number(input.height);
+        if (
+          ![rawX, rawY, rawWidth, rawHeight].every(Number.isFinite) ||
+          rawX < 0 ||
+          rawY < 0 ||
+          rawWidth <= 0 ||
+          rawHeight <= 0
+        )
+          throw Error('Invalid resize capture bounds.');
+        const x = Math.min(contentWidth, Math.floor(rawX)),
+          y = Math.min(contentHeight, Math.floor(rawY)),
+          width = Math.min(contentWidth - x, Math.floor(rawWidth)),
+          height = Math.min(contentHeight - y, Math.floor(rawHeight));
+        if (!width || !height) return null;
+        let image = await window.webContents.capturePage({ x, y, width, height }),
+          size = image.getSize();
+        const maxPixels = 4 * 1024 * 1024;
+        if (size.width * size.height > maxPixels) {
+          const scale = Math.sqrt(maxPixels / (size.width * size.height));
+          size = {
+            width: Math.max(1, Math.floor(size.width * scale)),
+            height: Math.max(1, Math.floor(size.height * scale)),
+          };
+          image = image.resize({ ...size, quality: 'good' });
+        }
+        let png = image.toPNG();
+        const maxDataUrlBytes = 10 * 1024 * 1024;
+        for (
+          let attempt = 0;
+          Buffer.byteLength(`data:image/png;base64,${png.toString('base64')}`, 'utf8') >
+            maxDataUrlBytes && attempt < 16;
+          attempt++
+        ) {
+          const scale = Math.max(
+            0.1,
+            Math.min(
+              0.8,
+              Math.sqrt(
+                maxDataUrlBytes /
+                  Math.max(
+                    1,
+                    Buffer.byteLength(`data:image/png;base64,${png.toString('base64')}`, 'utf8'),
+                  ),
+              ) * 0.9,
+            ),
+          );
+          size = {
+            width: Math.max(1, Math.floor(size.width * scale)),
+            height: Math.max(1, Math.floor(size.height * scale)),
+          };
+          image = image.resize({ ...size, quality: 'good' });
+          png = image.toPNG();
+        }
+        const dataUrl = `data:image/png;base64,${png.toString('base64')}`;
+        if (Buffer.byteLength(dataUrl, 'utf8') > maxDataUrlBytes)
+          throw Error('Resize capture exceeds the 10 MiB limit.');
+        return { width: size.width, height: size.height, dataUrl };
+      });
+      handleMeasuredIPC('haptics:tick', (event) => {
+        const window = trustedWindow(event);
+        if (!window.isFocused()) return false;
+        return haptics.tick();
+      });
+      handleMeasuredIPC('appearance:current', (event) => {
+        const window = trustedWindow(event);
+        return appearance();
+      });
+      nativeTheme.on('updated', updateAppearance);
+      if (process.platform === 'darwin') {
+        for (const notification of [
+          'AppleColorPreferencesChangedNotification',
+          'AppleAquaColorVariantChanged',
+        ])
+          systemPreferences.subscribeNotification(notification, updateAppearance);
+        systemPreferences.subscribeLocalNotification(
+          'NSSystemColorsDidChangeNotification',
+          updateAppearance,
+        );
+      }
+      for (const action of ['status', 'save', 'clear'])
+        handleMeasuredIPC(`credentials:${action}`, async (event, value) => {
+          const window = trustedWindow(event);
+          if (action === 'status') return credentials.status();
+          const result = await (action === 'save' ? credentials.save(value) : credentials.clear());
+          for (const target of windows.keys())
+            if (!target.isDestroyed()) target.webContents.send('credentials:changed');
+          return result;
+        });
+      for (const action of ['status', 'load', 'save', 'clear'])
+        handleMeasuredIPC(`serviceCredentials:${action}`, async (event, value) => {
+          trustedWindow(event);
+          if (action === 'status') return serviceCredentialStore.status();
+          if (action === 'load') return serviceCredentialStore.load(value);
+          const result = await (action === 'save'
+            ? serviceCredentialStore.save(value)
+            : serviceCredentialStore.clear(value));
+          for (const target of windows.keys())
+            if (!target.isDestroyed()) target.webContents.send('serviceCredentials:changed');
+          return result;
+        });
+      preferences = await createReaderPreferences(
+        join(app.getPath('userData'), 'reader-preferences.json'),
+      );
+      appUpdates = await createAppUpdates({
+        ...(smoke === 'app-updates'
+          ? { fetchImpl: (await import('./app-updates-smoke.mjs')).updateFetchFixture }
+          : {}),
+        currentVersion: app.getVersion(),
+        automatic: preferences.load().autoCheckUpdates,
+        path: join(app.getPath('userData'), 'app-updates.json'),
+        onChange: (state) => {
+          for (const target of windows.keys())
+            if (!target.isDestroyed()) target.webContents.send('updates:changed', state);
+        },
+      });
+      handleMeasuredIPC('updates:status', (event) => {
+        trustedWindow(event);
+        return appUpdates.status();
+      });
+      handleMeasuredIPC('updates:check', (event) => {
+        trustedWindow(event);
+        return appUpdates.check();
+      });
+      handleMeasuredIPC('updates:automatic', async (event, value) => {
+        trustedWindow(event);
+        if (typeof value !== 'boolean') throw Error('Invalid automatic update setting');
+        await preferences.save({ autoCheckUpdates: value });
+        for (const state of windows.values()) state.preferences.autoCheckUpdates = value;
+        return appUpdates.setAutomatic(value);
+      });
+      handleMeasuredIPC('updates:openRelease', async (event) => {
+        trustedWindow(event);
+        const state = appUpdates.status();
+        const url =
+          releaseLink(state.downloadUrl, { download: true }) || releaseLink(state.releaseUrl);
+        if (!url) throw Error('No published update');
+        await shell.openExternal(url);
+      });
+      backendOptions.cacheLimitMB = preferences.load().cacheLimitMB;
+      nativeTheme.themeSource = preferences.load().appearance;
+      rebuildMenu();
+      for (const action of ['load', 'save'])
+        handleMeasuredIPC(`preferences:${action}`, async (event, value) => {
+          const window = trustedWindow(event);
+          if (action === 'load') return windows.get(window).preferences;
+          const senderBefore = { ...windows.get(window).preferences };
+          const previous = preferences.load(),
+            write = preferences.save(value),
+            next = preferences.load();
+          if (previous.autoCheckUpdates !== next.autoCheckUpdates)
+            appUpdates.setAutomatic(next.autoCheckUpdates);
+          if (previous.cacheLimitMB !== next.cacheLimitMB) {
+            backendOptions.cacheLimitMB = next.cacheLimitMB;
+            await Promise.all(
+              [...new Set([...windows.values()].map((state) => state.backend))].map((service) =>
+                fetch(service.origin + '/api/cache/limit', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'X-Preview-Token': token },
+                  body: JSON.stringify({ limitMB: next.cacheLimitMB }),
+                }),
+              ),
+            );
+          }
+          nativeTheme.themeSource = next.appearance;
+          if (previous.uiLanguage !== next.uiLanguage) rebuildMenu();
+          for (const [target, state] of windows) {
+            state.preferences = mergeWindowPreferences(
+              next,
+              state.preferences,
+              value,
+              target === window,
+            );
+            setWindowVibrancy(target, state.preferences.reduceTransparency);
+            target.webContents.setBackgroundThrottling(state.preferences.reduceBackgroundFrameRate);
+          }
+          if (!samePreferences(preferenceSnapshot(previous), preferenceSnapshot(next)))
+            updateAppearance();
+          if (
+            SETTINGS_PREFERENCES.some((key) =>
+              [
+                'kernelAdvancedOptions',
+                'translationServices',
+                'translationServiceHistory',
+              ].includes(key)
+                ? JSON.stringify(previous[key]) !== JSON.stringify(next[key])
+                : previous[key] !== next[key],
+            )
+          )
+            for (const target of windows.keys())
+              if (target !== window)
+                target.webContents.send(
+                  'preferences:changed',
+                  Object.fromEntries(SETTINGS_PREFERENCES.map((key) => [key, next[key]])),
+                );
+          const senderState = windows.get(window),
+            owner = senderState.settingsOwner || window;
+          const localChanges = Object.fromEntries(
+            WINDOW_LOCAL_PREFERENCES.filter(
+              (key) =>
+                Object.prototype.hasOwnProperty.call(value || {}, key) &&
+                senderBefore[key] !== senderState.preferences[key],
+            ).map((key) => [key, senderState.preferences[key]]),
+          );
+          if (Object.keys(localChanges).length)
+            for (const [target, state] of windows) {
+              if (target !== window && (target === owner || state.settingsOwner === owner)) {
+                Object.assign(state.preferences, localChanges);
+                target.webContents.send('preferences:changed', localChanges);
+              }
+            }
+          if (window === focusedWindow()) updateMenu(window);
+          return write;
+        });
+      handleMeasuredIPC('cache:clear', async (event) => {
+        const target = trustedWindow(event),
+          services = [...new Set([...windows.values()].map((state) => state.backend))];
+        const statuses = await Promise.all(
+          services.map(async (service) => {
+            const response = await fetch(service.origin + '/api/cache', {
+              headers: { 'X-Preview-Token': token },
+            });
+            if (!response.ok) throw Error('Unable to inspect cache.');
+            return response.json();
+          }),
+        );
+        if (statuses.some((status) => status.busy))
+          throw Error('409: Cache is in use. Try again after translation finishes.');
+        const response = await fetch(windows.get(target).backend.origin + '/api/cache/clear', {
+          method: 'POST',
+          headers: { 'X-Preview-Token': token, 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (!response.ok) throw Error(response.status + ': Unable to clear cache.');
+        return response.json();
+      });
+      documentSession = await createDocumentSession(
+        join(app.getPath('userData'), 'document-session.json'),
+      );
+      handleMeasuredIPC('documents:closed', (event) => {
+        const target = trustedWindow(event);
+        windows.get(target).documentIdentity = null;
+        return documentSession.close(target.id);
+      });
+      handleMeasuredIPC('documents:claim', async (event, path) => {
+        const target = trustedWindow(event);
+        if (!path) return true;
+        await validateSystemPDF(path);
+        const identity = documentIdentity(path),
+          existing =
+            findDocumentWindow(identity) ||
+            (openingDocuments.has(identity) ? await openingDocuments.get(identity) : null);
+        if (existing) {
+          focusDocumentWindow(existing);
+          return false;
+        }
+        windows.get(target).documentIdentity = identity;
+        return true;
+      });
+      handleMeasuredIPC('documents:view', async (event, view) => {
+        const target = trustedWindow(event);
+        await documentSession.update(target.id, view);
+        return true;
+      });
+      recents = await createRecents(join(app.getPath('userData'), 'recent-documents.json'));
+      for (const action of ['remember', 'setPinned', 'remove', 'clear']) {
+        const mutate = recents[action].bind(recents);
+        recents[action] = async (...args) => {
+          const result = await mutate(...args);
+          rebuildMenu();
+          return result;
+        };
+      }
+      rebuildMenu();
+      annotations = await createAnnotationStore(join(app.getPath('userData'), 'annotations'));
+      performanceReports = await loadPerformanceReports(
+        join(app.getPath('userData'), 'performance.json'),
+      );
+      for (const action of [
+        'list',
+        'open',
+        'openWindow',
+        'remember',
+        'clear',
+        'preview',
+        'contextMenu',
+        'setThumbnail',
+        'setView',
+        'setTranslationStatus',
+      ])
+        handleMeasuredIPC('recents:' + action, async (event, value) => {
+          const window = trustedWindow(event);
+          if (action === 'list') return recents.list();
+          if (action === 'clear') {
+            app.clearRecentDocuments();
+            return recents.clear();
+          }
+          if (action === 'contextMenu') {
+            const id = value,
+              path = typeof id === 'string' ? recents.path(id) : undefined;
+            if (typeof id !== 'string' || !id || typeof path !== 'string' || !path)
+              throw Error('Document no longer in history.');
+            const locale = resolveUILanguage(
+                preferences?.load?.().uiLanguage || 'system',
+                app.getPreferredSystemLanguages()[0] || app.getLocale(),
+              ),
+              labels = {
+                ...recentContextMenuLabelsFor(locale),
+                ...(recentExtraLabels[locale] || recentExtraLabels.en),
+              },
+              entry = recents.list().find((item) => item.id === id);
+            return new Promise((resolve, reject) => {
+              let selected = null,
+                pending = Promise.resolve();
+              const template = [
+                {
+                  label: labels.open,
+                  click: () => {
+                    selected = 'open';
+                  },
+                },
+                {
+                  label: labels.openWindow,
+                  click: () => {
+                    selected = 'openWindow';
+                  },
+                },
+                {
+                  label: entry?.pinned ? labels.unpin : labels.pin,
+                  click: () => {
+                    pending = recents.setPinned(id, !entry?.pinned).then(() => {
+                      selected = 'pin';
+                    });
+                  },
+                },
+                {
+                  label: labels.hide,
+                  click: () => {
+                    pending = recents.remove(id).then(() => {
+                      selected = 'hide';
+                    });
+                  },
+                },
+                { type: 'separator' },
+                {
+                  label: labels.copy,
+                  click: () => {
+                    pending = Promise.resolve().then(() => clipboard.writeText(path));
+                  },
+                },
+                {
+                  label: labels.reveal,
+                  click: () => {
+                    pending = Promise.resolve().then(() => shell.showItemInFolder(path));
+                  },
+                },
+                { type: 'separator' },
+                {
+                  label: labels.status,
+                  click: () => {
+                    selected = 'status';
+                  },
+                },
+                { type: 'separator' },
+                {
+                  label: labels.clearCache,
+                  click: () => {
+                    pending = (async () => {
+                      const document = await readSystemPDF(path);
+                      const response = await fetch(
+                        windows.get(window).backend.origin + '/api/translation-cache/clear',
+                        {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/pdf', 'X-Preview-Token': token },
+                          body: document.bytes,
+                        },
+                      );
+                      if (!response.ok) throw Error('Could not clear translation cache.');
+                      await recents.clearTranslationStatus(id);
+                      selected = 'clearCache';
+                    })();
+                  },
+                },
+              ];
+              try {
+                Menu.buildFromTemplate(template).popup({
+                  window,
+                  callback: () => {
+                    pending.then(() => resolve(selected), reject);
+                  },
+                });
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+          if (action === 'openWindow') {
+            const path = recents.path(value);
+            if (!path) throw Error('Document no longer in history.');
+            await validateSystemPDF(path);
+            await openDocumentWindow(path, window);
+            return true;
+          }
+          if (action === 'open') {
+            const path = recents.path(value);
+            if (!path) throw Error('Document no longer in history.');
+            const identity = documentIdentity(path),
+              existing =
+                findDocumentWindow(identity) ||
+                (openingDocuments.has(identity) ? await openingDocuments.get(identity) : null);
+            if (existing) {
+              focusDocumentWindow(existing);
+              return null;
+            }
+            windows.get(window).documentIdentity = identity;
+            let document;
+            try {
+              document = await readSystemPDF(path);
+            } catch (error) {
+              windows.get(window).documentIdentity = null;
+              throw error;
+            }
+            const state = windows.get(window),
+              source = {
+                path,
+                reliable: true,
+                preserveWithoutPath: false,
+                bytes: Buffer.from(document.bytes),
+              };
+            state.annotationSources.set(value, source);
+            state.unkeyedAnnotationSource = source;
+            const ticket = randomBytes(16).toString('hex');
+            state.tickets.set(ticket, path);
+            const recent = recents.list().find((entry) => entry.id === value);
+            return { ...document, ticket, recentId: value, view: recent?.view };
+          }
+          if (action === 'preview') {
+            const path = recents.path(value);
+            if (!path) throw Error('Document no longer in history.');
+            const document = await readSystemPDF(path);
+            return { bytes: document.bytes };
+          }
+          if (action === 'setThumbnail') return recents.setThumbnail(value?.id, value?.thumbnail);
+          if (action === 'setView') return recents.setView(value?.id, value?.view);
+          if (action === 'setTranslationStatus')
+            return recents.setTranslationStatus(value?.id, value?.status);
+          const state = windows.get(window),
+            path = value?.ticket ? state.tickets.get(value.ticket) : value?.path;
+          if (!path) {
+            state.documentIdentity = null;
+            await documentSession.close(window.id);
+            if (!state.unkeyedAnnotationSource?.preserveWithoutPath) {
+              state.unkeyedAnnotationSource = null;
+              state.annotationSources.clear();
+            }
+            return { entries: recents.list(), recentId: null };
+          }
+          if (
+            smoke &&
+            !['A quieter way to read.pdf', 'Portrait and landscape.pdf'].includes(
+              path.split(/[\\/]/).pop(),
+            )
+          )
+            throw Error('Test document rejected.');
+          await validateSystemPDF(path);
+          if (value?.ticket) state.tickets.delete(value.ticket);
+          if (!smoke) app.addRecentDocument(path);
+          const entries = await recents.remember(path, value?.thumbnail),
+            first = entries.find((item) => recents.path(item.id) === path),
+            source = { path, reliable: true, preserveWithoutPath: false };
+          state.annotationSources.set(first.id, source);
+          state.unkeyedAnnotationSource = source;
+          const restored = state.restoreView;
+          state.restoreView = null;
+          await documentSession.open(window.id, { path, view: restored || first?.view });
+          return { entries, recentId: first?.id ?? null, view: restored || first?.view };
+        });
+      handleMeasuredIPC('documents:open', async (event, value) => {
+        const target = trustedWindow(event);
+        if (typeof value?.path === 'string') {
+          await validateSystemPDF(value.path);
+          await openDocumentWindow(value.path, target);
+        } else {
+          if (
+            !value ||
+            typeof value.name !== 'string' ||
+            !(value.bytes instanceof Uint8Array) ||
+            value.bytes.byteLength > 50 * 1024 * 1024
+          )
+            throw Error('Invalid PDF.');
+          await openDocumentWindow({ name: value.name, bytes: value.bytes }, target);
+        }
+        return true;
+      });
+      handleMeasuredIPC('window:settings', async (event, section) => {
+        await openSettingsWindow(trustedWindow(event), section);
+        return true;
+      });
+      handleMeasuredIPC('window:new', async (event) => {
+        trustedWindow(event);
+        await createWindow();
+      });
+      if (!smoke && !ciLaunchCheck && preferences.load().restoreDocuments) {
+        for (const document of documentSession.restore()) {
+          try {
+            await validateSystemPDF(document.path);
+          } catch {
+            continue;
+          }
+          if (!pendingFiles.includes(document.path))
+            await openDocumentWindow(document.path, null, document.view);
+        }
+      }
+      window =
+        [...windows.keys()][0] ||
+        (!ciLaunchCheck && pendingFiles.length
+          ? await openDocumentWindow(pendingFiles.shift())
+          : await createWindow());
+      backend = windows.get(window).backend;
+      documentsReady = true;
+      if (!ciLaunchCheck) await deliverPendingFiles();
+      if (app.isPackaged && !smoke && !ciLaunchCheck) appUpdates.start();
+      if (ciLaunchCheck) {
+        const ready = await waitForCILaunch(window);
+        console.log(
+          ciLaunchPassMarker,
+          JSON.stringify({ ...ready, platform: process.platform, version: app.getVersion() }),
+        );
+        app.quit();
+        return;
+      }
+      if (smoke) {
+        const checks = await import('./smoke.mjs');
+        if (smoke === 'kernel-menu-mouse')
+          await (
+            await import('./kernel-menu-mouse-smoke.mjs')
+          ).verifyKernelMenuMouse(window, createWindow);
+        else if (smoke === 'app-updates')
+          await (await import('./app-updates-smoke.mjs')).verifyAppUpdates(window, createWindow);
+        else if (smoke === 'crop-status')
+          await (await import('./crop-status-smoke.mjs')).verifyCropStatus(window);
+        else if (smoke === 'provider-clone')
+          await (await import('./provider-clone-smoke.mjs')).verifyProviderClone(window);
+        else if (smoke === 'kernel-error')
+          await (await import('./kernel-error-smoke.mjs')).verifyKernelError(window, createWindow);
+        else if (smoke === 'about')
+          await (await import('./about-smoke.mjs')).verifyAbout(window, createWindow);
+        else if (smoke === 'kernel-settings')
+          await (
+            await import('./kernel-settings-smoke.mjs')
+          ).verifyKernelSettings(window, createWindow);
+        else if (smoke === 'provider-history')
+          await (
+            await import('./settings-workspace-smoke.mjs')
+          ).verifyProviderHistory(window, createWindow);
+        else if (smoke === 'developer')
+          await (
+            await import('./developer-smoke.mjs')
+          ).verifyDeveloper(window, backend, token, createWindow);
+        else if (smoke === 'resource-benchmark')
+          await (await import('./resource-benchmark.mjs')).verifyResourceBenchmark(window);
+        else if (smoke === 'resource-usage')
+          await (await import('./resource-usage-smoke.mjs')).verifyResourceUsage(window);
+        else if (smoke === 'information-categories')
+          await (
+            await import('./information-categories-smoke.mjs')
+          ).verifyInformationCategories(window, recents, createWindow);
+        else if (smoke === 'information-emphasis')
+          await (
+            await import('./information-emphasis-smoke.mjs')
+          ).verifyInformationEmphasis(window, recents);
+        else if (smoke === 'topic-sentences')
+          await (await import('./topic-sentences-smoke.mjs')).verifyTopicSentences(window, recents);
+        else if (smoke === 'page-edits')
+          await (await import('./page-edits-smoke.mjs')).verifyPageEdits(window, recents);
+        else if (smoke === 'cache-progress')
+          await (await import('./cache-progress-smoke.mjs')).verifyCacheProgress(window);
+        else if (smoke === 'quick-links')
+          await (await import('./quick-links-smoke.mjs')).verifyQuickLinks(window);
+        else if (smoke === 'translation-prefetch')
+          await (
+            await import('./translation-prefetch-smoke.mjs')
+          ).verifyTranslationPrefetch(window, recents);
+        else if (smoke === 'pdf-navigation')
+          await (await import('./pdf-navigation-smoke.mjs')).verifyPDFNavigation(window, recents);
+        else if (['sidebar', 'sidebar-keys'].includes(smoke))
+          await (await import('./sidebar-smoke.mjs')).verifySidebar(window, recents);
+        else if (smoke === 'advanced-cache')
+          await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);
+        else if (smoke === 'large-open')
+          await (await import('./large-open-smoke.mjs')).verifyLargeOpen(window, recents);
+        else if (smoke === 'file-menu')
+          await (await import('./file-menu-smoke.mjs')).verifyFileMenu(window, recents);
+        else if (smoke === 'recent-menu')
+          await (await import('./recent-menu-smoke.mjs')).verifyRecentMenu(window, recents);
+        else if (smoke === 'startup')
+          await (await import('./startup-smoke.mjs')).verifyStartup(window);
+        else if (smoke === 'session')
+          await (await import('./session-smoke.mjs')).verifySession(window, windows, createWindow);
+        else if (smoke === 'settings-menu')
+          await (await import('./settings-menu-smoke.mjs')).verifySettingsMenu(window, windows);
+        else if (smoke === 'settings-native')
+          await (await import('./settings-native-smoke.mjs')).verifyNativeSettings(window, windows);
+        else if (smoke === 'settings-workspace')
+          await (await import('./settings-workspace-smoke.mjs')).verifySettingsWorkspace(window);
+        else if (smoke === 'layout-settings')
+          await (await import('./layout-settings-smoke.mjs')).verifyLayoutSettings(window);
+        else if (smoke === 'windows-settings')
+          await (await import('./windows-settings-smoke.mjs')).verifyWindowsSettings(window);
+        else if (smoke === 'locales')
+          await (await import('./locales-smoke.mjs')).verifyLocales(window);
+        else if (smoke === 'advanced')
+          await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);
+        else if (smoke === 'fluent')
+          await (await import('./fluent-smoke.mjs')).verifyFluent(window);
+        else if (smoke === 'search')
+          await (await import('./search-smoke.mjs')).verifySearch(window);
+        else if (smoke === 'multi-window')
+          await (
+            await import('./multi-window-smoke.mjs')
+          ).verifyMultiWindow(window, windows, createWindow);
+        else if (smoke === 'crop')
+          await (await import('./crop-smoke.mjs')).verifyCrop(window, recents);
+        else if (smoke === 'fit-width')
+          await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window, recents);
+        else if (smoke === 'reading-view')
+          await (await import('./reading-view-smoke.mjs')).verifyReadingView(window, recents);
+        else if (smoke === 'performance')
+          await (await import('./performance-smoke.mjs')).verifyPerformance(window);
+        else if (smoke === 'benchmark')
+          await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);
+        else if (smoke === 'coverage')
+          await (await import('./coverage-smoke.mjs')).verifyCoverage(window, backend, token);
+        else if (smoke === 'resize') {
+          await (await import('./recents-smoke.mjs')).verifyRecents(window, recents);
+          await (await import('./resize-smoke.mjs')).verifyResize(window);
+        } else if (smoke === 'animation')
+          await (await import('./animation-smoke.mjs')).verifyAnimation(window);
+        else if (smoke === 'ux') await (await import('./ux-smoke.mjs')).verifyUX(window, recents);
+        else if (smoke === 'layout-region')
+          await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);
+        else if (smoke === 'kernel-choice')
+          await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);
+        else if (smoke === 'kernels')
+          await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);
+        else if (['annotations', 'annotation-shortcuts'].includes(smoke))
+          await (await import('./annotations-smoke.mjs')).verifyAnnotations(window, recents);
+        else if (smoke === 'file-open') await checks.verifySystemOpen(window);
+        else await checks.verify(window, backend, token, smoke, credentials);
+      }
+    })
+    .catch(async (error) => {
+      if (smoke || ciLaunchCheck) {
+        await backend?.close();
+        console.error(
+          ciLaunchCheck ? 'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL' : 'Desktop smoke failed:',
+          error.stack || error.message,
+        );
+        if (smoke === 'file-open')
+          await writeFile(
+            '/tmp/preview-system-open-result.json',
+            JSON.stringify({ passed: false, error: error.message }),
+          );
+        app.exit(1);
+        return;
+      }
+      dialog.showErrorBox(
+        'PDFMathReader',
+        `The local reader could not start.\n\n${error?.message || 'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`,
+      );
+      app.quit();
     });
-   }
-   if(action==='openWindow'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');await validateSystemPDF(path);await openDocumentWindow(path,window);return true;}
-   if(action==='open'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const identity=documentIdentity(path),existing=findDocumentWindow(identity)||(openingDocuments.has(identity)?await openingDocuments.get(identity):null);if(existing){focusDocumentWindow(existing);return null;}windows.get(window).documentIdentity=identity;let document;try{document=await readSystemPDF(path);}catch(error){windows.get(window).documentIdentity=null;throw error;}const state=windows.get(window),source={path,reliable:true,preserveWithoutPath:false,bytes:Buffer.from(document.bytes)};state.annotationSources.set(value,source);state.unkeyedAnnotationSource=source;const ticket=randomBytes(16).toString('hex');state.tickets.set(ticket,path);const recent=recents.list().find(entry=>entry.id===value);return {...document,ticket,recentId:value,view:recent?.view};}
-   if(action==='preview'){const path=recents.path(value);if(!path)throw Error('Document no longer in history.');const document=await readSystemPDF(path);return {bytes:document.bytes};}
-   if(action==='setThumbnail')return recents.setThumbnail(value?.id,value?.thumbnail);
-   if(action==='setView')return recents.setView(value?.id,value?.view);
-   if(action==='setTranslationStatus')return recents.setTranslationStatus(value?.id,value?.status);
-   const state=windows.get(window),path=value?.ticket?state.tickets.get(value.ticket):value?.path;if(!path){state.documentIdentity=null;await documentSession.close(window.id);if(!state.unkeyedAnnotationSource?.preserveWithoutPath){state.unkeyedAnnotationSource=null;state.annotationSources.clear();}return {entries:recents.list(),recentId:null};}if(smoke&&!['A quieter way to read.pdf','Portrait and landscape.pdf'].includes(path.split(/[\\/]/).pop()))throw Error('Test document rejected.');await validateSystemPDF(path);if(value?.ticket)state.tickets.delete(value.ticket);if(!smoke)app.addRecentDocument(path);const entries=await recents.remember(path,value?.thumbnail),first=entries.find(item=>recents.path(item.id)===path),source={path,reliable:true,preserveWithoutPath:false};state.annotationSources.set(first.id,source);state.unkeyedAnnotationSource=source;const restored=state.restoreView;state.restoreView=null;await documentSession.open(window.id,{path,view:restored||first?.view});return {entries,recentId:first?.id??null,view:restored||first?.view};
+  app.on('before-quit', (event) => {
+    appUpdates?.stop();
+    if (!backend || quitting) return;
+    event.preventDefault();
+    quitting = true;
+    void Promise.allSettled([...windows.keys()].map(saveWindowReadingView)).finally(() =>
+      Promise.allSettled(
+        [...windows.values()]
+          .map((state) => state.backend.close())
+          .concat([
+            ...closingBackends,
+            preferences?.flush(),
+            serviceCredentialStore?.flush(),
+            recents?.flush(),
+            documentSession?.saveOnQuit(),
+            annotations?.flush(),
+          ]),
+      ).finally(() => app.quit()),
+    );
   });
-  handleMeasuredIPC('documents:open',async(event,value)=>{const target=trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await openDocumentWindow(value.path,target);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await openDocumentWindow({name:value.name,bytes:value.bytes},target);}return true;});
-  handleMeasuredIPC('window:settings',async(event,section)=>{await openSettingsWindow(trustedWindow(event),section);return true;});
-  handleMeasuredIPC('window:new',async event=>{trustedWindow(event);await createWindow();});
-  if(!smoke&&!ciLaunchCheck&&preferences.load().restoreDocuments){for(const document of documentSession.restore()){try{await validateSystemPDF(document.path);}catch{continue;}if(!pendingFiles.includes(document.path))await openDocumentWindow(document.path,null,document.view);}}
-  window=[...windows.keys()][0]||((!ciLaunchCheck&&pendingFiles.length)?await openDocumentWindow(pendingFiles.shift()):await createWindow());backend=windows.get(window).backend;documentsReady=true;if(!ciLaunchCheck)await deliverPendingFiles();if(app.isPackaged&&!smoke&&!ciLaunchCheck)appUpdates.start();
-  if(ciLaunchCheck){const ready=await waitForCILaunch(window);console.log(ciLaunchPassMarker,JSON.stringify({...ready,platform:process.platform,version:app.getVersion()}));app.quit();return;}
-  if(smoke){const checks=await import('./smoke.mjs');if(smoke==='kernel-menu-mouse')await (await import('./kernel-menu-mouse-smoke.mjs')).verifyKernelMenuMouse(window,createWindow);else if(smoke==='app-updates')await (await import('./app-updates-smoke.mjs')).verifyAppUpdates(window,createWindow);else if(smoke==='crop-status')await (await import('./crop-status-smoke.mjs')).verifyCropStatus(window);else if(smoke==='provider-clone')await (await import('./provider-clone-smoke.mjs')).verifyProviderClone(window);else if(smoke==='kernel-error')await (await import('./kernel-error-smoke.mjs')).verifyKernelError(window,createWindow);else if(smoke==='about')await (await import('./about-smoke.mjs')).verifyAbout(window,createWindow);else if(smoke==='kernel-settings')await (await import('./kernel-settings-smoke.mjs')).verifyKernelSettings(window,createWindow);else if(smoke==='provider-history')await (await import('./settings-workspace-smoke.mjs')).verifyProviderHistory(window,createWindow);else if(smoke==='developer')await (await import('./developer-smoke.mjs')).verifyDeveloper(window,backend,token,createWindow);else if(smoke==='resource-benchmark')await (await import('./resource-benchmark.mjs')).verifyResourceBenchmark(window);else if(smoke==='resource-usage')await (await import('./resource-usage-smoke.mjs')).verifyResourceUsage(window);else if(smoke==='information-categories')await (await import('./information-categories-smoke.mjs')).verifyInformationCategories(window,recents,createWindow);else if(smoke==='information-emphasis')await (await import('./information-emphasis-smoke.mjs')).verifyInformationEmphasis(window,recents);else if(smoke==='topic-sentences')await (await import('./topic-sentences-smoke.mjs')).verifyTopicSentences(window,recents);else if(smoke==='page-edits')await (await import('./page-edits-smoke.mjs')).verifyPageEdits(window,recents);else if(smoke==='cache-progress')await (await import('./cache-progress-smoke.mjs')).verifyCacheProgress(window);else if(smoke==='quick-links')await (await import('./quick-links-smoke.mjs')).verifyQuickLinks(window);else if(smoke==='translation-prefetch')await (await import('./translation-prefetch-smoke.mjs')).verifyTranslationPrefetch(window,recents);else if(smoke==='pdf-navigation')await (await import('./pdf-navigation-smoke.mjs')).verifyPDFNavigation(window,recents);else if(['sidebar','sidebar-keys'].includes(smoke))await (await import('./sidebar-smoke.mjs')).verifySidebar(window,recents);else if(smoke==='advanced-cache')await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);else if(smoke==='large-open')await (await import('./large-open-smoke.mjs')).verifyLargeOpen(window,recents);else if(smoke==='file-menu')await (await import('./file-menu-smoke.mjs')).verifyFileMenu(window,recents);else if(smoke==='recent-menu')await (await import('./recent-menu-smoke.mjs')).verifyRecentMenu(window,recents);else if(smoke==='startup')await (await import('./startup-smoke.mjs')).verifyStartup(window);else if(smoke==='session')await (await import('./session-smoke.mjs')).verifySession(window,windows,createWindow);else if(smoke==='settings-menu')await (await import('./settings-menu-smoke.mjs')).verifySettingsMenu(window,windows);else if(smoke==='settings-native')await (await import('./settings-native-smoke.mjs')).verifyNativeSettings(window,windows);else if(smoke==='settings-workspace')await (await import('./settings-workspace-smoke.mjs')).verifySettingsWorkspace(window);else if(smoke==='layout-settings')await (await import('./layout-settings-smoke.mjs')).verifyLayoutSettings(window);else if(smoke==='windows-settings')await (await import('./windows-settings-smoke.mjs')).verifyWindowsSettings(window);else if(smoke==='locales')await (await import('./locales-smoke.mjs')).verifyLocales(window);else if(smoke==='advanced')await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);else if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='crop')await (await import('./crop-smoke.mjs')).verifyCrop(window,recents);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(['annotations','annotation-shortcuts'].includes(smoke))await (await import('./annotations-smoke.mjs')).verifyAnnotations(window,recents);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
- }).catch(async error=>{if(smoke||ciLaunchCheck){await backend?.close();console.error(ciLaunchCheck?'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL':'Desktop smoke failed:',error.stack||error.message);if(smoke==='file-open')await writeFile('/tmp/preview-system-open-result.json',JSON.stringify({passed:false,error:error.message}));app.exit(1);return;}dialog.showErrorBox('PDFMathReader',`The local reader could not start.\n\n${error?.message||'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`);app.quit();});
- app.on('before-quit',event=>{
-  appUpdates?.stop();
-  if(!backend || quitting)return;
-  event.preventDefault();quitting=true;
-  void Promise.allSettled([...windows.keys()].map(saveWindowReadingView)).finally(()=>Promise.allSettled([...windows.values()].map(state=>state.backend.close()).concat([...closingBackends,preferences?.flush(),serviceCredentialStore?.flush(),recents?.flush(),documentSession?.saveOnQuit(),annotations?.flush()])).finally(()=>app.quit()));
- });
 }

@@ -1,9 +1,16 @@
 <script setup>
-import {computed, onBeforeUnmount, onMounted, ref} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const SUPPORTED_LANGUAGES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'fr', 'es']);
 const NO_WINDOW_ID = Symbol('no-window-id');
-const RESULT_STATUSES = Object.freeze(['pending', 'running', 'success', 'error', 'skipped', 'cancelled']);
+const RESULT_STATUSES = Object.freeze([
+  'pending',
+  'running',
+  'success',
+  'error',
+  'skipped',
+  'cancelled',
+]);
 
 const props = defineProps({
   language: {
@@ -32,13 +39,16 @@ const messages = Object.freeze({
     refresh: 'Refresh context',
     cancel: 'Cancel test',
     kernelAction: 'Test kernel communication',
-    kernelDescription: 'Use a sample PDF to verify kernel processing; the translation channel uses a local mock response.',
-    kernelInspectorDescription: 'Inspect a sample PDF and verify extraction and grouping through the local kernel.',
+    kernelDescription:
+      'Use a sample PDF to verify kernel processing; the translation channel uses a local mock response.',
+    kernelInspectorDescription:
+      'Inspect a sample PDF and verify extraction and grouping through the local kernel.',
     providerAction: 'Test current translation provider',
     providerDescription: 'Send a small diagnostic translation through the selected provider.',
     batchAction: 'Batch test providers',
     batchDescription: 'Run the provider checks for this kernel in one batch.',
-    batchHint: 'Provider and batch tests make real requests. Batch uses configured providers only; no secret fields appear here.',
+    batchHint:
+      'Provider and batch tests make real requests. Batch uses configured providers only; no secret fields appear here.',
     noBridge: 'The developer test bridge is unavailable.',
     contextError: 'Could not load the current test context.',
     statusError: 'Could not read the test status.',
@@ -60,7 +70,8 @@ const messages = Object.freeze({
     liveStarted: 'Translation test started.',
     liveExisting: 'A translation test is already running.',
     liveProgress: '{completed} of {total} checks complete.',
-    liveFinished: 'Translation test finished: {success} succeeded, {error} errored, {skipped} skipped, {cancelled} cancelled.',
+    liveFinished:
+      'Translation test finished: {success} succeeded, {error} errored, {skipped} skipped, {cancelled} cancelled.',
     liveFinishedEmpty: 'Translation test finished with no reported checks.',
     selectedReader: 'Selected reader window',
   }),
@@ -89,7 +100,8 @@ const messages = Object.freeze({
     providerDescription: '通过当前提供商发送一次小型诊断翻译。',
     batchAction: '批量测试提供商',
     batchDescription: '一次运行此内核的提供商检查。',
-    batchHint: '当前提供商和批量测试会发出真实请求；批量测试仅使用已配置的提供商，此处不显示密钥字段。',
+    batchHint:
+      '当前提供商和批量测试会发出真实请求；批量测试仅使用已配置的提供商，此处不显示密钥字段。',
     noBridge: '开发者测试桥接不可用。',
     contextError: '无法加载当前测试上下文。',
     statusError: '无法读取测试状态。',
@@ -111,7 +123,8 @@ const messages = Object.freeze({
     liveStarted: '翻译测试已开始。',
     liveExisting: '已有翻译测试正在运行。',
     liveProgress: '已完成 {completed} / {total} 项检查。',
-    liveFinished: '翻译测试已结束：成功 {success} 项，错误 {error} 项，跳过 {skipped} 项，取消 {cancelled} 项。',
+    liveFinished:
+      '翻译测试已结束：成功 {success} 项，错误 {error} 项，跳过 {skipped} 项，取消 {cancelled} 项。',
     liveFinishedEmpty: '翻译测试结束，但没有报告检查结果。',
     selectedReader: '已选阅读器窗口',
   }),
@@ -140,7 +153,8 @@ const messages = Object.freeze({
     providerDescription: '透過目前提供者傳送小型診斷翻譯。',
     batchAction: '批次測試提供者',
     batchDescription: '一次執行此核心的提供者檢查。',
-    batchHint: '目前提供者與批次測試會發出實際請求；批次測試僅使用已設定的提供者，此處不顯示密鑰欄位。',
+    batchHint:
+      '目前提供者與批次測試會發出實際請求；批次測試僅使用已設定的提供者，此處不顯示密鑰欄位。',
     noBridge: '開發者測試橋接無法使用。',
     contextError: '無法載入目前測試內容。',
     statusError: '無法讀取測試狀態。',
@@ -162,7 +176,8 @@ const messages = Object.freeze({
     liveStarted: '翻譯測試已開始。',
     liveExisting: '已有翻譯測試正在執行。',
     liveProgress: '已完成 {total} 項檢查中的 {completed} 項。',
-    liveFinished: '翻譯測試已結束：成功 {success} 項，錯誤 {error} 項，略過 {skipped} 項，取消 {cancelled} 項。',
+    liveFinished:
+      '翻譯測試已結束：成功 {success} 項，錯誤 {error} 項，略過 {skipped} 項，取消 {cancelled} 項。',
     liveFinishedEmpty: '翻譯測試結束，但沒有回報檢查結果。',
     selectedReader: '已選閱讀器視窗',
   }),
@@ -185,13 +200,15 @@ const messages = Object.freeze({
     refresh: 'コンテキストを更新',
     cancel: 'テストをキャンセル',
     kernelAction: 'カーネル通信をテスト',
-    kernelDescription: 'サンプル PDF でカーネル処理を確認します。翻訳経路はローカルのモック応答を使用します。',
+    kernelDescription:
+      'サンプル PDF でカーネル処理を確認します。翻訳経路はローカルのモック応答を使用します。',
     kernelInspectorDescription: 'ローカルカーネルでサンプル PDF の抽出とグループ化を確認します。',
     providerAction: '現在の翻訳プロバイダーをテスト',
     providerDescription: '選択中のプロバイダーで小さな診断翻訳を送信します。',
     batchAction: 'プロバイダーを一括テスト',
     batchDescription: 'このカーネルのプロバイダー検査をまとめて実行します。',
-    batchHint: '現在のプロバイダーと一括テストは実際のリクエストを送信します。一括テストは設定済みプロバイダーだけを対象にします。',
+    batchHint:
+      '現在のプロバイダーと一括テストは実際のリクエストを送信します。一括テストは設定済みプロバイダーだけを対象にします。',
     noBridge: '開発者テストブリッジを利用できません。',
     contextError: '現在のテストコンテキストを読み込めませんでした。',
     statusError: 'テスト状態を読み取れませんでした。',
@@ -213,7 +230,8 @@ const messages = Object.freeze({
     liveStarted: '翻訳テストを開始しました。',
     liveExisting: '翻訳テストがすでに実行中です。',
     liveProgress: '{total} 件中 {completed} 件の検査が完了しました。',
-    liveFinished: '翻訳テストが終了しました。成功 {success} 件、エラー {error} 件、スキップ {skipped} 件、キャンセル {cancelled} 件です。',
+    liveFinished:
+      '翻訳テストが終了しました。成功 {success} 件、エラー {error} 件、スキップ {skipped} 件、キャンセル {cancelled} 件です。',
     liveFinishedEmpty: '翻訳テストは終了しましたが、検査結果は報告されませんでした。',
     selectedReader: '選択中のリーダーウィンドウ',
   }),
@@ -236,13 +254,15 @@ const messages = Object.freeze({
     refresh: '컨텍스트 새로 고침',
     cancel: '테스트 취소',
     kernelAction: '커널 통신 테스트',
-    kernelDescription: '샘플 PDF로 커널 처리를 확인합니다. 번역 경로는 로컬 모의 응답을 사용합니다.',
+    kernelDescription:
+      '샘플 PDF로 커널 처리를 확인합니다. 번역 경로는 로컬 모의 응답을 사용합니다.',
     kernelInspectorDescription: '로컬 커널로 샘플 PDF의 추출과 그룹화를 확인합니다.',
     providerAction: '현재 번역 제공자 테스트',
     providerDescription: '선택한 제공자로 작은 진단 번역을 보냅니다.',
     batchAction: '제공자 일괄 테스트',
     batchDescription: '이 커널의 제공자 검사를 한 번에 실행합니다.',
-    batchHint: '현재 제공자와 일괄 테스트는 실제 요청을 보냅니다. 일괄 테스트는 구성된 제공자만 테스트하며 비밀 필드는 표시하지 않습니다.',
+    batchHint:
+      '현재 제공자와 일괄 테스트는 실제 요청을 보냅니다. 일괄 테스트는 구성된 제공자만 테스트하며 비밀 필드는 표시하지 않습니다.',
     noBridge: '개발자 테스트 브리지를 사용할 수 없습니다.',
     contextError: '현재 테스트 컨텍스트를 불러오지 못했습니다.',
     statusError: '테스트 상태를 읽지 못했습니다.',
@@ -264,7 +284,8 @@ const messages = Object.freeze({
     liveStarted: '번역 테스트를 시작했습니다.',
     liveExisting: '번역 테스트가 이미 실행 중입니다.',
     liveProgress: '{total}개 검사 중 {completed}개가 완료되었습니다.',
-    liveFinished: '번역 테스트가 끝났습니다. 성공 {success}개, 오류 {error}개, 건너뜀 {skipped}개, 취소 {cancelled}개입니다.',
+    liveFinished:
+      '번역 테스트가 끝났습니다. 성공 {success}개, 오류 {error}개, 건너뜀 {skipped}개, 취소 {cancelled}개입니다.',
     liveFinishedEmpty: '번역 테스트가 끝났지만 보고된 검사가 없습니다.',
     selectedReader: '선택한 리더 창',
   }),
@@ -287,13 +308,16 @@ const messages = Object.freeze({
     refresh: 'Actualiser le contexte',
     cancel: 'Annuler le test',
     kernelAction: 'Tester la communication du noyau',
-    kernelDescription: 'Vérifiez le traitement du noyau avec un PDF d’exemple ; le canal de traduction utilise une réponse simulée locale.',
-    kernelInspectorDescription: 'Vérifiez l’extraction et le groupement d’un PDF d’exemple avec le noyau local.',
+    kernelDescription:
+      'Vérifiez le traitement du noyau avec un PDF d’exemple ; le canal de traduction utilise une réponse simulée locale.',
+    kernelInspectorDescription:
+      'Vérifiez l’extraction et le groupement d’un PDF d’exemple avec le noyau local.',
     providerAction: 'Tester le fournisseur de traduction actuel',
     providerDescription: 'Envoyez une petite traduction de diagnostic au fournisseur sélectionné.',
     batchAction: 'Tester les fournisseurs par lot',
     batchDescription: 'Exécutez en une fois les vérifications des fournisseurs de ce noyau.',
-    batchHint: 'Les tests du fournisseur actuel et par lot effectuent de vraies requêtes. Le lot utilise uniquement les fournisseurs configurés ; aucun champ secret n’apparaît ici.',
+    batchHint:
+      'Les tests du fournisseur actuel et par lot effectuent de vraies requêtes. Le lot utilise uniquement les fournisseurs configurés ; aucun champ secret n’apparaît ici.',
     noBridge: 'Le pont de test développeur est indisponible.',
     contextError: 'Impossible de charger le contexte de test actuel.',
     statusError: 'Impossible de lire l’état du test.',
@@ -315,7 +339,8 @@ const messages = Object.freeze({
     liveStarted: 'Le test de traduction a commencé.',
     liveExisting: 'Un test de traduction est déjà en cours.',
     liveProgress: '{completed} vérifications sur {total} sont terminées.',
-    liveFinished: 'Le test de traduction est terminé : {success} réussie(s), {error} erreur(s), {skipped} ignorée(s), {cancelled} annulée(s).',
+    liveFinished:
+      'Le test de traduction est terminé : {success} réussie(s), {error} erreur(s), {skipped} ignorée(s), {cancelled} annulée(s).',
     liveFinishedEmpty: 'Le test de traduction est terminé sans vérification signalée.',
     selectedReader: 'Fenêtre de lecture sélectionnée',
   }),
@@ -338,13 +363,16 @@ const messages = Object.freeze({
     refresh: 'Actualizar contexto',
     cancel: 'Cancelar prueba',
     kernelAction: 'Probar la comunicación del núcleo',
-    kernelDescription: 'Verifica el procesamiento del núcleo con un PDF de muestra; el canal de traducción usa una respuesta simulada local.',
-    kernelInspectorDescription: 'Comprueba la extracción y la agrupación de un PDF de muestra con el núcleo local.',
+    kernelDescription:
+      'Verifica el procesamiento del núcleo con un PDF de muestra; el canal de traducción usa una respuesta simulada local.',
+    kernelInspectorDescription:
+      'Comprueba la extracción y la agrupación de un PDF de muestra con el núcleo local.',
     providerAction: 'Probar el proveedor de traducción actual',
     providerDescription: 'Envía una pequeña traducción de diagnóstico al proveedor seleccionado.',
     batchAction: 'Probar proveedores por lotes',
     batchDescription: 'Ejecuta en un lote las comprobaciones de proveedores de este núcleo.',
-    batchHint: 'Las pruebas del proveedor actual y por lotes realizan solicitudes reales. El lote usa solo proveedores configurados; aquí no aparecen campos secretos.',
+    batchHint:
+      'Las pruebas del proveedor actual y por lotes realizan solicitudes reales. El lote usa solo proveedores configurados; aquí no aparecen campos secretos.',
     noBridge: 'El puente de pruebas de desarrollador no está disponible.',
     contextError: 'No se pudo cargar el contexto de prueba actual.',
     statusError: 'No se pudo leer el estado de la prueba.',
@@ -366,7 +394,8 @@ const messages = Object.freeze({
     liveStarted: 'La prueba de traducción ha comenzado.',
     liveExisting: 'Ya hay una prueba de traducción en curso.',
     liveProgress: '{completed} de {total} comprobaciones completadas.',
-    liveFinished: 'La prueba de traducción terminó: {success} correctas, {error} con error, {skipped} omitidas y {cancelled} canceladas.',
+    liveFinished:
+      'La prueba de traducción terminó: {success} correctas, {error} con error, {skipped} omitidas y {cancelled} canceladas.',
     liveFinishedEmpty: 'La prueba de traducción terminó sin comprobaciones informadas.',
     selectedReader: 'Ventana del lector seleccionada',
   }),
@@ -382,7 +411,9 @@ const languageNames = Object.freeze({
   es: 'Español',
 });
 
-const locale = computed(() => SUPPORTED_LANGUAGES.includes(props.language) ? props.language : 'en');
+const locale = computed(() =>
+  SUPPORTED_LANGUAGES.includes(props.language) ? props.language : 'en',
+);
 const context = ref(null);
 const run = ref(null);
 const selectedWindowId = ref('');
@@ -403,7 +434,9 @@ let disposed = false;
 
 function text(key, values = {}) {
   const value = messages[locale.value]?.[key] ?? messages.en[key] ?? key;
-  return String(value).replace(/\{(\w+)\}/g, (_, name) => values[name] === undefined ? `{${name}}` : String(values[name]));
+  return String(value).replace(/\{(\w+)\}/g, (_, name) =>
+    values[name] === undefined ? `{${name}}` : String(values[name]),
+  );
 }
 
 function getBridge() {
@@ -427,25 +460,33 @@ function finiteNumber(value) {
 
 function normalizeContext(value) {
   const source = isRecord(value) ? value : {};
-  const providers = Array.isArray(source.providers) ? source.providers.map((provider, index) => {
-    const item = isRecord(provider) ? provider : {};
-    const id = item.id === undefined || item.id === null ? String(index) : item.id;
-    return {
-      id,
-      label: String(item.label ?? id),
-      configured: Boolean(item.configured),
-    };
-  }) : [];
-  const readers = Array.isArray(source.readers) ? source.readers.map((reader, index) => {
-    const item = isRecord(reader) ? reader : {};
-    const id = item.id === undefined || item.id === null ? String(index) : item.id;
-    return {id, title: String(item.title ?? `${text('reader')} ${id}`)};
-  }) : [];
+  const providers = Array.isArray(source.providers)
+    ? source.providers.map((provider, index) => {
+        const item = isRecord(provider) ? provider : {};
+        const id = item.id === undefined || item.id === null ? String(index) : item.id;
+        return {
+          id,
+          label: String(item.label ?? id),
+          configured: Boolean(item.configured),
+        };
+      })
+    : [];
+  const readers = Array.isArray(source.readers)
+    ? source.readers.map((reader, index) => {
+        const item = isRecord(reader) ? reader : {};
+        const id = item.id === undefined || item.id === null ? String(index) : item.id;
+        return { id, title: String(item.title ?? `${text('reader')} ${id}`) };
+      })
+    : [];
   return {
     windowId: source.windowId === undefined ? null : source.windowId,
     engine: source.engine === undefined || source.engine === null ? '' : String(source.engine),
-    language: source.language === undefined || source.language === null ? '' : String(source.language),
-    sourceLanguage: source.sourceLanguage === undefined || source.sourceLanguage === null ? '' : String(source.sourceLanguage),
+    language:
+      source.language === undefined || source.language === null ? '' : String(source.language),
+    sourceLanguage:
+      source.sourceLanguage === undefined || source.sourceLanguage === null
+        ? ''
+        : String(source.sourceLanguage),
     concurrency: source.concurrency,
     pageConcurrency: source.pageConcurrency,
     providerId: source.providerId === undefined ? null : source.providerId,
@@ -471,7 +512,10 @@ function normalizeResult(value, index) {
 function normalizeRunSnapshot(value) {
   if (!isRecord(value)) return null;
   const results = Array.isArray(value.results) ? value.results.map(normalizeResult) : [];
-  const running = value.running === undefined ? results.some(result => result.status === 'running' || result.status === 'pending') : Boolean(value.running);
+  const running =
+    value.running === undefined
+      ? results.some((result) => result.status === 'running' || result.status === 'pending')
+      : Boolean(value.running);
   return {
     id: value.id === undefined || value.id === null ? '' : String(value.id),
     running,
@@ -481,7 +525,7 @@ function normalizeRunSnapshot(value) {
 
 function currentReader() {
   const readers = context.value?.readers || [];
-  return readers.find(reader => String(reader.id) === String(selectedWindowId.value)) || null;
+  return readers.find((reader) => String(reader.id) === String(selectedWindowId.value)) || null;
 }
 
 const readers = computed(() => context.value?.readers || []);
@@ -492,20 +536,35 @@ const currentWindowId = computed(() => {
 });
 const selectedProvider = computed(() => {
   const providerId = context.value?.providerId;
-  return (context.value?.providers || []).find(provider => String(provider.id) === String(providerId)) || null;
+  return (
+    (context.value?.providers || []).find(
+      (provider) => String(provider.id) === String(providerId),
+    ) || null
+  );
 });
 const providerName = computed(() => {
   if (selectedProvider.value) return selectedProvider.value.label;
-  if (context.value?.providerId !== undefined && context.value?.providerId !== null && context.value?.providerId !== '') return String(context.value.providerId);
+  if (
+    context.value?.providerId !== undefined &&
+    context.value?.providerId !== null &&
+    context.value?.providerId !== ''
+  )
+    return String(context.value.providerId);
   return text('notConfigured');
 });
 const providerConfiguration = computed(() => {
   if (!selectedProvider.value) return text('notConfigured');
   return selectedProvider.value.configured ? text('configured') : text('notConfigured');
 });
-const kernelActionDescription = computed(() => context.value?.engine === 'pdf_inspector' ? text('kernelInspectorDescription') : text('kernelDescription'));
+const kernelActionDescription = computed(() =>
+  context.value?.engine === 'pdf_inspector'
+    ? text('kernelInspectorDescription')
+    : text('kernelDescription'),
+);
 const isRunning = computed(() => Boolean(run.value?.running));
-const isBusy = computed(() => contextLoading.value || statusLoading.value || actionBusy.value || cancelBusy.value);
+const isBusy = computed(
+  () => contextLoading.value || statusLoading.value || actionBusy.value || cancelBusy.value,
+);
 
 function formatLanguage(value) {
   if (value === undefined || value === null || value === '') return '—';
@@ -542,19 +601,22 @@ function resultStatusLabel(status) {
 }
 
 function resultSignature(snapshot) {
-  return `${snapshot.running}|${snapshot.results.map(result => `${result.id}:${result.status}`).join(',')}`;
+  return `${snapshot.running}|${snapshot.results.map((result) => `${result.id}:${result.status}`).join(',')}`;
 }
 
 function countsFor(snapshot) {
-  return snapshot.results.reduce((counts, result) => {
-    if (result.status === 'running') counts.running += 1;
-    else if (result.status === 'pending') counts.pending += 1;
-    else if (result.status === 'success') counts.success += 1;
-    else if (result.status === 'error') counts.error += 1;
-    else if (result.status === 'skipped') counts.skipped += 1;
-    else if (result.status === 'cancelled') counts.cancelled += 1;
-    return counts;
-  }, {pending: 0, running: 0, success: 0, error: 0, skipped: 0, cancelled: 0});
+  return snapshot.results.reduce(
+    (counts, result) => {
+      if (result.status === 'running') counts.running += 1;
+      else if (result.status === 'pending') counts.pending += 1;
+      else if (result.status === 'success') counts.success += 1;
+      else if (result.status === 'error') counts.error += 1;
+      else if (result.status === 'skipped') counts.skipped += 1;
+      else if (result.status === 'cancelled') counts.cancelled += 1;
+      return counts;
+    },
+    { pending: 0, running: 0, success: 0, error: 0, skipped: 0, cancelled: 0 },
+  );
 }
 
 function announceSnapshot(snapshot, previous) {
@@ -566,7 +628,10 @@ function announceSnapshot(snapshot, previous) {
   }
   const counts = countsFor(snapshot);
   if (snapshot.running) {
-    liveMessage.value = text('liveProgress', {completed: snapshot.results.length - counts.running - counts.pending, total: snapshot.results.length});
+    liveMessage.value = text('liveProgress', {
+      completed: snapshot.results.length - counts.running - counts.pending,
+      total: snapshot.results.length,
+    });
     return;
   }
   if (!snapshot.results.length) {
@@ -613,15 +678,24 @@ async function loadContext(windowId = NO_WINDOW_ID) {
   contextLoading.value = true;
   contextError.value = '';
   try {
-    const value = windowId === NO_WINDOW_ID ? await bridge.testContext() : await bridge.testContext(windowId);
+    const value =
+      windowId === NO_WINDOW_ID ? await bridge.testContext() : await bridge.testContext(windowId);
     if (disposed) return false;
     const next = normalizeContext(value);
     context.value = next;
     const nextReaders = next.readers;
-    const selectedStillExists = selectedWindowId.value && nextReaders.some(reader => String(reader.id) === String(selectedWindowId.value));
+    const selectedStillExists =
+      selectedWindowId.value &&
+      nextReaders.some((reader) => String(reader.id) === String(selectedWindowId.value));
     if (!selectedStillExists) {
-      const contextReader = nextReaders.find(reader => String(reader.id) === String(next.windowId));
-      selectedWindowId.value = contextReader ? String(contextReader.id) : (nextReaders[0] ? String(nextReaders[0].id) : '');
+      const contextReader = nextReaders.find(
+        (reader) => String(reader.id) === String(next.windowId),
+      );
+      selectedWindowId.value = contextReader
+        ? String(contextReader.id)
+        : nextReaders[0]
+          ? String(nextReaders[0].id)
+          : '';
     }
     return true;
   } catch (error) {
@@ -632,7 +706,7 @@ async function loadContext(windowId = NO_WINDOW_ID) {
   }
 }
 
-async function readStatus({announce = true} = {}) {
+async function readStatus({ announce = true } = {}) {
   const bridge = getBridge();
   if (!bridge || typeof bridge.testStatus !== 'function') {
     statusError.value = text('noBridge');
@@ -683,13 +757,15 @@ async function startTest(kind) {
   actionBusy.value = true;
   runError.value = '';
   cancelError.value = '';
-  const refreshed = await loadContext(currentWindowId.value === null ? NO_WINDOW_ID : currentWindowId.value);
+  const refreshed = await loadContext(
+    currentWindowId.value === null ? NO_WINDOW_ID : currentWindowId.value,
+  );
   if (!refreshed || disposed) {
     actionBusy.value = false;
     return;
   }
   try {
-    const snapshot = await bridge.runTest(requestWindowId({kind}));
+    const snapshot = await bridge.runTest(requestWindowId({ kind }));
     if (disposed) return;
     const next = syncRunSnapshot(snapshot);
     if (next?.running) schedulePoll();
@@ -725,7 +801,7 @@ async function selectReader(event) {
   if (isRunning.value) return;
   const value = event.target.value;
   selectedWindowId.value = value;
-  const reader = readers.value.find(item => String(item.id) === value);
+  const reader = readers.value.find((item) => String(item.id) === value);
   await loadContext(reader ? reader.id : NO_WINDOW_ID);
 }
 
@@ -758,20 +834,40 @@ onBeforeUnmount(() => {
           <h2>{{ text('title') }}</h2>
           <p class="subtitle">{{ text('subtitle') }}</p>
         </div>
-        <button class="quiet-button" type="button" :disabled="isBusy || !bridgeAvailable" @click="refreshContext">
+        <button
+          class="quiet-button"
+          type="button"
+          :disabled="isBusy || !bridgeAvailable"
+          @click="refreshContext"
+        >
           {{ contextLoading ? text('loading') : text('refresh') }}
         </button>
       </header>
 
-      <div v-if="contextError" class="message-banner message-banner--error" role="alert">{{ contextError }}</div>
-      <div v-if="statusError" class="message-banner message-banner--error" role="alert">{{ statusError }}</div>
-      <div v-if="runError" class="message-banner message-banner--error" role="alert">{{ runError }}</div>
-      <div v-if="cancelError" class="message-banner message-banner--error" role="alert">{{ cancelError }}</div>
+      <div v-if="contextError" class="message-banner message-banner--error" role="alert">
+        {{ contextError }}
+      </div>
+      <div v-if="statusError" class="message-banner message-banner--error" role="alert">
+        {{ statusError }}
+      </div>
+      <div v-if="runError" class="message-banner message-banner--error" role="alert">
+        {{ runError }}
+      </div>
+      <div v-if="cancelError" class="message-banner message-banner--error" role="alert">
+        {{ cancelError }}
+      </div>
 
       <div v-if="readers.length > 1" class="reader-picker">
         <label for="developer-test-reader">{{ text('selectedReader') }}</label>
-        <select id="developer-test-reader" :value="selectedWindowId" :disabled="isBusy || isRunning" @change="selectReader">
-          <option v-for="reader in readers" :key="String(reader.id)" :value="String(reader.id)">{{ reader.title }}</option>
+        <select
+          id="developer-test-reader"
+          :value="selectedWindowId"
+          :disabled="isBusy || isRunning"
+          @change="selectReader"
+        >
+          <option v-for="reader in readers" :key="String(reader.id)" :value="String(reader.id)">
+            {{ reader.title }}
+          </option>
         </select>
       </div>
 
@@ -790,7 +886,10 @@ onBeforeUnmount(() => {
         </div>
         <div class="context-item">
           <dt>{{ text('provider') }}</dt>
-          <dd><span>{{ providerName }}</span><span class="context-subvalue">{{ providerConfiguration }}</span></dd>
+          <dd>
+            <span>{{ providerName }}</span
+            ><span class="context-subvalue">{{ providerConfiguration }}</span>
+          </dd>
         </div>
         <div class="context-item">
           <dt>{{ text('concurrency') }}</dt>
@@ -803,15 +902,30 @@ onBeforeUnmount(() => {
       </dl>
 
       <div class="test-actions" :aria-label="text('title')">
-        <button class="test-action" type="button" :disabled="isBusy || isRunning || !bridgeAvailable" @click="startTest('kernel')">
+        <button
+          class="test-action"
+          type="button"
+          :disabled="isBusy || isRunning || !bridgeAvailable"
+          @click="startTest('kernel')"
+        >
           <span class="test-action-title">{{ text('kernelAction') }}</span>
           <span class="test-action-description">{{ kernelActionDescription }}</span>
         </button>
-        <button class="test-action" type="button" :disabled="isBusy || isRunning || !bridgeAvailable" @click="startTest('provider')">
+        <button
+          class="test-action"
+          type="button"
+          :disabled="isBusy || isRunning || !bridgeAvailable"
+          @click="startTest('provider')"
+        >
           <span class="test-action-title">{{ text('providerAction') }}</span>
           <span class="test-action-description">{{ text('providerDescription') }}</span>
         </button>
-        <button class="test-action" type="button" :disabled="isBusy || isRunning || !bridgeAvailable" @click="startTest('batch')">
+        <button
+          class="test-action"
+          type="button"
+          :disabled="isBusy || isRunning || !bridgeAvailable"
+          @click="startTest('batch')"
+        >
           <span class="test-action-title">{{ text('batchAction') }}</span>
           <span class="test-action-description">{{ text('batchDescription') }}</span>
         </button>
@@ -819,13 +933,26 @@ onBeforeUnmount(() => {
 
       <p class="batch-hint">{{ text('batchHint') }}</p>
 
-      <section v-if="run?.results?.length" class="test-results" :aria-labelledby="'developer-test-results-' + (run?.id || 'empty')" :aria-describedby="run?.id ? 'developer-test-run-' + run.id : undefined">
+      <section
+        v-if="run?.results?.length"
+        class="test-results"
+        :aria-labelledby="'developer-test-results-' + (run?.id || 'empty')"
+        :aria-describedby="run?.id ? 'developer-test-run-' + run.id : undefined"
+      >
         <div class="results-heading">
           <div>
             <h3 :id="'developer-test-results-' + (run?.id || 'empty')">{{ text('results') }}</h3>
-            <span v-if="run?.id" class="sr-only" :id="'developer-test-run-' + run.id">{{ text('runId', {id: run.id}) }}</span>
+            <span v-if="run?.id" class="sr-only" :id="'developer-test-run-' + run.id">{{
+              text('runId', { id: run.id })
+            }}</span>
           </div>
-          <button v-if="isRunning" class="cancel-button" type="button" :disabled="cancelBusy" @click="cancelRun">
+          <button
+            v-if="isRunning"
+            class="cancel-button"
+            type="button"
+            :disabled="cancelBusy"
+            @click="cancelRun"
+          >
             {{ cancelBusy ? text('loading') : text('cancel') }}
           </button>
         </div>
@@ -837,7 +964,9 @@ onBeforeUnmount(() => {
               <span class="result-message">{{ result.message || text('noMessage') }}</span>
             </div>
             <div class="result-meta">
-              <span class="result-status" :class="`result-status--${result.status}`">{{ resultStatusLabel(result.status) }}</span>
+              <span class="result-status" :class="`result-status--${result.status}`">{{
+                resultStatusLabel(result.status)
+              }}</span>
               <span class="result-elapsed">{{ formatElapsed(result.elapsedMs) }}</span>
             </div>
             <details v-if="hasOutput(result)" class="result-output">
@@ -862,10 +991,10 @@ onBeforeUnmount(() => {
 
 .quick-tests-card {
   overflow: hidden;
-  border: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   border-radius: 16px;
   background: var(--dev-panel, #fff);
-  box-shadow: var(--dev-shadow, 0 1px 3px rgba(0, 0, 0, .035));
+  box-shadow: var(--dev-shadow, 0 1px 3px rgba(0, 0, 0, 0.035));
 }
 
 .quick-tests-header,
@@ -892,7 +1021,7 @@ onBeforeUnmount(() => {
   color: var(--dev-muted, #636366);
   font-size: 10px;
   font-weight: 650;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -906,7 +1035,7 @@ h2 {
   margin-bottom: 3px;
   font-size: 17px;
   font-weight: 650;
-  letter-spacing: -.018em;
+  letter-spacing: -0.018em;
 }
 
 .subtitle {
@@ -935,32 +1064,35 @@ select:disabled {
   flex: 0 0 auto;
   min-height: 32px;
   padding: 6px 11px;
-  border: 1px solid var(--dev-border-strong, rgba(33, 45, 68, .16));
+  border: 1px solid var(--dev-border-strong, rgba(33, 45, 68, 0.16));
   border-radius: 9px;
   color: var(--dev-text, #1d1d1f);
   background: var(--dev-panel-solid, var(--dev-panel, #fff));
   font-size: 11px;
   font-weight: 600;
-  transition: background-color 140ms ease, border-color 140ms ease, transform 100ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 100ms ease;
 }
 
 .quiet-button:hover:not(:disabled),
 .cancel-button:hover:not(:disabled) {
   border-color: var(--dev-accent, #326bdf);
-  background: var(--dev-accent-soft, rgba(50, 107, 223, .1));
+  background: var(--dev-accent-soft, rgba(50, 107, 223, 0.1));
 }
 
 .quiet-button:active:not(:disabled),
 .cancel-button:active:not(:disabled),
 .test-action:active:not(:disabled) {
-  transform: scale(.985);
+  transform: scale(0.985);
   transition-duration: 60ms;
 }
 
 .message-banner {
   margin: 0 16px 10px;
   padding: 9px 11px;
-  border: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   border-radius: 9px;
   font-size: 11px;
   line-height: 1.45;
@@ -990,7 +1122,7 @@ select:disabled {
   min-width: min(100%, 280px);
   min-height: 32px;
   padding: 5px 28px 5px 9px;
-  border: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   border-radius: 9px;
   color: var(--dev-text, #1d1d1f);
   background: var(--dev-bg, #f5f5f7);
@@ -998,7 +1130,7 @@ select:disabled {
 
 .context-grid {
   display: grid;
-  grid-template-columns: .9fr 1fr 1fr 1.7fr .7fr .9fr;
+  grid-template-columns: 0.9fr 1fr 1fr 1.7fr 0.7fr 0.9fr;
   gap: 8px 16px;
   margin: 0;
   padding-bottom: 14px;
@@ -1044,7 +1176,7 @@ select:disabled {
   gap: 10px;
   padding-top: 14px;
   padding-bottom: 10px;
-  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
 }
 
 .test-action {
@@ -1057,17 +1189,20 @@ select:disabled {
   justify-content: center;
   gap: 5px;
   padding: 12px 13px;
-  border: 1px solid var(--dev-border-strong, rgba(33, 45, 68, .16));
+  border: 1px solid var(--dev-border-strong, rgba(33, 45, 68, 0.16));
   border-radius: 12px;
   color: var(--dev-text, #1d1d1f);
   background: var(--dev-panel-solid, var(--dev-panel, #fff));
   text-align: left;
-  transition: border-color 140ms ease, background-color 140ms ease, transform 100ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    transform 100ms ease;
 }
 
 .test-action:hover:not(:disabled) {
   border-color: var(--dev-accent, #326bdf);
-  background: var(--dev-accent-soft, rgba(50, 107, 223, .1));
+  background: var(--dev-accent-soft, rgba(50, 107, 223, 0.1));
 }
 
 .test-action-title {
@@ -1094,7 +1229,7 @@ select:disabled {
 .test-results {
   padding-top: 14px;
   padding-bottom: 16px;
-  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
 }
 
 .results-heading {
@@ -1131,7 +1266,7 @@ h3 {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
   padding: 10px 11px;
-  border: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   border-radius: 10px;
   background: color-mix(in srgb, var(--dev-bg, #f5f5f7) 62%, transparent);
 }
@@ -1178,7 +1313,7 @@ h3 {
 .result-status--running,
 .result-status--pending {
   color: var(--dev-accent, #326bdf);
-  background: var(--dev-accent-soft, rgba(50, 107, 223, .1));
+  background: var(--dev-accent-soft, rgba(50, 107, 223, 0.1));
 }
 
 .result-status--success {
@@ -1206,7 +1341,7 @@ h3 {
 
 .result-output {
   grid-column: 1 / -1;
-  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border-top: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   padding-top: 6px;
 }
 
@@ -1223,7 +1358,7 @@ h3 {
   margin: 7px 0 0;
   overflow: auto;
   padding: 9px;
-  border: 1px solid var(--dev-border, rgba(33, 45, 68, .1));
+  border: 1px solid var(--dev-border, rgba(33, 45, 68, 0.1));
   border-radius: 8px;
   color: var(--dev-text, #1d1d1f);
   background: var(--dev-panel-solid, var(--dev-panel, #fff));
@@ -1254,7 +1389,6 @@ summary:focus-visible {
   .context-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-
 }
 
 @media (max-width: 640px) {
@@ -1284,7 +1418,10 @@ summary:focus-visible {
 }
 
 @media (prefers-color-scheme: dark) {
-  .developer-quick-tests { --dev-success: #84c99e; --dev-error: #f0a39c; }
+  .developer-quick-tests {
+    --dev-success: #84c99e;
+    --dev-error: #f0a39c;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

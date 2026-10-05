@@ -16,11 +16,11 @@ pdf-lib for their fixtures.
 
 Using identical freshly built `dist` contents:
 
-| Production staged content | Bytes | MiB |
-| --- | ---: | ---: |
-| Before Express bundling | 18,325,719 | 17.48 |
-| After Express bundling | 17,002,252 | 16.21 |
-| Saved | 1,323,467 | 1.26 |
+| Production staged content |      Bytes |   MiB |
+| ------------------------- | ---------: | ----: |
+| Before Express bundling   | 18,325,719 | 17.48 |
+| After Express bundling    | 17,002,252 | 16.21 |
+| Saved                     |  1,323,467 |  1.26 |
 
 This is a 7.22% reduction of application content, excluding Electron itself.
 It is not a measurement of the compressed distribution ZIP.

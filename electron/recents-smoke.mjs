@@ -1,49 +1,411 @@
 import assert from 'node:assert/strict';
-import {PDFDocument,StandardFonts} from 'pdf-lib';
-import {mkdtemp,writeFile,rm,mkdir} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-const cornerNames=['topLeft','topRight','bottomRight','bottomLeft'];
-function assertRectClose(actual,expected,label,tolerance=.75){
- assert.ok(actual,`${label}: actual rectangle is missing`);assert.ok(expected,`${label}: expected rectangle is missing`);
- const deltas=cornerNames.flatMap(name=>actual.corners[name].map((value,index)=>Math.abs(value-expected.corners[name][index]))),max=Math.max(...deltas);
- assert.ok(max<=tolerance,`${label}: corner drift ${max.toFixed(3)}px exceeds ${tolerance}px (expected ${JSON.stringify(expected.corners)}, got ${JSON.stringify(actual.corners)})`);
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const cornerNames = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'];
+function assertRectClose(actual, expected, label, tolerance = 0.75) {
+  assert.ok(actual, `${label}: actual rectangle is missing`);
+  assert.ok(expected, `${label}: expected rectangle is missing`);
+  const deltas = cornerNames.flatMap((name) =>
+      actual.corners[name].map((value, index) => Math.abs(value - expected.corners[name][index])),
+    ),
+    max = Math.max(...deltas);
+  assert.ok(
+    max <= tolerance,
+    `${label}: corner drift ${max.toFixed(3)}px exceeds ${tolerance}px (expected ${JSON.stringify(expected.corners)}, got ${JSON.stringify(actual.corners)})`,
+  );
 }
-function rectDelta(a,b){if(!a||!b)return null;return Math.max(...cornerNames.flatMap(name=>a.corners[name].map((value,index)=>Math.abs(value-b.corners[name][index]))));}
-export async function verifyRecents(window,recents){
- const dir=await mkdtemp(join(tmpdir(),'recent-pdf-')),path=join(dir,'Portrait and landscape.pdf');const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica);pdf.addPage().drawText('Recent document preview',{x:40,y:650,size:24,font});await writeFile(path,await pdf.save());
- const evaluate=code=>window.webContents.executeJavaScript(code).catch(error=>{throw Error(`Renderer evaluation failed: ${code.slice(0,220)} (${error.message})`,{cause:error});});const pause=ms=>new Promise(r=>setTimeout(r,ms));async function wait(code){for(let i=0;i<100;i++){if(await evaluate(code))return;await pause(50);}throw Error('Recent UI assertion timed out');}
- try{
- await recents.remember(path);const animatedRecentId=recents.list()[0].id,visibleView={page:1,offsetX:0,offsetY:0,zoom:1,fit:'width',direction:'vertical',columns:1,sidebar:true,showTranslations:true},hiddenView={...visibleView,fit:'manual',sidebar:false};await recents.setView(animatedRecentId,visibleView);await window.webContents.reload();await wait(`!!document.querySelector('.recent-document')`);await wait(`document.querySelector('.recent-document img')?.naturalWidth>0`);assert.equal(await evaluate(`document.querySelector('.recent-document').textContent.trim()`),'');assert.equal(await evaluate(`document.querySelector('.recent-document').getAttribute('aria-label')`),'Open Portrait and landscape.pdf');assert.equal(await evaluate(`document.querySelector('.empty').classList.contains('has-recents')`),true);
- for(let i=0;i<5;i++){const folder=join(dir,String(i));await mkdir(folder);const fixture=join(folder,'Portrait and landscape.pdf'),doc=await PDFDocument.create(),face=await doc.embedFont(StandardFonts.Helvetica);const page=doc.addPage(i%2?[792,612]:[612,792]);page.drawText('Preview '+(i+2),{x:40,y:page.getHeight()-80,size:30,font:face});await writeFile(fixture,await doc.save());await recents.remember(fixture);}
- await window.webContents.reload();await wait(`document.querySelectorAll('.recent-document img').length===6&&Array.from(document.querySelectorAll('.recent-document img')).every(image=>image.naturalWidth>0)`);
- window.setSize(800,650);await pause(300);
- const gallery=await evaluate(`(()=>{const list=document.querySelector('.recent-gallery'),cards=[...list.querySelectorAll('.recent-document')].map(card=>card.getBoundingClientRect());return {overflow:list.scrollWidth>list.clientWidth,tops:cards.map(card=>card.top),labels:[...list.querySelectorAll('button')].map(card=>card.textContent.trim()),ratios:[...list.querySelectorAll('img')].map(image=>{const box=image.getBoundingClientRect();return [box.width/box.height,image.naturalWidth/image.naturalHeight];})};})()`);
- assert.equal(gallery.overflow,true);assert.ok(gallery.tops.every(top=>Math.abs(top-gallery.tops[0])<1));assert.ok(gallery.labels.every(label=>label===''));for(const [display,native] of gallery.ratios)assert.ok(Math.abs(display-native)<.02);
- assert.ok(recents.list().every(entry=>entry.thumbnail?.startsWith('data:image/png;base64,')));
- await writeFile('/tmp/pdfmathreader-recent-gallery.png',(await window.webContents.capturePage()).toPNG());
- await window.webContents.reload();await wait(`document.querySelectorAll('.recent-document img').length===6&&Array.from(document.querySelectorAll('.recent-document img')).every(image=>image.naturalWidth>0)`);
- await writeFile('/tmp/pdfmathreader-recent-gallery.json',JSON.stringify({realPagePreviews:true,horizontalGallery:true,horizontalOverflow:true,noVisibleFilenames:true,aspectRatiosPreserved:true,persistedPreviews:true}));
- let motionDebuggerAttached=false;
- try{
-  window.webContents.debugger.attach('1.3');motionDebuggerAttached=true;await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
-  await evaluate(`(()=>{window.motionFrames=[];window.motionAnimationEntries=[];window.motionNativeAnimate=Element.prototype.animate;window.motionRecentId=${JSON.stringify(animatedRecentId)};window.motionRect=element=>{if(!element)return null;const rect=element.getBoundingClientRect(),corners={topLeft:[rect.left,rect.top],topRight:[rect.right,rect.top],bottomRight:[rect.right,rect.bottom],bottomLeft:[rect.left,rect.bottom]};return {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height,corners};};window.motionTarget=()=>{const cards=[...document.querySelectorAll('.recent-document')],card=cards.find(candidate=>candidate.dataset.recentId===window.motionRecentId)||cards[0];return card?.querySelector('img');};window.motionGeometry=()=>({snapshot:window.motionRect(document.querySelector('.document-motion-snapshot')),page:window.motionRect(document.querySelector('.page')),thumbnail:window.motionRect(window.motionTarget())});window.motionSample=(index,progresses)=>{const entry=window.motionAnimationEntries[index],animation=entry.animation,wasRunning=['running','pending'].includes(animation.playState),previousTime=animation.currentTime;animation.pause();const samples=progresses.map(progress=>{animation.currentTime=entry.duration*progress;return {progress,geometry:window.motionGeometry()};});animation.currentTime=previousTime;if(wasRunning)animation.play();return samples;};const animate=window.motionNativeAnimate;Element.prototype.animate=function(frames,options){const animation=animate.call(this,frames,options);if(this.classList.contains('document-motion-snapshot')){const duration=Number(typeof options==='number'?options:options?.duration)||0,index=window.motionAnimationEntries.push({animation,duration})-1;window.motionFrames.push({frames,options,index});}return animation;};const target=window.motionTarget()?.closest('button');if(!target)throw Error('Animated recent document target is missing.');target.click();return true;})()`);
-  const openingOrigin=await evaluate(`window.motionRect(window.motionTarget())`);assert.ok(openingOrigin,'Opening thumbnail geometry is missing before the click.');await wait(`window.motionFrames.length===1&&!!document.querySelector('.document-motion-snapshot')`);assert.equal(await evaluate(`!!document.querySelector('.sidebar')&&getComputedStyle(document.querySelector('.sidebar')).display!=='none'`),true);const openingState=await evaluate(`window.previewRenderDiagnostics().readingView`);assert.equal(openingState.fit,'width');assert.equal(openingState.sidebar,true);
-  const opening=await evaluate(`window.motionFrames[0]`);assert.equal(typeof opening.index,'number',`Opening probe record is missing its index: ${JSON.stringify(opening)}`);const openingSamples=await evaluate(`window.motionSample(${opening.index},[0,1])`);assert.equal(opening.options.duration,360);assertRectClose(openingSamples[0].geometry.snapshot,openingOrigin,'Opening visible-sidebar progress 0 snapshot');assertRectClose(openingSamples[1].geometry.snapshot,openingSamples[1].geometry.page,'Opening visible-sidebar progress 1 snapshot to page');assertRectClose(openingSamples[0].geometry.page,openingSamples[1].geometry.page,'Opening visible-sidebar destination page stability');
-  await wait(`!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening&&!document.querySelector('.document-motion-snapshot')`);const openingEndPage=await evaluate(`window.motionRect(document.querySelector('.page'))`);assertRectClose(openingEndPage,openingSamples[1].geometry.page,'Opening visible-sidebar end page after snapshot removal');
-  const closingStartPage=await evaluate(`window.motionRect(document.querySelector('.page'))`);window.webContents.send('reader:action','close-document');await wait(`window.motionFrames.length===2&&!!document.querySelector('.document-motion-snapshot')`);
-  const closing=await evaluate(`window.motionFrames[1]`);assert.equal(typeof closing.index,'number',`Closing probe record is missing its index: ${JSON.stringify(closing)}`);const closingSamples=await evaluate(`window.motionSample(${closing.index},[0,1])`);assert.equal(closing.options.duration,300);assertRectClose(closingSamples[0].geometry.snapshot,closingStartPage,'Closing visible-sidebar progress 0 snapshot');assertRectClose(closingSamples[1].geometry.snapshot,closingSamples[1].geometry.thumbnail,'Closing visible-sidebar progress 1 snapshot to thumbnail');assertRectClose(closingSamples[0].geometry.thumbnail,closingSamples[1].geometry.thumbnail,'Closing visible-sidebar destination thumbnail stability');
-  await wait(`!!document.querySelector('.empty')&&!document.querySelector('.document-motion-snapshot')`);const closingEndThumbnail=await evaluate(`window.motionRect(window.motionTarget())`);assertRectClose(closingEndThumbnail,closingSamples[1].geometry.thumbnail,'Closing visible-sidebar end thumbnail after snapshot removal');assert.equal(await evaluate(`window.motionTarget()?.style.visibility`),'');await recents.setView(animatedRecentId,hiddenView);await evaluate(`window.motionTarget()?.closest('button').click();true`);const hiddenOpeningOrigin=await evaluate(`window.motionRect(window.motionTarget())`);await wait(`window.motionFrames.length===3&&!!document.querySelector('.document-motion-snapshot')`);assert.equal(await evaluate(`!document.querySelector('.sidebar')||getComputedStyle(document.querySelector('.sidebar')).display==='none'`),true);const hiddenOpeningState=await evaluate(`window.previewRenderDiagnostics().readingView`);assert.equal(hiddenOpeningState.fit,'manual');assert.equal(hiddenOpeningState.sidebar,false);
-  const hiddenOpening=await evaluate(`window.motionFrames[2]`);assert.equal(typeof hiddenOpening.index,'number',`Hidden opening probe record is missing its index: ${JSON.stringify(hiddenOpening)}`);const hiddenOpeningSamples=await evaluate(`window.motionSample(${hiddenOpening.index},[0,1])`);assert.equal(hiddenOpening.options.duration,360);assertRectClose(hiddenOpeningSamples[0].geometry.snapshot,hiddenOpeningOrigin,'Opening hidden-sidebar progress 0 snapshot');assertRectClose(hiddenOpeningSamples[1].geometry.snapshot,hiddenOpeningSamples[1].geometry.page,'Opening hidden-sidebar progress 1 snapshot to page');assertRectClose(hiddenOpeningSamples[0].geometry.page,hiddenOpeningSamples[1].geometry.page,'Opening hidden-sidebar destination page stability');await wait(`!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening&&!document.querySelector('.document-motion-snapshot')`);const hiddenOpeningEndPage=await evaluate(`window.motionRect(document.querySelector('.page'))`);assertRectClose(hiddenOpeningEndPage,hiddenOpeningSamples[1].geometry.page,'Opening hidden-sidebar end page after snapshot removal');
-  const hiddenClosingStartPage=await evaluate(`window.motionRect(document.querySelector('.page'))`);window.webContents.send('reader:action','close-document');await wait(`window.motionFrames.length===4&&!!document.querySelector('.document-motion-snapshot')`);const hiddenClosing=await evaluate(`window.motionFrames[3]`);assert.equal(typeof hiddenClosing.index,'number',`Hidden closing probe record is missing its index: ${JSON.stringify(hiddenClosing)}`);const hiddenClosingSamples=await evaluate(`window.motionSample(${hiddenClosing.index},[0,1])`);assert.equal(hiddenClosing.options.duration,300);assertRectClose(hiddenClosingSamples[0].geometry.snapshot,hiddenClosingStartPage,'Closing hidden-sidebar progress 0 snapshot');assertRectClose(hiddenClosingSamples[1].geometry.snapshot,hiddenClosingSamples[1].geometry.thumbnail,'Closing hidden-sidebar progress 1 snapshot to thumbnail');assertRectClose(hiddenClosingSamples[0].geometry.thumbnail,hiddenClosingSamples[1].geometry.thumbnail,'Closing hidden-sidebar destination thumbnail stability');await wait(`!!document.querySelector('.empty')&&!document.querySelector('.document-motion-snapshot')`);const hiddenClosingEndThumbnail=await evaluate(`window.motionRect(window.motionTarget())`);assertRectClose(hiddenClosingEndThumbnail,hiddenClosingSamples[1].geometry.thumbnail,'Closing hidden-sidebar end thumbnail after snapshot removal');assert.equal(await evaluate(`window.motionTarget()?.style.visibility`),'');console.log('Document corner transitions:',JSON.stringify({visibleSidebar:{fit:'width',opening:{progress0:openingSamples[0].geometry.snapshot.corners,progress1:openingSamples[1].geometry.snapshot.corners,endPage:openingEndPage.corners,pageMovePx:rectDelta(openingSamples[0].geometry.page,openingSamples[1].geometry.page)},closing:{progress0:closingSamples[0].geometry.snapshot.corners,progress1:closingSamples[1].geometry.snapshot.corners,endThumbnail:closingEndThumbnail.corners,thumbnailMovePx:rectDelta(closingSamples[0].geometry.thumbnail,closingSamples[1].geometry.thumbnail)}},hiddenSidebar:{fit:'manual',opening:{progress0:hiddenOpeningSamples[0].geometry.snapshot.corners,progress1:hiddenOpeningSamples[1].geometry.snapshot.corners,endPage:hiddenOpeningEndPage.corners,pageMovePx:rectDelta(hiddenOpeningSamples[0].geometry.page,hiddenOpeningSamples[1].geometry.page)},closing:{progress0:hiddenClosingSamples[0].geometry.snapshot.corners,progress1:hiddenClosingSamples[1].geometry.snapshot.corners,endThumbnail:hiddenClosingEndThumbnail.corners,thumbnailMovePx:rectDelta(hiddenClosingSamples[0].geometry.thumbnail,hiddenClosingSamples[1].geometry.thumbnail)}}}));
-  await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-  await evaluate(`window.motionTarget()?.closest('button').click();true`);await wait(`!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening`);
-  assert.equal(await evaluate(`window.motionFrames.length`),4);assert.equal(await evaluate(`document.querySelector('.reader').classList.contains('document-opening')`),false);assert.equal(await evaluate(`window.previewRenderDiagnostics().readingView.sidebar`),false);assert.equal(await evaluate(`window.previewRenderDiagnostics().readingView.fit`),'manual');
-  window.webContents.send('reader:action','close-document');await wait(`!!document.querySelector('.empty')`);assert.equal(await evaluate(`window.motionFrames.length`),4);console.log('Reduced motion: hidden-sidebar opening and closing skip scaling.');
- }finally{
-  if(motionDebuggerAttached){await evaluate(`if(window.motionNativeAnimate)Element.prototype.animate=window.motionNativeAnimate`).catch(()=>{});try{window.webContents.debugger.detach();}catch{} }
- }
- await recents.clear();await window.webContents.reload();await wait(`!!document.querySelector('.empty')`);assert.equal(await evaluate(`document.querySelectorAll('.recent-documents').length`),0);
- await recents.remember(path);await window.webContents.reload();await wait(`!!document.querySelector('.recent-heading button')`);await evaluate(`document.querySelector('.recent-heading button').click();true`);await wait(`!document.querySelector('.recent-documents')`);assert.deepEqual(recents.list(),[]);await window.webContents.reload();await wait(`!!document.querySelector('.empty')`);assert.equal(await evaluate(`document.querySelectorAll('.recent-documents').length`),0);console.log('Recent documents: reopen, startup positioning, Clear, and cleared-history reload passed.');
- }finally{await rm(dir,{recursive:true,force:true});}
+function rectDelta(a, b) {
+  if (!a || !b) return null;
+  return Math.max(
+    ...cornerNames.flatMap((name) =>
+      a.corners[name].map((value, index) => Math.abs(value - b.corners[name][index])),
+    ),
+  );
+}
+export async function verifyRecents(window, recents) {
+  const dir = await mkdtemp(join(tmpdir(), 'recent-pdf-')),
+    path = join(dir, 'Portrait and landscape.pdf');
+  const pdf = await PDFDocument.create(),
+    font = await pdf.embedFont(StandardFonts.Helvetica);
+  pdf.addPage().drawText('Recent document preview', { x: 40, y: 650, size: 24, font });
+  await writeFile(path, await pdf.save());
+  const evaluate = (code) =>
+    window.webContents.executeJavaScript(code).catch((error) => {
+      throw Error(`Renderer evaluation failed: ${code.slice(0, 220)} (${error.message})`, {
+        cause: error,
+      });
+    });
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function wait(code) {
+    for (let i = 0; i < 100; i++) {
+      if (await evaluate(code)) return;
+      await pause(50);
+    }
+    throw Error('Recent UI assertion timed out');
+  }
+  try {
+    await recents.remember(path);
+    const animatedRecentId = recents.list()[0].id,
+      visibleView = {
+        page: 1,
+        offsetX: 0,
+        offsetY: 0,
+        zoom: 1,
+        fit: 'width',
+        direction: 'vertical',
+        columns: 1,
+        sidebar: true,
+        showTranslations: true,
+      },
+      hiddenView = { ...visibleView, fit: 'manual', sidebar: false };
+    await recents.setView(animatedRecentId, visibleView);
+    await window.webContents.reload();
+    await wait(`!!document.querySelector('.recent-document')`);
+    await wait(`document.querySelector('.recent-document img')?.naturalWidth>0`);
+    assert.equal(
+      await evaluate(`document.querySelector('.recent-document').textContent.trim()`),
+      '',
+    );
+    assert.equal(
+      await evaluate(`document.querySelector('.recent-document').getAttribute('aria-label')`),
+      'Open Portrait and landscape.pdf',
+    );
+    assert.equal(
+      await evaluate(`document.querySelector('.empty').classList.contains('has-recents')`),
+      true,
+    );
+    for (let i = 0; i < 5; i++) {
+      const folder = join(dir, String(i));
+      await mkdir(folder);
+      const fixture = join(folder, 'Portrait and landscape.pdf'),
+        doc = await PDFDocument.create(),
+        face = await doc.embedFont(StandardFonts.Helvetica);
+      const page = doc.addPage(i % 2 ? [792, 612] : [612, 792]);
+      page.drawText('Preview ' + (i + 2), {
+        x: 40,
+        y: page.getHeight() - 80,
+        size: 30,
+        font: face,
+      });
+      await writeFile(fixture, await doc.save());
+      await recents.remember(fixture);
+    }
+    await window.webContents.reload();
+    await wait(
+      `document.querySelectorAll('.recent-document img').length===6&&Array.from(document.querySelectorAll('.recent-document img')).every(image=>image.naturalWidth>0)`,
+    );
+    window.setSize(800, 650);
+    await pause(300);
+    const gallery = await evaluate(
+      `(()=>{const list=document.querySelector('.recent-gallery'),cards=[...list.querySelectorAll('.recent-document')].map(card=>card.getBoundingClientRect());return {overflow:list.scrollWidth>list.clientWidth,tops:cards.map(card=>card.top),labels:[...list.querySelectorAll('button')].map(card=>card.textContent.trim()),ratios:[...list.querySelectorAll('img')].map(image=>{const box=image.getBoundingClientRect();return [box.width/box.height,image.naturalWidth/image.naturalHeight];})};})()`,
+    );
+    assert.equal(gallery.overflow, true);
+    assert.ok(gallery.tops.every((top) => Math.abs(top - gallery.tops[0]) < 1));
+    assert.ok(gallery.labels.every((label) => label === ''));
+    for (const [display, native] of gallery.ratios) assert.ok(Math.abs(display - native) < 0.02);
+    assert.ok(
+      recents.list().every((entry) => entry.thumbnail?.startsWith('data:image/png;base64,')),
+    );
+    await writeFile(
+      '/tmp/pdfmathreader-recent-gallery.png',
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    await window.webContents.reload();
+    await wait(
+      `document.querySelectorAll('.recent-document img').length===6&&Array.from(document.querySelectorAll('.recent-document img')).every(image=>image.naturalWidth>0)`,
+    );
+    await writeFile(
+      '/tmp/pdfmathreader-recent-gallery.json',
+      JSON.stringify({
+        realPagePreviews: true,
+        horizontalGallery: true,
+        horizontalOverflow: true,
+        noVisibleFilenames: true,
+        aspectRatiosPreserved: true,
+        persistedPreviews: true,
+      }),
+    );
+    let motionDebuggerAttached = false;
+    try {
+      window.webContents.debugger.attach('1.3');
+      motionDebuggerAttached = true;
+      await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
+      });
+      await evaluate(
+        `(()=>{window.motionFrames=[];window.motionAnimationEntries=[];window.motionNativeAnimate=Element.prototype.animate;window.motionRecentId=${JSON.stringify(animatedRecentId)};window.motionRect=element=>{if(!element)return null;const rect=element.getBoundingClientRect(),corners={topLeft:[rect.left,rect.top],topRight:[rect.right,rect.top],bottomRight:[rect.right,rect.bottom],bottomLeft:[rect.left,rect.bottom]};return {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height,corners};};window.motionTarget=()=>{const cards=[...document.querySelectorAll('.recent-document')],card=cards.find(candidate=>candidate.dataset.recentId===window.motionRecentId)||cards[0];return card?.querySelector('img');};window.motionGeometry=()=>({snapshot:window.motionRect(document.querySelector('.document-motion-snapshot')),page:window.motionRect(document.querySelector('.page')),thumbnail:window.motionRect(window.motionTarget())});window.motionSample=(index,progresses)=>{const entry=window.motionAnimationEntries[index],animation=entry.animation,wasRunning=['running','pending'].includes(animation.playState),previousTime=animation.currentTime;animation.pause();const samples=progresses.map(progress=>{animation.currentTime=entry.duration*progress;return {progress,geometry:window.motionGeometry()};});animation.currentTime=previousTime;if(wasRunning)animation.play();return samples;};const animate=window.motionNativeAnimate;Element.prototype.animate=function(frames,options){const animation=animate.call(this,frames,options);if(this.classList.contains('document-motion-snapshot')){const duration=Number(typeof options==='number'?options:options?.duration)||0,index=window.motionAnimationEntries.push({animation,duration})-1;window.motionFrames.push({frames,options,index});}return animation;};const target=window.motionTarget()?.closest('button');if(!target)throw Error('Animated recent document target is missing.');target.click();return true;})()`,
+      );
+      const openingOrigin = await evaluate(`window.motionRect(window.motionTarget())`);
+      assert.ok(openingOrigin, 'Opening thumbnail geometry is missing before the click.');
+      await wait(
+        `window.motionFrames.length===1&&!!document.querySelector('.document-motion-snapshot')`,
+      );
+      assert.equal(
+        await evaluate(
+          `!!document.querySelector('.sidebar')&&getComputedStyle(document.querySelector('.sidebar')).display!=='none'`,
+        ),
+        true,
+      );
+      const openingState = await evaluate(`window.previewRenderDiagnostics().readingView`);
+      assert.equal(openingState.fit, 'width');
+      assert.equal(openingState.sidebar, true);
+      const opening = await evaluate(`window.motionFrames[0]`);
+      assert.equal(
+        typeof opening.index,
+        'number',
+        `Opening probe record is missing its index: ${JSON.stringify(opening)}`,
+      );
+      const openingSamples = await evaluate(`window.motionSample(${opening.index},[0,1])`);
+      assert.equal(opening.options.duration, 360);
+      assertRectClose(
+        openingSamples[0].geometry.snapshot,
+        openingOrigin,
+        'Opening visible-sidebar progress 0 snapshot',
+      );
+      assertRectClose(
+        openingSamples[1].geometry.snapshot,
+        openingSamples[1].geometry.page,
+        'Opening visible-sidebar progress 1 snapshot to page',
+      );
+      assertRectClose(
+        openingSamples[0].geometry.page,
+        openingSamples[1].geometry.page,
+        'Opening visible-sidebar destination page stability',
+      );
+      await wait(
+        `!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening&&!document.querySelector('.document-motion-snapshot')`,
+      );
+      const openingEndPage = await evaluate(`window.motionRect(document.querySelector('.page'))`);
+      assertRectClose(
+        openingEndPage,
+        openingSamples[1].geometry.page,
+        'Opening visible-sidebar end page after snapshot removal',
+      );
+      const closingStartPage = await evaluate(`window.motionRect(document.querySelector('.page'))`);
+      window.webContents.send('reader:action', 'close-document');
+      await wait(
+        `window.motionFrames.length===2&&!!document.querySelector('.document-motion-snapshot')`,
+      );
+      const closing = await evaluate(`window.motionFrames[1]`);
+      assert.equal(
+        typeof closing.index,
+        'number',
+        `Closing probe record is missing its index: ${JSON.stringify(closing)}`,
+      );
+      const closingSamples = await evaluate(`window.motionSample(${closing.index},[0,1])`);
+      assert.equal(closing.options.duration, 300);
+      assertRectClose(
+        closingSamples[0].geometry.snapshot,
+        closingStartPage,
+        'Closing visible-sidebar progress 0 snapshot',
+      );
+      assertRectClose(
+        closingSamples[1].geometry.snapshot,
+        closingSamples[1].geometry.thumbnail,
+        'Closing visible-sidebar progress 1 snapshot to thumbnail',
+      );
+      assertRectClose(
+        closingSamples[0].geometry.thumbnail,
+        closingSamples[1].geometry.thumbnail,
+        'Closing visible-sidebar destination thumbnail stability',
+      );
+      await wait(
+        `!!document.querySelector('.empty')&&!document.querySelector('.document-motion-snapshot')`,
+      );
+      const closingEndThumbnail = await evaluate(`window.motionRect(window.motionTarget())`);
+      assertRectClose(
+        closingEndThumbnail,
+        closingSamples[1].geometry.thumbnail,
+        'Closing visible-sidebar end thumbnail after snapshot removal',
+      );
+      assert.equal(await evaluate(`window.motionTarget()?.style.visibility`), '');
+      await recents.setView(animatedRecentId, hiddenView);
+      await evaluate(`window.motionTarget()?.closest('button').click();true`);
+      const hiddenOpeningOrigin = await evaluate(`window.motionRect(window.motionTarget())`);
+      await wait(
+        `window.motionFrames.length===3&&!!document.querySelector('.document-motion-snapshot')`,
+      );
+      assert.equal(
+        await evaluate(
+          `!document.querySelector('.sidebar')||getComputedStyle(document.querySelector('.sidebar')).display==='none'`,
+        ),
+        true,
+      );
+      const hiddenOpeningState = await evaluate(`window.previewRenderDiagnostics().readingView`);
+      assert.equal(hiddenOpeningState.fit, 'manual');
+      assert.equal(hiddenOpeningState.sidebar, false);
+      const hiddenOpening = await evaluate(`window.motionFrames[2]`);
+      assert.equal(
+        typeof hiddenOpening.index,
+        'number',
+        `Hidden opening probe record is missing its index: ${JSON.stringify(hiddenOpening)}`,
+      );
+      const hiddenOpeningSamples = await evaluate(
+        `window.motionSample(${hiddenOpening.index},[0,1])`,
+      );
+      assert.equal(hiddenOpening.options.duration, 360);
+      assertRectClose(
+        hiddenOpeningSamples[0].geometry.snapshot,
+        hiddenOpeningOrigin,
+        'Opening hidden-sidebar progress 0 snapshot',
+      );
+      assertRectClose(
+        hiddenOpeningSamples[1].geometry.snapshot,
+        hiddenOpeningSamples[1].geometry.page,
+        'Opening hidden-sidebar progress 1 snapshot to page',
+      );
+      assertRectClose(
+        hiddenOpeningSamples[0].geometry.page,
+        hiddenOpeningSamples[1].geometry.page,
+        'Opening hidden-sidebar destination page stability',
+      );
+      await wait(
+        `!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening&&!document.querySelector('.document-motion-snapshot')`,
+      );
+      const hiddenOpeningEndPage = await evaluate(
+        `window.motionRect(document.querySelector('.page'))`,
+      );
+      assertRectClose(
+        hiddenOpeningEndPage,
+        hiddenOpeningSamples[1].geometry.page,
+        'Opening hidden-sidebar end page after snapshot removal',
+      );
+      const hiddenClosingStartPage = await evaluate(
+        `window.motionRect(document.querySelector('.page'))`,
+      );
+      window.webContents.send('reader:action', 'close-document');
+      await wait(
+        `window.motionFrames.length===4&&!!document.querySelector('.document-motion-snapshot')`,
+      );
+      const hiddenClosing = await evaluate(`window.motionFrames[3]`);
+      assert.equal(
+        typeof hiddenClosing.index,
+        'number',
+        `Hidden closing probe record is missing its index: ${JSON.stringify(hiddenClosing)}`,
+      );
+      const hiddenClosingSamples = await evaluate(
+        `window.motionSample(${hiddenClosing.index},[0,1])`,
+      );
+      assert.equal(hiddenClosing.options.duration, 300);
+      assertRectClose(
+        hiddenClosingSamples[0].geometry.snapshot,
+        hiddenClosingStartPage,
+        'Closing hidden-sidebar progress 0 snapshot',
+      );
+      assertRectClose(
+        hiddenClosingSamples[1].geometry.snapshot,
+        hiddenClosingSamples[1].geometry.thumbnail,
+        'Closing hidden-sidebar progress 1 snapshot to thumbnail',
+      );
+      assertRectClose(
+        hiddenClosingSamples[0].geometry.thumbnail,
+        hiddenClosingSamples[1].geometry.thumbnail,
+        'Closing hidden-sidebar destination thumbnail stability',
+      );
+      await wait(
+        `!!document.querySelector('.empty')&&!document.querySelector('.document-motion-snapshot')`,
+      );
+      const hiddenClosingEndThumbnail = await evaluate(`window.motionRect(window.motionTarget())`);
+      assertRectClose(
+        hiddenClosingEndThumbnail,
+        hiddenClosingSamples[1].geometry.thumbnail,
+        'Closing hidden-sidebar end thumbnail after snapshot removal',
+      );
+      assert.equal(await evaluate(`window.motionTarget()?.style.visibility`), '');
+      console.log(
+        'Document corner transitions:',
+        JSON.stringify({
+          visibleSidebar: {
+            fit: 'width',
+            opening: {
+              progress0: openingSamples[0].geometry.snapshot.corners,
+              progress1: openingSamples[1].geometry.snapshot.corners,
+              endPage: openingEndPage.corners,
+              pageMovePx: rectDelta(
+                openingSamples[0].geometry.page,
+                openingSamples[1].geometry.page,
+              ),
+            },
+            closing: {
+              progress0: closingSamples[0].geometry.snapshot.corners,
+              progress1: closingSamples[1].geometry.snapshot.corners,
+              endThumbnail: closingEndThumbnail.corners,
+              thumbnailMovePx: rectDelta(
+                closingSamples[0].geometry.thumbnail,
+                closingSamples[1].geometry.thumbnail,
+              ),
+            },
+          },
+          hiddenSidebar: {
+            fit: 'manual',
+            opening: {
+              progress0: hiddenOpeningSamples[0].geometry.snapshot.corners,
+              progress1: hiddenOpeningSamples[1].geometry.snapshot.corners,
+              endPage: hiddenOpeningEndPage.corners,
+              pageMovePx: rectDelta(
+                hiddenOpeningSamples[0].geometry.page,
+                hiddenOpeningSamples[1].geometry.page,
+              ),
+            },
+            closing: {
+              progress0: hiddenClosingSamples[0].geometry.snapshot.corners,
+              progress1: hiddenClosingSamples[1].geometry.snapshot.corners,
+              endThumbnail: hiddenClosingEndThumbnail.corners,
+              thumbnailMovePx: rectDelta(
+                hiddenClosingSamples[0].geometry.thumbnail,
+                hiddenClosingSamples[1].geometry.thumbnail,
+              ),
+            },
+          },
+        }),
+      );
+      await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      });
+      await evaluate(`window.motionTarget()?.closest('button').click();true`);
+      await wait(
+        `!!document.querySelector('.page canvas')?.width&&!window.previewRenderDiagnostics().opening`,
+      );
+      assert.equal(await evaluate(`window.motionFrames.length`), 4);
+      assert.equal(
+        await evaluate(`document.querySelector('.reader').classList.contains('document-opening')`),
+        false,
+      );
+      assert.equal(await evaluate(`window.previewRenderDiagnostics().readingView.sidebar`), false);
+      assert.equal(await evaluate(`window.previewRenderDiagnostics().readingView.fit`), 'manual');
+      window.webContents.send('reader:action', 'close-document');
+      await wait(`!!document.querySelector('.empty')`);
+      assert.equal(await evaluate(`window.motionFrames.length`), 4);
+      console.log('Reduced motion: hidden-sidebar opening and closing skip scaling.');
+    } finally {
+      if (motionDebuggerAttached) {
+        await evaluate(
+          `if(window.motionNativeAnimate)Element.prototype.animate=window.motionNativeAnimate`,
+        ).catch(() => {});
+        try {
+          window.webContents.debugger.detach();
+        } catch {}
+      }
+    }
+    await recents.clear();
+    await window.webContents.reload();
+    await wait(`!!document.querySelector('.empty')`);
+    assert.equal(await evaluate(`document.querySelectorAll('.recent-documents').length`), 0);
+    await recents.remember(path);
+    await window.webContents.reload();
+    await wait(`!!document.querySelector('.recent-heading button')`);
+    await evaluate(`document.querySelector('.recent-heading button').click();true`);
+    await wait(`!document.querySelector('.recent-documents')`);
+    assert.deepEqual(recents.list(), []);
+    await window.webContents.reload();
+    await wait(`!!document.querySelector('.empty')`);
+    assert.equal(await evaluate(`document.querySelectorAll('.recent-documents').length`), 0);
+    console.log(
+      'Recent documents: reopen, startup positioning, Clear, and cleared-history reload passed.',
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+release/
+.cache/
+.codegraph/
+.cursor/
+public/symbols/
+src/build-info.mjs
+package-lock.json
+doc/**/*-baseline.json
+doc/**/*-optimized.json
+doc/**/*-result.json
+doc/**/*-results.json

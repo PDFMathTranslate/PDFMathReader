@@ -125,15 +125,15 @@ function withListener(attrs, name, handler) {
     ...attrs,
     [name]: listener
       ? (event) => {
-        invoke(listener, event);
-        handler(event);
-      }
+          invoke(listener, event);
+          handler(event);
+        }
       : handler,
   };
 }
 
 function controlAttrs(attrs, ...classes) {
-  const forwarded = {...attrs};
+  const forwarded = { ...attrs };
   delete forwarded['onUpdate:modelValue'];
   delete forwarded['onUpdate:open'];
   delete forwarded.modelValue;
@@ -176,23 +176,32 @@ export const MacButton = defineComponent({
   name: 'WindowsMacButton',
   inheritAttrs: false,
   props: {
-    size: {default: 'regular'},
-    variant: {default: 'default'},
-    disabled: {type: Boolean, default: false},
+    size: { default: 'regular' },
+    variant: { default: 'default' },
+    disabled: { type: Boolean, default: false },
   },
-  setup(props, {attrs, slots, expose}) {
+  setup(props, { attrs, slots, expose }) {
     const element = ref(null);
-    onMounted(() => { void ensureFluent(); });
+    onMounted(() => {
+      void ensureFluent();
+    });
     exposeControl(expose, element);
-    return () => h('fluent-button', {
-      ...controlAttrs(attrs, 'macvue-button'),
-      ref: element,
-      appearance: props.variant === 'prominent' ? 'primary' : 'subtle',
-      size: buttonSize(props.size),
-      'icon-only': booleanAttribute(normalizeClass(attrs.class).split(/\s+/).includes('icon-button')),
-      type: attrs.type || 'button',
-      disabled: booleanAttribute(props.disabled),
-    }, slots.default?.());
+    return () =>
+      h(
+        'fluent-button',
+        {
+          ...controlAttrs(attrs, 'macvue-button'),
+          ref: element,
+          appearance: props.variant === 'prominent' ? 'primary' : 'subtle',
+          size: buttonSize(props.size),
+          'icon-only': booleanAttribute(
+            normalizeClass(attrs.class).split(/\s+/).includes('icon-button'),
+          ),
+          type: attrs.type || 'button',
+          disabled: booleanAttribute(props.disabled),
+        },
+        slots.default?.(),
+      );
   },
 });
 
@@ -200,21 +209,20 @@ export const MacSwitch = defineComponent({
   name: 'WindowsMacSwitch',
   inheritAttrs: false,
   props: {
-    modelValue: {default: undefined},
-    defaultValue: {default: undefined},
-    size: {default: 'regular'},
-    disabled: {type: Boolean, default: false},
-    name: {default: undefined},
-    value: {default: 'on'},
-    required: {type: Boolean, default: false},
+    modelValue: { default: undefined },
+    defaultValue: { default: undefined },
+    size: { default: 'regular' },
+    disabled: { type: Boolean, default: false },
+    name: { default: undefined },
+    value: { default: 'on' },
+    required: { type: Boolean, default: false },
   },
   emits: ['update:modelValue'],
-  setup(props, {attrs, emit, expose, slots}) {
+  setup(props, { attrs, emit, expose, slots }) {
     const element = ref(null);
     const localValue = ref(props.defaultValue ?? false);
-    const currentValue = () => props.modelValue === undefined
-      ? localValue.value
-      : Boolean(props.modelValue);
+    const currentValue = () =>
+      props.modelValue === undefined ? localValue.value : Boolean(props.modelValue);
     const sync = () => {
       if (!element.value) return;
       element.value.checked = currentValue();
@@ -228,19 +236,30 @@ export const MacSwitch = defineComponent({
       localValue.value = value;
       emit('update:modelValue', value);
     };
-    onMounted(() => { void ensureFluent().then(sync); });
+    onMounted(() => {
+      void ensureFluent().then(sync);
+    });
     watch(() => [props.modelValue, props.disabled, props.name, props.value, props.required], sync);
     exposeControl(expose, element);
-    return () => h('fluent-switch', withListener({
-      ...controlAttrs(attrs, 'macvue-switch'),
-      ref: element,
-      checked: currentValue(),
-      disabled: booleanAttribute(props.disabled),
-      name: props.name,
-      value: props.value,
-      required: props.required,
-      'data-control-size': props.size,
-    }, 'onChange', change), slots.default?.());
+    return () =>
+      h(
+        'fluent-switch',
+        withListener(
+          {
+            ...controlAttrs(attrs, 'macvue-switch'),
+            ref: element,
+            checked: currentValue(),
+            disabled: booleanAttribute(props.disabled),
+            name: props.name,
+            value: props.value,
+            required: props.required,
+            'data-control-size': props.size,
+          },
+          'onChange',
+          change,
+        ),
+        slots.default?.(),
+      );
   },
 });
 
@@ -248,30 +267,32 @@ export const MacSlider = defineComponent({
   name: 'WindowsMacSlider',
   inheritAttrs: false,
   props: {
-    modelValue: {default: undefined},
-    defaultValue: {default: undefined},
-    min: {default: 0},
-    max: {default: 100},
-    step: {default: 1},
-    orientation: {default: 'horizontal'},
-    ticks: {default: undefined},
-    snapToTicks: {type: Boolean, default: false},
-    size: {default: 'regular'},
-    disabled: {type: Boolean, default: false},
-    name: {default: undefined},
+    modelValue: { default: undefined },
+    defaultValue: { default: undefined },
+    min: { default: 0 },
+    max: { default: 100 },
+    step: { default: 1 },
+    orientation: { default: 'horizontal' },
+    ticks: { default: undefined },
+    snapToTicks: { type: Boolean, default: false },
+    size: { default: 'regular' },
+    disabled: { type: Boolean, default: false },
+    name: { default: undefined },
   },
   emits: ['update:modelValue', 'valueCommit'],
-  setup(props, {attrs, emit, expose, slots}) {
+  setup(props, { attrs, emit, expose, slots }) {
     const element = ref(null);
     const localValue = ref(props.defaultValue ?? props.min);
-    const currentValue = () => props.modelValue === undefined ? localValue.value : props.modelValue;
+    const currentValue = () =>
+      props.modelValue === undefined ? localValue.value : props.modelValue;
     const sync = () => {
       if (!element.value) return;
       element.value.min = props.min;
       element.value.max = props.max;
-      element.value.step = props.snapToTicks && props.ticks > 1
-        ? (props.max - props.min) / (props.ticks - 1)
-        : props.step;
+      element.value.step =
+        props.snapToTicks && props.ticks > 1
+          ? (props.max - props.min) / (props.ticks - 1)
+          : props.step;
       element.value.orientation = props.orientation;
       element.value.disabled = props.disabled;
       element.value.value = currentValue();
@@ -284,23 +305,47 @@ export const MacSlider = defineComponent({
         emit('update:modelValue', value);
       }
     };
-    onMounted(() => { void ensureFluent().then(sync); });
-    watch(() => [props.modelValue, props.min, props.max, props.step, props.orientation, props.disabled, props.ticks, props.snapToTicks], sync);
+    onMounted(() => {
+      void ensureFluent().then(sync);
+    });
+    watch(
+      () => [
+        props.modelValue,
+        props.min,
+        props.max,
+        props.step,
+        props.orientation,
+        props.disabled,
+        props.ticks,
+        props.snapToTicks,
+      ],
+      sync,
+    );
     exposeControl(expose, element);
-    return () => h('fluent-slider', withListener({
-      ...controlAttrs(attrs, 'macvue-slider'),
-      ref: element,
-      value: currentValue(),
-      min: props.min,
-      max: props.max,
-      step: props.snapToTicks && props.ticks > 1
-        ? (props.max - props.min) / (props.ticks - 1)
-        : props.step,
-      orientation: props.orientation,
-      disabled: booleanAttribute(props.disabled),
-      size: props.size === 'small' || props.size === 'mini' ? 'small' : 'medium',
-      'data-ticks': props.ticks,
-    }, 'onChange', change), slots.default?.());
+    return () =>
+      h(
+        'fluent-slider',
+        withListener(
+          {
+            ...controlAttrs(attrs, 'macvue-slider'),
+            ref: element,
+            value: currentValue(),
+            min: props.min,
+            max: props.max,
+            step:
+              props.snapToTicks && props.ticks > 1
+                ? (props.max - props.min) / (props.ticks - 1)
+                : props.step,
+            orientation: props.orientation,
+            disabled: booleanAttribute(props.disabled),
+            size: props.size === 'small' || props.size === 'mini' ? 'small' : 'medium',
+            'data-ticks': props.ticks,
+          },
+          'onChange',
+          change,
+        ),
+        slots.default?.(),
+      );
   },
 });
 
@@ -318,20 +363,27 @@ export const MacPopUpButtonItem = defineComponent({
   name: 'WindowsMacPopUpButtonItem',
   inheritAttrs: false,
   props: {
-    value: {default: undefined},
-    disabled: {type: Boolean, default: false},
-    textValue: {default: undefined},
+    value: { default: undefined },
+    disabled: { type: Boolean, default: false },
+    textValue: { default: undefined },
   },
-  setup(props, {attrs, slots, expose}) {
+  setup(props, { attrs, slots, expose }) {
     const element = ref(null);
-    onMounted(() => { void ensureFluent(); });
+    onMounted(() => {
+      void ensureFluent();
+    });
     exposeControl(expose, element);
-    return () => h('fluent-option', {
-      ...controlAttrs(attrs, 'macvue-pop-up-button-item'),
-      ref: element,
-      value: props.value == null ? '' : String(props.value),
-      disabled: booleanAttribute(props.disabled),
-    }, slots.default?.() ?? (props.textValue == null ? undefined : String(props.textValue)));
+    return () =>
+      h(
+        'fluent-option',
+        {
+          ...controlAttrs(attrs, 'macvue-pop-up-button-item'),
+          ref: element,
+          value: props.value == null ? '' : String(props.value),
+          disabled: booleanAttribute(props.disabled),
+        },
+        slots.default?.() ?? (props.textValue == null ? undefined : String(props.textValue)),
+      );
   },
 });
 
@@ -339,22 +391,22 @@ export const MacPopUpButton = defineComponent({
   name: 'WindowsMacPopUpButton',
   inheritAttrs: false,
   props: {
-    modelValue: {default: undefined},
-    defaultValue: {default: undefined},
-    open: {default: undefined},
-    defaultOpen: {default: undefined},
-    size: {default: 'regular'},
-    disabled: {type: Boolean, default: false},
-    required: {type: Boolean, default: false},
-    name: {default: undefined},
-    autocomplete: {default: undefined},
-    by: {default: undefined},
-    dir: {default: undefined},
-    placeholder: {default: ''},
-    teleportTo: {default: undefined},
+    modelValue: { default: undefined },
+    defaultValue: { default: undefined },
+    open: { default: undefined },
+    defaultOpen: { default: undefined },
+    size: { default: 'regular' },
+    disabled: { type: Boolean, default: false },
+    required: { type: Boolean, default: false },
+    name: { default: undefined },
+    autocomplete: { default: undefined },
+    by: { default: undefined },
+    dir: { default: undefined },
+    placeholder: { default: '' },
+    teleportTo: { default: undefined },
   },
   emits: ['update:modelValue', 'update:open'],
-  setup(props, {attrs, emit, slots, expose}) {
+  setup(props, { attrs, emit, slots, expose }) {
     const element = ref(null);
     const localOpen = ref(Boolean(props.defaultOpen ?? false));
     let lastOpen;
@@ -362,7 +414,7 @@ export const MacPopUpButton = defineComponent({
     let restoreOpen;
     let childObserver;
 
-    const currentOpen = () => props.open === undefined ? localOpen.value : Boolean(props.open);
+    const currentOpen = () => (props.open === undefined ? localOpen.value : Boolean(props.open));
     const syncValue = () => {
       if (!element.value || props.modelValue === undefined) return;
       element.value.value = props.modelValue == null ? '' : String(props.modelValue);
@@ -395,7 +447,9 @@ export const MacPopUpButton = defineComponent({
       Object.defineProperty(target, 'open', {
         configurable: true,
         enumerable: descriptor.enumerable,
-        get() { return descriptor.get.call(this); },
+        get() {
+          return descriptor.get.call(this);
+        },
         set(value) {
           const before = descriptor.get.call(this);
           descriptor.set.call(this, value);
@@ -417,13 +471,15 @@ export const MacPopUpButton = defineComponent({
       if (value !== undefined && value !== null) emit('update:modelValue', value);
       syncAfterInteraction();
     };
-    const valueSlot = () => slots.value?.({
-      selectedLabel: element.value?.displayValue ?? props.modelValue,
-      modelValue: props.modelValue,
-    });
-    const controlAria = () => Object.fromEntries(
-      Object.entries(attrs).filter(([name]) => name.startsWith('aria-') || name === 'title'),
-    );
+    const valueSlot = () =>
+      slots.value?.({
+        selectedLabel: element.value?.displayValue ?? props.modelValue,
+        modelValue: props.modelValue,
+      });
+    const controlAria = () =>
+      Object.fromEntries(
+        Object.entries(attrs).filter(([name]) => name.startsWith('aria-') || name === 'title'),
+      );
 
     onMounted(() => {
       void ensureFluent().then(async () => {
@@ -432,7 +488,7 @@ export const MacPopUpButton = defineComponent({
         syncValue();
         syncOpen();
         childObserver = new MutationObserver(syncValue);
-        if (element.value) childObserver.observe(element.value, {childList: true});
+        if (element.value) childObserver.observe(element.value, { childList: true });
       });
     });
     onBeforeUnmount(() => {
@@ -451,31 +507,37 @@ export const MacPopUpButton = defineComponent({
     });
 
     return () => {
-      const dropdownAttrs = withListener(withListener(withListener(
-        {
-          ...controlAttrs(attrs, 'macvue-pop-up-button'),
-          ref: element,
-          type: 'dropdown',
-          size: segmentSize(props.size),
-          disabled: booleanAttribute(props.disabled),
-          required: props.required,
-          name: props.name,
-          autocomplete: props.autocomplete,
-          dir: props.dir,
-          placeholder: props.placeholder,
-        },
-        'onChange',
-        change,
-      ), 'onClick', syncAfterInteraction), 'onKeydown', syncAfterInteraction);
+      const dropdownAttrs = withListener(
+        withListener(
+          withListener(
+            {
+              ...controlAttrs(attrs, 'macvue-pop-up-button'),
+              ref: element,
+              type: 'dropdown',
+              size: segmentSize(props.size),
+              disabled: booleanAttribute(props.disabled),
+              required: props.required,
+              name: props.name,
+              autocomplete: props.autocomplete,
+              dir: props.dir,
+              placeholder: props.placeholder,
+            },
+            'onChange',
+            change,
+          ),
+          'onClick',
+          syncAfterInteraction,
+        ),
+        'onKeydown',
+        syncAfterInteraction,
+      );
       const optionNodes = slots.default?.() || [];
       // Fluent 3 dropdowns require a fluent-listbox child. The component
       // creates its own light-DOM control button during upgrade; supplying a
       // second slot="control" button makes the library remove the adapter's
       // button and leaves the selected value blank. The generated button uses
       // the selected fluent-option text and preserves the native ARIA wiring.
-      return h('fluent-dropdown', dropdownAttrs, [
-        h('fluent-listbox', {}, optionNodes),
-      ]);
+      return h('fluent-dropdown', dropdownAttrs, [h('fluent-listbox', {}, optionNodes)]);
     };
   },
 });
@@ -484,19 +546,26 @@ export const MacSegment = defineComponent({
   name: 'WindowsMacSegment',
   inheritAttrs: false,
   props: {
-    value: {default: undefined},
-    disabled: {type: Boolean, default: false},
+    value: { default: undefined },
+    disabled: { type: Boolean, default: false },
   },
-  setup(props, {attrs, slots, expose}) {
+  setup(props, { attrs, slots, expose }) {
     const element = ref(null);
-    onMounted(() => { void ensureFluent(); });
+    onMounted(() => {
+      void ensureFluent();
+    });
     exposeControl(expose, element);
-    return () => h('fluent-tab', {
-      ...controlAttrs(attrs, 'macvue-segment'),
-      ref: element,
-      'data-segment-value': props.value == null ? '' : String(props.value),
-      disabled: booleanAttribute(props.disabled),
-    }, slots.default?.());
+    return () =>
+      h(
+        'fluent-tab',
+        {
+          ...controlAttrs(attrs, 'macvue-segment'),
+          ref: element,
+          'data-segment-value': props.value == null ? '' : String(props.value),
+          disabled: booleanAttribute(props.disabled),
+        },
+        slots.default?.(),
+      );
   },
 });
 
@@ -504,27 +573,32 @@ export const MacSegmentedControl = defineComponent({
   name: 'WindowsMacSegmentedControl',
   inheritAttrs: false,
   props: {
-    modelValue: {default: undefined},
-    defaultValue: {default: undefined},
-    type: {default: 'single'},
-    size: {default: 'regular'},
-    disabled: {type: Boolean, default: false},
-    name: {default: undefined},
+    modelValue: { default: undefined },
+    defaultValue: { default: undefined },
+    type: { default: 'single' },
+    size: { default: 'regular' },
+    disabled: { type: Boolean, default: false },
+    name: { default: undefined },
   },
   emits: ['update:modelValue'],
-  setup(props, {attrs, emit, slots, expose}) {
+  setup(props, { attrs, emit, slots, expose }) {
     const element = ref(null);
     let syncing = false;
     let clicking = false;
     const localValue = ref(props.defaultValue ?? (props.type === 'multiple' ? [] : ''));
-    const currentValue = () => props.modelValue === undefined ? localValue.value : props.modelValue;
-    const selected = (value) => props.type === 'multiple'
-      ? Array.isArray(currentValue()) && currentValue().some((entry) => String(entry) === String(value))
-      : String(currentValue()) === String(value);
+    const currentValue = () =>
+      props.modelValue === undefined ? localValue.value : props.modelValue;
+    const selected = (value) =>
+      props.type === 'multiple'
+        ? Array.isArray(currentValue()) &&
+          currentValue().some((entry) => String(entry) === String(value))
+        : String(currentValue()) === String(value);
     const sync = () => {
       const root = element.value;
       if (!root) return;
-      const tabs = Array.from(root.children).filter((child) => child.tagName?.toLowerCase() === 'fluent-tab');
+      const tabs = Array.from(root.children).filter(
+        (child) => child.tagName?.toLowerCase() === 'fluent-tab',
+      );
       tabs.forEach((tab, index) => {
         const value = tab.dataset.segmentValue ?? tab.getAttribute('value') ?? String(index);
         tab.classList.add('macvue-segment');
@@ -533,7 +607,11 @@ export const MacSegmentedControl = defineComponent({
       const active = tabs.find((tab) => tab.dataset.state === 'on' && !tab.disabled);
       if (active && root.activeid !== active.id) {
         syncing = true;
-        try { root.activeid = active.id; } finally { syncing = false; }
+        try {
+          root.activeid = active.id;
+        } finally {
+          syncing = false;
+        }
       }
     };
     const change = (event) => {
@@ -542,8 +620,12 @@ export const MacSegmentedControl = defineComponent({
       // Fluent also emits change during connection, setTabs and activeid
       // synchronization. Those events must never overwrite the Vue model.
       if (syncing) return;
-      if (!root?.isConnected || props.disabled || (!clicking && document.activeElement !== active)) {
-        nextTick(sync);
+      if (
+        !root?.isConnected ||
+        props.disabled ||
+        (!clicking && document.activeElement !== active)
+      ) {
+        void nextTick(() => sync());
         return;
       }
       const value = active?.dataset?.segmentValue ?? active?.getAttribute?.('value');
@@ -558,22 +640,40 @@ export const MacSegmentedControl = defineComponent({
       }
       localValue.value = next;
       emit('update:modelValue', next);
-      nextTick(sync);
+      void nextTick(() => sync());
     };
-    onMounted(() => { void ensureFluent().then(() => nextTick(sync)); });
+    onMounted(async () => {
+      await ensureFluent();
+      await nextTick();
+      sync();
+    });
     watch(() => [props.modelValue, props.disabled, props.type], sync);
     exposeControl(expose, element);
-    return () => h('fluent-tablist', withListener({
-      ...controlAttrs(attrs, 'macvue-segmented'),
-      ref: element,
-      appearance: 'subtle',
-      size: segmentSize(props.size),
-      orientation: 'horizontal',
-      disabled: booleanAttribute(props.disabled),
-      'aria-disabled': props.disabled ? 'true' : undefined,
-      name: props.name,
-      onClickCapture: () => { clicking = true; queueMicrotask(() => { clicking = false; }); },
-    }, 'onChange', change), slots.default?.());
+    return () =>
+      h(
+        'fluent-tablist',
+        withListener(
+          {
+            ...controlAttrs(attrs, 'macvue-segmented'),
+            ref: element,
+            appearance: 'subtle',
+            size: segmentSize(props.size),
+            orientation: 'horizontal',
+            disabled: booleanAttribute(props.disabled),
+            'aria-disabled': props.disabled ? 'true' : undefined,
+            name: props.name,
+            onClickCapture: () => {
+              clicking = true;
+              queueMicrotask(() => {
+                clicking = false;
+              });
+            },
+          },
+          'onChange',
+          change,
+        ),
+        slots.default?.(),
+      );
   },
 });
 
@@ -588,21 +688,26 @@ function textInputComponent(name, kind, extraClass, defaultPlaceholder) {
     name,
     inheritAttrs: false,
     props: {
-      modelValue: {default: undefined},
-      defaultValue: {default: undefined},
-      size: {default: 'regular'},
-      disabled: {type: Boolean, default: false},
-      placeholder: {default: defaultPlaceholder},
-      name: {default: undefined},
-      required: {type: Boolean, default: false},
+      modelValue: { default: undefined },
+      defaultValue: { default: undefined },
+      size: { default: 'regular' },
+      disabled: { type: Boolean, default: false },
+      placeholder: { default: defaultPlaceholder },
+      name: { default: undefined },
+      required: { type: Boolean, default: false },
     },
     emits: ['update:modelValue'],
-    setup(props, {attrs, emit, expose, slots}) {
+    setup(props, { attrs, emit, expose, slots }) {
       const element = ref(null);
       const input = ref(null);
       const localValue = ref(props.defaultValue ?? '');
-      const currentValue = () => props.modelValue === undefined ? localValue.value : String(props.modelValue ?? '');
-      const resolveInput = () => input.value || element.value?.shadowRoot?.querySelector('input') || element.value?.control || null;
+      const currentValue = () =>
+        props.modelValue === undefined ? localValue.value : String(props.modelValue ?? '');
+      const resolveInput = () =>
+        input.value ||
+        element.value?.shadowRoot?.querySelector('input') ||
+        element.value?.control ||
+        null;
       const sync = () => {
         const target = element.value;
         if (!target) return;
@@ -619,37 +724,67 @@ function textInputComponent(name, kind, extraClass, defaultPlaceholder) {
         localValue.value = value;
         emit('update:modelValue', value);
       };
-      onMounted(() => { void ensureFluent().then(sync); });
-      watch(() => [props.modelValue, props.disabled, props.placeholder, props.name, props.required], sync);
+      onMounted(() => {
+        void ensureFluent().then(sync);
+      });
+      watch(
+        () => [props.modelValue, props.disabled, props.placeholder, props.name, props.required],
+        sync,
+      );
       expose({
         el: element,
-        get input() { return resolveInput(); },
+        get input() {
+          return resolveInput();
+        },
         getInput: resolveInput,
         focus: () => {
           const target = resolveInput();
           if (target) target.focus();
-          else void ensureFluent().then(() => { sync(); resolveInput()?.focus(); });
+          else
+            void ensureFluent().then(() => {
+              sync();
+              resolveInput()?.focus();
+            });
         },
         blur: () => (resolveInput() || element.value)?.blur?.(),
       });
-      return () => h('fluent-text-input', withListener({
-        ...controlAttrs(attrs, 'macvue-field', extraClass),
-        ref: element,
-        type: textInputType(kind),
-        value: currentValue(),
-        disabled: booleanAttribute(props.disabled),
-        placeholder: props.placeholder,
-        name: props.name,
-        required: props.required,
-        'control-size': props.size === 'small' || props.size === 'mini' ? 'small' : props.size === 'large' || props.size === 'extra-large' ? 'large' : 'medium',
-      }, 'onInput', update), slots.default?.());
+      return () =>
+        h(
+          'fluent-text-input',
+          withListener(
+            {
+              ...controlAttrs(attrs, 'macvue-field', extraClass),
+              ref: element,
+              type: textInputType(kind),
+              value: currentValue(),
+              disabled: booleanAttribute(props.disabled),
+              placeholder: props.placeholder,
+              name: props.name,
+              required: props.required,
+              'control-size':
+                props.size === 'small' || props.size === 'mini'
+                  ? 'small'
+                  : props.size === 'large' || props.size === 'extra-large'
+                    ? 'large'
+                    : 'medium',
+            },
+            'onInput',
+            update,
+          ),
+          slots.default?.(),
+        );
     },
   });
 }
 
 export const MacSecureField = textInputComponent('WindowsMacSecureField', 'secure', '', undefined);
 export const MacTextField = textInputComponent('WindowsMacTextField', 'text', '', undefined);
-export const MacSearchField = textInputComponent('WindowsMacSearchField', 'search', 'macvue-field--search', 'Search');
+export const MacSearchField = textInputComponent(
+  'WindowsMacSearchField',
+  'search',
+  'macvue-field--search',
+  'Search',
+);
 
 export function disposeFluentTheme() {
   themeMediaQuery?.removeEventListener?.('change', themeApply);

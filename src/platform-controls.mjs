@@ -6,9 +6,10 @@
 const detectedPlatform = globalThis.window?.previewAppearance?.platform;
 export const platform = detectedPlatform || 'darwin';
 
-const controls = platform === 'win32'
-  ? await import('./platform-controls/fluent-windows.mjs')
-  : await import('@macvue/core');
+const controls =
+  platform === 'win32'
+    ? await import('./platform-controls/fluent-windows.mjs')
+    : await import('@macvue/core');
 
 // The Windows renderer must not create an unupgraded Fluent host. In
 // particular, a boolean `disabled="false"` attribute is still truthy when a

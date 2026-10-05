@@ -8,13 +8,13 @@ The previous installed app contained 407.5 MiB of files. The reduced production 
 
 Each reduction was measured separately. This table measures unarchived staging files, excluding the shared Electron runtime and the package icon/archive headers.
 
-| Stage | Application staging payload | Change |
-| --- | ---: | --- |
-| Runtime file whitelist with existing production dependencies | 112.7 MiB | Excludes project documents, build scripts, smoke tests and Vite cache |
-| Remove duplicate PDF.js distribution and unused pdf-lib builds | 62.9 MiB | Keeps PDF.js and its worker in the frontend build; keeps pdf-lib's Node entry |
-| Remove optional Node Canvas / Skia | 36.2 MiB | Removes approximately 26.8 MiB; browser rendering uses Chromium Canvas |
-| Copy only the actual Node runtime dependency graph | 19.9 MiB | Removes Vue and frontend compiler dependencies; preserves nested dependency versions |
-| Bundle main process and backend, including used pdf-lib code | 16.1 MiB | Keeps Express and native PDF Inspector external; preserves original resource paths |
+| Stage                                                          | Application staging payload | Change                                                                               |
+| -------------------------------------------------------------- | --------------------------: | ------------------------------------------------------------------------------------ |
+| Runtime file whitelist with existing production dependencies   |                   112.7 MiB | Excludes project documents, build scripts, smoke tests and Vite cache                |
+| Remove duplicate PDF.js distribution and unused pdf-lib builds |                    62.9 MiB | Keeps PDF.js and its worker in the frontend build; keeps pdf-lib's Node entry        |
+| Remove optional Node Canvas / Skia                             |                    36.2 MiB | Removes approximately 26.8 MiB; browser rendering uses Chromium Canvas               |
+| Copy only the actual Node runtime dependency graph             |                    19.9 MiB | Removes Vue and frontend compiler dependencies; preserves nested dependency versions |
+| Bundle main process and backend, including used pdf-lib code   |                    16.1 MiB | Keeps Express and native PDF Inspector external; preserves original resource paths   |
 
 Third-party license notices for browser libraries and inlined backend dependencies are retained. PDF Inspector's arm64 native binary remains unpacked. The Python translation environments and models remain installed separately, as before; these measurements concern the `.app`, not those environments.
 

@@ -30,7 +30,8 @@ private enum LocalTranslationError: LocalizedError {
         case .invalidRequest(let message):
             return message
         case .modelsUnavailable(let source, let target):
-            return "Apple translation models for \(source) and \(target) are not installed. Open System Settings > General > Language & Region > Translation Languages and download both languages, then retry."
+            return
+                "Apple translation models for \(source) and \(target) are not installed. Open System Settings > General > Language & Region > Translation Languages and download both languages, then retry."
         case .translationFailed(let message):
             return "Apple on-device translation failed: \(message)"
         }
@@ -57,7 +58,9 @@ private func writeJSON<T: Encodable>(_ value: T) {
         // JSONEncoder only receives the concrete response types above. Keep a
         // last-resort JSON line on stdout so the parent can always finish the
         // request instead of waiting for a process that cannot report status.
-        let fallback = Data("{\"error\":{\"message\":\"Could not encode the local translation response.\",\"code\":\"encoding_failed\"}}\n".utf8)
+        let fallback = Data(
+            "{\"error\":{\"message\":\"Could not encode the local translation response.\",\"code\":\"encoding_failed\"}}\n"
+                .utf8)
         FileHandle.standardOutput.write(fallback)
     }
 }
@@ -71,7 +74,8 @@ private func translate(_ request: TranslationRequest) async throws -> String {
     let source = languageIdentifier(request.source)
     let target = languageIdentifier(request.target)
     guard !source.isEmpty, !target.isEmpty else {
-        throw LocalTranslationError.invalidRequest("source and target must be non-empty BCP-47 language identifiers.")
+        throw LocalTranslationError.invalidRequest(
+            "source and target must be non-empty BCP-47 language identifiers.")
     }
 
     if source.caseInsensitiveCompare(target) == .orderedSame {
@@ -101,10 +105,12 @@ private func translate(_ request: TranslationRequest) async throws -> String {
 private struct LocalTranslationMain {
     static func main() async {
         guard #available(macOS 26.0, *) else {
-            writeJSON(ErrorResponse(error: ErrorDetail(
-                message: "Apple on-device translation requires macOS 26 or later.",
-                code: "unsupported_os"
-            )))
+            writeJSON(
+                ErrorResponse(
+                    error: ErrorDetail(
+                        message: "Apple on-device translation requires macOS 26 or later.",
+                        code: "unsupported_os"
+                    )))
             return
         }
 
@@ -114,21 +120,30 @@ private struct LocalTranslationMain {
             }
 
             do {
-                let request = try JSONDecoder().decode(TranslationRequest.self, from: Data(line.utf8))
+                let request = try JSONDecoder().decode(
+                    TranslationRequest.self, from: Data(line.utf8))
                 let translation = try await translate(request)
                 writeJSON(TranslationResponse(translation: translation))
             } catch let error as LocalTranslationError {
-                writeJSON(ErrorResponse(error: ErrorDetail(message: error.localizedDescription, code: error.code)))
+                writeJSON(
+                    ErrorResponse(
+                        error: ErrorDetail(message: error.localizedDescription, code: error.code)))
             } catch let error as DecodingError {
-                writeJSON(ErrorResponse(error: ErrorDetail(
-                    message: "Invalid local translation request: \(error.localizedDescription)",
-                    code: "invalid_request"
-                )))
+                writeJSON(
+                    ErrorResponse(
+                        error: ErrorDetail(
+                            message:
+                                "Invalid local translation request: \(error.localizedDescription)",
+                            code: "invalid_request"
+                        )))
             } catch {
-                writeJSON(ErrorResponse(error: ErrorDetail(
-                    message: "Apple on-device translation failed: \(error.localizedDescription)",
-                    code: "translation_failed"
-                )))
+                writeJSON(
+                    ErrorResponse(
+                        error: ErrorDetail(
+                            message:
+                                "Apple on-device translation failed: \(error.localizedDescription)",
+                            code: "translation_failed"
+                        )))
             }
         }
     }
