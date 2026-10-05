@@ -1,0 +1,1 @@
+import{s}from"./template-helpers-BMdXD38S.js";import{r as a}from"./ref-DmzTP_6E.js";import{a3 as e}from"./tslib.es6-DFwJ_Q0V.js";class l{}function m(t){return e` <slot name="end" ${a("end")}>${s(t.end)}</slot> `.inline()}function i(t){return e` <slot name="start" ${a("start")}>${s(t.start)}</slot> `.inline()}export{l as S,m as e,i as s};

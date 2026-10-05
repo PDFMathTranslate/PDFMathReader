@@ -1,0 +1,1 @@
+import{U as o}from"./update-queue-CiMQqwBQ.js";function c(t){const i=t.ownerDocument;t?.isConnected&&t?.hasAttribute("autofocus")&&t?.checkVisibility?.({contentVisibilityAuto:!0,visibilityProperty:!0})&&[null,t,i.body,i.documentElement].includes(i.activeElement)&&o.enqueue(()=>{t.focus()})}export{c as m};

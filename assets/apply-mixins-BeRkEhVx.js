@@ -1,0 +1,1 @@
+import{a_ as e}from"./tslib.es6-DFwJ_Q0V.js";function a(r,...p){const c=e.locate(r);p.forEach(o=>{Object.getOwnPropertyNames(o.prototype).forEach(t=>{t!=="constructor"&&Object.defineProperty(r.prototype,t,Object.getOwnPropertyDescriptor(o.prototype,t))}),e.locate(o).forEach(t=>c.push(t))})}export{a};
