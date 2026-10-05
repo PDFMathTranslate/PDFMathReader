@@ -8,6 +8,7 @@ export default [
     ignores: [
       'node_modules/**',
       'dist/**',
+      'dist-pages/**',
       'release/**',
       '.cache/**',
       '.codegraph/**',
