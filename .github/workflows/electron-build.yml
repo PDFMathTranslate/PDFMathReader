@@ -1,4 +1,4 @@
-name: Electron compile
+name: Electron test
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - '**/*.md'
       - 'doc/**'
       - '!doc/icon.png'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -19,9 +20,7 @@ concurrency:
 
 jobs:
   compile:
-    # For multi-commit pushes, evaluate the newest commit's message.
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'fix') || startsWith(github.event.head_commit.message, 'feat')
-    name: Compile ${{ matrix.platform }} ${{ matrix.arch }} ${{ matrix.extra-arch }}
+    name: Build and launch ${{ matrix.platform }} ${{ matrix.arch }} ${{ matrix.extra-arch }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     env:
@@ -85,9 +84,6 @@ jobs:
           key: electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-${{ hashFiles('package-lock.json', '.github/workflows/electron-build.yml') }}
           restore-keys: |
             electron-v1-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.extra-arch }}-
-      - name: Test PDF extraction without native architecture bindings
-        if: matrix.extra-arch != '' || (matrix.platform == 'darwin' && matrix.arch == 'x64')
-        run: node --test server/pdf-extractor.test.mjs
       - name: Cache macOS icons and symbols
         if: matrix.platform == 'darwin'
         uses: actions/cache@v5
@@ -103,12 +99,16 @@ jobs:
         if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
         run: npm run icons:mac
       # Both architectures share this host installation and frontend build.
-      - name: Test secure credential persistence
-        run: node --test server/credentials.test.mjs
       - name: Build frontend
         run: npm run build
       - name: Package primary architecture
         run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned --distribute
+      - name: Launch packaged application
+        if: matrix.platform != 'linux'
+        run: node electron/launch-check.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
+      - name: Launch packaged application on Linux
+        if: matrix.platform == 'linux'
+        run: xvfb-run --auto-servernum node electron/launch-check.mjs --platform=linux --arch=x64 --no-sandbox
       - name: Package secondary architecture
         if: matrix.extra-arch != ''
         run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned --distribute

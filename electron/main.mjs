@@ -18,9 +18,12 @@ const windowsBuild=process.platform==='win32'?Number(release().split('.')[2]):0;
 // AppKit otherwise inserts a second full-screen item beside our togglefullscreen role.
 if(process.platform==='darwin')systemPreferences.setUserDefault('NSFullScreenMenuItemEverywhere','boolean',false);
 const smoke=process.argv.find(a=>a.startsWith('--smoke-test='))?.split('=')[1];
+const ciLaunchCheck=process.argv.includes('--ci-launch-check');
+const ciLaunchPassMarker='PDFMATHREADER_CI_LAUNCH_CHECK_PASS';
+const ciLaunchTimeoutMs=Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS)>0?Number(process.env.PDFMATHREADER_CI_LAUNCH_TIMEOUT_MS):45000;
 if(smoke&&app.isPackaged&&!process.execPath.includes('PDFMathReader Tests.app'))throw Error('Mock tests require the isolated test application.');
-if(smoke){
- app.setPath('userData',mkdtempSync(join(tmpdir(),'preview-smoke-')));
+if(smoke||ciLaunchCheck){
+ app.setPath('userData',mkdtempSync(join(tmpdir(),smoke?'preview-smoke-':'preview-ci-launch-')));
 }
 import {startBackendService} from './backend-service.mjs';
 import {createCredentials} from './credentials.mjs';
@@ -67,8 +70,8 @@ const pendingFiles=[];
 function enqueueFiles(paths){for(const path of paths)if(!pendingFiles.includes(path))pendingFiles.push(path);if(paths.length)notifyDocuments();}
 let notifyDocuments=()=>{};
 app.on('open-file',(event,path)=>{event.preventDefault();if(smoke&&smoke!=='file-open'&&smoke!=='multi-window')return;enqueueFiles([path]);});
-app.setName(smoke?'PDFMathReader Tests':'PDFMathReader');if(!smoke)app.setPath('userData',join(app.getPath('appData'),'PDFMathReader'));
-if(!smoke||smoke==='file-open')enqueueFiles(pdfLaunchPaths(process.argv.slice(1),process.cwd()));if(process.platform==='darwin'&&['resize','file-open'].includes(smoke))app.setActivationPolicy('prohibited');
+app.setName(smoke?'PDFMathReader Tests':'PDFMathReader');if(!smoke&&!ciLaunchCheck)app.setPath('userData',join(app.getPath('appData'),'PDFMathReader'));
+if((!smoke&&!ciLaunchCheck)||smoke==='file-open')enqueueFiles(pdfLaunchPaths(process.argv.slice(1),process.cwd()));if(process.platform==='darwin'&&['resize','file-open'].includes(smoke))app.setActivationPolicy('prohibited');
 if(!app.requestSingleInstanceLock())app.quit();
 else {
  let backend,window,credentials,serviceCredentialStore,preferences,recents,annotations,documentSession,appUpdates;const windows=new Map(),closingBackends=new Set();let backendOptions,documentsReady=false;let quitting=false,backendFailureHandled=false;let performanceReports=[];let performanceWrite=Promise.resolve();
@@ -157,7 +160,7 @@ else {
  async function handleBackendFailure(error){
   if(quitting||backendFailureHandled)return;backendFailureHandled=true;
   const key=credentials?.getKey?.();const detail=error?.message&&key?error.message.replaceAll(key,'[redacted]'):error?.message;
-  if(smoke){console.error('Desktop smoke backend failed:',detail||'The backend utility process stopped unexpectedly.');app.exit(1);return;}
+  if(smoke||ciLaunchCheck){console.error(ciLaunchCheck?'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL':'Desktop smoke backend failed:',detail||'The backend utility process stopped unexpectedly.');app.exit(1);return;}
   dialog.showErrorBox('PDFMathReader',`The local reader backend stopped unexpectedly.${detail?`\n\n${detail}`:''}\n\nQuit and reopen PDFMathReader.`);app.quit();
  }
  notifyDocuments=()=>{if(!documentsReady)return;void deliverPendingFiles().catch(handleBackendFailure);};
@@ -199,7 +202,7 @@ else {
  }
  async function createWindow(document,restoreView,settingsOwner=null,settingsSection='general'){
   let window;
-  const backend=settingsOwner?windows.get(settingsOwner).backend:await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
+  const backend=settingsOwner?windows.get(settingsOwner).backend:await startBackendService({...backendOptions,onCrash:error=>{if(quitting)return;if(smoke||ciLaunchCheck){void handleBackendFailure(error);return;}dialog.showErrorBox('PDFMathReader','This window’s reader process stopped unexpectedly. Reopen its PDF in a new window.');window?.close();}});
   window=new BrowserWindow({width:1200,height:850,minWidth:720,minHeight:500,title:settingsOwner?'PDFMathReader Settings':'PDFMathReader',...(settingsOwner?{width:920,height:780,minWidth:680,minHeight:500,parent:settingsOwner,modal:false}:{}),icon:fileURLToPath(new URL('./AppIcon.png',import.meta.url)),...chromeOptions(),show:false,webPreferences:{partition:'window-'+randomBytes(16).toString('hex'),backgroundThrottling:['resize','file-open'].includes(smoke)?false:preferences.load().reduceBackgroundFrameRate,additionalArguments:[`--preview-system-locale=${app.getPreferredSystemLanguages()[0]||app.getLocale()}`,...(process.platform==='win32'&&windowsBuild>=22621?['--preview-windows-glass']:[]),...(smoke?['--preview-test-mode',...(smoke==='settings-native'?[]:['--preview-inline-settings'])]:[]),...(smoke==='fluent'?['--preview-ui-platform=win32']:[]),...(backgroundRenderSmoke?['--preview-background-render']:[])],preload:fileURLToPath(new URL('./preload.cjs',import.meta.url)),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   hideNativeMenuBar(window);
   windows.set(window,{backend,settingsOwner,restoreView,documentIdentity:typeof document==='string'?documentIdentity(document):null,documents:document?[document]:[],tickets:new Map(),annotationSources:new Map(),unkeyedAnnotationSource:annotationSourceForDocument(document),preferences:settingsOwner?{...windows.get(settingsOwner).preferences}:preferences.load(),performance:{peaks:new Map(),timer:null,samples:0,hasDocument:!!document}});
@@ -246,6 +249,65 @@ else {
   if(settingsOwner){const closeWithOwner=()=>{if(!window.isDestroyed())window.close();};settingsOwner.once('closed',closeWithOwner);window.once('closed',()=>settingsOwner.removeListener('closed',closeWithOwner));}activityChanged();return window;
  }
  const settingsWindows=new Map();
+  const waitForCILaunch = (target) =>
+    new Promise((resolve, reject) => {
+      let settled = false,
+        pollTimer;
+      const timeout = setTimeout(
+        () => finish(Error(`CI launch check timed out after ${ciLaunchTimeoutMs} ms.`)),
+        ciLaunchTimeoutMs,
+      );
+      timeout.unref?.();
+      const cleanup = () => {
+        clearTimeout(timeout);
+        clearTimeout(pollTimer);
+        target.removeListener('closed', onClosed);
+        target.webContents.removeListener('did-fail-load', onDidFailLoad);
+        target.webContents.removeListener('render-process-gone', onRenderProcessGone);
+      };
+      const finish = (error, value) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        error ? reject(error) : resolve(value);
+      };
+      const onClosed = () => finish(Error('Main window closed before the renderer became ready.'));
+      const onDidFailLoad = (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        if (isMainFrame !== false)
+          finish(
+            Error(
+              `did-fail-load ${errorCode}: ${errorDescription || 'unknown load error'}${validatedURL ? ` (${validatedURL})` : ''}`,
+            ),
+          );
+      };
+      const onRenderProcessGone = (_event, details) =>
+        finish(Error(`render-process-gone: ${details?.reason || 'unknown reason'}`));
+      const poll = async () => {
+        if (settled) return;
+        if (target.isDestroyed()) {
+          finish(Error('Main window was destroyed before the renderer became ready.'));
+          return;
+        }
+        try {
+          if (
+            (await target.webContents.executeJavaScript('window.previewReady===true', true)) &&
+            target.isVisible()
+          ) {
+            finish(null, { previewReady: true, visible: true });
+            return;
+          }
+        } catch (error) {
+          finish(Error(`Renderer readiness probe failed: ${error?.message || error}`));
+          return;
+        }
+        pollTimer = setTimeout(poll, 50);
+        pollTimer.unref?.();
+      };
+      target.once('closed', onClosed);
+      target.webContents.on('did-fail-load', onDidFailLoad);
+      target.webContents.on('render-process-gone', onRenderProcessGone);
+      void poll();
+    });
  async function openSettingsWindow(owner,section='general'){
   if(!['general','performance','appearance','translation','providers','kernel','about'].includes(section))throw Error('Invalid settings section.');
   owner=windows.get(owner)?.settingsOwner||owner;
@@ -257,7 +319,7 @@ else {
  }
  app.on('second-instance',(_event,args,cwd)=>{const paths=pdfLaunchPaths(args.slice(1),cwd);if((!smoke||['file-open','multi-window'].includes(smoke))&&paths.length)enqueueFiles(paths);else {focusedWindow()?.show();focusedWindow()?.focus();}});
  app.whenReady().then(async()=>{
-  await registerWindowsPDF({packaged:app.isPackaged,smoke:!!smoke}).catch(error=>console.error('Windows PDF menu registration failed:',error.message));
+  await registerWindowsPDF({packaged:app.isPackaged,smoke:!!smoke||ciLaunchCheck}).catch(error=>console.error('Windows PDF menu registration failed:',error.message));
   if(process.platform==='darwin'&&!app.isPackaged&&!smoke)app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png',import.meta.url)));
   const commandId=action=>`action-${String(action).replace(/[^a-z\d]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}`;
   const command=(label,accelerator,action,id=commandId(action))=>({id,label,accelerator,click:(_item,target)=>{const receiver=target||focusedWindow();receiver?.webContents.send('reader:action',action);}});
@@ -545,10 +607,11 @@ else {
   handleMeasuredIPC('documents:open',async(event,value)=>{const target=trustedWindow(event);if(typeof value?.path==='string'){await validateSystemPDF(value.path);await openDocumentWindow(value.path,target);}else{if(!value||typeof value.name!=='string'||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength>50*1024*1024)throw Error('Invalid PDF.');await openDocumentWindow({name:value.name,bytes:value.bytes},target);}return true;});
   handleMeasuredIPC('window:settings',async(event,section)=>{await openSettingsWindow(trustedWindow(event),section);return true;});
   handleMeasuredIPC('window:new',async event=>{trustedWindow(event);await createWindow();});
-  if(!smoke&&preferences.load().restoreDocuments){for(const document of documentSession.restore()){try{await validateSystemPDF(document.path);}catch{continue;}if(!pendingFiles.includes(document.path))await openDocumentWindow(document.path,null,document.view);}}
-  window=[...windows.keys()][0]||(pendingFiles.length?await openDocumentWindow(pendingFiles.shift()):await createWindow());backend=windows.get(window).backend;documentsReady=true;await deliverPendingFiles();if(app.isPackaged&&!smoke)appUpdates.start();
+  if(!smoke&&!ciLaunchCheck&&preferences.load().restoreDocuments){for(const document of documentSession.restore()){try{await validateSystemPDF(document.path);}catch{continue;}if(!pendingFiles.includes(document.path))await openDocumentWindow(document.path,null,document.view);}}
+  window=[...windows.keys()][0]||((!ciLaunchCheck&&pendingFiles.length)?await openDocumentWindow(pendingFiles.shift()):await createWindow());backend=windows.get(window).backend;documentsReady=true;if(!ciLaunchCheck)await deliverPendingFiles();if(app.isPackaged&&!smoke&&!ciLaunchCheck)appUpdates.start();
+  if(ciLaunchCheck){const ready=await waitForCILaunch(window);console.log(ciLaunchPassMarker,JSON.stringify({...ready,platform:process.platform,version:app.getVersion()}));app.quit();return;}
   if(smoke){const checks=await import('./smoke.mjs');if(smoke==='kernel-menu-mouse')await (await import('./kernel-menu-mouse-smoke.mjs')).verifyKernelMenuMouse(window,createWindow);else if(smoke==='app-updates')await (await import('./app-updates-smoke.mjs')).verifyAppUpdates(window,createWindow);else if(smoke==='crop-status')await (await import('./crop-status-smoke.mjs')).verifyCropStatus(window);else if(smoke==='provider-clone')await (await import('./provider-clone-smoke.mjs')).verifyProviderClone(window);else if(smoke==='kernel-error')await (await import('./kernel-error-smoke.mjs')).verifyKernelError(window,createWindow);else if(smoke==='about')await (await import('./about-smoke.mjs')).verifyAbout(window,createWindow);else if(smoke==='kernel-settings')await (await import('./kernel-settings-smoke.mjs')).verifyKernelSettings(window,createWindow);else if(smoke==='provider-history')await (await import('./settings-workspace-smoke.mjs')).verifyProviderHistory(window,createWindow);else if(smoke==='developer')await (await import('./developer-smoke.mjs')).verifyDeveloper(window,backend,token,createWindow);else if(smoke==='resource-benchmark')await (await import('./resource-benchmark.mjs')).verifyResourceBenchmark(window);else if(smoke==='resource-usage')await (await import('./resource-usage-smoke.mjs')).verifyResourceUsage(window);else if(smoke==='information-categories')await (await import('./information-categories-smoke.mjs')).verifyInformationCategories(window,recents,createWindow);else if(smoke==='information-emphasis')await (await import('./information-emphasis-smoke.mjs')).verifyInformationEmphasis(window,recents);else if(smoke==='topic-sentences')await (await import('./topic-sentences-smoke.mjs')).verifyTopicSentences(window,recents);else if(smoke==='page-edits')await (await import('./page-edits-smoke.mjs')).verifyPageEdits(window,recents);else if(smoke==='cache-progress')await (await import('./cache-progress-smoke.mjs')).verifyCacheProgress(window);else if(smoke==='quick-links')await (await import('./quick-links-smoke.mjs')).verifyQuickLinks(window);else if(smoke==='translation-prefetch')await (await import('./translation-prefetch-smoke.mjs')).verifyTranslationPrefetch(window,recents);else if(smoke==='pdf-navigation')await (await import('./pdf-navigation-smoke.mjs')).verifyPDFNavigation(window,recents);else if(['sidebar','sidebar-keys'].includes(smoke))await (await import('./sidebar-smoke.mjs')).verifySidebar(window,recents);else if(smoke==='advanced-cache')await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);else if(smoke==='large-open')await (await import('./large-open-smoke.mjs')).verifyLargeOpen(window,recents);else if(smoke==='file-menu')await (await import('./file-menu-smoke.mjs')).verifyFileMenu(window,recents);else if(smoke==='recent-menu')await (await import('./recent-menu-smoke.mjs')).verifyRecentMenu(window,recents);else if(smoke==='startup')await (await import('./startup-smoke.mjs')).verifyStartup(window);else if(smoke==='session')await (await import('./session-smoke.mjs')).verifySession(window,windows,createWindow);else if(smoke==='settings-menu')await (await import('./settings-menu-smoke.mjs')).verifySettingsMenu(window,windows);else if(smoke==='settings-native')await (await import('./settings-native-smoke.mjs')).verifyNativeSettings(window,windows);else if(smoke==='settings-workspace')await (await import('./settings-workspace-smoke.mjs')).verifySettingsWorkspace(window);else if(smoke==='layout-settings')await (await import('./layout-settings-smoke.mjs')).verifyLayoutSettings(window);else if(smoke==='windows-settings')await (await import('./windows-settings-smoke.mjs')).verifyWindowsSettings(window);else if(smoke==='locales')await (await import('./locales-smoke.mjs')).verifyLocales(window);else if(smoke==='advanced')await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);else if(smoke==='fluent')await (await import('./fluent-smoke.mjs')).verifyFluent(window);else if(smoke==='search')await (await import('./search-smoke.mjs')).verifySearch(window);else if(smoke==='multi-window')await (await import('./multi-window-smoke.mjs')).verifyMultiWindow(window,windows,createWindow);else if(smoke==='crop')await (await import('./crop-smoke.mjs')).verifyCrop(window,recents);else if(smoke==='fit-width')await (await import('./fit-width-smoke.mjs')).verifyFitWidth(window,recents);else if(smoke==='reading-view')await (await import('./reading-view-smoke.mjs')).verifyReadingView(window,recents);else if(smoke==='performance')await (await import('./performance-smoke.mjs')).verifyPerformance(window);else if(smoke==='benchmark')await (await import('./benchmark-smoke.mjs')).verifyBenchmark(window);else if(smoke==='coverage')await (await import('./coverage-smoke.mjs')).verifyCoverage(window,backend,token);else if(smoke==='resize'){await (await import('./recents-smoke.mjs')).verifyRecents(window,recents);await (await import('./resize-smoke.mjs')).verifyResize(window);}else if(smoke==='animation')await (await import('./animation-smoke.mjs')).verifyAnimation(window);else if(smoke==='ux')await (await import('./ux-smoke.mjs')).verifyUX(window,recents);else if(smoke==='layout-region')await (await import('./layout-region-smoke.mjs')).verifyLayoutRegion(window);else if(smoke==='kernel-choice')await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);else if(smoke==='kernels')await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);else if(['annotations','annotation-shortcuts'].includes(smoke))await (await import('./annotations-smoke.mjs')).verifyAnnotations(window,recents);else if(smoke==='file-open')await checks.verifySystemOpen(window);else await checks.verify(window,backend,token,smoke,credentials);}
- }).catch(async error=>{if(smoke){await backend?.close();console.error('Desktop smoke failed:',error.stack||error.message);if(smoke==='file-open')await writeFile('/tmp/preview-system-open-result.json',JSON.stringify({passed:false,error:error.message}));app.exit(1);return;}dialog.showErrorBox('PDFMathReader',`The local reader could not start.\n\n${error?.message||'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`);app.quit();});
+ }).catch(async error=>{if(smoke||ciLaunchCheck){await backend?.close();console.error(ciLaunchCheck?'PDFMATHREADER_CI_LAUNCH_CHECK_FAIL':'Desktop smoke failed:',error.stack||error.message);if(smoke==='file-open')await writeFile('/tmp/preview-system-open-result.json',JSON.stringify({passed:false,error:error.message}));app.exit(1);return;}dialog.showErrorBox('PDFMathReader',`The local reader could not start.\n\n${error?.message||'The backend utility process did not become ready.'}\n\nQuit and reopen PDFMathReader.`);app.quit();});
  app.on('before-quit',event=>{
   appUpdates?.stop();
   if(!backend || quitting)return;
