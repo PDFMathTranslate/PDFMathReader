@@ -729,6 +729,11 @@ else {
         sandbox: true,
       },
     });
+    if (ciLaunchCheck) {
+      window.webContents.on('console-message', (details) => {
+        if (details.level === 'error') console.error('CI renderer error:', details.message);
+      });
+    }
     hideNativeMenuBar(window);
     windows.set(window, {
       backend,
@@ -963,9 +968,15 @@ else {
   const waitForCILaunch = (target) =>
     new Promise((resolve, reject) => {
       let settled = false,
-        pollTimer;
+        pollTimer,
+        lastProbe = {};
       const timeout = setTimeout(
-        () => finish(Error(`CI launch check timed out after ${ciLaunchTimeoutMs} ms.`)),
+        () =>
+          finish(
+            Error(
+              `CI launch check timed out after ${ciLaunchTimeoutMs} ms: ${JSON.stringify(lastProbe)}`,
+            ),
+          ),
         ciLaunchTimeoutMs,
       );
       timeout.unref?.();
@@ -1000,10 +1011,12 @@ else {
           return;
         }
         try {
-          if (
-            (await target.webContents.executeJavaScript('window.previewReady===true', true)) &&
-            target.isVisible()
-          ) {
+          const state = await target.webContents.executeJavaScript(
+            '({ready:window.previewReady===true,state:document.readyState,title:document.title,text:document.body?.innerText.slice(0,300)})',
+            true,
+          );
+          lastProbe = { ...state, visible: target.isVisible() };
+          if (state.ready && lastProbe.visible) {
             finish(null, { previewReady: true, visible: true });
             return;
           }
