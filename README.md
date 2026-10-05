@@ -109,6 +109,8 @@ npm run package:win
 
 Frontend libraries (Vue, MacVue, and Fluent UI) are build dependencies: Vite includes them in `dist`. Node dependencies used by the server or Electron main process remain runtime dependencies. Install with `npm ci` before building; `npm ci --omit=dev` cannot build or package the app.
 
+The About page includes GitHub Release update status, a manual check button, and an automatic check switch (enabled by default). Packaged apps check lazily after startup and every six hours; no published release is shown as a normal empty state. Stable version tags must use `vX.Y.Z` or `X.Y.Z`. Matching release assets use `PDFMathReader-<platform>-<arch>.zip` (macOS), `.exe` (Windows), or `.tar.gz` (Linux). Available updates open the matching download, or the release page when that asset is absent; installation remains manual.
+
 The About page shows the application, installed kernels and UV versions. Each Vite build embeds `dist/build-info.json` with the package version and the latest ten conventional `feat` commits (including scoped and breaking features); release CI checks out the full Git history. The installed app reads this snapshot without Git or network access. Builds from a source archive without Git show an empty update list.
 
 The default Electron package bundles Express and PDF utilities into the backend/main scripts, retaining their licenses. It copies only external runtime modules into the staged `node_modules`; native PDF Inspector bindings and the PDF.js/DOMMatrix fallback for unsupported native targets remain available. Electron itself and packaging tools are supplied by the build toolchain.

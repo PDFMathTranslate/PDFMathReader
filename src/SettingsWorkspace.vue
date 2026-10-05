@@ -14,7 +14,7 @@ const sections=computed(()=>[
  {id:'translation',label:t('settings.translation'),symbol:'character.book.closed.fill'},
  {id:'providers',label:labels.value[1],symbol:'network'},
  {id:'kernel',label:t('settings.kernel'),symbol:'cpu.fill'},
- {id:'performance',label:({en:'Performance','zh-CN':'性能','zh-TW':'效能',ja:'パフォーマンス',ko:'성능',fr:'Performances',es:'Rendimiento'})[uiLanguage.value]||'Performance',symbol:'cpu.fill'},
+ {id:'performance',label:({en:'Performance','zh-CN':'性能','zh-TW':'效能',ja:'パフォーマンス',ko:'성능',fr:'Performances',es:'Rendimiento'})[uiLanguage.value]||'Performance',symbol:'gauge.with.dots.needle.67percent'},
  {id:'about',label:t('settings.about'),symbol:'info.circle.fill'}
 ]);
 const visibleSections=computed(()=>{

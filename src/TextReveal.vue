@@ -6,11 +6,11 @@ import {firstSentenceLength} from './topic-sentences.mjs';
 import {importantInformationRanges} from './information-emphasis.mjs';
 import {uiLanguage} from './i18n.mjs';
 import {paragraphDisplayText} from './translation-spacing.mjs';
-const props=defineProps({text:String,original:Boolean,nativeSource:Function,scale:Number,emphasizeTopicSentences:Boolean,emphasizeInformation:Boolean});
+const props=defineProps({text:String,original:Boolean,nativeSource:Function,scale:Number,emphasizeTopicSentences:Boolean,emphasizeInformation:Boolean,informationCategories:Object});
 const emit=defineEmits(['active']);const active=ref(false),generation=ref(0),nativeHost=ref(),textHost=ref();let timer,controller;
 const displayText=computed(()=>props.original?props.text:paragraphDisplayText(props.text));
 const sentenceEnd=computed(()=>props.emphasizeTopicSentences?firstSentenceLength(displayText.value||'',uiLanguage.value):0);
-const informationRanges=computed(()=>props.emphasizeInformation?importantInformationRanges(displayText.value||''):[]);
+const informationRanges=computed(()=>props.emphasizeInformation?importantInformationRanges(displayText.value||'',props.informationCategories):[]);
 const wordSegmenter=new Intl.Segmenter(undefined,{granularity:'word'});
 const words=computed(()=>{let index=0,offset=0;return Array.from(wordSegmenter.segment(displayText.value||''),item=>item.segment).map(word=>({word,space:/^\s+$/.test(word),letters:characters(word).map(text=>{const emphasized=offset<sentenceEnd.value;const important=informationRanges.value.some(r=>offset>=r.start&&offset<r.end);offset+=text.length;return {text,index:index++,emphasized,important};})}));});
 watch(()=>[props.text,props.original],async(_value,old)=>{clearTimeout(timer);controller?.abort();generation.value++;const id=generation.value;
@@ -25,6 +25,6 @@ onBeforeUnmount(()=>{clearTimeout(timer);controller?.abort();emit('active',false
 </script>
 <template>
  <span v-if="original&&active" ref="nativeHost" class="native-paragraph-reveal" aria-hidden="true"></span>
- <span v-else-if="!original&&!active" class="paragraph-text" aria-hidden="true"><TopicSentenceText :text="displayText" :enabled="emphasizeTopicSentences" :information="emphasizeInformation"/></span>
+ <span v-else-if="!original&&!active" class="paragraph-text" aria-hidden="true"><TopicSentenceText :text="displayText" :enabled="emphasizeTopicSentences" :information="emphasizeInformation" :information-categories="informationCategories"/></span>
  <span v-else-if="!original" ref="textHost" :key="generation" class="paragraph-text" :class="{'text-revealing':active}" aria-hidden="true"><template v-for="(word,i) in words" :key="i"><template v-if="word.space">{{word.word}}</template><span v-else class="reveal-word"><span v-for="letter in word.letters" :key="letter.index" class="reveal-mask"><span class="reveal-letter" :class="{'topic-sentence-text':letter.emphasized,'information-keyword':letter.important}" :style="{'--reveal-delay':Math.min(letter.index*6,180)+'ms'}">{{letter.text}}</span></span></span></template></span>
 </template>

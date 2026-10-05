@@ -7,7 +7,7 @@ import {createReaderPreferences} from '../electron/preferences.mjs';
 
 const DEFAULT_PREFERENCES={
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- cacheLimitMB:null,documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reduceBackgroundFrameRate:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,
+ autoCheckUpdates:true,cacheLimitMB:null,documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reduceBackgroundFrameRate:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,emphasizeResearchFindings:true,emphasizeOrdinals:true,emphasizeKeyVerbs:true,emphasizeLogicalConnectives:true,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
  language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,defaultPageCropEnabled:false,defaultPageCropX:0,defaultPageCropY:0,autoAlignDocumentWidth:false,
  kernelAdvancedOptions:{},
@@ -68,5 +68,16 @@ test('page crop and document width preferences default, persist, and validate bo
   for(const value of [-Number.EPSILON,.5+Number.EPSILON,Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY,'0.25',null])assert.throws(()=>store.save({defaultPageCropY:value}),/Invalid default page crop Y preference/);
   for(const value of [0,1,'true',null])assert.throws(()=>store.save({defaultPageCropEnabled:value}),/Invalid default page crop enabled preference/);
   for(const value of [0,1,'false',null])assert.throws(()=>store.save({autoAlignDocumentWidth:value}),/Invalid auto-align document width preference/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('automatic update checks default on, persist off, and reject invalid values',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'update-preferences-'));
+ try{
+  const path=join(dir,'reader.json'),preferences=await createReaderPreferences(path);
+  assert.equal(preferences.load().autoCheckUpdates,true);
+  await preferences.save({autoCheckUpdates:false});
+  assert.equal((await createReaderPreferences(path)).load().autoCheckUpdates,false);
+  assert.throws(()=>preferences.save({autoCheckUpdates:'false'}));
  }finally{await rm(dir,{recursive:true,force:true});}
 });

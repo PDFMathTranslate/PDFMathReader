@@ -19,7 +19,7 @@ export async function verifyAbout(reader,createWindow){
  assert.equal(await evaluate(settings,`(()=>{const input=document.querySelector('.sidebar-search input');input.value='editable';input.focus();input.setSelectionRange(0,8);const works=getComputedStyle(input).userSelect==='text'&&input.selectionEnd-input.selectionStart===8;input.value='';input.blur();return works})()`),true);
 
  for(const version of result.versions)assert.match(version.text,/\d+\.\d+/);
- assert.deepEqual(result.features,metadata.recentFeatures.map(item=>item.subject));assert.ok(result.features.length<=10);
+ assert.deepEqual(result.features,metadata.recentFeatures.map(item=>item.subject.replace(/^(\s*)(\p{L})/u,(_match,space,letter)=>space+letter.toUpperCase())));assert.ok(result.features.length<=10);
  await evaluate(reader,`window.previewPreferences.save({uiLanguage:'zh-CN'})`);
  await wait(settings,`document.querySelector('#settings-about-versions')?.textContent==='版本与更新'`);
  await writeFile('/tmp/pdfmathreader-about-versions.png',(await settings.webContents.capturePage()).toPNG());

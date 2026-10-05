@@ -2168,3 +2168,5 @@ body:has(.windows-glass),.desktop.windows-glass.app {background:transparent}
 /* Settings labels and descriptions behave like native UI; fields stay editable. */
 .settings,.settings *{-webkit-user-select:none;user-select:none;}
 .settings :is(input,textarea,[contenteditable="true"]),.settings [contenteditable="true"] *{-webkit-user-select:text;user-select:text;}
+
+.information-subcategories{padding-inline-start:20px;border-inline-start:1px solid var(--chrome-divider);margin-inline-start:4px}

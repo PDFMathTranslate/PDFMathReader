@@ -53,11 +53,12 @@ const escaped=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const patterns=entries.map(entry=>({...entry,pattern:new RegExp(escaped(entry.word).replace(/ /g,'\\s+'),'giu')}));
 const wordCharacter=character=>!!character&&/[\p{L}\p{N}_]/u.test(character);
 
+const informationGroups={results:'research',comparison:'research',ordinals:'ordinals',discovery:'verbs',logic:'logic'};
 /** UTF-16 offsets into unchanged source text, longest phrase wins. */
-export function importantInformationRanges(text=''){
+export function importantInformationRanges(text='',categories){
  if(typeof text!=='string'||!text)return [];
  const matches=[];
- for(const entry of patterns){entry.pattern.lastIndex=0;for(const match of text.matchAll(entry.pattern)){
+ for(const entry of patterns){if(categories?.[informationGroups[entry.category]]===false)continue;entry.pattern.lastIndex=0;for(const match of text.matchAll(entry.pattern)){
   const start=match.index,end=start+match[0].length;
   if(entry.english&&(wordCharacter(text[start-1])||wordCharacter(text[end])))continue;
   matches.push({start,end,category:entry.category});
@@ -68,15 +69,15 @@ export function importantInformationRanges(text=''){
 }
 
 /** Shared plain-text segments for normal text, emphasis and reveal animation. */
-export function informationTextSegments(text='',{topicEnd=0,emphasizeInformation=false,ranges}={}){
+export function informationTextSegments(text='',{topicEnd=0,emphasizeInformation=false,ranges,categories}={}){
  const source=typeof text==='string'?text:'',topic=Math.max(0,Math.min(source.length,topicEnd||0));
- const keywords=emphasizeInformation?(ranges??importantInformationRanges(source)):[];
+ const keywords=emphasizeInformation?(ranges??importantInformationRanges(source,categories)):[];
  const boundaries=[...new Set([0,source.length,topic,...keywords.flatMap(r=>[r.start,r.end])])].filter(n=>n>=0&&n<=source.length).sort((a,b)=>a-b);
  return boundaries.slice(0,-1).map((start,i)=>({text:source.slice(start,boundaries[i+1]),start,end:boundaries[i+1],topic:start<topic,important:keywords.some(r=>start>=r.start&&start<r.end)}));
 }
 
 /** Match native PDF runs without changing their text, coordinates or selection. */
-export function informationRunRanges(runs=[]){
+export function informationRunRanges(runs=[],categories){
  let logical='';const parts=[];
  for(let index=0;index<runs.length;index++){
   const run=runs[index],text=run.text||'',previous=runs[index-1];
@@ -89,7 +90,7 @@ export function informationRunRanges(runs=[]){
   }
   const start=logical.length;logical+=text;parts.push({index,start,end:logical.length});
  }
- const matches=importantInformationRanges(logical),result=[];
+ const matches=importantInformationRanges(logical,categories),result=[];
  for(const match of matches)for(const part of parts){const start=Math.max(match.start,part.start),end=Math.min(match.end,part.end);if(end>start)result.push({index:part.index,start:start-part.start,end:end-part.start,category:match.category});}
  return result;
 }

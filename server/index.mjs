@@ -1,3 +1,4 @@
+import {isProviderPortOpen} from './provider-port.mjs';
 import {mathProviderOutcome} from './provider-outcome.mjs';
 import {isTranslationLanguageSupported} from '../src/translation-languages.mjs';
 import express from 'express';
@@ -120,6 +121,11 @@ app.use((req,res,next)=>{
 app.use((req,res,next)=>{if(req.headers.origin && req.headers.origin!==origin && !(development && req.headers.origin==='http://localhost:5173'))return res.status(403).json({error:'Origin rejected'});next();});
 // Install before any route body parser so byte counts reflect the actual streams.
 app.use(performanceTracker.middleware);
+app.post('/api/providers/ports',express.json({limit:'4kb'}),async(req,res)=>{
+ const endpoints=req.body?.endpoints;
+ if(!Array.isArray(endpoints)||endpoints.length>2||endpoints.some(item=>!['ollama','xinference'].includes(item?.id?.toLowerCase())||typeof item.url!=='string'||item.url.length>2048))return res.sendStatus(400);
+ res.json(Object.fromEntries(await Promise.all(endpoints.map(async item=>[item.id,await isProviderPortOpen(item.url)]))));
+});
 app.get('/api/cache',async(_req,res)=>{try{res.json(await cacheManager.stats());}catch(error){res.status(500).json({error:error.message});}});
 const cacheResponse=({bytes,limitMB})=>({bytes,limitMB});
 app.post('/api/cache/limit',express.json({limit:'4kb'}),async(req,res)=>{try{res.json(cacheResponse(await cacheManager.setLimit(req.body?.limitMB)));}catch(error){res.status(error?.status===400?400:500).json({error:error.message});}});

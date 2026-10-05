@@ -112,3 +112,5 @@ contextBridge.exposeInMainWorld('previewDeveloper',Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('previewCache',Object.freeze({clear:()=>ipcRenderer.invoke('cache:clear')}));
+
+contextBridge.exposeInMainWorld('previewUpdates',Object.freeze({status:()=>ipcRenderer.invoke('updates:status'),check:()=>ipcRenderer.invoke('updates:check'),setAutomatic:value=>ipcRenderer.invoke('updates:automatic',value),openRelease:()=>ipcRenderer.invoke('updates:openRelease'),onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('updates:changed',listener);return ()=>ipcRenderer.removeListener('updates:changed',listener);}}));

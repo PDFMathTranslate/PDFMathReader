@@ -170,9 +170,9 @@ const messages = {
    ultraFast: 'Ultra fast',
    fast: 'Fast',
    precise: 'Precise',
-   pdfInspector: 'Inspector',
-   pdfMathFast: 'Legacy',
-   pdfMathPrecise: 'Next',
+   pdfInspector: 'Ultra fast',
+   pdfMathFast: 'Fast',
+   pdfMathPrecise: 'Precise',
    busy: 'Busy',
    ready: 'Available',
    error: 'Installed with an error',
@@ -396,9 +396,9 @@ const messages = {
    ultraFast: '超快',
    fast: '快速',
    precise: '精确',
-   pdfInspector: 'Inspector',
-   pdfMathFast: 'Legacy',
-   pdfMathPrecise: 'Next',
+   pdfInspector: '超快',
+   pdfMathFast: '快速',
+   pdfMathPrecise: '精确',
    busy: '忙碌',
    ready: '可用',
    error: '已安装但存在错误',
@@ -622,9 +622,9 @@ const messages = {
    ultraFast: '超高速',
    fast: '高速',
    precise: '高精度',
-   pdfInspector: 'Inspector',
-   pdfMathFast: 'Legacy',
-   pdfMathPrecise: 'Next',
+   pdfInspector: '超高速',
+   pdfMathFast: '高速',
+   pdfMathPrecise: '高精度',
    busy: '処理中',
    ready: '利用可能',
    error: 'インストール済みですがエラーがあります',
@@ -839,3 +839,6 @@ const documentDefaultLabels={
  es:['Procesamiento de documentos','Recorte de página predeterminado','Se aplica al abrir documentos sin recorte guardado. Recorta ambos lados por igual, hasta un 50 % en total por dirección. No modifica el archivo original.','Horizontal','Vertical','Alinear los anchos automáticamente','Al abrir, ajusta proporcionalmente las páginas al ancho más frecuente y guarda los cambios en el archivo original.']
 };
 for(const [locale,[documentDefaults,defaultPageCrop,defaultPageCropHint,cropHorizontal,cropVertical,autoAlignDocumentWidth,autoAlignDocumentWidthHint]] of Object.entries(documentDefaultLabels))Object.assign(messages[locale].settings,{documentDefaults,defaultPageCrop,defaultPageCropHint,cropHorizontal,cropVertical,autoAlignDocumentWidth,autoAlignDocumentWidthHint});
+
+const informationCategoryLabels={"en": ["Research findings", "Ordinal words", "Key verbs", "Logical connectives"], "zh-CN": ["研究发现", "序数词", "关键动词", "逻辑关联词"], "zh-TW": ["研究發現", "序數詞", "關鍵動詞", "邏輯關聯詞"], "ja": ["研究結果", "序数詞", "重要な動詞", "論理接続詞"], "ko": ["연구 결과", "서수 표현", "핵심 동사", "논리 연결어"], "fr": ["Résultats de recherche", "Mots ordinaux", "Verbes clés", "Connecteurs logiques"], "es": ["Hallazgos de investigación", "Palabras ordinales", "Verbos clave", "Conectores lógicos"]};
+for(const [locale,labels] of Object.entries(informationCategoryLabels))for(const [index,key] of ["emphasizeResearchFindings", "emphasizeOrdinals", "emphasizeKeyVerbs", "emphasizeLogicalConnectives"].entries())messages[locale].settings[key]=labels[index];

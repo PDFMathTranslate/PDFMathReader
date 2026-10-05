@@ -4,7 +4,7 @@ import {uiLanguage} from './i18n.mjs';
 import {informationRunRanges,informationTextSegments,mergeInformationRects} from './information-emphasis.mjs';
 import {topicSentenceRanges} from './topic-sentences.mjs';
 import {loadPDFRuntime} from './pdf-runtime.mjs';
-const props=defineProps({document:Object,pageNumber:Number,zoom:Number,active:Boolean,obscuredBoxes:Array,paragraphBoxes:Array,emphasizeTopicSentences:Boolean,emphasizeInformation:Boolean,selectable:Boolean});
+const props=defineProps({document:Object,pageNumber:Number,zoom:Number,active:Boolean,obscuredBoxes:Array,paragraphBoxes:Array,emphasizeTopicSentences:Boolean,emphasizeInformation:Boolean,informationCategories:Object,selectable:Boolean});
 const host=ref();let layer,generation=0,currentDocument,currentPage,page,rendered=false,boxKey,overlay,highlights,frameHost,appearanceObserver;
 const originals=new WeakMap();
 function drawEmphasis(){
@@ -40,7 +40,7 @@ function emphasize(){
  const bounds=host.value.getBoundingClientRect(),scale=props.zoom;
  const runs=spans.map(span=>{const r=span.getBoundingClientRect();return {text:originals.get(span),x:(r.left-bounds.left)/scale,y:(r.top-bounds.top)/scale,width:r.width/scale,height:r.height/scale};});
  const topicRanges=props.emphasizeTopicSentences?topicSentenceRanges(runs,props.paragraphBoxes||[],uiLanguage.value):[];
- const informationRanges=props.emphasizeInformation?informationRunRanges(runs):[];
+ const informationRanges=props.emphasizeInformation?informationRunRanges(runs,props.informationCategories):[];
  for(let index=0;index<spans.length;index++){
   const span=spans[index],text=originals.get(span),topicEnd=topicRanges.find(r=>r.index===index)?.end||0;
   const parts=informationTextSegments(text,{topicEnd,emphasizeInformation:props.emphasizeInformation,ranges:informationRanges.filter(r=>r.index===index)});
@@ -48,7 +48,7 @@ function emphasize(){
  }
  drawEmphasis();
 }
-watch(()=>[props.emphasizeTopicSentences,props.emphasizeInformation,props.paragraphBoxes,uiLanguage.value],emphasize,{flush:'post'});
+watch(()=>[props.emphasizeTopicSentences,props.emphasizeInformation,props.informationCategories,props.paragraphBoxes,uiLanguage.value],emphasize,{flush:'post'});
 watch(()=>[props.document,props.pageNumber,props.zoom,props.active,props.obscuredBoxes],async()=>{
  const id=++generation;
  if(!props.active||!props.document){layer?.cancel();layer=null;rendered=false;host.value?.replaceChildren();return;}

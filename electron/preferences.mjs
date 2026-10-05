@@ -14,7 +14,7 @@ const SERVICE_FIELD_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const PROTOTYPE_NAMES=new Set([...Object.getOwnPropertyNames(Object.prototype),'prototype']);
 const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
- cacheLimitMB:null,documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reduceBackgroundFrameRate:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,
+ autoCheckUpdates:true,cacheLimitMB:null,documentOpenMode:'translation',interactionMode:'reading',restoreDocuments:true,reduceResourceUsage:true,reduceBackgroundFrameRate:true,reuseTranslations:true,emphasizeTopicSentences:false,emphasizeInformation:false,emphasizeResearchFindings:true,emphasizeOrdinals:true,emphasizeKeyVerbs:true,emphasizeLogicalConnectives:true,
  appearance:'system',accentColor:'system',reduceMotion:false,reduceTransparency:false,reducePadding:false,
  language:'Simplified Chinese',sourceLanguage:'English',concurrency:2,pageConcurrency:2,automatic:true,layoutVisible:false,defaultPageCropEnabled:false,defaultPageCropX:0,defaultPageCropY:0,autoAlignDocumentWidth:false,
  kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'system'
@@ -83,6 +83,7 @@ function cloneTranslationServices(value){
 function clonePreferences(value){const clone={...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};if(Object.prototype.hasOwnProperty.call(value||{},'translationServices'))clone.translationServices=cloneTranslationServices(value.translationServices);if(Object.hasOwn(value||{},'translationServiceHistory'))clone.translationServiceHistory=cloneTranslationServiceHistory(value.translationServiceHistory);return clone;}
 
 const VALIDATORS={
+ autoCheckUpdates:value=>typeof value==='boolean',
  cacheLimitMB:value=>value===null||[512,1024,2048,5120,10240].includes(value),
  documentOpenMode:value=>['translation','original','manual'].includes(value),
  restoreDocuments:value=>typeof value==='boolean',
@@ -91,6 +92,10 @@ const VALIDATORS={
  reuseTranslations:value=>typeof value==='boolean',
  emphasizeTopicSentences:value=>typeof value==='boolean',
  emphasizeInformation:value=>typeof value==='boolean',
+ emphasizeResearchFindings:value=>typeof value==='boolean',
+ emphasizeOrdinals:value=>typeof value==='boolean',
+ emphasizeKeyVerbs:value=>typeof value==='boolean',
+ emphasizeLogicalConnectives:value=>typeof value==='boolean',
  engine:value=>['pdf_inspector','pdf_math_fast','pdf_math_precise'].includes(value),
  direction:value=>['vertical','horizontal'].includes(value),
  columns:value=>[1,2,4].includes(value),

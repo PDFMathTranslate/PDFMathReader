@@ -2,7 +2,7 @@
 import {computed,ref,watch,onBeforeUnmount} from 'vue';
 import {MacButton,MacPopUpButton,MacPopUpButtonItem,MacSecureField,MacSwitch,MacTextField} from './platform-controls.mjs';
 import ProviderIcon from './ProviderIcon.vue';
-import {groupProviders} from './provider-groups.mjs';
+import {groupProviders,providerPortEndpoint} from './provider-groups.mjs';
 import {cloneTranslationServices,loadTranslationServiceSchema} from './translation-services.mjs';
 import {t,uiLanguage} from './i18n.mjs';
 
@@ -36,7 +36,8 @@ const config=computed(()=>{
  return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
 });
 const services=computed(()=>Array.isArray(schema.value?.services)?schema.value.services:[]);
-const providerGroups=computed(()=>groupProviders(services.value,config.value,props.credentials?.[props.engine]||{},props.history?.[props.engine]||{}).filter(group=>group.id!=='error'||group.services.length>0));
+const providerPorts=ref({});
+const providerGroups=computed(()=>groupProviders(services.value,config.value,props.credentials?.[props.engine]||{},props.history?.[props.engine]||{},providerPorts.value).filter(group=>group.id!=='error'||group.services.length>0));
 const serviceById=id=>services.value.find(service=>service.id===id);
 // Keep this active-service derivation in lockstep with TranslationServiceOptions.
 const selectedId=computed(()=>typeof config.value.id==='string'&&message.value?config.value.id:serviceById(config.value.id)?.id||services.value[0]?.id||config.value.id||'auto');
@@ -151,6 +152,19 @@ async function loadSchema(){
  catch(error){if(token===generation)message.value=error.message||t('settings.translationServiceUnavailable');}
  finally{if(token===generation)busy.value=false;}
 }
+const portEndpoints=computed(()=>services.value.map(service=>({id:service.id,url:providerPortEndpoint(service,config.value)})).filter(item=>item.url!==null));
+watch(portEndpoints,(endpoints,_old,onCleanup)=>{
+ let stopped=false,timer;const controller=new AbortController();providerPorts.value={};
+ async function refresh(){
+  if(stopped)return;
+  if(!document.hidden&&endpoints.length)try{
+   const response=await fetch('/api/providers/ports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoints}),signal:controller.signal});
+   const ports=response.ok?await response.json():{};if(!stopped)providerPorts.value=ports;
+  }catch{if(!stopped)providerPorts.value={};}
+  if(!stopped)timer=setTimeout(refresh,5000);
+ }
+ void refresh();onCleanup(()=>{stopped=true;clearTimeout(timer);controller.abort();});
+},{immediate:true});
 watch(schemaKey,loadSchema,{immediate:true});
 watch([selectedId,services],()=>{if(!serviceById(browseId.value))browseId.value=serviceById(selectedId.value)?.id||'';},{flush:'post'});
 watch(()=>[selectedId.value,JSON.stringify(props.credentials?.[props.engine]||{}),JSON.stringify(activeProfileValues.value)],()=>emitRequest(),{flush:'post'});
@@ -168,8 +182,8 @@ onBeforeUnmount(()=>{generation++;for(const timer of scrollbarTimers.values())cl
     <div v-if="group.services.length" role="listbox" :aria-label="t('settings.providerGroups.'+group.id)">
     <button v-for="service in group.services" :key="service.id" type="button" role="option" class="provider-list-item" :data-provider-id="service.id" :class="{'is-browse':service.id===selectedProviderId,'is-active':service.id===selectedId}" :aria-selected="service.id===selectedProviderId" :aria-current="service.id===selectedId?'true':undefined" @click="browseService(service.id)">
      <ProviderIcon :provider="service" :label="serviceLabel(service)"/>
-     <span class="provider-list-copy"><span class="provider-list-name" :title="serviceLabel(service)">{{serviceLabel(service)}}</span><span v-if="service.id===selectedId" class="provider-active-label">{{local('active')}}</span></span>
-     <span v-if="service.id===selectedProviderId" class="provider-selection-dot" aria-hidden="true"></span>
+     <span class="provider-list-copy"><span class="provider-list-name" :title="serviceLabel(service)">{{serviceLabel(service)}}</span></span>
+     <span v-if="service.id===selectedId" class="provider-selection-dot" aria-hidden="true"></span>
     </button>
     </div>
     <p v-else class="muted provider-group-empty">{{t('settings.providerGroups.empty')}}</p>
@@ -226,15 +240,14 @@ onBeforeUnmount(()=>{generation++;for(const timer of scrollbarTimers.values())cl
 .provider-group-title span{font-weight:400;}
 .provider-group-empty{margin:0 6px;font-size:11px;}
 .provider-group[data-provider-group=error] .provider-group-title{color:var(--danger,#c93434);}
-.provider-list-item{display:grid;grid-template-columns:28px minmax(0,1fr) 8px;align-items:center;gap:9px;width:100%;min-width:0;padding:8px 8px;color:var(--text-secondary);background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);text-align:left;font-size:13px;line-height:1.25;transition:background-color var(--motion-duration) var(--motion-ease),border-color var(--motion-duration) var(--motion-ease),color var(--motion-duration) var(--motion-ease)}
+.provider-list-item{display:grid;grid-template-columns:28px minmax(0,1fr) 16px;align-items:center;gap:9px;width:100%;min-width:0;padding:8px 8px;color:var(--text-secondary);background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);text-align:left;font-size:13px;line-height:1.25;transition:background-color var(--motion-duration) var(--motion-ease),border-color var(--motion-duration) var(--motion-ease),color var(--motion-duration) var(--motion-ease)}
 .provider-list-item:hover{color:var(--text);background:var(--chrome-hover)}
 .provider-list-item:active{background:var(--chrome-pressed)}
 .provider-list-item.is-browse{color:var(--text);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 22%,transparent)}
 .provider-list-item.is-active:not(.is-browse){border-color:var(--chrome-border)}
 .provider-list-copy{display:grid;gap:6px;min-width:0}
 .provider-list-name{min-width:0;white-space:nowrap;font-weight:500}
-.provider-active-label{overflow:hidden;color:var(--accent);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
-.provider-selection-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.provider-selection-dot{justify-self:end;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .provider-empty,.provider-status,.provider-browse-hint{margin:0;color:var(--text-secondary);font-size:12px;line-height:1.45}
 .provider-detail{display:flex;flex-direction:column;gap:13px;min-height:0;padding:22px 24px;overflow:hidden;border-left:1px solid var(--chrome-divider)}
 .provider-detail-content{display:grid;align-content:start;gap:13px;flex:1;min-height:0;overflow:auto;}

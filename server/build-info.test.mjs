@@ -58,6 +58,17 @@ test('build info remains valid JSON with the package version',()=>{
   writeFileSync(join(root,'package.json'),JSON.stringify({version:'7.8.9'}));
   const metadata=JSON.parse(JSON.stringify(readBuildInfo(root)));
   assert.equal(metadata.version,'7.8.9');
-  assert.deepEqual(Object.keys(metadata),['version','revision','builtAt','recentFeatures']);
+  assert.deepEqual(Object.keys(metadata),['version','revision','builtAt','recentFeatures','acknowledgements']);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+ test('refreshes acknowledgement text and safe links from README on each build',()=>{
+ const root=temporaryRoot();
+ try{
+  writeFileSync(join(root,'package.json'),JSON.stringify({version:'1'}));
+  writeFileSync(join(root,'README.md'),'# Reader\n\nThanks to [OpenAI](https://openai.com/) for support.\n');
+  assert.deepEqual(readBuildInfo(root).acknowledgements.en,[{text:'Thanks to '},{text:'OpenAI',href:'https://openai.com/'},{text:' for support.'}]);
+  writeFileSync(join(root,'README.md'),'Updated thanks to [Warp](https://www.warp.dev/).\n');
+  assert.equal(readBuildInfo(root).acknowledgements.en[1].text,'Warp');
  }finally{rmSync(root,{recursive:true,force:true});}
 });

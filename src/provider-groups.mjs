@@ -1,3 +1,9 @@
+export function providerPortEndpoint(service,config={}){
+ if(!['ollama','xinference'].includes(service.id.toLowerCase()))return null;
+ const values=config.profiles?.[service.id]?.values||(config.id===service.id?config.values:null)||{};
+ const field=(service.fields||[]).find(field=>!field.secret&&/(?:^|_)(host|base_url|endpoint|url)$/i.test(field.id));
+ return String(field?(values[field.id]??field.default??''):service.id.toLowerCase()==='ollama'?'http://127.0.0.1:11434':'http://127.0.0.1:9997');
+}
 const record=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 function validValue(field,value){
  const missing=value===undefined||value===null||typeof value==='string'&&!value.trim();
@@ -21,11 +27,11 @@ export function isProviderConfigured(service,config={},credentials={}){
  if(!fields.every(field=>validValue(field,field.secret?secrets[field.id]:Object.hasOwn(values,field.id)?values[field.id]:field.default)))return false;
  return !fields.some(field=>field.secret)||Object.keys(values).length>0||Object.values(secrets).some(value=>typeof value==='string'&&!!value.trim());
 }
-export function groupProviders(services,config={},credentials={},history={}){
+export function groupProviders(services,config={},credentials={},history={},ports={}){
  const groups=[{id:'configured',services:[]},{id:'unconfigured',services:[]},{id:'error',services:[]}];
  for(const service of services){
   const status=history?.[service.id]?.status;
-  const group=status==='error'?groups[2]:isProviderConfigured(service,config,credentials)?groups[0]:groups[1];
+  const group=status==='error'?groups[2]:isProviderConfigured(service,config,credentials)&&(providerPortEndpoint(service,config)===null||ports[service.id]===true)?groups[0]:groups[1];
   group.services.push(service);
  }
  return groups;
