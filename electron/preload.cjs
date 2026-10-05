@@ -5,6 +5,13 @@ contextBridge.exposeInMainWorld('previewCredentials',Object.freeze({
  clear:()=>ipcRenderer.invoke('credentials:clear')
 }));
 
+contextBridge.exposeInMainWorld('previewServiceCredentials',Object.freeze({
+ status:()=>ipcRenderer.invoke('serviceCredentials:status'),
+ load:selection=>ipcRenderer.invoke('serviceCredentials:load',selection),
+ save:value=>ipcRenderer.invoke('serviceCredentials:save',value),
+ clear:value=>ipcRenderer.invoke('serviceCredentials:clear',value)
+}));
+
 contextBridge.exposeInMainWorld('previewAppearance',Object.freeze({
  platform:process.argv.includes('--preview-test-mode')&&process.argv.includes('--preview-ui-platform=win32')?'win32':process.platform,
  contentGlass:process.platform==='darwin',
@@ -82,3 +89,12 @@ contextBridge.exposeInMainWorld('previewClipboard',Object.freeze({writeText:text
 contextBridge.exposeInMainWorld('previewHaptics',Object.freeze({tick:()=>ipcRenderer.invoke('haptics:tick')}));
 
 contextBridge.exposeInMainWorld('previewQuickLinks',Object.freeze({load:key=>ipcRenderer.invoke('quickLinks:load',key),save:(key,links)=>ipcRenderer.invoke('quickLinks:save',{key,links})}));
+
+contextBridge.exposeInMainWorld('previewDeveloper',Object.freeze({
+ open:()=>ipcRenderer.invoke('developer:open'),
+ close:()=>ipcRenderer.invoke('developer:close'),
+ enabled:()=>ipcRenderer.invoke('developer:enabled'),
+ snapshot:()=>ipcRenderer.invoke('developer:snapshot'),
+ copy:text=>ipcRenderer.invoke('developer:copy',text),
+ onChange:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('developer:changed',listener);return ()=>ipcRenderer.removeListener('developer:changed',listener);}
+}));

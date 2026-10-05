@@ -16,9 +16,9 @@ export function makeProviderFetch(mode){
  if(!mode)return upstream;
  return async(url,options)=>{
   if(!String(url).startsWith('https://api.openai.com/'))return upstream(url,options);
-  if(mode==='ux'){
-   await new Promise(resolve=>setTimeout(resolve,600));
-   if(String(options?.body).includes('fixture 13'))return new Response(JSON.stringify({error:{message:'Synthetic rate limit'}}),{status:429,headers:{'Content-Type':'application/json'}});
+  if(mode==='ux'||mode==='developer'){
+   await new Promise(resolve=>setTimeout(resolve,mode==='developer'?1500:600));
+   if(mode==='ux'&&String(options?.body).includes('fixture 13'))return new Response(JSON.stringify({error:{message:'Synthetic rate limit'}}),{status:429,headers:{'Content-Type':'application/json'}});
   }
   return new Response(JSON.stringify({choices:[{message:{content:mode==='animation'?'示例译文：新的文字逐个跳跃上来，段落保持自然换行。'.repeat(3)+' 👩🏽‍💻 é':mode==='information-emphasis'?'首先，结果表明支持研究假设。然而，发现高于原先预期。普通内容保持不变。':mode==='topic-sentences'?'译文第一句。第二句保持普通字重。'+'后续段落提供具体证据并说明研究背景。'.repeat(10):'Mock translated paragraph'}}]}),{headers:{'Content-Type':'application/json'}});
  };

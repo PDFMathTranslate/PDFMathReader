@@ -6,7 +6,10 @@ import {LANGUAGE_CODES} from '../src/translation-languages.mjs';
 const LANGUAGE_OPTIONS=Object.keys(LANGUAGE_CODES);
 const KERNEL_ENGINE_IDS=Object.freeze(['pdf_math_fast','pdf_math_precise']);
 const KERNEL_ENGINE_SET=new Set(KERNEL_ENGINE_IDS);
+const SERVICE_ENGINE_SET=new Set(['pdf_inspector',...KERNEL_ENGINE_IDS]);
 const KERNEL_OPTION_NAME=/^[a-z][a-z0-9_]*$/;
+const SERVICE_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+const SERVICE_FIELD_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const PROTOTYPE_NAMES=new Set([...Object.getOwnPropertyNames(Object.prototype),'prototype']);
 const DEFAULT_PREFERENCES=Object.freeze({
  engine:'pdf_inspector',direction:'vertical',columns:1,fit:'width',zoom:1,translationMode:'reading',
@@ -16,7 +19,9 @@ const DEFAULT_PREFERENCES=Object.freeze({
  kernelAdvancedOptions:{},autoHideHeader:true,uiLanguage:'en'
 });
 const KNOWN_KEYS=Object.freeze(Object.keys(DEFAULT_PREFERENCES));
-const KNOWN_KEY_SET=new Set(KNOWN_KEYS);
+const OPTIONAL_KEYS=Object.freeze(['translationServices']);
+const PREFERENCE_KEYS=Object.freeze([...KNOWN_KEYS,...OPTIONAL_KEYS]);
+const KNOWN_KEY_SET=new Set(PREFERENCE_KEYS);
 
 function isObject(value){return value!==null&&typeof value==='object'&&!Array.isArray(value);}
 function isRecord(value){if(!isObject(value))return false;const prototype=Object.getPrototypeOf(value);return prototype===Object.prototype||prototype===null;}
@@ -46,7 +51,34 @@ function cloneKernelAdvancedOptions(value){
  }
  return clone;
 }
-function clonePreferences(value){return {...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};}
+const SECRET_SERVICE_FIELD=/(?:api[_-]?key|auth[_-]?key|access[_-]?token)|(?:^|[_-])(token|secret|password|credential|key)(?:$|[_-])/i;
+function isValidServiceValue(value){return typeof value==='string'&&value.length<=16384&&!/[\r\n]/.test(value)||typeof value==='number'&&Number.isFinite(value)||typeof value==='boolean';}
+function isValidServiceValues(value){
+ if(!isRecord(value))return false;
+ for(const key of Reflect.ownKeys(value))if(typeof key!=='string'||!SERVICE_FIELD_ID.test(key)||PROTOTYPE_NAMES.has(key)||SECRET_SERVICE_FIELD.test(key)||!isValidServiceValue(value[key]))return false;
+ return true;
+}
+function isValidTranslationServices(value){
+ if(!isRecord(value))return false;
+ for(const engine of Reflect.ownKeys(value)){
+  if(typeof engine!=='string'||!SERVICE_ENGINE_SET.has(engine)||PROTOTYPE_NAMES.has(engine))return false;
+  const config=value[engine];if(!isRecord(config)||typeof config.id!=='string'||!SERVICE_ID.test(config.id)||!isValidServiceValues(config.values||{}))return false;
+  if(config.profiles!==undefined){if(!isRecord(config.profiles))return false;for(const service of Reflect.ownKeys(config.profiles)){if(typeof service!=='string'||!SERVICE_ID.test(service)||PROTOTYPE_NAMES.has(service))return false;const profile=config.profiles[service];if(!isRecord(profile)||!isValidServiceValues(profile.values||{}))return false;}}
+ }
+ return true;
+}
+function cloneServiceValues(value){const clone={};if(!isRecord(value))return clone;for(const [key,entry] of Object.entries(value))if(SERVICE_FIELD_ID.test(key)&&isValidServiceValue(entry)&&!SECRET_SERVICE_FIELD.test(key))clone[key]=entry;return clone;}
+function cloneTranslationServices(value){
+ const clone={};if(!isRecord(value))return clone;
+ for(const engine of ['pdf_inspector',...KERNEL_ENGINE_IDS]){
+  const config=value[engine];if(!isRecord(config)||typeof config.id!=='string')continue;
+  const next={id:config.id,values:cloneServiceValues(config.values),profiles:{}};
+  if(isRecord(config.profiles))for(const [service,profile] of Object.entries(config.profiles))if(isRecord(profile))next.profiles[service]={values:cloneServiceValues(profile.values)};
+  clone[engine]=next;
+ }
+ return clone;
+}
+function clonePreferences(value){const clone={...value,kernelAdvancedOptions:cloneKernelAdvancedOptions(value?.kernelAdvancedOptions)};if(Object.prototype.hasOwnProperty.call(value||{},'translationServices'))clone.translationServices=cloneTranslationServices(value.translationServices);return clone;}
 
 const VALIDATORS={
  documentOpenMode:value=>['translation','original','manual'].includes(value),
@@ -75,7 +107,8 @@ const VALIDATORS={
  layoutVisible:value=>typeof value==='boolean',
  kernelAdvancedOptions:isValidKernelAdvancedOptions,
  autoHideHeader:value=>typeof value==='boolean',
- uiLanguage:value=>['en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value)
+ uiLanguage:value=>['en','zh-CN','zh-TW','fr','es','ja','ko'].includes(value),
+ translationServices:isValidTranslationServices
 };
 const VALIDATION_MESSAGES={
  documentOpenMode:'Invalid document opening mode',
@@ -88,7 +121,7 @@ const VALIDATION_MESSAGES={
  pageConcurrency:'Invalid page concurrency preference',automatic:'Invalid automatic translation preference',
  layoutVisible:'Invalid layout visibility preference',kernelAdvancedOptions:'Invalid kernel advanced options',
  autoHideHeader:'Invalid auto-hide header preference',
- uiLanguage:'Invalid UI language preference'
+ uiLanguage:'Invalid UI language preference',translationServices:'Invalid translation service preferences'
 };
 
 function copyUnknown(value){
@@ -102,7 +135,7 @@ function upgrade(value){
  const next={...DEFAULT_PREFERENCES,...copyUnknown(value)};
  next.kernelAdvancedOptions=cloneKernelAdvancedOptions(DEFAULT_PREFERENCES.kernelAdvancedOptions);
  if(!isObject(value))return next;
- for(const key of KNOWN_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):value[key];
+ for(const key of PREFERENCE_KEYS)if(VALIDATORS[key](value[key]))next[key]=key==='kernelAdvancedOptions'?cloneKernelAdvancedOptions(value[key]):key==='translationServices'?cloneTranslationServices(value[key]):value[key];
  if(!VALIDATORS.sourceLanguage(value.sourceLanguage)){const entry=Object.entries(LANGUAGE_CODES).find(([,code])=>code===value.kernelAdvancedOptions?.pdf_math_fast?.lang_in);if(entry)next.sourceLanguage=entry[0];}
  if(next.kernelAdvancedOptions.pdf_math_fast)delete next.kernelAdvancedOptions.pdf_math_fast.lang_in;
  return next;
@@ -112,8 +145,9 @@ function invalidPreference(message='Invalid reader preferences'){throw Error(mes
 
 function validate(value,partial=false){
  if(!isObject(value))invalidPreference();
- for(const key of KNOWN_KEYS){
-  if((!partial||Object.prototype.hasOwnProperty.call(value,key))&&!VALIDATORS[key](value[key]))invalidPreference(VALIDATION_MESSAGES[key]);
+ for(const key of PREFERENCE_KEYS){
+  const present=Object.prototype.hasOwnProperty.call(value,key),optional=OPTIONAL_KEYS.includes(key);
+  if((present||!partial&&!optional)&&!VALIDATORS[key](value[key]))invalidPreference(VALIDATION_MESSAGES[key]);
  }
 }
 
@@ -128,6 +162,7 @@ export async function createReaderPreferences(path){
    const next={...state,...(isObject(value)?value:{})};
    validate(value,true);
    validate(next);
+   if(Object.prototype.hasOwnProperty.call(next,'translationServices'))next.translationServices=cloneTranslationServices(next.translationServices);
    const saved=clonePreferences(next);
    state=saved;
    writes=writes.catch(()=>{}).then(async()=>{await mkdir(dirname(path),{recursive:true});await writeFile(path+'.tmp',JSON.stringify(saved));await replaceFile(path+'.tmp',path);});

@@ -33,7 +33,7 @@ export function createTranslationProvider(providerFetch,{cacheDirectory}={}){
   return selected;
  }
  async function request(provider,body,signal){
-  if(provider.id==='openai')return providerFetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal,headers:{Authorization:`Bearer ${provider.key}`,'Content-Type':'application/json'},body:JSON.stringify(requestBody(provider,body))});
+  if(provider.id==='openai')return providerFetch((provider.baseUrl||'https://api.openai.com/v1').replace(/\/$/,'')+'/chat/completions',{method:'POST',signal,headers:{Authorization:`Bearer ${provider.key}`,'Content-Type':'application/json'},body:JSON.stringify(requestBody(provider,body))});
   const first=await endpoint();
   const payload=requestBody(provider,body);
   for(const url of [first,...FREE_ENDPOINTS.filter(url=>url!==first)]){
@@ -55,7 +55,7 @@ export function createTranslationProvider(providerFetch,{cacheDirectory}={}){
   if(!cacheDirectory||!cache)return request(provider,body,signal);
   // Include all output-affecting request options; never include document IDs,
   // proxy tokens or provider credentials. Stream responses are buffered upstream.
-  const key=createHash('sha256').update(JSON.stringify(stable({version:1,...cacheScope?{cacheScope}:{},service:provider.id,model:provider.model,body:requestBody(provider,body)}))).digest('hex');
+  const key=createHash('sha256').update(JSON.stringify(stable({version:1,...cacheScope?{cacheScope}:{},service:provider.id,...provider.baseUrl?{baseUrl:provider.baseUrl}:{},model:provider.model,body:requestBody(provider,body)}))).digest('hex');
   const [documentHash,generation]=cacheScope.split(':');
   const directory=cacheScope?join(resolve(cacheDirectory),'..','documents',documentHash,'text',generation):resolve(cacheDirectory),path=join(directory,key+'.json');
   try{const data=JSON.parse(await readFile(path,'utf8'));if(validTranslation(data))return Response.json(data);}catch{}

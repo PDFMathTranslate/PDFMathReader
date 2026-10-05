@@ -4,8 +4,8 @@ import {dirname,join,resolve,relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {build} from 'esbuild';
 import {hasNativeInspector} from '../server/pdf-extractor.mjs';
-const runtimeElectron=['main.mjs','page-edits.mjs','page-edit-annotations.mjs','annotations.mjs','annotation-import.mjs','document-session.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
-const runtimeServer=['index.mjs','translation-cache.mjs','reading-assist.mjs','translation-provider.mjs','documents.mjs','engines.mjs','kernel-processes.mjs','kernel-options.mjs','layout.mjs','layout-extraction.mjs','pdf-extractor.mjs','performance.mjs'];
+const runtimeElectron=['main.mjs','developer-monitor.mjs','page-edits.mjs','page-edit-annotations.mjs','annotations.mjs','annotation-import.mjs','document-session.mjs','haptics.mjs','menu-i18n.mjs','backend-process.mjs','backend-service.mjs','credentials.mjs','service-credentials.mjs','atomic-file.mjs','documents.mjs','performance-tracker.mjs','preferences.mjs','recents.mjs','window-chrome.mjs','windows-file-association.mjs','preload.cjs'];
+const runtimeServer=['index.mjs','developer-diagnostics.mjs','translation-cache.mjs','reading-assist.mjs','translation-provider.mjs','documents.mjs','engines.mjs','kernel-processes.mjs','kernel-options.mjs','kernel-services.mjs','local-translation.mjs','layout.mjs','layout-extraction.mjs','pdf-extractor.mjs','performance.mjs'];
 async function packageDirectory(name,from){
  const require=createRequire(join(from,'package.json'));let path;
  try{path=dirname(require.resolve(name+'/package.json'));}catch{
@@ -42,6 +42,8 @@ export async function stageApplication({root=process.cwd(),phase='bundle',test=f
  for(const file of runtimeServer)await cp(join(root,'server',file),join(stage,'server',file));
  await cp(join(root,'electron/kernel-worker.py'),join(stage,'electron/kernel-worker.py'));
  await cp(join(root,'electron/kernel-options.py'),join(stage,'electron/kernel-options.py'));
+ await cp(join(root,'electron/kernel-services.py'),join(stage,'electron/kernel-services.py'));
+ if(platform==='darwin')await cp(join(root,'electron/local-translation.swift'),join(stage,'electron/local-translation.swift'));
  if(test)for(const file of await readdir(join(root,'electron')))if(file==='smoke.mjs'||file.endsWith('-smoke.mjs'))await cp(join(root,'electron',file),join(stage,'electron',file));
  const names=['whitelist','pdf','skia'].includes(phase)?Object.keys(metadata.dependencies):phase==='dependencies'?['express','pdf-lib','@firecrawl/pdf-inspector']:['@firecrawl/pdf-inspector'];
  if(test&&!names.includes('pdf-lib'))names.push('pdf-lib');

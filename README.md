@@ -14,6 +14,8 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Features
 
+- **Developer mode:** Enable it in Advanced settings to open an independent live resource and diagnostics window. Inspect app/renderer/kernel processes, task queues, kernel output, and command traffic; filter, pause, or copy diagnostics. Collection stops when the window closes.
+
 - Open PDFs up to 50 MiB in independent windows, with drag-and-drop and macOS Finder/Dock support.
 - Navigate with thumbnails, zoom, fit-to-page controls, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
 - Resume recent documents with their reading position and display settings restored.

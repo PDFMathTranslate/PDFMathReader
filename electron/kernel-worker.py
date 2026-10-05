@@ -34,6 +34,25 @@ def main(capture_only=False):
     else:
         kind, sidecar, selected, input_path, *args = sys.argv[1:]
     selected = int(selected)
+    if os.environ.get("PDFMATHREADER_LOCAL_TRANSLATION") == "1":
+        # The native API receives source text, never an LLM instruction template.
+        import urllib.request
+        def local_translate(self, text, *unused, **options):
+            request = urllib.request.Request(
+                os.environ["OPENAI_BASE_URL"] + "/translate",
+                data=json.dumps({"text": text}).encode(),
+                headers={"Authorization": "Bearer " + os.environ["OPENAI_API_KEY"], "Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return json.load(response)["translation"]
+        if kind == "pdf_math_fast":
+            from pdf2zh.translator import OpenAITranslator
+        else:
+            from pdf2zh_next.translator.translator_impl.openai import OpenAITranslator
+            def no_llm(self, *args, **kwargs):
+                raise NotImplementedError("Apple Translation is a text translation API")
+            OpenAITranslator.do_llm_translate = no_llm
+        OpenAITranslator.do_translate = local_translate
     timings = {}
     checkpoint = perf_counter()
     def step(name):

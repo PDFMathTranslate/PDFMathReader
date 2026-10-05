@@ -1,8 +1,26 @@
 <script setup>
-import {computed,ref,watch,onBeforeUnmount} from 'vue';
+import {computed,ref,watch,onBeforeUnmount,onMounted} from 'vue';
 import {MacButton,MacPopUpButton,MacPopUpButtonItem,MacSwitch,MacTextField,platform} from './platform-controls.mjs';
-import {t,advancedOptionText,advancedChoiceText} from './i18n.mjs';
+import {t,uiLanguage,advancedOptionText,advancedChoiceText} from './i18n.mjs';
+import {developerText} from './developer-locales.mjs';
 
+const developerAvailable=!!globalThis.window?.previewDeveloper;
+const developerEnabled=ref(false),developerBusy=ref(false),developerError=ref('');
+let unsubscribeDeveloper;
+const dt=key=>developerText(uiLanguage.value,'app.'+key);
+onMounted(async()=>{
+ if(!window.previewDeveloper)return;
+ unsubscribeDeveloper=window.previewDeveloper.onChange(value=>{developerEnabled.value=value;});
+ try{developerEnabled.value=await window.previewDeveloper.enabled();}catch(error){developerError.value=error.message;}
+});
+onBeforeUnmount(()=>unsubscribeDeveloper?.());
+async function toggleDeveloper(enabled){
+ if(developerBusy.value)return;
+ developerBusy.value=true;developerError.value='';
+ try{await window.previewDeveloper[enabled?'open':'close']();developerEnabled.value=enabled;}
+ catch(error){developerError.value=error.message;}
+ finally{developerBusy.value=false;}
+}
 const SUPPORTED_ENGINES=['pdf_math_fast','pdf_math_precise'];
 const INVALID=Symbol('invalid-advanced-value');
 const SERVICE_OPTIONS=['prompt','custom_system_prompt'];
@@ -154,6 +172,12 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
  <details :key="engine" class="settings-section advanced-settings" @toggle="expanded=$event.target.open">
   <summary>{{t('advanced.section')}}</summary>
   <div class="advanced-options">
+   <div v-if="developerAvailable" class="advanced-developer-mode">
+    <div class="setting-row"><span id="developer-mode-label">{{dt('developerMode')}}</span><MacSwitch :model-value="developerEnabled" :disabled="developerBusy" aria-labelledby="developer-mode-label" @update:model-value="toggleDeveloper"/></div>
+    <p class="muted">{{dt('developerHint')}}</p>
+    <MacButton v-if="developerEnabled" :disabled="developerBusy" @click="toggleDeveloper(true)">{{dt('openWindow')}}</MacButton>
+    <p v-if="developerError" class="muted" role="alert">{{developerError}}</p>
+   </div>
    <p v-if="busy" class="muted" role="status">{{t('advanced.loading')}}</p>
    <p v-else-if="message" class="muted" role="status">{{message}}</p>
    <div v-for="option in options" :key="option.id" class="advanced-option" :data-advanced-option="option.id">
@@ -178,3 +202,7 @@ onBeforeUnmount(()=>{generation++;requestController?.abort();requestController=u
   </div>
  </details>
 </template>
+
+<style scoped>
+.advanced-developer-mode{padding-bottom:16px;margin-bottom:8px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+</style>
