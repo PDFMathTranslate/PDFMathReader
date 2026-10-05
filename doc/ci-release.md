@@ -14,7 +14,8 @@ Windows x64, and Linux x64. The check uses a temporary user-data directory,
 waits for a visible main window and the real renderer's startup-ready marker,
 then exits cleanly. Startup failures, renderer crashes, early exits, and timeouts
 fail the workflow. It does not test translation, PDF interaction, or other features.
-Linux uses Xvfb. The cross-built ia32 and ARMv7 packages are compiled but are not
+Windows launches the bundled main executable directly because the portable
+launcher does not forward its child process stdout. Linux uses Xvfb. The cross-built ia32 and ARMv7 packages are compiled but are not
 separately launched on the x64 runners.
 
 ## Release workflow

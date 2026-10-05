@@ -75,7 +75,7 @@ async function resolveExecutable(platform, arch) {
           join(releaseRoot, `${name}.app`, 'Contents', 'MacOS', 'PDFMathReader'),
         ]
       : platform === 'win32'
-        ? [join(releaseRoot, `${name}.exe`), join(packageRoot, 'PDFMathReader.exe')]
+        ? [join(packageRoot, 'PDFMathReader.exe')]
         : [join(packageRoot, 'PDFMathReader')];
   for (const candidate of candidates) if (await isFile(candidate)) return candidate;
   throw Error(
