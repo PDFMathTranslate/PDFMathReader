@@ -2934,9 +2934,6 @@
   .page-wrap.cropped > .page {
     box-shadow: none;
   }
-  :root[data-reduce-padding='true'] .page-wrap.cropped {
-    box-shadow: none;
-  }
   .thumbnail-list > .thumbnail-inner {
     position: relative;
     width: 100%;

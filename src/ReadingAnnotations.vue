@@ -1,4 +1,5 @@
 <script setup>
+import { t } from './i18n.mjs';
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { createAnnotationShake, updateAnnotationShake } from './annotation-shake.mjs';
 import {
@@ -34,7 +35,7 @@ const props = defineProps({
   translated: Boolean,
   selectedAnnotation: String,
 });
-const emit = defineEmits(['change', 'notice', 'rail']);
+const emit = defineEmits(['change', 'notice', 'rail', 'search-document']);
 const popupFromNote = ref(false);
 const assistance = ref(null);
 let assistController;
@@ -769,6 +770,11 @@ async function action(name, a = menu.value?.a) {
       await comment(a);
       return;
     }
+    if (name === '在文档内搜索') {
+      const query = (a.text || '').trim();
+      if (query) emit('search-document', query);
+      return;
+    }
     const text = [a.text, a.comment].filter(Boolean).join('\n\n');
     if (name === '谷歌搜索' || name === '谷歌学术搜索') {
       const provider = name === '谷歌学术搜索' ? 'scholar' : 'google';
@@ -1185,13 +1191,13 @@ watch(
     >
       <button
         v-for="name in menu.a.kind === 'highlight'
-          ? ['复制', '分享', '谷歌搜索', '谷歌学术搜索', 'Hand over to AI', '删除']
+          ? ['复制', '分享', '在文档内搜索', '谷歌搜索', '谷歌学术搜索', 'Hand over to AI', '删除']
           : ['复制', '分享', 'Hand over to AI', '修改', '删除']"
         :key="name"
         role="menuitem"
         @click="action(name)"
       >
-        {{ name }}
+        {{ name === '在文档内搜索' ? t('toolbar.searchDocument') : name }}
       </button>
     </div>
     <div v-if="confirming" :data-platform="popupPlatform" class="annotation-ui annotation-modal">

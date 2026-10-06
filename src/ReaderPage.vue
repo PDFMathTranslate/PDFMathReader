@@ -72,6 +72,7 @@ const p = computed(() => props.page),
     'hover',
     'annotations',
     'notice',
+    'search-document',
     'navigate',
     'quick-link',
   ]);
@@ -297,6 +298,7 @@ function fit(el, b) {
             @rail="commentRail = $event"
             @change="emit('annotations', $event)"
             @notice="emit('notice', $event)"
+            @search-document="emit('search-document', $event)"
           /></div
       ></Transition>
       <div class="quick-link-layer">

@@ -918,6 +918,7 @@ const informationCategories = computed(() => ({
   logic: emphasizeLogicalConnectives.value,
 }));
 const emphasizeTopicSentences = ref(localStorage.getItem('emphasizeTopicSentences') === 'true');
+const showKernelToolbarShortcut = ref(localStorage.getItem('showKernelToolbarShortcut') === 'true');
 const autoHideHeader = ref(true),
   immersiveHeaderHidden = ref(false);
 let immersiveLastPosition = 0,
@@ -1540,6 +1541,8 @@ function applySavedSettings(saved) {
   if (saved.glossaries !== undefined) glossaries.value = cloneGlossaries(saved.glossaries);
   if (saved.sourceLanguage) sourceLanguage.value = saved.sourceLanguage;
   if (saved.uiLanguage) setUILanguage(saved.uiLanguage);
+  if (saved.showKernelToolbarShortcut !== undefined)
+    showKernelToolbarShortcut.value = !!saved.showKernelToolbarShortcut;
   if (saved.autoHideHeader !== undefined) autoHideHeader.value = !!saved.autoHideHeader;
   if (saved.concurrency !== undefined) concurrency.value = saved.concurrency;
   if (saved.pageConcurrency !== undefined) pageConcurrency.value = saved.pageConcurrency;
@@ -1581,6 +1584,7 @@ function saveView(force = false) {
       glossaries: cloneGlossaries(glossaries.value),
       sourceLanguage: sourceLanguage.value,
       uiLanguage: uiLanguageChoice.value,
+      showKernelToolbarShortcut: showKernelToolbarShortcut.value,
       autoHideHeader: autoHideHeader.value,
       concurrency: concurrency.value,
       pageConcurrency: pageConcurrency.value,
@@ -4580,6 +4584,7 @@ watch(
     emphasizeKeyVerbs,
     emphasizeLogicalConnectives,
     autoHideHeader,
+    showKernelToolbarShortcut,
     uiLanguageChoice,
   ],
   () => saveView(),
@@ -4592,6 +4597,9 @@ watch(
     resetTranslations();
     settle();
   },
+);
+watch(showKernelToolbarShortcut, (value) =>
+  localStorage.setItem('showKernelToolbarShortcut', String(value)),
 );
 watch(
   glossaries,
@@ -5038,8 +5046,13 @@ onBeforeUnmount(() => {
                 <path v-if="!showAnnotations" d="m3 3 18 18" /></svg
             ></MacButton>
           </template>
-          <div class="toolbar-kernel" data-popover-trigger>
+          <div
+            v-if="showKernelToolbarShortcut || kernelErrorVisible"
+            class="toolbar-kernel"
+            data-popover-trigger
+          >
             <MacPopUpButton
+              v-if="showKernelToolbarShortcut"
               size="small"
               :model-value="engine"
               :disabled="engineBusy"
@@ -5475,6 +5488,7 @@ onBeforeUnmount(() => {
                 @navigate="followReference"
                 @annotations="saveAnnotations"
                 @notice="annotationNotice"
+                @search-document="readerAction('search-selection', $event)"
                 :register-host="bindPage"
                 :register-canvas="bindCanvas"
                 :native-source="nativeSource"
@@ -5898,6 +5912,7 @@ onBeforeUnmount(() => {
         <template #appearance>
           <AppearanceSettings
             :show-effects="false"
+            v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
             v-model:appearance="appearanceChoice"
             v-model:accent-color="accentColor"
             v-model:reduce-motion="reduceMotion"
@@ -6522,6 +6537,7 @@ onBeforeUnmount(() => {
           <p class="muted">{{ t('settings.reduceResourceUsageHint') }}</p>
         </section>
         <AppearanceSettings
+          v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
           v-model:appearance="appearanceChoice"
           v-model:accent-color="accentColor"
           v-model:reduce-motion="reduceMotion"

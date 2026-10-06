@@ -42,6 +42,7 @@ const DEFAULT_PREFERENCES = {
   defaultPageCropY: 0,
   autoAlignDocumentWidth: false,
   kernelAdvancedOptions: {},
+  showKernelToolbarShortcut: false,
   autoHideHeader: true,
   uiLanguage: 'system',
 };

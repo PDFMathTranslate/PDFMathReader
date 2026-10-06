@@ -1003,7 +1003,6 @@
 }
 :root[data-reduce-padding='true'] .page {
   border: 0;
-  box-shadow: none;
 }
 
 /* Crossfade theme snapshots without reflowing document pages. */

@@ -54,6 +54,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   defaultPageCropY: 0,
   autoAlignDocumentWidth: false,
   kernelAdvancedOptions: {},
+  showKernelToolbarShortcut: false,
   autoHideHeader: true,
   uiLanguage: 'system',
 });
@@ -256,6 +257,7 @@ const VALIDATORS = {
   defaultPageCropY: isValidPageCropRatio,
   autoAlignDocumentWidth: (value) => typeof value === 'boolean',
   kernelAdvancedOptions: isValidKernelAdvancedOptions,
+  showKernelToolbarShortcut: (value) => typeof value === 'boolean',
   autoHideHeader: (value) => typeof value === 'boolean',
   uiLanguage: (value) => ['system', 'en', 'zh-CN', 'zh-TW', 'fr', 'es', 'ja', 'ko'].includes(value),
   translationServiceHistory: isValidTranslationServiceHistory,
@@ -287,6 +289,7 @@ const VALIDATION_MESSAGES = {
   defaultPageCropY: 'Invalid default page crop Y preference',
   autoAlignDocumentWidth: 'Invalid auto-align document width preference',
   kernelAdvancedOptions: 'Invalid kernel advanced options',
+  showKernelToolbarShortcut: 'Invalid toolbar kernel shortcut preference',
   autoHideHeader: 'Invalid auto-hide header preference',
   translationServiceHistory: 'Invalid translation service history',
   uiLanguage: 'Invalid UI language preference',

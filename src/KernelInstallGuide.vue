@@ -127,7 +127,12 @@ onMounted(inspect);
 watch(() => props.engine, inspect);
 </script>
 <template>
-  <section class="kernel-install-guide" :aria-label="copy.title" :aria-busy="busy">
+  <section
+    v-if="!ready || busy || failure"
+    class="kernel-install-guide"
+    :aria-label="copy.title"
+    :aria-busy="busy"
+  >
     <h4>{{ copy.title }}</h4>
     <p>{{ copy.intro }}</p>
     <ol>

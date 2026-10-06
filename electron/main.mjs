@@ -1583,8 +1583,8 @@ else {
         if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
         return new Promise((resolve) => {
           let selected = null;
-          const item = (label) => ({
-            label,
+          const item = (label, displayLabel = label) => ({
+            label: displayLabel,
             click: () => {
               selected = label;
             },
@@ -1592,7 +1592,22 @@ else {
           const template = [
             item('复制'),
             item('分享'),
-            ...(kind === 'highlight' ? [item('谷歌搜索'), item('谷歌学术搜索')] : []),
+            ...(kind === 'highlight'
+              ? [
+                  item(
+                    '在文档内搜索',
+                    menuLabel(
+                      'Search in Document',
+                      resolveUILanguage(
+                        windows.get(target)?.preferences?.uiLanguage || 'system',
+                        app.getPreferredSystemLanguages()[0] || app.getLocale(),
+                      ),
+                    ),
+                  ),
+                  item('谷歌搜索'),
+                  item('谷歌学术搜索'),
+                ]
+              : []),
             item('Hand over to AI'),
             { type: 'separator' },
             ...(kind === 'comment' ? [item('修改')] : []),

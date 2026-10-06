@@ -1,8 +1,9 @@
 <script setup>
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { MacSwitch, MacPopUpButton, MacPopUpButtonItem } from './platform-controls.mjs';
-import { t, setUILanguage } from './i18n.mjs';
+import { t, setUILanguage, uiLanguage as currentUILanguage } from './i18n.mjs';
 const props = defineProps({
+  showKernelToolbarShortcut: Boolean,
   effectsOnly: Boolean,
   showEffects: { type: Boolean, default: true },
   appearance: String,
@@ -13,6 +14,7 @@ const props = defineProps({
   uiLanguage: { type: String, default: 'system' },
 });
 const emit = defineEmits([
+  'update:showKernelToolbarShortcut',
   'update:appearance',
   'update:accentColor',
   'update:reduceMotion',
@@ -20,6 +22,18 @@ const emit = defineEmits([
   'update:reducePadding',
   'update:uiLanguage',
 ]);
+const kernelShortcutLabel = computed(
+  () =>
+    ({
+      en: 'Show kernel switching shortcut in toolbar',
+      'zh-CN': '在工具栏显示内核切换快捷方式',
+      'zh-TW': '在工具列顯示核心切換快捷方式',
+      ja: 'ツールバーにカーネル切り替えショートカットを表示',
+      ko: '도구 모음에 커널 전환 바로 가기 표시',
+      fr: 'Afficher le raccourci de changement de moteur dans la barre d’outils',
+      es: 'Mostrar el acceso para cambiar de motor en la barra de herramientas',
+    })[currentUILanguage.value] || 'Show kernel switching shortcut in toolbar',
+);
 const themes = [
   ['light', 'appearance.light'],
   ['dark', 'appearance.dark'],
@@ -136,6 +150,14 @@ function changeUILanguage(code) {
             t(label)
           }}</MacPopUpButtonItem></MacPopUpButton
         >
+      </div>
+      <div class="appearance-row" data-setting="kernel-toolbar-shortcut">
+        <span id="kernel-toolbar-shortcut-label">{{ kernelShortcutLabel }}</span>
+        <MacSwitch
+          :model-value="showKernelToolbarShortcut"
+          aria-labelledby="kernel-toolbar-shortcut-label"
+          @update:model-value="emit('update:showKernelToolbarShortcut', $event)"
+        />
       </div>
     </div>
   </section>
