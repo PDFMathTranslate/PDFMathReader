@@ -21,6 +21,121 @@ def fast_paragraph_indent(text, x, x0, language):
     return text, x
 
 
+def fast_typography_advance(converter, text, ptr, advance, size, language):
+    """Reserve trailing CJK punctuation together with the preceding character."""
+    if language.lower().split("-")[0] != "zh":
+        return advance
+    end = ptr
+    while end < len(text) and text[end] in "，。！？；：、）】》”’":
+        end += 1
+    if end > ptr:
+        advance += sum(converter.noto.char_lengths(text[ptr:end], size))
+    return advance
+
+
+def fast_italic_prose_characters(page):
+    """Recognize ordinary italic prose without relaxing math-font detection."""
+    protected = set()
+    run = []
+
+    def finish():
+        text = "".join(char.get_text() for char in run)
+        words = re.findall(r"[A-Za-z]+", text)
+        if (
+            re.fullmatch(r"[A-Za-z\s.,:'’()\-]+", text)
+            and words
+            and max(map(len, words)) >= 4
+            and (len(words) >= 2 or max(map(len, words)) >= 5)
+        ):
+            protected.update(id(char) for char in run)
+        run.clear()
+
+    for char in page:
+        font = getattr(char, "fontname", "")
+        if isinstance(font, bytes):
+            font = font.decode("utf-8", errors="ignore")
+        font = font.split("+")[-1]
+        # CM/TeX, symbol, code and explicitly configured formula fonts stay intact.
+        if not re.match(
+            r"(?:Times|Helvetica|Arial|Georgia|Palatino|Minion|Garamond|Liberation|Nimbus).*"
+            r"(?:Italic|Oblique)",
+            font,
+            re.IGNORECASE,
+        ):
+            finish()
+            continue
+        if run and (
+            char.fontname != run[-1].fontname
+            or abs(char.y0 - run[-1].y0) > max(1, char.size * 0.2)
+            or char.x0 - run[-1].x1 > char.size
+            or char.x0 < run[-1].x0
+        ):
+            finish()
+        run.append(char)
+    finish()
+    return protected
+
+
+def fast_resolve_text_overlaps(context):
+    """Try moving translated lines below retained runs, inside the paragraph box."""
+    from pdfminer.pdffont import PDFCIDFont
+
+    converter = context["self"]
+    paragraph = context["pstk"][context["id"]]
+    size, leading = context["size"], context["line_height"]
+    step = size * leading
+    translated_fonts = {"tiro", converter.noto_name}
+    items = [item for item in context["ops_vals"] if item.get("type").value == "text"]
+
+    def bounds(item):
+        font = item["font"]
+        encoded = item["rtxt"]
+        if font == converter.noto_name:
+            width = len(encoded) / 4 * item["size"]
+        else:
+            pdf_font = converter.fontmap[font]
+            stride = 4 if isinstance(pdf_font, PDFCIDFont) else 2
+            width = (
+                sum(
+                    pdf_font.char_width(int(encoded[i : i + stride], 16))
+                    for i in range(0, len(encoded), stride)
+                )
+                * item["size"]
+            )
+        baseline = context["y"] + item["dy"] - item["lidx"] * step
+        return (
+            item["x"],
+            baseline - item["size"] * 0.2,
+            item["x"] + width,
+            baseline + item["size"] * 0.8,
+        )
+
+    retained = [bounds(item) for item in items if item["font"] not in translated_fonts]
+    moved = 0
+    for line in sorted({item["lidx"] for item in items if item["font"] in translated_fonts}):
+        current = [
+            item for item in items if item["font"] in translated_fonts and item["lidx"] == line
+        ]
+        for _ in range(3):
+            collision = any(
+                min(a[2], b[2]) - max(a[0], b[0]) > size * 0.15
+                and min(a[3], b[3]) - max(a[1], b[1]) > size * 0.15
+                for a in map(bounds, current)
+                for b in retained
+            )
+            if not collision:
+                break
+            following = [
+                item for item in items if item["font"] in translated_fonts and item["lidx"] >= line
+            ]
+            if min(bounds(item)[1] for item in following) - step < paragraph.y0:
+                break
+            for item in following:
+                item["dy"] -= step
+            moved += 1
+    return moved
+
+
 def layout_box(values, source_page, kind):
     # Fast's interpreter applies its CropBox/rotation CTM before layout.
     # Its coordinates are already in the visible page's bottom-left frame.
@@ -145,6 +260,7 @@ def main(capture_only=False):
         original = TranslateConverter.receive_layout
 
         def capture(v):
+            overlap_adjustments = fast_resolve_text_overlaps(v)
             index = v["id"]
             paragraph = v["pstk"][index]
             raw_source, raw_target = v["sstk"][index], v["news"][index]
@@ -206,6 +322,7 @@ def main(capture_only=False):
                         "translationOutput": raw_target,
                         "formulaTexts": variables,
                         "layoutSource": "pdf2zh.converter",
+                        "overlapAdjustments": overlap_adjustments,
                         "translatedWidth": "source-paragraph-width",
                     }
                 )
@@ -217,6 +334,98 @@ def main(capture_only=False):
         class CaptureParagraph(ast.NodeTransformer):
             count = 0
             indent_count = 0
+            prose_count = 0
+
+            def visit_FunctionDef(self, node):
+                self.generic_visit(node)
+                if node.name == "receive_layout":
+                    node.body.insert(
+                        0,
+                        ast.parse(
+                            "_preview_prose = set() if self.vfont else _preview_italic_prose(ltpage)"
+                        ).body[0],
+                    )
+                return node
+
+            def visit_Call(self, node):
+                self.generic_visit(node)
+                if isinstance(node.func, ast.Name) and node.func.id == "vflag":
+                    self.prose_count += 1
+                    return ast.IfExp(
+                        test=ast.parse("_preview_identity(child) in _preview_prose").body[0].value,
+                        body=ast.Constant(value=False),
+                        orelse=node,
+                    )
+                return node
+
+            def visit_Compare(self, node):
+                self.generic_visit(node)
+                # Only the converter's two right-edge checks; glyph advance stays real.
+                if (
+                    isinstance(node.left, ast.BinOp)
+                    and isinstance(node.left.op, ast.Add)
+                    and isinstance(node.left.left, ast.Name)
+                    and node.left.left.id == "x"
+                    and isinstance(node.left.right, ast.Name)
+                    and node.left.right.id == "adv"
+                    and any(isinstance(op, ast.Gt) for op in node.ops)
+                ):
+                    node.left.right = (
+                        ast.parse(
+                            "_preview_wrap_advance(self, new, ptr, adv, size, _preview_language)"
+                        )
+                        .body[0]
+                        .value
+                    )
+                return node
+
+            def visit_Assign(self, node):
+                self.generic_visit(node)
+                # Use identical metrics for the emitted Latin glyphs and line wrapping.
+                if (
+                    len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)
+                    and node.targets[0].id == "adv"
+                    and isinstance(node.value, ast.BinOp)
+                    and isinstance(node.value.op, ast.Mult)
+                    and isinstance(node.value.right, ast.Name)
+                    and node.value.right.id == "size"
+                ):
+                    node.value = ast.BinOp(
+                        left=node.value,
+                        op=ast.Mult(),
+                        right=ast.parse(
+                            "1.08 if _preview_language.lower().split('-')[0] == 'zh' else 1.0"
+                        )
+                        .body[0]
+                        .value,
+                    )
+                return node
+
+            def visit_Dict(self, node):
+                self.generic_visit(node)
+                # Preserve source formula sizes; only ordinary translated Latin runs.
+                values = {
+                    key.value: value
+                    for key, value in zip(node.keys, node.values)
+                    if isinstance(key, ast.Constant)
+                }
+                if (
+                    isinstance(values.get("font"), ast.Name)
+                    and values["font"].id == "fcur"
+                    and isinstance(values.get("size"), ast.Name)
+                    and values["size"].id == "size"
+                ):
+                    for i, key in enumerate(node.keys):
+                        if isinstance(key, ast.Constant) and key.value == "size":
+                            node.values[i] = (
+                                ast.parse(
+                                    "size * (1.08 if fcur == 'tiro' and _preview_language.lower().split('-')[0] == 'zh' else 1.0)"
+                                )
+                                .body[0]
+                                .value
+                            )
+                return node
 
             def visit_AnnAssign(self, node):
                 if isinstance(node.target, ast.Name) and node.target.id == "cstk":
@@ -256,12 +465,15 @@ def main(capture_only=False):
 
         injector = CaptureParagraph()
         tree = injector.visit(tree)
-        if injector.count != 1 or injector.indent_count != 1:
+        if injector.count != 1 or injector.indent_count != 1 or injector.prose_count != 1:
             raise RuntimeError("Fast paragraph capture is incompatible with this kernel version")
         namespace = {
             **original.__globals__,
             "_preview_capture": capture,
             "_preview_indent": fast_paragraph_indent,
+            "_preview_wrap_advance": fast_typography_advance,
+            "_preview_italic_prose": fast_italic_prose_characters,
+            "_preview_identity": id,
             "_preview_language": output_language,
         }
         exec(

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { uiLanguage } from './i18n.mjs';
 import { topicSentenceLength } from './topic-sentences.mjs';
 import { informationTextSegments } from './information-emphasis.mjs';
+import { chineseWordBoundaries } from './chinese-word-boundaries.mjs';
 const props = defineProps({
   text: String,
   enabled: Boolean,
@@ -16,9 +17,33 @@ const parts = computed(() =>
     categories: props.informationCategories,
   }),
 );
+const experimental = document.documentElement.dataset.experimentalTypography === 'true';
+const words = computed(() => {
+  if (!experimental) return [];
+  return chineseWordBoundaries(props.text || '').map((word) => ({
+    ...word,
+    parts: parts.value.flatMap((part) => {
+      const start = Math.max(word.start, part.start);
+      const end = Math.min(word.end, part.start + part.text.length);
+      return end > start ? [{ ...part, start, text: (props.text || '').slice(start, end) }] : [];
+    }),
+  }));
+});
 </script>
 <template>
-  <template v-for="part in parts" :key="part.start"
+  <template v-if="experimental">
+    <span v-for="word in words" :key="word.start" :class="{ 'typography-word': word.protected }"
+      ><component
+        :is="part.topic ? 'strong' : 'span'"
+        v-for="part in word.parts"
+        :key="part.start"
+        :class="{ 'topic-sentence-text': part.topic }"
+        ><mark v-if="part.important" class="information-keyword">{{ part.text }}</mark
+        ><template v-else>{{ part.text }}</template></component
+      ></span
+    >
+  </template>
+  <template v-for="part in experimental ? [] : parts" :key="part.start"
     ><component :is="part.topic ? 'strong' : 'span'" :class="{ 'topic-sentence-text': part.topic }"
       ><mark v-if="part.important" class="information-keyword">{{ part.text }}</mark
       ><template v-else>{{ part.text }}</template></component

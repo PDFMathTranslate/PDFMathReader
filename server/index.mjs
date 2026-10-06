@@ -379,6 +379,7 @@ export async function startServer({
             job.providerCalls++;
             const response = await providerClient.complete(provider, req.body, controller.signal, {
               cacheScope: job.cacheScope,
+              cache: !job.forceRetranslation,
             });
             const data = await response.json();
             const elapsed = performance.now() - providerStarted;
@@ -740,6 +741,11 @@ export async function startServer({
           : (req.body?.reuseTranslations ?? true);
         if (typeof reuseTranslations !== 'boolean')
           return res.status(400).json({ error: 'Invalid translation cache preference' });
+        const forceRetranslation = Buffer.isBuffer(req.body)
+          ? false
+          : (req.body?.forceRetranslation ?? false);
+        if (typeof forceRetranslation !== 'boolean')
+          return res.status(400).json({ error: 'Invalid force retranslation preference' });
         const cacheOnly = Buffer.isBuffer(req.body) ? false : (req.body?.cacheOnly ?? false);
         if (typeof cacheOnly !== 'boolean')
           return res.status(400).json({ error: 'Invalid cache lookup preference' });
@@ -797,6 +803,7 @@ export async function startServer({
             error: '',
             provider,
             cacheScope,
+            forceRetranslation,
             providerCalls: 0,
             providerQueueMs: 0,
             providerAggregateMs: 0,
@@ -837,6 +844,7 @@ export async function startServer({
             localTranslation: provider.id === 'apple-local',
             advancedOptions,
             reuseTranslations,
+            forceRetranslation,
             cacheScope,
             cacheOnly,
             onPageTiming: (timing) => {
@@ -940,10 +948,13 @@ export async function startServer({
         sourceLanguage,
         concurrency = 2,
         reuseTranslations = true,
+        forceRetranslation = false,
         cacheOnly = false,
       } = req.body || {};
       if (typeof cacheOnly !== 'boolean')
         return res.status(400).json({ error: 'Invalid cache lookup preference' });
+      if (typeof forceRetranslation !== 'boolean')
+        return res.status(400).json({ error: 'Invalid force retranslation preference' });
       if (typeof reuseTranslations !== 'boolean')
         return res.status(400).json({ error: 'Invalid translation cache preference' });
       if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 12)
@@ -1013,7 +1024,7 @@ export async function startServer({
           return result;
         },
       });
-      const hit = await cache.lookup(model, { reuseTranslations });
+      const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
       if (hit) return res.json({ ...hit.result, model: hit.model, cached: true });
       if (cacheOnly) return res.sendStatus(204);
       const controller = new AbortController();
@@ -1044,7 +1055,7 @@ export async function startServer({
                       ],
               },
               controller.signal,
-              { cacheScope },
+              { cacheScope, cache: !forceRetranslation },
             );
           },
           {

@@ -2123,6 +2123,15 @@ async function editDocumentPages(action) {
   }
 }
 function readerAction(action, selectionText) {
+  if (action === 'force-retranslate') {
+    if (!pages.value.length || settingsWindowMode) return;
+    forceRetranslation = true;
+    automatic.value = true;
+    showTranslations.value = true;
+    resetTranslations(true);
+    settle();
+    return;
+  }
   if (action === 'menu-option') {
     applyMenuOption(selectionText);
     return;
@@ -2895,6 +2904,7 @@ async function mathPage(p, token, manual = false) {
               documentId,
               sourceLanguage: sourceLanguage.value,
               reuseTranslations: reuseTranslations.value,
+              forceRetranslation,
               advancedOptions: currentKernelAdvancedOptions(),
               translationService: currentTranslationService.value,
             }),
@@ -3142,6 +3152,7 @@ let pdf,
   pendingPDFTask,
   bytes,
   documentId,
+  forceRetranslation = false,
   epoch = 0,
   timer,
   renderEpoch = 0;
@@ -3264,6 +3275,7 @@ function cancel() {
 async function releaseDocument() {
   const id = documentId;
   documentId = undefined;
+  forceRetranslation = false;
   if (id)
     try {
       await api('/api/documents/' + id, { method: 'DELETE' });
@@ -4359,6 +4371,7 @@ async function translate({
           language: target,
           sourceLanguage: source,
           reuseTranslations: reuseTranslations.value,
+          forceRetranslation,
           concurrency: concurrency.value,
           translationService: currentTranslationService.value,
         }),

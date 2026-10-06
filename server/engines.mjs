@@ -494,6 +494,7 @@ export function createEngines({
     localTranslation = false,
     advancedOptions = {},
     reuseTranslations = true,
+    forceRetranslation = false,
     cacheScope = '',
     onPageTiming,
     cacheOnly = false,
@@ -590,7 +591,7 @@ export function createEngines({
       },
     });
     const cached = join(cacheDir, `${key}.pdf`);
-    const hit = await cache.lookup(model, { reuseTranslations });
+    const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
     if (hit) {
       const result = hit.result;
       result.layoutKey = layoutKey(hit.key);
@@ -613,7 +614,7 @@ export function createEngines({
       // Exclude scheduling delay from input preparation; the API reports queueMs.
       checkpoint = performance.now();
       // Another queued request for the same page may have filled the cache.
-      const queuedHit = await cache.lookup(model, { reuseTranslations });
+      const queuedHit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
       step('cacheRecheck');
       if (queuedHit) {
         const result = queuedHit.result;
@@ -694,6 +695,7 @@ export function createEngines({
                 'no_watermark',
                 ...advancedArgs,
               ];
+        if (forceRetranslation && !args.includes('--ignore-cache')) args.push('--ignore-cache');
         if (sourceLanguage) args.push('--lang-in', translationLanguageCode(sourceLanguage));
         if (
           localTranslation &&

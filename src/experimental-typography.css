@@ -1,0 +1,32 @@
+/* Local fonts only: no dependency on Apple's private website fonts. */
+@font-face {
+  font-family: 'Reader CJK Experimental';
+  src: local('PingFang SC');
+  size-adjust: 96%;
+  unicode-range: U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}
+
+:root[data-experimental-typography='true'] .reading-paragraph .paragraph-text {
+  font-family:
+    'Reader CJK Experimental',
+    -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+  font-optical-sizing: auto;
+  text-autospace: normal;
+  text-spacing-trim: trim-start;
+  text-wrap: pretty;
+  line-break: strict;
+  font-feature-settings: 'palt';
+}
+
+:root[data-experimental-typography='true'] .reading-paragraph .typography-word {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
+  /* Only a word wider than the whole paragraph may break internally. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

@@ -1322,6 +1322,12 @@ else {
             submenu: [
               ...optionMenu(),
               { type: 'separator' },
+              command(
+                'Force Retranslate',
+                undefined,
+                'force-retranslate',
+                'translation-force-retranslate',
+              ),
               command('Choose Language…', accelerator('L'), 'language', 'translation-language'),
               command('Choose Kernel…', accelerator('K'), 'kernel', 'translation-kernel'),
             ],
