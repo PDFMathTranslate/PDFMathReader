@@ -27,13 +27,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date       | Feature                                                                                                                                                                    | Contributor                        |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-06 | [add highlight search and optional kernel toolbar shortcut](https://github.com/PDFMathTranslate/PDFMathReader/commit/93a6b444af1127ef5a91776ddf879f5a4f4a8bea)             | [@reycn](https://github.com/reycn) |
 | 2026-10-06 | [add translation glossaries and kernel setup guidance](https://github.com/PDFMathTranslate/PDFMathReader/commit/29d91d24cfcf0eb418202788b7549e4ce959c7e7)                  | [@reycn](https://github.com/reycn) |
 | 2026-10-06 | [add experimental typography and force retranslation](https://github.com/PDFMathTranslate/PDFMathReader/commit/8de27fb9f18a653726505ed9d13e11528406d609)                   | [@reycn](https://github.com/reycn) |
 | 2026-10-06 | [build Vue Pages showcase with cached reader translations](https://github.com/PDFMathTranslate/PDFMathReader/commit/052d8575eeb84bc8f7f20f913d1156340ab7e837)              | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [support custom language codes and streamline regression tests](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ead51359470f680471be1b387f6a4083072d57b)         | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [add information categories, release updates and provider availability](https://github.com/PDFMathTranslate/PDFMathReader/commit/1da70d073f778ad300901503e5dd41cf91c8318e) | [@reycn](https://github.com/reycn) |
 | 2026-10-05 | [improve settings, diagnostics and reader UX](https://github.com/PDFMathTranslate/PDFMathReader/commit/eadc9f1b89f2edfaec8ab9f97b3af522c4617494)                           | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [configure kernel translation services and developer diagnostics](https://github.com/PDFMathTranslate/PDFMathReader/commit/7dc5fac3c5d67260fe82672ba768d62122022c71)       | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
