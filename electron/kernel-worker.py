@@ -148,6 +148,64 @@ def layout_box(values, source_page, kind):
     return {"x": rect.x0, "y": rect.y0, "width": max(1, rect.width), "height": max(1, rect.height)}
 
 
+def install_glossary(kind, entries):
+    """Enforce terms at the translator boundary for every service."""
+    if not entries:
+        return
+    if kind == "pdf_math_fast":
+        from pdf2zh.translator import BaseTranslator
+    else:
+        from pdf2zh_next.translator.base_translator import BaseTranslator
+    targets = {entry["source"]: entry["target"] for entry in entries}
+    pattern = re.compile(
+        "|".join(re.escape(source) for source in sorted(targets, key=len, reverse=True))
+    )
+
+    def wrap(original, structured=False):
+        def translate(self, text, *args, **kwargs):
+            prefix = "PMRGLOSSARY"
+            while prefix in text:
+                prefix += "X"
+            replacements = []
+
+            def protect(match):
+                token = f"{prefix}{len(replacements)}END"
+                replacements.append((token, targets[match.group()]))
+                return token
+
+            protected = pattern.sub(protect, text)
+            if replacements:
+                if args:
+                    args = (True, *args[1:])
+                else:
+                    kwargs["ignore_cache"] = True
+            output = original(self, protected, *args, **kwargs)
+            for token, target in replacements:
+                if token not in output:
+                    raise ValueError(
+                        "Translation did not preserve a required glossary term. Retry translation."
+                    )
+                # LLM-only output is JSON; escape inserted values to keep it valid.
+                replacement = json.dumps(target, ensure_ascii=False)[1:-1] if structured else target
+                output = output.replace(token, replacement)
+            return output
+
+        return translate
+
+    def patch_overrides(cls):
+        for child in cls.__subclasses__():
+            if "translate" in child.__dict__:
+                child.translate = wrap(child.translate)
+            if "llm_translate" in child.__dict__:
+                child.llm_translate = wrap(child.llm_translate, structured=True)
+            patch_overrides(child)
+
+    patch_overrides(BaseTranslator)
+    BaseTranslator.translate = wrap(BaseTranslator.translate)
+    if hasattr(BaseTranslator, "llm_translate"):
+        BaseTranslator.llm_translate = wrap(BaseTranslator.llm_translate, structured=True)
+
+
 def main(capture_only=False):
     if capture_only:
         kind, sidecar, selected, input_path, args = json.loads(
@@ -156,6 +214,9 @@ def main(capture_only=False):
     else:
         kind, sidecar, selected, input_path, *args = sys.argv[1:]
     selected = int(selected)
+    glossary_path = os.environ.get("PDFMATHREADER_GLOSSARY_PATH")
+    if glossary_path:
+        install_glossary(kind, json.loads(Path(glossary_path).read_text(encoding="utf-8")))
     if os.environ.get("PDFMATHREADER_LOCAL_TRANSLATION") == "1":
         # The native API receives source text, never an LLM instruction template.
         import urllib.request

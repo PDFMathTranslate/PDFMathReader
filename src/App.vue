@@ -1,4 +1,6 @@
 <script setup>
+import GlossarySettings from './GlossarySettings.vue';
+import { cloneGlossaries, glossaryEntries } from './glossary.mjs';
 import AboutVersionInfo from './AboutVersionInfo.vue';
 import AboutAcknowledgements from './AboutAcknowledgements.vue';
 import DocumentDefaultsSettings from './DocumentDefaultsSettings.vue';
@@ -7,6 +9,7 @@ import PerformanceResources from './PerformanceResources.vue';
 import { startRendererFrameMetrics } from './renderer-frame-metrics.mjs';
 let stopRendererFrameMetrics;
 import KernelModeSwitcher from './KernelModeSwitcher.vue';
+import KernelInstallGuide from './KernelInstallGuide.vue';
 import DeveloperOptions from './DeveloperOptions.vue';
 import {
   cloneTranslationServiceHistory,
@@ -1164,6 +1167,15 @@ const fitMode = ref(
     : 'width',
 );
 const sourceLanguage = ref('English');
+const glossaries = ref(loadGlossaries());
+function loadGlossaries() {
+  try {
+    return cloneGlossaries(JSON.parse(localStorage.getItem('glossaries') || '[]'));
+  } catch {
+    return [];
+  }
+}
+const activeGlossary = computed(() => glossaryEntries(glossaries.value));
 const languageOptions = computed(() => translationLanguagesForKernel(engine.value));
 const sourceLanguageOptions = computed(() => translationLanguagesForKernel(engine.value, 'source'));
 const languageKeys = [
@@ -1525,6 +1537,7 @@ function applySavedSettings(saved) {
   if (saved.reuseTranslations !== undefined) reuseTranslations.value = !!saved.reuseTranslations;
   if (saved.interactionMode) interactionMode.value = saved.interactionMode;
   if (saved.language) language.value = saved.language;
+  if (saved.glossaries !== undefined) glossaries.value = cloneGlossaries(saved.glossaries);
   if (saved.sourceLanguage) sourceLanguage.value = saved.sourceLanguage;
   if (saved.uiLanguage) setUILanguage(saved.uiLanguage);
   if (saved.autoHideHeader !== undefined) autoHideHeader.value = !!saved.autoHideHeader;
@@ -1565,6 +1578,7 @@ function saveView(force = false) {
       emphasizeLogicalConnectives: emphasizeLogicalConnectives.value,
       interactionMode: interactionMode.value,
       language: language.value,
+      glossaries: cloneGlossaries(glossaries.value),
       sourceLanguage: sourceLanguage.value,
       uiLanguage: uiLanguageChoice.value,
       autoHideHeader: autoHideHeader.value,
@@ -2817,6 +2831,15 @@ watch(settings, (opened) => {
       engineDiscovery = undefined;
     });
 });
+async function finishKernelSetup() {
+  await checkEngine();
+  const startup = await api('/api/engines');
+  uvState.value = startup.uv;
+  discoveredEngines.value = startup.engines;
+  clearTranslationServiceSchemaCache(engine.value, engineState.value?.version);
+  translationServiceCatalogRevision.value++;
+  settle();
+}
 async function installEngine(reinstall = false, source = 'release') {
   if (engineBusy.value) return;
   const id = engine.value;
@@ -2905,6 +2928,7 @@ async function mathPage(p, token, manual = false) {
               sourceLanguage: sourceLanguage.value,
               reuseTranslations: reuseTranslations.value,
               forceRetranslation,
+              glossary: activeGlossary.value,
               advancedOptions: currentKernelAdvancedOptions(),
               translationService: currentTranslationService.value,
             }),
@@ -4368,6 +4392,7 @@ async function translate({
           cacheOnly,
           documentId,
           text: b.text,
+          glossary: activeGlossary.value,
           language: target,
           sourceLanguage: source,
           reuseTranslations: reuseTranslations.value,
@@ -4562,6 +4587,23 @@ watch(
 watch([kernelAdvancedOptions, translationServices], () => saveView(), { deep: true });
 watch(
   () => JSON.stringify(currentTranslationService.value),
+  () => {
+    if (loadingPreferences || settingsWindowMode) return;
+    resetTranslations();
+    settle();
+  },
+);
+watch(
+  glossaries,
+  () => {
+    if (loadingPreferences) return;
+    localStorage.setItem('glossaries', JSON.stringify(glossaries.value));
+    saveView();
+  },
+  { deep: true },
+);
+watch(
+  () => JSON.stringify(activeGlossary.value),
   () => {
     if (loadingPreferences || settingsWindowMode) return;
     resetTranslations();
@@ -5387,6 +5429,12 @@ onBeforeUnmount(() => {
                         t('startup.previewUnavailable')
                       }}</span></span
                     >
+                    <span
+                      v-if="document.pinned"
+                      class="system-icon recent-pin"
+                      style="--symbol: url('/symbols/pin.fill.png')"
+                      aria-hidden="true"
+                    ></span>
                   </button>
                 </div>
               </section>
@@ -5722,12 +5770,14 @@ onBeforeUnmount(() => {
                 <span>{{ engineState?.version || '—' }}</span>
                 <span class="kernel-uv-version">{{ uvVersionLabel }}</span>
               </div>
-              <MacButton
-                v-if="engine !== 'pdf_inspector' && !engineState?.available"
-                @click="installEngine"
-                :disabled="engineBusy || !uvState?.available"
-                >{{ t('settings.installKernelWithUV') }}</MacButton
-              >
+              <KernelInstallGuide
+                v-if="engine !== 'pdf_inspector'"
+                :engine="engine"
+                :request="api"
+                :disabled="engineBusy"
+                @busy="engineBusy = $event"
+                @ready="finishKernelSetup().catch((e) => (error = e.message))"
+              />
             </div>
           </section>
           <section class="settings-section" aria-labelledby="settings-interaction">
@@ -5857,6 +5907,7 @@ onBeforeUnmount(() => {
           />
         </template>
         <template #translation>
+          <GlossarySettings v-model="glossaries" />
           <section class="settings-section" aria-labelledby="settings-translation-language">
             <h3 id="settings-translation-language">{{ t('settings.languageSection') }}</h3>
             <div class="settings-section-body">
@@ -6041,6 +6092,14 @@ onBeforeUnmount(() => {
           </ProviderSettings>
         </template>
         <template #kernel>
+          <KernelInstallGuide
+            v-if="settingsSection === 'kernel' && engine !== 'pdf_inspector'"
+            :engine="engine"
+            :request="api"
+            :disabled="engineBusy"
+            @busy="engineBusy = $event"
+            @ready="finishKernelSetup().catch((e) => (error = e.message))"
+          />
           <AdvancedSettings
             v-if="settingsSection === 'kernel'"
             inline

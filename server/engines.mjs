@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { installUvRuntime } from './install-uv.mjs';
 import { promisify } from 'node:util';
 import { mkdir, readFile, writeFile, mkdtemp, rm, readdir, symlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -182,7 +183,13 @@ export async function findUv({
           join(home, '.local', 'bin', 'uv.exe'),
           join(home, '.cargo', 'bin', 'uv.exe'),
         ]
-      : ['uv', join(home, '.local/bin/uv'), '/opt/homebrew/bin/uv', '/usr/local/bin/uv'];
+      : [
+          'uv',
+          ...(env.UV_INSTALL_DIR ? [join(env.UV_INSTALL_DIR, 'uv')] : []),
+          join(home, '.local/bin/uv'),
+          '/opt/homebrew/bin/uv',
+          '/usr/local/bin/uv',
+        ];
   for (const path of candidates) {
     try {
       const { stdout } = await run(path, ['--version'], { timeout: 5000, windowsHide: true });
@@ -218,7 +225,10 @@ export function createEngines({
 }) {
   const processes = createKernelProcesses({ execImpl, onEvent: onKernelEvent });
   const runExec = processes.exec;
-  let uv;
+  const uvDirectory = join(root, 'tools', 'bin');
+  const detectUv = () =>
+    findUvImpl({ run: runExec, env: { ...process.env, UV_INSTALL_DIR: uvDirectory } });
+  let uv, uvInstallation;
   const installing = new Map(),
     advancedMetadata = new Map(),
     knownStates = new Map(),
@@ -249,7 +259,7 @@ export function createEngines({
     const known = knownStates.get(id);
     if (known && performance.now() - known.at < 30000 && !installing.has(id)) return known.state;
     const installed = existsSync(envPath(id));
-    if (!uv) uv = await findUvImpl({ run: runExec });
+    if (!uv) uv = await detectUv();
     if (!uv.available)
       return { id, label: definitions[id].label, installed, available: false, reason: uv.message };
     try {
@@ -291,7 +301,7 @@ export function createEngines({
         await advanced(id, state);
         return state;
       }
-      uv = await findUvImpl({ run: runExec });
+      uv = await detectUv();
       if (!uv.available) throw Error(uv.message);
       await mkdir(root, { recursive: true });
       const env = { ...process.env, UV_CACHE_DIR: join(root, 'uv-cache') };
@@ -492,6 +502,7 @@ export function createEngines({
     translationService,
     serviceIdentity,
     localTranslation = false,
+    glossary = [],
     advancedOptions = {},
     reuseTranslations = true,
     forceRetranslation = false,
@@ -567,6 +578,7 @@ export function createEngines({
               ? { service: service?.cacheIdentity || serviceIdentity }
               : {}),
             prompt: 2,
+            ...(glossary.length ? { glossary } : {}),
             ...(cacheScope ? { cacheScope } : {}),
             layoutSchema,
             ...(Object.keys(overrides).length ? { advancedOptions: overrides } : {}),
@@ -635,6 +647,8 @@ export function createEngines({
       try {
         const input = join(dir, 'input.pdf');
         await writeFile(input, bytes);
+        const glossaryPath = join(dir, 'glossary.json');
+        if (glossary.length) await writeFile(glossaryPath, JSON.stringify(glossary));
         const assetHome = join(runtimeHomeRoot, id, 'home');
         const home = join(dir, 'home');
         await prepareKernelAssets(assetHome, home);
@@ -647,6 +661,7 @@ export function createEngines({
           PDF2ZH_OPENAI_API_KEY: proxy.token,
           PDF2ZH_OPENAI_BASE_URL: proxy.url,
           PDF2ZH_OPENAI_MODEL: model,
+          PDFMATHREADER_GLOSSARY_PATH: glossary.length ? glossaryPath : '',
         };
         delete env.OPENAI_API_KEY_REAL;
         if (service) Object.assign(env, service.env);
@@ -854,9 +869,25 @@ export function createEngines({
       return JSON.parse(await readFile(join(baseCacheDir, key + '.layout.json'), 'utf8'));
     },
     startup: async () => ({
-      uv: (uv = await findUvImpl({ run: runExec })),
+      uv: (uv = await detectUv()),
       engines: await Promise.all(Object.keys(definitions).map(check)),
     }),
+    installUv: async () => {
+      uvInstallation ??= installUvRuntime({
+        directory: uvDirectory,
+        run: runExec,
+        detect: detectUv,
+      })
+        .then((result) => {
+          uv = result;
+          knownStates.clear();
+          return result;
+        })
+        .finally(() => {
+          uvInstallation = undefined;
+        });
+      return uvInstallation;
+    },
     check,
     install,
     advanced,

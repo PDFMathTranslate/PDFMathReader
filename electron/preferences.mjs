@@ -1,3 +1,4 @@
+import { cloneGlossaries, validGlossaries } from '../src/glossary.mjs';
 import {
   cloneTranslationServiceHistory,
   isValidTranslationServiceHistory,
@@ -57,7 +58,11 @@ const DEFAULT_PREFERENCES = Object.freeze({
   uiLanguage: 'system',
 });
 const KNOWN_KEYS = Object.freeze(Object.keys(DEFAULT_PREFERENCES));
-const OPTIONAL_KEYS = Object.freeze(['translationServices', 'translationServiceHistory']);
+const OPTIONAL_KEYS = Object.freeze([
+  'translationServices',
+  'translationServiceHistory',
+  'glossaries',
+]);
 const PREFERENCE_KEYS = Object.freeze([...KNOWN_KEYS, ...OPTIONAL_KEYS]);
 const KNOWN_KEY_SET = new Set(PREFERENCE_KEYS);
 
@@ -208,6 +213,8 @@ function clonePreferences(value) {
     clone.translationServiceHistory = cloneTranslationServiceHistory(
       value.translationServiceHistory,
     );
+  if (Object.hasOwn(value || {}, 'glossaries'))
+    clone.glossaries = cloneGlossaries(value.glossaries);
   return clone;
 }
 
@@ -238,6 +245,7 @@ const VALIDATORS = {
   reduceTransparency: (value) => typeof value === 'boolean',
   reducePadding: (value) => typeof value === 'boolean',
   language: (value) => LANGUAGE_OPTIONS.includes(value) || isCustomLanguageCode(value),
+  glossaries: validGlossaries,
   sourceLanguage: (value) => LANGUAGE_OPTIONS.includes(value) || isCustomLanguageCode(value),
   concurrency: isValidConcurrency,
   pageConcurrency: isValidConcurrency,
@@ -267,6 +275,7 @@ const VALIDATION_MESSAGES = {
   reduceMotion: 'Invalid reduce motion preference',
   reduceTransparency: 'Invalid reduce transparency preference',
   reducePadding: 'Invalid reduce padding preference',
+  glossaries: 'Invalid terminology libraries',
   sourceLanguage: 'Invalid source language preference',
   language: 'Invalid language preference',
   concurrency: 'Invalid concurrency preference',

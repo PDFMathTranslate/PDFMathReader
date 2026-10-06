@@ -2816,6 +2816,7 @@
     scroll-snap-type: x proximity;
   }
   .recent-document {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2835,6 +2836,15 @@
   .recent-document:hover {
     background: var(--chrome-raised);
     border-color: var(--accent);
+  }
+  .recent-document .recent-pin {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    color: #636366;
+    pointer-events: none;
   }
   .recent-document:focus-visible {
     outline: 2px solid var(--accent);
