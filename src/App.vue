@@ -5361,6 +5361,7 @@ onBeforeUnmount(() => {
             class="reader"
             :class="{
               pinching,
+              'manual-zoom': fitMode === 'manual',
               'restoring-view': restoringView,
               'document-opening': documentOpening,
             }"

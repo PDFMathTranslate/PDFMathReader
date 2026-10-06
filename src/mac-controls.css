@@ -1001,8 +1001,19 @@
   padding-top: calc(var(--toolbar-height) + max(12px, var(--page-gutter)));
   scroll-padding-top: var(--toolbar-height);
 }
+/* Reduced padding stays zero even under immersive toolbar rules. */
+:root[data-reduce-padding='true'] .app:not(.startup-page) .reader,
+:root[data-reduce-padding='true'] .desktop.app.vertical-immersive[data-platform='win32'] .reader {
+  padding: 0;
+  scroll-padding: 0;
+}
 :root[data-reduce-padding='true'] .page {
   border: 0;
+}
+/* Shadows do not affect layout; show them only for manual zoom in compact mode. */
+:root[data-reduce-padding='true'] .reader:not(.manual-zoom) .page,
+:root[data-reduce-padding='true'] .reader:not(.manual-zoom) .page-wrap.cropped {
+  box-shadow: none;
 }
 
 /* Crossfade theme snapshots without reflowing document pages. */
