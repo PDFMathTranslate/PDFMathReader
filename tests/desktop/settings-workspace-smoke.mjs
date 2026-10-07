@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { app } from 'electron';
+import { app, shell } from 'electron';
+import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 export async function verifySettingsWorkspace(window) {
   const evaluate = (code) =>
@@ -57,6 +58,29 @@ export async function verifySettingsWorkspace(window) {
   assert.equal(await visible('[data-setting="reduce-resource-usage"]'), true);
   for (const id of ['reduce-motion', 'reduce-transparency', 'reduce-padding'])
     assert.equal(await visible(`[aria-labelledby="${id}-label"]`), true);
+  assert.equal(await visible('.performance-cache'), true);
+  assert.equal(
+    await evaluate(
+      `!!document.querySelector('.performance-resources [data-setting="cache-size-limit"]')`,
+    ),
+    false,
+    'cache controls have their own section',
+  );
+  assert.equal(await visible('[data-setting="open-cache-folder"]'), true);
+  const originalOpenPath = shell.openPath;
+  let openedPath;
+  shell.openPath = async (path) => {
+    openedPath = path;
+    return '';
+  };
+  try {
+    await evaluate(`document.querySelector('[data-setting="open-cache-folder"]').click()`);
+    for (let n = 0; n < 100 && !openedPath; n++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(openedPath, join(app.getPath('userData'), 'translations'));
+  } finally {
+    shell.openPath = originalOpenPath;
+  }
   await new Promise((resolve) => setTimeout(resolve, 250));
   await writeFile(
     '/tmp/pdfmathreader-settings-performance.png',

@@ -904,13 +904,13 @@ section.settings.settings-workspace
 }
 section.settings.settings-workspace
   .workspace-page
-  :deep(.performance-resources .settings-section-body) {
+  :deep(:is(.performance-resources, .performance-cache) .settings-section-body) {
   gap: 0;
   padding-block: 4px;
 }
 section.settings.settings-workspace
   .workspace-page
-  :deep(.performance-resources .settings-section-body > .muted) {
+  :deep(:is(.performance-resources, .performance-cache) .settings-section-body > .muted) {
   margin: 0;
   padding: 0 0 8px;
   line-height: 1.55;

@@ -16,6 +16,10 @@ export function registerUpdatesIPC({
     trustedWindow(event);
     return appUpdates.check();
   });
+  handle('updates:install', (event) => {
+    trustedWindow(event);
+    return appUpdates.install();
+  });
   handle('updates:automatic', async (event, value) => {
     trustedWindow(event);
     if (typeof value !== 'boolean') throw Error('Invalid automatic update setting');

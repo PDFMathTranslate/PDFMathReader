@@ -260,7 +260,10 @@ contextBridge.exposeInMainWorld(
 
 contextBridge.exposeInMainWorld(
   'previewCache',
-  Object.freeze({ clear: () => ipcRenderer.invoke('cache:clear') }),
+  Object.freeze({
+    clear: () => ipcRenderer.invoke('cache:clear'),
+    openFolder: () => ipcRenderer.invoke('cache:openFolder'),
+  }),
 );
 
 contextBridge.exposeInMainWorld(
@@ -268,6 +271,7 @@ contextBridge.exposeInMainWorld(
   Object.freeze({
     status: () => ipcRenderer.invoke('updates:status'),
     check: () => ipcRenderer.invoke('updates:check'),
+    install: () => ipcRenderer.invoke('updates:install'),
     setAutomatic: (value) => ipcRenderer.invoke('updates:automatic', value),
     openRelease: () => ipcRenderer.invoke('updates:openRelease'),
     onChange: (callback) => {

@@ -33,6 +33,20 @@ export async function verifyAppUpdates(reader, createWindow) {
   settings.focus();
   await wait(settings, `!!document.querySelector('.app-update-status')`);
   assert.equal(calls, 0, 'opening About must not trigger a request');
+  assert.equal(
+    await run(settings, `!!document.querySelector('.update-meta-row,time')`),
+    false,
+    'last check time is hidden',
+  );
+  assert.equal(
+    await run(settings, `document.querySelectorAll('.update-status-side button').length`),
+    1,
+  );
+  assert.equal(
+    await run(settings, `!!document.querySelector('.update-status-value')`),
+    false,
+    'status and check action use one control',
+  );
   await run(settings, `window.previewUpdates.setAutomatic(true)`);
   await wait(
     settings,
@@ -49,11 +63,11 @@ export async function verifyAppUpdates(reader, createWindow) {
   );
   await run(
     settings,
-    `document.querySelector('.app-update-status button[aria-label="Check for updates"]').click()`,
+    `document.querySelector('.app-update-status [data-setting="app-update-action"]').click()`,
   );
   await wait(
     settings,
-    `document.querySelector('.app-update-status')?.textContent.includes('No releases')`,
+    `document.querySelector('.app-update-status')?.dataset.status==='no-release'`,
   );
   assert.equal(
     await run(settings, `(async()=> (await window.previewUpdates.status()).status)()`),
@@ -61,11 +75,11 @@ export async function verifyAppUpdates(reader, createWindow) {
   );
   await run(
     settings,
-    `document.querySelector('.app-update-status button[aria-label="Check for updates"]').click()`,
+    `document.querySelector('.app-update-status [data-setting="app-update-action"]').click()`,
   );
   await wait(
     settings,
-    `document.querySelector('.app-update-status')?.textContent.includes('9.0.0')`,
+    `document.querySelector('.app-update-status [data-setting=app-update-action]')?.title.includes('9.0.0')`,
   );
   assert.equal(
     await run(
@@ -91,10 +105,7 @@ export async function verifyAppUpdates(reader, createWindow) {
     settings,
     `document.querySelector('.app-update-status [aria-labelledby=app-update-automatic-label]')?.getAttribute('data-state')==='checked'`,
   );
-  await run(
-    settings,
-    `document.querySelector('.app-update-status button[aria-label="Check for updates"]').click()`,
-  );
+  await run(settings, `window.previewUpdates.check()`);
   await wait(settings, `(async()=> (await window.previewUpdates.status()).error==='rate-limit')()`);
   await wait(settings, `document.querySelector('.app-update-status')?.dataset.status==='error'`);
   await new Promise((resolve) => setTimeout(resolve, 100));

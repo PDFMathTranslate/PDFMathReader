@@ -71,6 +71,8 @@ function releaseState(release, currentVersion, platform, arch) {
     latestVersion: version.replace(/^v/, ''),
     releaseUrl,
     downloadUrl: releaseLink(asset?.browser_download_url, { download: true }),
+    downloadDigest: /^sha256:[a-f0-9]{64}$/i.test(asset?.digest || '') ? asset.digest : null,
+    downloadSize: Number.isSafeInteger(asset?.size) && asset.size > 0 ? asset.size : null,
   };
 }
 export async function createAppUpdates({
@@ -86,6 +88,7 @@ export async function createAppUpdates({
   clearTimer = clearTimeout,
   startupDelay = UPDATE_STARTUP_DELAY,
   interval = UPDATE_INTERVAL,
+  installer = null,
 } = {}) {
   let state = {
     status: 'idle',
@@ -96,6 +99,8 @@ export async function createAppUpdates({
     error: null,
     releaseUrl: null,
     downloadUrl: null,
+    installSupported: Boolean(installer?.supported),
+    progress: null,
   };
   let etag = null,
     cached = null,
@@ -103,7 +108,10 @@ export async function createAppUpdates({
     pending,
     controller,
     started = false,
-    stopped = false;
+    stopped = false,
+    installPending,
+    installController,
+    manualInstall = false;
   if (path)
     try {
       const saved = JSON.parse(await readFile(path, 'utf8'));
@@ -115,6 +123,11 @@ export async function createAppUpdates({
         state = { ...state, ...info, checkedAt: saved.checkedAt };
         etag = typeof saved.etag === 'string' ? saved.etag : null;
       }
+    } catch {}
+  if (installer?.resultPath)
+    try {
+      const result = JSON.parse(await readFile(installer.resultPath, 'utf8'));
+      if (result.status === 'error') state = { ...state, status: 'error', error: 'install' };
     } catch {}
   function snapshot() {
     return { ...state };
@@ -144,8 +157,53 @@ export async function createAppUpdates({
       timer?.unref?.();
     }
   }
+  function install({ automatic: auto = false } = {}) {
+    if (stopped) return Promise.resolve(snapshot());
+    if (!installer?.supported || !state.downloadUrl || !state.latestVersion)
+      return Promise.resolve(snapshot());
+    if (!auto) manualInstall = true;
+    if (installPending) return installPending;
+    if (state.status === 'ready') return Promise.resolve(snapshot());
+    installController = new AbortController();
+    const signal = installController.signal;
+    publish({ status: 'downloading', error: null, progress: 0 });
+    installPending = (async () => {
+      try {
+        await installer.prepare(
+          snapshot(),
+          (progress) => {
+            if (!stopped && !signal.aborted)
+              publish({ progress: Math.max(0, Math.min(1, progress)) });
+          },
+          signal,
+        );
+        if (!stopped && !signal.aborted) publish({ status: 'ready', error: null, progress: 1 });
+      } catch (error) {
+        if (!stopped)
+          publish(
+            signal.aborted
+              ? { status: 'available', error: null, progress: null }
+              : {
+                  status: 'error',
+                  error: ['unsupported', 'UNSUPPORTED_UPDATE'].includes(error.code)
+                    ? 'unsupported'
+                    : 'install',
+                  progress: null,
+                },
+          );
+      } finally {
+        installController = null;
+      }
+      return snapshot();
+    })().finally(() => {
+      installPending = null;
+    });
+    return installPending;
+  }
   function check() {
     if (stopped) return Promise.resolve(snapshot());
+    if (installPending) return installPending;
+    if (state.status === 'ready') return Promise.resolve(snapshot());
     if (pending) return pending;
     pending = (async () => {
       controller = new AbortController();
@@ -183,6 +241,9 @@ export async function createAppUpdates({
         }
         publish({ ...info, checkedAt: now(), error: null });
         await persist();
+        clearTimer(timeout);
+        if (state.automatic && state.status === 'available' && installer?.supported)
+          await install({ automatic: true });
       } catch (error) {
         if (!stopped)
           publish({
@@ -204,9 +265,21 @@ export async function createAppUpdates({
   return {
     status: snapshot,
     check,
+    install,
+    installOnQuit() {
+      if (state.status === 'ready' && (state.automatic || manualInstall))
+        return installer?.installOnQuit();
+      return false;
+    },
     setAutomatic(value) {
       if (typeof value !== 'boolean') throw Error('Invalid automatic update setting');
       publish({ automatic: value });
+      if (!value && !manualInstall) {
+        installController?.abort();
+        if (state.status === 'ready') publish({ status: 'available', progress: null });
+      }
+      if (value && state.status === 'available' && installer?.supported)
+        void install({ automatic: true });
       schedule(startupDelay);
       return snapshot();
     },
@@ -219,6 +292,7 @@ export async function createAppUpdates({
       stopped = true;
       clearTimer(timer);
       controller?.abort();
+      installController?.abort();
     },
   };
 }

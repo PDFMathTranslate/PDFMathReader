@@ -1,4 +1,5 @@
-import { nativeTheme } from 'electron';
+import { nativeTheme, shell } from 'electron';
+import { mkdir } from 'node:fs/promises';
 
 const WINDOW_LOCAL_PREFERENCES = [
   'engine',
@@ -142,6 +143,14 @@ export function registerPreferencesIPC({
       if (target === registry.focusedWindow()) updateMenu(target);
       return write;
     });
+  handle('cache:openFolder', async (event) => {
+    trustedWindow(event);
+    // The renderer never supplies a path. Open only the configured cache root.
+    await mkdir(backendOptions.cacheDir, { recursive: true });
+    const error = await shell.openPath(backendOptions.cacheDir);
+    if (error) throw Error(error);
+    return { opened: true };
+  });
   handle('cache:clear', async (event) => {
     const target = trustedWindow(event);
     const services = [...new Set([...registry.windows.values()].map((state) => state.backend))];

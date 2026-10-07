@@ -109,3 +109,93 @@ test('shares checks, selects architecture asset, persists and revalidates with E
     await rm(folder, { recursive: true, force: true });
   }
 });
+
+test('automatic updates stage once and install only on normal quit', async () => {
+  let prepares = 0,
+    applies = 0;
+  const updates = await createAppUpdates({
+    currentVersion: '0.1.0',
+    fetchImpl: async () => response(200, release()),
+    installer: {
+      supported: true,
+      prepare: async (state, progress) => {
+        prepares++;
+        assert.equal(state.latestVersion, '0.2.0');
+        progress(0.5);
+      },
+      installOnQuit: () => {
+        applies++;
+        return true;
+      },
+    },
+  });
+  assert.equal((await updates.check()).status, 'ready');
+  assert.equal(applies, 0, 'open documents are not interrupted to install');
+  await updates.check();
+  assert.equal(prepares, 1);
+  updates.stop();
+  assert.equal(updates.installOnQuit(), true);
+  assert.equal(applies, 1);
+});
+
+test('turning off automatic updates suppresses a staged automatic install; manual install still applies', async () => {
+  let applies = 0;
+  const updates = await createAppUpdates({
+    currentVersion: '0.1.0',
+    fetchImpl: async () => response(200, release()),
+    installer: { supported: true, prepare: async () => {}, installOnQuit: () => ++applies },
+  });
+  await updates.check();
+  updates.setAutomatic(false);
+  assert.equal(updates.installOnQuit(), false);
+  await updates.install();
+  updates.installOnQuit();
+  assert.equal(applies, 1);
+});
+
+test('failed preparation remains retryable and never installs an unverified update', async () => {
+  let attempts = 0,
+    applies = 0;
+  const updates = await createAppUpdates({
+    currentVersion: '0.1.0',
+    automatic: false,
+    fetchImpl: async () => response(200, release()),
+    installer: {
+      supported: true,
+      prepare: async () => {
+        if (++attempts === 1) throw Error('signature mismatch');
+      },
+      installOnQuit: () => ++applies,
+    },
+  });
+  assert.equal((await updates.check()).status, 'available');
+  assert.equal((await updates.install()).error, 'install');
+  assert.equal(updates.installOnQuit(), false);
+  assert.equal(applies, 0);
+  assert.equal((await updates.install()).status, 'ready');
+});
+
+test('disabling automatic updates cancels an in-flight background download', async () => {
+  let started;
+  const began = new Promise((resolve) => {
+    started = resolve;
+  });
+  const updates = await createAppUpdates({
+    currentVersion: '0.1.0',
+    fetchImpl: async () => response(200, release()),
+    installer: {
+      supported: true,
+      prepare: async (_state, _progress, signal) => {
+        started();
+        await new Promise((_resolve, reject) =>
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true }),
+        );
+      },
+    },
+  });
+  const checking = updates.check();
+  await began;
+  updates.setAutomatic(false);
+  assert.equal((await checking).status, 'available');
+  assert.equal(updates.status().error, null);
+});

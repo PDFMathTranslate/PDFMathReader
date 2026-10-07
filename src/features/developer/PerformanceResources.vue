@@ -10,59 +10,80 @@ const emit = defineEmits(['update:reduceResourceUsage', 'update:reduceBackground
 const words = {
   en: [
     'Resources',
+    'Cache',
     'Cache size limit',
     'Unlimited',
     'Clear cache',
+    'Open cache folder',
     'Cache cleared',
     'Cache in use. Try again after translation finishes.',
+    'Unable to open cache folder',
   ],
   'zh-CN': [
     '资源',
+    '缓存',
     '缓存大小限制',
     '无限制',
     '清除缓存',
+    '打开缓存文件夹',
     '缓存已清除',
     '缓存正在使用，请在翻译完成后重试。',
+    '无法打开缓存文件夹',
   ],
   'zh-TW': [
     '資源',
+    '快取',
     '快取大小限制',
     '無限制',
     '清除快取',
+    '開啟快取資料夾',
     '快取已清除',
     '快取正在使用，請在翻譯完成後重試。',
+    '無法開啟快取資料夾',
   ],
   ja: [
     'リソース',
+    'キャッシュ',
     'キャッシュ容量の上限',
     '無制限',
     'キャッシュを消去',
+    'キャッシュフォルダを開く',
     'キャッシュを消去しました',
     '翻訳完了後に再試行してください。',
+    'キャッシュフォルダを開けません',
   ],
   ko: [
     '리소스',
+    '캐시',
     '캐시 용량 제한',
     '무제한',
     '캐시 지우기',
+    '캐시 폴더 열기',
     '캐시를 지웠습니다',
     '번역 완료 후 다시 시도하세요.',
+    '캐시 폴더를 열 수 없습니다',
   ],
   fr: [
     'Ressources',
+    'Cache',
     'Limite du cache',
     'Illimitée',
     'Vider le cache',
+    'Ouvrir le dossier du cache',
     'Cache vidé',
     'Réessayez après la traduction.',
+    'Impossible d’ouvrir le dossier du cache',
   ],
   es: [
     'Recursos',
+    'Caché',
     'Límite de caché',
     'Sin límite',
     'Borrar caché',
+    'Abrir carpeta de caché',
     'Caché borrada',
     'Inténtalo después de la traducción.',
+    'No se puede abrir la carpeta de caché',
   ],
 };
 const text = (i) => (words[uiLanguage.value] || words.en)[i];
@@ -116,7 +137,7 @@ async function clearDocument(id) {
   try {
     await request('/document/clear', { id });
     await refresh();
-    notice.value = text(4);
+    notice.value = text(6);
   } catch (error) {
     notice.value = error.message;
   } finally {
@@ -135,7 +156,10 @@ const documents = ref([]);
 const limit = ref('unlimited'),
   bytes = ref(0),
   busy = ref(false),
-  notice = ref('');
+  notice = ref(''),
+  folderBusy = ref(false);
+const cacheFolderAvailable =
+  typeof window !== 'undefined' && typeof window.previewCache?.openFolder === 'function';
 const usage = computed(
   () =>
     new Intl.NumberFormat(uiLanguage.value, { maximumFractionDigits: 1 }).format(
@@ -151,7 +175,7 @@ async function request(path, body) {
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   if (!response.ok) {
-    const error = Error(response.status === 409 ? text(5) : 'Unable to manage cache');
+    const error = Error(response.status === 409 ? text(7) : 'Unable to manage cache');
     throw error;
   }
   return response.json();
@@ -194,11 +218,24 @@ async function clear() {
       : await request('/clear', {});
     applyCache(result);
     await refresh();
-    notice.value = text(4);
+    notice.value = text(6);
   } catch (error) {
-    notice.value = error.message.includes('409') ? text(5) : error.message;
+    notice.value = error.message.includes('409') ? text(7) : error.message;
   } finally {
     busy.value = false;
+  }
+}
+async function openCacheFolder() {
+  if (folderBusy.value) return;
+  folderBusy.value = true;
+  notice.value = '';
+  try {
+    const result = await window.previewCache.openFolder();
+    if (!result?.opened) notice.value = text(8);
+  } catch (error) {
+    notice.value = error?.message || text(8);
+  } finally {
+    folderBusy.value = false;
   }
 }
 onMounted(() => {
@@ -234,8 +271,13 @@ onBeforeUnmount(() => {
           @update:model-value="emit('update:reduceBackgroundFrameRate', $event)"
         />
       </div>
+    </div>
+  </section>
+  <section class="settings-section performance-cache" aria-labelledby="settings-cache">
+    <h3 id="settings-cache">{{ text(1) }}</h3>
+    <div class="settings-section-body">
       <div class="setting-row" data-setting="cache-size-limit">
-        <span id="cache-size-limit-label">{{ text(1) }}</span
+        <span id="cache-size-limit-label">{{ text(2) }}</span
         ><AppPopUpButton
           :model-value="limit"
           :disabled="busy"
@@ -243,13 +285,20 @@ onBeforeUnmount(() => {
           aria-labelledby="cache-size-limit-label"
           @update:model-value="change"
           ><AppPopUpButtonItem v-for="[value, label] in choices" :key="value" :value="value">{{
-            label || text(2)
+            label || text(3)
           }}</AppPopUpButtonItem></AppPopUpButton
         >
       </div>
       <div class="setting-row cache-actions">
         <span class="muted">{{ usage }}</span
-        ><AppButton :disabled="busy" @click="clear">{{ text(3) }}</AppButton>
+        ><AppButton :disabled="busy" @click="clear">{{ text(4) }}</AppButton
+        ><AppButton
+          v-if="cacheFolderAvailable"
+          data-setting="open-cache-folder"
+          :disabled="busy || folderBusy"
+          @click="openCacheFolder"
+          >{{ text(5) }}</AppButton
+        >
       </div>
       <div class="document-cache-list" aria-labelledby="document-cache-heading">
         <h4 id="document-cache-heading">{{ documentText(0) }}</h4>

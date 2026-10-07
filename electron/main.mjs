@@ -10,6 +10,7 @@ import { tmpdir, release } from 'node:os';
 import { startBackendService } from './main/backend/backend-service.mjs';
 import { createHaptics } from './platform/macos/haptics.mjs';
 import { registerWindowsPDF } from './platform/windows/file-association.mjs';
+import { createUpdateInstaller } from './main/services/update-installer.mjs';
 import { createAppUpdates, releaseLink } from './main/services/app-updates.mjs';
 import {
   createOperationMetrics,
@@ -299,12 +300,21 @@ else {
             }
           : {}),
         currentVersion: app.getVersion(),
+        installer:
+          app.isPackaged && !smoke && !ciLaunchCheck ? createUpdateInstaller({ app }) : null,
         automatic: preferences.load().autoCheckUpdates,
         path: join(app.getPath('userData'), 'app-updates.json'),
         onChange: (state) => {
           for (const target of windows.keys())
             if (!target.isDestroyed()) target.webContents.send('updates:changed', state);
         },
+      });
+      app.on('will-quit', () => {
+        try {
+          appUpdates.installOnQuit();
+        } catch (error) {
+          console.error('Unable to apply downloaded update:', error.message);
+        }
       });
       backendOptions = {
         port: 0,
