@@ -1,3 +1,4 @@
+import { createAIDiscussionService } from '../services/ai-discussion.mjs';
 import { clipboard, dialog, Menu, ShareMenu, shell } from 'electron';
 
 export function registerAnnotationIPC({
@@ -12,6 +13,7 @@ export function registerAnnotationIPC({
   app,
   runFile,
 }) {
+  const aiDiscussion = createAIDiscussionService({ runFile, clipboard });
   handle('previewAnnotations:prepare', async (event, value) => {
     const target = trustedWindow(event);
     if (!(value instanceof Uint8Array) || value.byteLength > 50 * 1024 * 1024)
@@ -82,7 +84,7 @@ export function registerAnnotationIPC({
               item('谷歌学术搜索'),
             ]
           : []),
-        item('Hand over to AI'),
+        item('和人工智能讨论'),
         { type: 'separator' },
         ...(kind === 'comment' ? [item('修改')] : []),
         item('删除'),
@@ -130,11 +132,14 @@ export function registerAnnotationIPC({
     const target = trustedWindow(event);
     if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
       throw Error('Invalid handover text.');
-    if (process.platform !== 'darwin') throw Error('本机 AI 客户端交接目前仅支持 macOS。');
+    if (process.platform !== 'darwin') throw Error('本机 AI 对话目前仅支持 macOS。');
+    const clients = await aiDiscussion.list();
+    if (!clients.length)
+      throw Error('未找到可用的本机 AI 应用，请安装 ChatGPT、Claude 或 Gemini。');
     const client = await new Promise((resolve) => {
       let selected = null;
       const menu = Menu.buildFromTemplate(
-        ['ChatGPT', 'Claude'].map((label) => ({
+        clients.map((label) => ({
           label,
           click: () => {
             selected = label;
@@ -144,18 +149,7 @@ export function registerAnnotationIPC({
       menu.popup({ window: target, callback: () => resolve(selected) });
     });
     if (!client) return { cancelled: true };
-    try {
-      await runFile('/usr/bin/open', ['-Ra', client], { timeout: 10000 });
-    } catch {
-      throw Error(`未找到本机 ${client} 客户端，请先安装。`);
-    }
-    clipboard.writeText(text);
-    try {
-      await runFile('/usr/bin/open', ['-a', client], { timeout: 10000 });
-    } catch {
-      throw Error(`内容已复制，但无法打开 ${client} 客户端。`);
-    }
-    return { client };
+    return aiDiscussion.open(client, text);
   });
   handle('clipboard:write-text', async (event, text) => {
     trustedWindow(event);

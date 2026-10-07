@@ -62,14 +62,14 @@ export async function verifyAnnotations(window, recents) {
       assert.deepEqual(
         captured.menu.items.filter((i) => i.type !== 'separator').map((i) => i.label),
         kind === 'comment'
-          ? ['复制', '分享', 'Hand over to AI', '修改', '删除']
+          ? ['复制', '分享', '和人工智能讨论', '修改', '删除']
           : [
               '复制',
               '分享',
               'Search in Document',
               '谷歌搜索',
               '谷歌学术搜索',
-              'Hand over to AI',
+              '和人工智能讨论',
               '删除',
             ],
       );

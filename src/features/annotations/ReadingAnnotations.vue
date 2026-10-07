@@ -565,13 +565,18 @@ async function action(name, a = menu.value?.a) {
       await navigator.share({ text });
       return;
     }
-    if (name === 'Hand over to AI') {
+    if (name === '和人工智能讨论') {
       if (!window.previewAnnotations?.handover)
-        throw Error('请在桌面客户端中交接到本机 ChatGPT 或 Claude。');
+        throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
       const result = await window.previewAnnotations.handover(text);
       if (!result.cancelled)
         emit('notice', {
-          text: `已打开 ${result.client}，内容已复制，请粘贴并发送`,
+          text:
+            result.delivery === 'prefilled'
+              ? `已请求 ${result.client} 将选中文本填入新对话，请检查后发送`
+              : result.delivery === 'pasted'
+                ? `已向 ${result.client} 对话输入框粘贴上下文，请检查后发送`
+                : `已打开 ${result.client}，上下文已复制。请点击对话输入框并粘贴；自动粘贴需要允许 PDFMathReader 使用辅助功能。`,
           ...pointer.value,
         });
       return;
@@ -951,8 +956,8 @@ watch(
     >
       <button
         v-for="name in menu.a.kind === 'highlight'
-          ? ['复制', '分享', '在文档内搜索', '谷歌搜索', '谷歌学术搜索', 'Hand over to AI', '删除']
-          : ['复制', '分享', 'Hand over to AI', '修改', '删除']"
+          ? ['复制', '分享', '在文档内搜索', '谷歌搜索', '谷歌学术搜索', '和人工智能讨论', '删除']
+          : ['复制', '分享', '和人工智能讨论', '修改', '删除']"
         :key="name"
         role="menuitem"
         @click="action(name)"
