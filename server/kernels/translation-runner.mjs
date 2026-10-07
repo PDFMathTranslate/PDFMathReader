@@ -100,7 +100,7 @@ export function createTranslationRunner({
     const currentLayoutSchema =
       id === 'pdf_math_fast'
         ? ['zh', 'ja', 'ko'].includes(lang.toLowerCase().split('-')[0])
-          ? 5
+          ? 6
           : 4
         : 3;
     const keyFor = (cacheModel, layoutSchema = currentLayoutSchema) =>
@@ -130,7 +130,7 @@ export function createTranslationRunner({
       directory: cacheDir,
       keyFor,
       fallbackKeyFors:
-        currentLayoutSchema === 5
+        currentLayoutSchema >= 5
           ? []
           : [(cacheModel) => keyFor(cacheModel, currentLayoutSchema - 1)],
       readResult: async (cachedKey) => {

@@ -16,6 +16,11 @@ import pymupdf
 
 def fast_paragraph_indent(text, x, x0, language):
     """Replace inherited source indentation with two CJK full-width spaces."""
+    # Protected tables and formulas are emitted as one placeholder run. Their
+    # first glyph is not a prose indent: moving it moves every retained glyph
+    # and rule in the run, which can push the whole table beyond the page edge.
+    if not re.sub(r"\{+\s*v\d+\s*\}+", "", text).strip():
+        return text, x
     if language.lower().split("-")[0] in ("zh", "ja", "ko") and x > x0 + 0.1:
         return "\u3000\u3000" + text.lstrip(" \t\u3000"), x0
     return text, x
