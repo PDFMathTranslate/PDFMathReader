@@ -31,7 +31,14 @@ export function shortcutAction(platform, input) {
   }
   if (platform !== 'darwin' && key === 'f11' && !input.meta && !input.control && !input.alt)
     return 'toggle-fullscreen';
-  if (platform === 'darwin' && key === 'f' && input.meta && input.control && !input.alt && !input.shift)
+  if (
+    platform === 'darwin' &&
+    key === 'f' &&
+    input.meta &&
+    input.control &&
+    !input.alt &&
+    !input.shift
+  )
     return 'toggle-fullscreen';
   if (platform === 'darwin') {
     if (key === 'w' && input.control && !input.meta && !input.alt && !input.shift)
@@ -50,8 +57,12 @@ export function shortcutAction(platform, input) {
   if (digit !== null)
     return input.shift
       ? 'percent:' + (digit === '0' ? 100 : Number(digit) * 10)
-      : { 0: 'fit-width', 9: 'fit-height', 1: 'columns:1', 2: 'columns:2', 3: 'columns:4' }[
-          digit
-        ] || null;
+      : {
+          0: 'fit-width',
+          9: 'fit-height',
+          1: 'columns:1',
+          2: 'columns:2',
+          3: 'columns:4',
+        }[digit] || null;
   return SHORTCUT_ACTIONS[key] || null;
 }
