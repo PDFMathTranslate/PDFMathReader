@@ -151,6 +151,7 @@ onBeforeUnmount(() => {
   <section
     class="settings settings-workspace"
     :class="{ 'native-settings-window': nativeWindow }"
+    :style="{ '--settings-sidebar-scale': platform === 'win32' ? 2 : 1 }"
     role="dialog"
     :aria-label="t('settings.title')"
     :data-section="section"
@@ -303,7 +304,7 @@ section.settings.settings-workspace[data-section] {
   max-height: none;
   padding: 0;
   display: grid;
-  grid-template-columns: 114px minmax(0, 1fr);
+  grid-template-columns: calc(114px * var(--settings-sidebar-scale, 1)) minmax(0, 1fr);
   gap: 0;
   overflow: hidden;
   border: 0;
@@ -324,7 +325,13 @@ section.settings.settings-workspace.native-settings-window[data-section] {
   border-radius: 0;
   box-shadow: none;
   background: transparent;
-  grid-template-columns: clamp(132px, 18.78%, 180px) minmax(0, 1fr);
+  grid-template-columns:
+    clamp(
+      calc(132px * var(--settings-sidebar-scale, 1)),
+      calc(18.78% * var(--settings-sidebar-scale, 1)),
+      calc(180px * var(--settings-sidebar-scale, 1))
+    )
+    minmax(0, 1fr);
   transform: none;
   transition: none;
 }
@@ -968,7 +975,7 @@ section.settings.settings-workspace
 
 @media (max-width: 760px) {
   section.settings.settings-workspace:not(.native-settings-window)[data-section] {
-    grid-template-columns: 93.6px minmax(0, 1fr);
+    grid-template-columns: calc(93.6px * var(--settings-sidebar-scale, 1)) minmax(0, 1fr);
     width: calc(100vw - 20px);
   }
   .settings-categories {
@@ -993,7 +1000,7 @@ section.settings.settings-workspace
 }
 @media (max-width: 520px) {
   section.settings.settings-workspace:not(.native-settings-window)[data-section] {
-    grid-template-columns: 67.2px minmax(0, 1fr);
+    grid-template-columns: calc(67.2px * var(--settings-sidebar-scale, 1)) minmax(0, 1fr);
   }
   .category-button {
     font-size: 11px;
