@@ -25,15 +25,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                    | Contributor                        |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-06 | [add highlight search and optional kernel toolbar shortcut](https://github.com/PDFMathTranslate/PDFMathReader/commit/93a6b444af1127ef5a91776ddf879f5a4f4a8bea)             | [@reycn](https://github.com/reycn) |
-| 2026-10-06 | [add translation glossaries and kernel setup guidance](https://github.com/PDFMathTranslate/PDFMathReader/commit/29d91d24cfcf0eb418202788b7549e4ce959c7e7)                  | [@reycn](https://github.com/reycn) |
-| 2026-10-06 | [add experimental typography and force retranslation](https://github.com/PDFMathTranslate/PDFMathReader/commit/8de27fb9f18a653726505ed9d13e11528406d609)                   | [@reycn](https://github.com/reycn) |
-| 2026-10-06 | [build Vue Pages showcase with cached reader translations](https://github.com/PDFMathTranslate/PDFMathReader/commit/052d8575eeb84bc8f7f20f913d1156340ab7e837)              | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [support custom language codes and streamline regression tests](https://github.com/PDFMathTranslate/PDFMathReader/commit/7ead51359470f680471be1b387f6a4083072d57b)         | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [add information categories, release updates and provider availability](https://github.com/PDFMathTranslate/PDFMathReader/commit/1da70d073f778ad300901503e5dd41cf91c8318e) | [@reycn](https://github.com/reycn) |
-| 2026-10-05 | [improve settings, diagnostics and reader UX](https://github.com/PDFMathTranslate/PDFMathReader/commit/eadc9f1b89f2edfaec8ab9f97b3af522c4617494)                           | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                        | Contributor                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-08 | [add local formula OCR and copy in reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/2896ebf2fc75aaad25e3fec39709df3d0c5b54e4)            | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [discuss PDF selections with local AI apps](https://github.com/PDFMathTranslate/PDFMathReader/commit/ce47d2d1dd998892b784b235390cfc3316c6d30a)                 | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [continue reading PDFs in another application](https://github.com/PDFMathTranslate/PDFMathReader/commit/a5ed5e6baff7f6888e583e7379658afb33cf9bda)              | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [automatically install updates and organize cache settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/92d89ff9a465c11c579bc7c3de3f79f8c3acc3e0) | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [add project and acknowledgements to native About panel](https://github.com/PDFMathTranslate/PDFMathReader/commit/2331acac9cb9412fbe04db3da8e38b1625525342)    | [@reycn](https://github.com/reycn) |
+| 2026-10-06 | [add highlight search and optional kernel toolbar shortcut](https://github.com/PDFMathTranslate/PDFMathReader/commit/93a6b444af1127ef5a91776ddf879f5a4f4a8bea) | [@reycn](https://github.com/reycn) |
+| 2026-10-06 | [add translation glossaries and kernel setup guidance](https://github.com/PDFMathTranslate/PDFMathReader/commit/29d91d24cfcf0eb418202788b7549e4ce959c7e7)      | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
