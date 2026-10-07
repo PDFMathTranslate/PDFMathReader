@@ -628,31 +628,34 @@ else {
     return focusDocumentWindow(target);
   }
   const openingDocuments = new Map();
-  async function openDocumentWindow(document, preferredWindow, restoreView) {
+  async function openDocumentWindow(document, preferredWindow, restoreView, activate = true) {
     const started = performance.now();
     try {
-      return await deliverDocumentWindow(document, preferredWindow, restoreView);
+      return await deliverDocumentWindow(document, preferredWindow, restoreView, activate);
     } finally {
       developerOperationMetrics.fileOpen(performance.now() - started);
     }
   }
-  async function deliverDocumentWindow(document, preferredWindow, restoreView) {
+  async function deliverDocumentWindow(document, preferredWindow, restoreView, activate) {
     const identity = typeof document === 'string' ? documentIdentity(document) : null;
     const existing = findDocumentWindow(identity);
-    if (existing) return focusDocumentWindow(existing);
-    if (identity && openingDocuments.has(identity))
-      return focusDocumentWindow(await openingDocuments.get(identity));
+    if (existing) return activate ? focusDocumentWindow(existing) : existing;
+    if (identity && openingDocuments.has(identity)) {
+      const target = await openingDocuments.get(identity);
+      return activate ? focusDocumentWindow(target) : target;
+    }
     const operation = (async () => {
       const candidates = [preferredWindow, focusedWindow(), ...windows.keys()];
       const target = candidates.find(isBlankStartPage);
-      if (!target) return createWindow(document, restoreView);
+      if (!target) return createWindow(document, restoreView, null, 'general', activate);
       const state = windows.get(target);
       state.documentIdentity = identity;
+      state.restoreView = restoreView;
       state.documents.push(document);
       state.unkeyedAnnotationSource = annotationSourceForDocument(document);
       state.performance.hasDocument = true;
       target.webContents.send('documents:available');
-      return focusDocumentWindow(target);
+      return activate ? focusDocumentWindow(target) : target;
     })();
     if (identity) openingDocuments.set(identity, operation);
     try {
@@ -666,6 +669,7 @@ else {
     restoreView,
     settingsOwner = null,
     settingsSection = 'general',
+    activate = true,
   ) {
     let window;
     const backend = settingsOwner
@@ -912,7 +916,7 @@ else {
     const showLoadedWindow = () => {
       hideNativeMenuBar(window);
       if (!backgroundRenderSmoke && !window.isVisible()) {
-        if (process.argv.includes('--background')) window.showInactive();
+        if (!activate || process.argv.includes('--background')) window.showInactive();
         else window.show();
       }
       updatePerformanceSampling(window);
@@ -2337,22 +2341,32 @@ else {
         trustedWindow(event);
         await createWindow();
       });
+      // Drain external launch requests before restoring the previous session. Requests
+      // arriving while a backend starts also take priority over the next restore.
+      let externalLaunch = false;
+      const openLaunchFiles = async () => {
+        if (ciLaunchCheck || !pendingFiles.length) return;
+        externalLaunch = true;
+        await deliverPendingFiles();
+      };
+      await openLaunchFiles();
       if (!smoke && !ciLaunchCheck && preferences.load().restoreDocuments) {
         for (const document of documentSession.restore()) {
+          await openLaunchFiles();
           try {
             await validateSystemPDF(document.path);
           } catch {
             continue;
           }
-          if (!pendingFiles.includes(document.path))
-            await openDocumentWindow(document.path, null, document.view);
+          await openLaunchFiles();
+          const firstRestore = windows.size === 0;
+          const restored = await openDocumentWindow(document.path, null, document.view, false);
+          await openLaunchFiles();
+          if (firstRestore && !externalLaunch) focusDocumentWindow(restored);
         }
       }
-      window =
-        [...windows.keys()][0] ||
-        (!ciLaunchCheck && pendingFiles.length
-          ? await openDocumentWindow(pendingFiles.shift())
-          : await createWindow());
+      await openLaunchFiles();
+      window = [...windows.keys()][0] || (await createWindow());
       backend = windows.get(window).backend;
       documentsReady = true;
       if (!ciLaunchCheck) await deliverPendingFiles();

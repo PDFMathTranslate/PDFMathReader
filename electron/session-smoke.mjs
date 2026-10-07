@@ -34,10 +34,20 @@ export async function verifySession(first, windows, createWindow) {
       sidebar: false,
       showTranslations: false,
     };
-    const second = await createWindow(a, view),
-      third = await createWindow(b);
+    const second = await createWindow(a, view);
     await wait(second, 'window.previewReady');
+    second.show();
+    second.focus();
+    for (let i = 0; i < 100 && !second.isFocused(); i++)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(second.isFocused(), true);
+    const third = await createWindow(b, undefined, null, 'general', false);
     await wait(third, 'window.previewReady');
+    for (let i = 0; i < 100 && !third.isVisible(); i++)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(third.isVisible(), true);
+    assert.equal(third.isFocused(), false);
+    assert.equal(second.isFocused(), true);
     await second.webContents.executeJavaScript('window.previewSaveReadingView()');
     await third.webContents.executeJavaScript('window.previewSaveReadingView()');
     const restored = (await createDocumentSession(store)).restore();
@@ -51,9 +61,7 @@ export async function verifySession(first, windows, createWindow) {
     );
     third.webContents.send('reader:action', 'close-document');
     await wait(third, 'window.previewRenderDiagnostics().totalPages===0');
-    const fallback = (await createDocumentSession(store)).restore();
-    assert.equal(fallback.length, 1);
-    assert.equal(fallback[0].path, b);
+    assert.deepEqual((await createDocumentSession(store)).restore(), []);
     await first.webContents.executeJavaScript(
       'window.previewPreferences.save({restoreDocuments:false})',
     );
@@ -67,8 +75,9 @@ export async function verifySession(first, windows, createWindow) {
       JSON.stringify({
         passed: true,
         multipleDocuments: true,
+        backgroundRestorePreservesFocus: true,
         restoredPosition: true,
-        lastClosedFallback: true,
+        allDocumentsClosed: true,
         sharedOptOut: true,
       }),
     );

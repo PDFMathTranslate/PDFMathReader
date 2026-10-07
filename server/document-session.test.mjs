@@ -16,7 +16,7 @@ const view = {
   showTranslations: true,
 };
 
-test('session persists multiple documents and positions; closing all restores only the last closed document', async () => {
+test('session persists multiple documents and positions; closing all restores nothing', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'reader-session-'));
   try {
     const path = join(dir, 'session.json'),
@@ -36,8 +36,25 @@ test('session persists multiple documents and positions; closing all restores on
     assert.deepEqual((await createDocumentSession(path)).restore(), [{ path: '/tmp/a.pdf', view }]);
     await session.close(1);
     await session.close(1);
-    assert.deepEqual((await createDocumentSession(path)).restore(), [{ path: '/tmp/a.pdf', view }]);
+    assert.deepEqual((await createDocumentSession(path)).restore(), []);
     assert.equal(JSON.parse(await readFile(path)).documents.length, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('empty documents do not restore a legacy last closed document', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'reader-session-'));
+  try {
+    const path = join(dir, 'session.json');
+    await writeFile(
+      path,
+      JSON.stringify({
+        documents: [],
+        last: { path: '/tmp/legacy-closed.pdf' },
+      }),
+    );
+    assert.deepEqual((await createDocumentSession(path)).restore(), []);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
