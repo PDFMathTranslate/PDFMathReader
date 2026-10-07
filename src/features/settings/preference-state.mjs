@@ -10,6 +10,7 @@ export function createPreferenceState() {
   const layoutVisible = ref(false);
   const reuseTranslations = ref(localStorage.getItem('reuseTranslations') !== 'false');
   const interactionMode = ref('reading');
+  const formulaOcrEnabled = ref(localStorage.getItem('formulaOcrEnabled') === 'true');
   const restoreDocuments = ref(true);
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
   const defaultPageCropEnabled = ref(false);
@@ -63,6 +64,7 @@ export function createPreferenceState() {
     layoutVisible,
     reuseTranslations,
     interactionMode,
+    formulaOcrEnabled,
     restoreDocuments,
     documentOpenMode,
     defaultPageCropEnabled,

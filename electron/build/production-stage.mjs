@@ -100,11 +100,24 @@ export async function stageApplication({
     : phase === 'dependencies'
       ? ['express', 'pdf-lib', '@firecrawl/pdf-inspector']
       : ['@firecrawl/pdf-inspector', 'pdf-lib'];
+  if (!names.includes('onnxruntime-node')) names.push('onnxruntime-node');
   if (test && !names.includes('pdf-lib')) names.push('pdf-lib');
   const fallback = !hasNativeInspector(platform, arch);
   if (fallback && !names.includes('pdfjs-dist')) names.push('pdfjs-dist');
   if (fallback && !names.includes('@thednp/dommatrix')) names.push('@thednp/dommatrix');
   const copied = await copyDependencies(root, stage, names, fallback);
+  // Ship only the target CPU runtime; other architectures multiply bundle size.
+  const onnxBin = join(stage, 'node_modules/onnxruntime-node/bin/napi-v6');
+  const { rm: removeRuntime } = await import('node:fs/promises');
+  for (const target of await readdir(onnxBin)) {
+    if (target !== platform)
+      await removeRuntime(join(onnxBin, target), { recursive: true, force: true });
+    else
+      for (const targetArch of await readdir(join(onnxBin, target)))
+        if (targetArch !== arch)
+          await removeRuntime(join(onnxBin, target, targetArch), { recursive: true, force: true });
+  }
+
   const browserLicenses = [
     '@fluentui/web-components',
     '@fluentui/tokens',
@@ -168,6 +181,7 @@ export async function stageApplication({
       mainFields: ['module', 'main'],
       external: [
         'electron',
+        'onnxruntime-node',
         // Keep PDF editing outside the startup bundles so dynamic imports also
         // avoid parsing the library when only the Start Page is requested.
         'pdf-lib',

@@ -38,6 +38,7 @@ export function installReaderPreferenceObservers({ bindings }) {
     [
       bindings.documentOpenMode,
       bindings.restoreDocuments,
+      bindings.preferences.formulaOcrEnabled,
       bindings.defaultPageCropEnabled,
       bindings.defaultPageCropX,
       bindings.defaultPageCropY,

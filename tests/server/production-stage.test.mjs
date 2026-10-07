@@ -15,6 +15,10 @@ test('production bundle serves and extracts PDFs without an external Express ins
     for (const name of ['kernel-worker.py', 'kernel-options.py', 'kernel-services.py'])
       await access(join(stage, 'server/kernels/python', name));
     await access(join(stage, 'server/platform/macos/local-translation.swift'));
+    await access(join(stage, 'server/formula/formula-ocr-worker.mjs'));
+    await access(
+      join(stage, 'node_modules/onnxruntime-node/bin/napi-v6', process.platform, process.arch),
+    );
     assert.ok(!packages.includes('express'));
     await assert.rejects(access(join(stage, 'node_modules/express')));
     await access(join(stage, 'licenses/express/LICENSE'));
@@ -28,6 +32,9 @@ test('production bundle serves and extracts PDFs without an external Express ins
     const headers = { 'X-Preview-Token': 'package-test' };
     assert.equal((await fetch(backend.origin, { headers })).status, 200);
     assert.equal((await fetch(backend.origin)).status, 403);
+    const formulaStatus = await fetch(backend.origin + '/api/formula-ocr/status', { headers });
+    assert.equal(formulaStatus.status, 200);
+    assert.equal((await formulaStatus.json()).ready, false);
     const pdf = await PDFDocument.create(),
       font = await pdf.embedFont(StandardFonts.Helvetica);
     pdf

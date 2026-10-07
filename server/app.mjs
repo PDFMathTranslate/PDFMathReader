@@ -41,6 +41,8 @@ import {
 import { registerDocumentRoutes } from './http/document-routes.mjs';
 import { registerKernelRoutes } from './http/kernel-routes.mjs';
 import { registerTranslationRoutes } from './http/translation-routes.mjs';
+import { registerFormulaOcrRoutes } from './http/formula-ocr-routes.mjs';
+import { createFormulaOcrService } from './formula/formula-ocr-service.mjs';
 
 export async function startServer({
   port = 5173,
@@ -96,6 +98,9 @@ export async function startServer({
           args: [],
         }),
     });
+  const formulaOcr = createFormulaOcrService({
+    cacheDir: join(cacheDir, '..', 'models'),
+  });
   const documents = createDocumentStore();
   const documentCache = createDocumentCache(cacheDir);
   const providerLimiter = createLimiter(4, { label: 'provider' });
@@ -188,6 +193,7 @@ export async function startServer({
   registerAccessMiddleware(app, { token, origin: () => origin, development });
   registerPerformanceMiddleware(app, performanceTracker);
 
+  registerFormulaOcrRoutes(app, { service: formulaOcr });
   registerProviderPortRoute(app, isProviderPortOpen);
   registerCacheRoutes(app, { cacheManager });
   registerDeveloperRoutes(app, {
@@ -284,6 +290,7 @@ export async function startServer({
       layoutEntries.clear();
       documents.clear();
       server.closeAllConnections();
+      await formulaOcr.dispose();
       await engines.close();
       await localTranslator.close?.();
       await new Promise((r) => server.close(r));

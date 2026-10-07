@@ -70,6 +70,19 @@
   color: var(--text);
   font-size: 13px;
   pointer-events: none;
+  overflow-wrap: anywhere;
+  max-width: min(640px, calc(100vw - 48px));
+}
+
+.copy-toast-detail {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .copy-toast-enter-active,

@@ -12,7 +12,8 @@ import { createPreferenceState } from '../features/settings/preference-state.mjs
 import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
-import { ref, shallowRef, computed, watch, nextTick, markRaw } from 'vue';
+import { ref, shallowRef, computed, watch, nextTick, markRaw, provide } from 'vue';
+import { useFormulaOcr } from '../features/reader/useFormulaOcr.mjs';
 
 import {
   buildReaderLayout,
@@ -376,6 +377,16 @@ export function useReaderWindow() {
     noteTranslationService,
     copyHoveredParagraph,
   } = documentSurface;
+
+  provide(
+    'formulaOcr',
+    useFormulaOcr({
+      enabled: preferences.formulaOcrEnabled,
+      request: featureActions.api,
+      notify: notifyCopy,
+      save: () => featureActions.saveView(),
+    }),
+  );
 
   const informationCategorySettings = [
     { key: 'emphasizeResearchFindings', value: emphasizeResearchFindings },

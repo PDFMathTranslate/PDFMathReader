@@ -4,7 +4,7 @@ import DocumentSearchBar from './features/search/DocumentSearchBar.vue';
 import ReaderWorkspace from './features/reader/ReaderWorkspace.vue';
 import ReaderFloatingTools from './features/reader/ReaderFloatingTools.vue';
 import ParagraphDetails from './features/translation/ParagraphDetails.vue';
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 const NativeSettingsPanel = defineAsyncComponent(
   () => import('./features/settings/NativeSettingsPanel.vue'),
 );
@@ -220,6 +220,12 @@ const {
   zoomEntryInput,
   zoomInput,
 } = useReaderWindow();
+const copyToastHeading = computed(() => copyToast.value.split('\n')[0]);
+const copyToastDetail = computed(() =>
+  copyToast.value.includes('\n')
+    ? copyToast.value.slice(copyToast.value.indexOf('\n') + 1).trim()
+    : '',
+);
 </script>
 
 <template>
@@ -425,7 +431,12 @@ const {
           {{ annotationToast.text }}
         </div></Transition
       ><Transition name="copy-toast"
-        ><div v-if="copyToast" class="copy-toast" role="status">{{ copyToast }}</div></Transition
+        ><div v-if="copyToast" class="copy-toast" role="status">
+          <span>{{ copyToastHeading }}</span>
+          <span v-if="copyToastDetail" class="copy-toast-detail" :title="copyToastDetail">{{
+            copyToastDetail
+          }}</span>
+        </div></Transition
       >
       <footer v-if="!desktopCredentials" class="statusbar">
         <span

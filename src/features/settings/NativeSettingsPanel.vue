@@ -12,6 +12,7 @@ import {
   AppSecureField,
 } from '../../ui/controls.mjs';
 import DocumentDefaultsSettings from './DocumentDefaultsSettings.vue';
+import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import PerformanceResources from '../developer/PerformanceResources.vue';
 import GlossarySettings from './GlossarySettings.vue';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
@@ -197,6 +198,7 @@ const keyEntry = defineModel('keyEntry');
                 :aria-label="t('settings.autoHideHeader')"
               />
             </div>
+            <FormulaOcrSettings />
           </div>
         </section>
         <section class="settings-section" aria-labelledby="settings-emphasis">

@@ -7,6 +7,8 @@ import ReadingTextLayer from './ReadingTextLayer.vue';
 import TopicSentenceText from '../translation/TopicSentenceText.vue';
 import TextReveal from '../../ui/motion/TextReveal.vue';
 import MathRegion from './MathRegion.vue';
+import FormulaOcrRegion from './FormulaOcrRegion.vue';
+import { formulaRegions } from './formula-regions.mjs';
 import {
   annotationLineRects,
   highlightLineRect,
@@ -95,6 +97,9 @@ function emphasizeTopic(block) {
     paragraphBoxes.value.find((box) => box.id === block.id)?.eligible !== false
   );
 }
+const recognizedFormulaRegions = computed(() =>
+  formulaRegions(p.value.blocks, props.translations && !!p.value.mathDocument),
+);
 const readingBlocks = computed(() =>
   p.value.blocks.filter((b) => !b.math && b.translation && b.translated),
 );
@@ -225,6 +230,25 @@ function fit(el, b) {
         :active="foreground && !!p.visible"
         @navigate="emit('navigate', $event)"
       />
+      <template v-if="interactionMode === 'reading' && foreground && p.visible">
+        <FormulaOcrRegion
+          v-for="region in recognizedFormulaRegions"
+          :key="
+            [
+              region.id,
+              region.translated,
+              region.box.x,
+              region.box.y,
+              region.box.width,
+              region.box.height,
+              p.mathDocument?.fingerprints?.[0],
+            ].join(':')
+          "
+          :box="region.box"
+          :zoom="zoom"
+          :source="() => mathSource(p.number, region.translated)"
+        />
+      </template>
       <div v-if="interactionMode === 'reading'" class="reading-paragraphs">
         <div
           v-for="b in readingBlocks"

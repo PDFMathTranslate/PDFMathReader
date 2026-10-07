@@ -16,7 +16,10 @@ export function createBackendRequests({ session, translationState, provider, act
     if (url === '/api/translate' || url.startsWith('/api/layout'))
       translationState.controllers.add(controller);
     try {
-      const response = await fetch(url, { ...requestOptions, signal: controller.signal });
+      const signal = requestOptions.signal
+        ? AbortSignal.any([controller.signal, requestOptions.signal])
+        : controller.signal;
+      const response = await fetch(url, { ...requestOptions, signal });
       actions.rootActions.noteTranslationService(response);
       if (historyRequest)
         actions.translationHistory.recordServiceOutcome(

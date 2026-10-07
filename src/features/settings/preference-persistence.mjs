@@ -32,6 +32,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       autoAlignDocumentWidth: preferences.autoAlignDocumentWidth,
     }))
       if (saved[key] !== undefined) target.value = saved[key];
+    if (typeof saved.formulaOcrEnabled === 'boolean')
+      preferences.formulaOcrEnabled.value = saved.formulaOcrEnabled;
     if (saved.engine) preferences.engine.value = saved.engine;
     if (saved.translationMode) preferences.translationMode.value = saved.translationMode;
     if (saved.direction) view.direction.value = saved.direction;
@@ -105,6 +107,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         ...(force ? { engine: preferences.engine.value } : {}),
         documentOpenMode: preferences.documentOpenMode.value,
         restoreDocuments: preferences.restoreDocuments.value,
+        formulaOcrEnabled: preferences.formulaOcrEnabled.value,
         defaultPageCropEnabled: preferences.defaultPageCropEnabled.value,
         defaultPageCropX: preferences.defaultPageCropX.value,
         defaultPageCropY: preferences.defaultPageCropY.value,

@@ -24,6 +24,7 @@
     "@firecrawl/pdf-inspector": "latest",
     "@thednp/dommatrix": "3.1.2",
     "express": "^5.1.0",
+    "onnxruntime-node": "1.22.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289"
   },

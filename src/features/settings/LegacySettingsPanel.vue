@@ -11,6 +11,7 @@ import {
   AppSecureField,
 } from '../../ui/controls.mjs';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
+import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import AboutAcknowledgements from './AboutAcknowledgements.vue';
 import { defineAsyncComponent } from 'vue';
 const AdvancedSettings = defineAsyncComponent(() => import('./AdvancedSettings.vue'));
@@ -394,6 +395,7 @@ const reducePadding = defineModel('reducePadding');
             :aria-label="t('settings.autoHideHeader')"
           />
         </div>
+        <FormulaOcrSettings />
       </section>
       <section class="settings-section">
         <div class="setting-row" data-setting="reduce-resource-usage">

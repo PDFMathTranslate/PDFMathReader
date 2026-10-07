@@ -95,7 +95,7 @@ const paths = await packager({
   arch,
   out: test ? '/tmp/pdfmathreader-slim-test-build' : resolve(root, 'release'),
   overwrite: true,
-  asar: { unpack: '**/*.node' },
+  asar: { unpack: '**/*.node', unpackDir: '**/onnxruntime-node/bin' },
   ignore: [
     /^\/release(?:\/|$)/,
     /^\/\.cache(?:\/|$)/,

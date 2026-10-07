@@ -322,6 +322,47 @@ def main(capture_only=False):
                 high_level.Document = original_document
 
         high_level.translate_stream = timed_stream
+        # Retain the layout detector's explicit formula boxes. Protected table
+        # placeholders must not be mistaken for formula paragraphs.
+        from pdf2zh.doclayout import OnnxModel
+
+        original_predict = OnnxModel.predict
+
+        def formula_predict(model, image, *args, **kwargs):
+            results = original_predict(model, image, *args, **kwargs)
+            for result in results:
+                for detected in result.boxes:
+                    label = result.names[int(detected.cls)]
+                    if label not in ("isolate_formula", "formula", "equation"):
+                        continue
+                    x0, y0, x1, y1 = map(float, detected.xyxy.squeeze())
+                    sx = source_page.rect.width / image.shape[1]
+                    sy = source_page.rect.height / image.shape[0]
+                    region = {
+                        "x": max(0, x0 * sx),
+                        "y": max(0, y0 * sy),
+                        "width": (min(source_page.rect.width, x1 * sx) - max(0, x0 * sx)),
+                        "height": (min(source_page.rect.height, y1 * sy) - max(0, y0 * sy)),
+                    }
+                    if region["width"] <= 0 or region["height"] <= 0:
+                        continue
+                    records.append(
+                        {
+                            "id": f"fast-formula-{selected}-{len(records)}",
+                            "page": selected,
+                            "text": "",
+                            "translation": "",
+                            "sourceBox": region,
+                            "translatedBox": dict(region),
+                            "fontSize": 12,
+                            "isFormula": True,
+                            "layoutLabel": label,
+                            "layoutSource": "pdf2zh.doclayout",
+                        }
+                    )
+            return results
+
+        OnnxModel.predict = formula_predict
         step("imports")
         original = TranslateConverter.receive_layout
 
@@ -593,14 +634,18 @@ def main(capture_only=False):
             def translate(self, docs):
                 for page in docs.page:
                     for para in page.pdf_paragraph:
-                        if para.box and (para.unicode or "").strip():
+                        if para.box and (
+                            (para.unicode or "").strip()
+                            or str(para.layout_label or "").lower()
+                            in ("formula", "isolate_formula", "equation")
+                        ):
                             pending.append(
                                 (
                                     para,
                                     {
                                         "id": f"precise-{selected}-{para.debug_id or len(pending)}",
                                         "page": selected,
-                                        "text": para.unicode,
+                                        "text": para.unicode or "",
                                         "sourceBox": box(values(para.box)),
                                         "fontSize": getattr(para.pdf_style, "font_size", None)
                                         or 12,
