@@ -1,4 +1,5 @@
 import { BrowserWindow as ElectronBrowserWindow, Menu as ElectronMenu, dialog } from 'electron';
+import { aboutPanelOptions } from '../services/about-panel.mjs';
 
 export function createApplicationMenu({
   app,
@@ -344,6 +345,7 @@ export function createApplicationMenu({
       preferences?.load?.().uiLanguage || 'system',
       app.getPreferredSystemLanguages()[0] || app.getLocale(),
     );
+    app.setAboutPanelOptions?.(aboutPanelOptions(app.getVersion?.() || '', locale));
     const localize = (items) =>
       items.map((item) => ({
         ...item,
