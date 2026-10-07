@@ -177,6 +177,14 @@
   grid-template-columns: minmax(0, 1fr) max-content;
 }
 
+/* Native lights start at x=18 and span 52px (three 12px lights, 20px apart).
+   Match the window inset, lights-to-button gap, and button-to-title gap. */
+.desktop[data-platform='darwin'] .toolbar {
+  --macos-titlebar-gap: 18px;
+  padding-left: calc(52px + 2 * var(--macos-titlebar-gap));
+  column-gap: var(--macos-titlebar-gap);
+}
+
 .desktop .toolbar > .icon-button:first-of-type {
   margin: 0;
 }

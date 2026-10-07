@@ -29,7 +29,10 @@ export function shortcutAction(platform, input) {
     if (key === 'pagedown' || (input.shift && ['arrowdown', 'arrowright'].includes(key)))
       return 'page-next';
   }
-  if (key === 'f11' && !input.meta && !input.control && !input.alt) return 'toggle-fullscreen';
+  if (platform !== 'darwin' && key === 'f11' && !input.meta && !input.control && !input.alt)
+    return 'toggle-fullscreen';
+  if (platform === 'darwin' && key === 'f' && input.meta && input.control && !input.alt && !input.shift)
+    return 'toggle-fullscreen';
   if (platform === 'darwin') {
     if (key === 'w' && input.control && !input.meta && !input.alt && !input.shift)
       return 'close-window';

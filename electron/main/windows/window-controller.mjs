@@ -58,9 +58,13 @@ export function createWindowController({
   };
   const updateWindowButtons = (target) => {
     if (process.platform !== 'darwin' || !target || target.isDestroyed()) return;
-    const visible = !target.isFullScreen() && !registry.stateFor(target)?.headerHidden;
+    const fullscreen = target.isFullScreen();
+    // Fullscreen's native titlebar reveals with the system menu bar, even
+    // while the reader hides its own toolbar. Do not hide its standard buttons.
+    const visible = fullscreen || !registry.stateFor(target)?.headerHidden;
     target.setWindowButtonVisibility(visible);
-    if (visible) target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);
+    if (visible && !fullscreen)
+      target.setWindowButtonPosition(windowChromeOptions('darwin').trafficLightPosition);
   };
   const hideNativeMenuBar = (target) => {
     if (!['win32', 'linux'].includes(process.platform) || !target || target.isDestroyed()) return;
