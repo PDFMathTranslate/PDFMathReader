@@ -10,7 +10,11 @@ export async function runDesktopSmoke({
   credentials,
 }) {
   const checks = await import('./smoke.mjs');
-  if (smoke === 'kernel-menu-mouse')
+  if (smoke === 'operation-performance')
+    await (
+      await import('./operation-performance-smoke.mjs')
+    ).verifyOperationPerformance(window, windows, createWindow);
+  else if (smoke === 'kernel-menu-mouse')
     await (
       await import('./kernel-menu-mouse-smoke.mjs')
     ).verifyKernelMenuMouse(window, createWindow);

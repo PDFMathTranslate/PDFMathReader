@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile, mkdtemp, rm, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { PDFDocument } from 'pdf-lib';
 import { translationAdvancedArgs } from './kernel-options.mjs';
 import { createTranslationCache } from '../translation/translation-cache.mjs';
 import { buildKernelServiceConfig } from './kernel-services.mjs';
@@ -9,6 +8,13 @@ import {
   isTranslationLanguageSupported,
   translationLanguageCode,
 } from '../../shared/translation/languages.mjs';
+
+let pdfLib;
+
+function loadPdfLib() {
+  pdfLib ??= import('pdf-lib');
+  return pdfLib;
+}
 
 export function createTranslationRunner({
   root,
@@ -319,6 +325,7 @@ export function createTranslationRunner({
         if (!output) throw Error('Kernel did not produce a translated PDF');
         const raw = await readFile(join(dir, output));
         await onOutput?.(raw, id);
+        const { PDFDocument } = await loadPdfLib();
         const document = await PDFDocument.load(raw);
         const index = document.getPageCount() === 1 ? 0 : page - 1;
         if (index >= document.getPageCount())

@@ -6,6 +6,7 @@ import {
   animateDocumentSidebar,
 } from './document-motion.mjs';
 import { loadPDFRuntime } from './pdf-runtime.mjs';
+import { scheduleAfterPaint, scheduleTaskCleanup } from './document-scheduling.mjs';
 
 export function createDocumentImport({
   session,
@@ -100,34 +101,40 @@ export function createDocumentImport({
     session.documentOpening.value = !!origin && !actions.rootActions.documentMotionReduced();
     motion.referenceReturn.value = null;
     motion.referenceNavigation++;
-    await actions.rootActions.flushAnnotations();
-    await actions.readingPosition.saveReadingView();
+    await Promise.all([
+      actions.rootActions.flushAnnotations(),
+      actions.readingPosition.saveReadingView(),
+    ]);
     annotations.annotations.value = [];
     shell.showAnnotations.value = true;
     annotations.annotationKey.value = '';
     shell.sidebarMode.value = 'thumbnails';
     shell.documentOutline.value = [];
     shell.selectedAnnotation.value = null;
-    await activity.performanceRecorder.start(file.size);
+    activity.performanceRecorder.start(file.size);
     const runtimeReady = ensurePDF();
     session.currentRecentId = null;
     session.restoringView.value = true;
     shell.selectedParagraph.value = null;
     actions.documentLifecycle.cancel();
     const token = session.epoch;
-    await actions.documentLifecycle.releaseDocument();
-    if (token !== session.epoch) return;
+    const release = actions.documentLifecycle.releaseDocument();
     actions.canvasRendering.resetBitmaps();
     renderState.renderMetrics.openedAt = performance.now();
     renderState.renderMetrics.firstPageMs = null;
     session.loading.value = true;
     feedback.error.value = '';
-    for (const p of session.pages.value) p.mathDocument?.loadingTask.destroy();
+    const previousTasks = session.pages.value
+      .map((page) => page.mathDocument?.loadingTask)
+      .filter(Boolean);
     session.pages.value = [];
     renderState.pageEls.clear();
     renderState.canvasEls.clear();
     renderState.thumbEls.clear();
+    void scheduleTaskCleanup(previousTasks, { afterCommit: nextTick }).catch(() => {});
     try {
+      await scheduleAfterPaint(() => {}, { afterCommit: nextTick });
+      if (token !== session.epoch) return;
       session.bytes = new Uint8Array(await file.arrayBuffer());
       let imported = { annotations: [], nativeRefs: [] };
       if (window.previewAnnotations?.prepare) {
@@ -137,8 +144,11 @@ export function createDocumentImport({
         session.bytes = await window.previewAnnotations.clean(session.bytes);
       activity.performanceRecorder.mark('fileRead');
       if (token !== session.epoch) return;
+      await release;
+      if (token !== session.epoch) return;
       await session.pdf?.loadingTask.destroy();
       if (token !== session.epoch) return;
+      activity.performanceRecorder.beginTransport?.();
       const registered = await actions.backendRequests.api('/api/documents', {
         method: 'POST',
         headers: {

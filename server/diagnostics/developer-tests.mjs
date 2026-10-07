@@ -1,4 +1,3 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createHash, randomBytes } from 'node:crypto';
 import { isTranslationLanguageSupported } from '../../shared/translation/languages.mjs';
 import { paragraphs } from '../documents/layout.mjs';
@@ -8,6 +7,12 @@ export const DEVELOPER_TEST_OUTPUT_LIMIT = 4_000;
 
 const ENGINES = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']);
 const IDENTIFIER = /^[a-z][a-z0-9_-]{0,100}$/i;
+let pdfLib;
+
+function loadPdfLib() {
+  pdfLib ??= import('pdf-lib');
+  return pdfLib;
+}
 
 export class DeveloperTestInputError extends Error {
   constructor(message) {
@@ -100,6 +105,7 @@ export function limitDeveloperTestOutput(value, maxLength = DEVELOPER_TEST_OUTPU
 }
 
 export async function createDeveloperSamplePDF({ marker = randomBytes(8).toString('hex') } = {}) {
+  const { PDFDocument, StandardFonts, rgb } = await loadPdfLib();
   const document = await PDFDocument.create();
   const font = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
@@ -145,8 +151,9 @@ function abortIfNeeded(signal) {
   if (signal?.aborted) throw signal.reason || Error('Developer test cancelled.');
 }
 
-function resultPDF(bytes) {
+async function resultPDF(bytes) {
   if (!bytes || typeof bytes.length !== 'number') throw Error('The kernel did not return a PDF.');
+  const { PDFDocument } = await loadPdfLib();
   return PDFDocument.load(bytes);
 }
 
@@ -186,6 +193,7 @@ export function createDeveloperTests({
 
   async function runInspectorKernel(bytes, request, signal) {
     abortIfNeeded(signal);
+    const { PDFDocument } = await loadPdfLib();
     const document = await PDFDocument.load(bytes),
       height = document.getPage(0).getHeight();
     const items = await layoutExtraction.extractPage(bytes, 1);

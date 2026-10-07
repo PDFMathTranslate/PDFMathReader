@@ -257,6 +257,7 @@ const {
       ></div>
       <ReaderToolbar
         :pages="pages"
+        :loading="loading"
         :immersive-header-hidden="immersiveHeaderHidden"
         :reveal-header="revealHeader"
         :header-double-click="headerDoubleClick"

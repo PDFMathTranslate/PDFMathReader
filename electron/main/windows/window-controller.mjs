@@ -1,7 +1,7 @@
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
-import { realpathSync, statSync } from 'node:fs';
+import { realpath, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 export function createWindowController({
@@ -73,9 +73,9 @@ export function createWindowController({
       await target.webContents.executeJavaScript('window.previewSaveReadingView?.()');
     } catch {}
   };
-  const documentIdentity = (path) => {
-    const canonical = realpathSync(path);
-    const info = statSync(canonical, { bigint: true });
+  const documentIdentity = async (path) => {
+    const canonical = await realpath(path);
+    const info = await stat(canonical, { bigint: true });
     return info.ino ? `${info.dev}:${info.ino}` : canonical;
   };
   const focusDocumentWindow = (target) => {
@@ -93,7 +93,7 @@ export function createWindowController({
     return focusDocumentWindow(target);
   };
   const deliverDocumentWindow = async (document, preferredWindow, restoreView, activate) => {
-    const identity = typeof document === 'string' ? documentIdentity(document) : null;
+    const identity = typeof document === 'string' ? await documentIdentity(document) : null;
     const existing = registry.findDocumentWindow(identity);
     if (existing) return activate ? focusDocumentWindow(existing) : existing;
     if (identity && registry.openingDocuments.has(identity)) {
@@ -103,7 +103,7 @@ export function createWindowController({
     const operation = (async () => {
       const candidates = [preferredWindow, registry.focusedWindow(), ...registry.windows.keys()];
       const target = candidates.find(registry.isBlankStartPage);
-      if (!target) return createWindow(document, restoreView, null, 'general', activate);
+      if (!target) return createWindow(document, restoreView, null, 'general', activate, identity);
       const state = registry.stateFor(target);
       state.documentIdentity = identity;
       state.restoreView = restoreView;
@@ -134,11 +134,14 @@ export function createWindowController({
     settingsOwner = null,
     settingsSection = 'general',
     activate = true,
+    knownIdentity,
   ) => {
+    const identity =
+      typeof document === 'string' ? (knownIdentity ?? (await documentIdentity(document))) : null;
     let target;
-    const backend = settingsOwner
+    const backendReady = settingsOwner
       ? registry.stateFor(settingsOwner).backend
-      : await startBackendService({
+      : startBackendService({
           ...getBackendOptions(),
           onCrash: (error) => {
             if (getRuntime().quitting) return;
@@ -200,6 +203,15 @@ export function createWindowController({
         sandbox: true,
       },
     });
+    // Creating the native window also starts Chromium. Overlap that work with
+    // the backend process instead of starting the renderer only after it is ready.
+    let backend;
+    try {
+      backend = await backendReady;
+    } catch (error) {
+      target.destroy();
+      throw error;
+    }
     if (ciLaunchCheck || smoke) {
       target.webContents.on('console-message', (details) => {
         if (details.level === 'error') console.error('Renderer error:', details.message);
@@ -218,7 +230,7 @@ export function createWindowController({
       backend,
       settingsOwner,
       restoreView,
-      documentIdentity: typeof document === 'string' ? documentIdentity(document) : null,
+      documentIdentity: identity,
       documents: document ? [document] : [],
       tickets: new Map(),
       annotationSources: new Map(),
@@ -410,6 +422,9 @@ export function createWindowController({
       event.preventDefault();
       closing = true;
       registry.stateFor(target).closing = true;
+      // A native close responds immediately; keep the renderer alive only long
+      // enough to save its reading position and persist the document session.
+      target.hide();
       void saveWindowReadingView(target)
         .then(() => getDocumentSession()?.close(target.id))
         .finally(() => {
@@ -430,12 +445,16 @@ export function createWindowController({
         application.quit();
       }
     });
-    await developerMonitor.sync(registry.stateFor(target));
-    await target.loadURL(
-      settingsOwner
-        ? backend.origin + '/?settingsWindow=1&section=' + encodeURIComponent(settingsSection)
-        : backend.origin,
-    );
+    const monitorReady = developerMonitor.sync(registry.stateFor(target));
+    // Monitoring is independent of navigation and must not hold up first paint.
+    await Promise.all([
+      monitorReady,
+      target.loadURL(
+        settingsOwner
+          ? backend.origin + '/?settingsWindow=1&section=' + encodeURIComponent(settingsSection)
+          : backend.origin,
+      ),
+    ]);
     if (settingsOwner) {
       const closeWithOwner = () => {
         if (!target.isDestroyed()) target.close();

@@ -36,6 +36,9 @@ export async function verifyLargeOpen(window, recents) {
     await wait(
       'window.previewRenderDiagnostics?.().totalPages===1000 && !window.previewRenderDiagnostics().opening && window.previewRenderDiagnostics().metrics.firstPageMs!==null',
     );
+    await wait(
+      '(async()=>Number.isFinite((await window.previewPerformanceReport()).firstScreenMs))()',
+    );
     const report = await evaluate('window.previewPerformanceReport()');
     assert.ok(await evaluate('document.querySelector(".page canvas")?.width>0'));
     console.log(

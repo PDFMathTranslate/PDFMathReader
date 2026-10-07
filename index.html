@@ -4,9 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PDFMathReader</title>
+    <style>
+      /* Paint a quiet shell while the platform adapter and Vue entry load. */
+      .startup-shell {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: #f7f7f9;
+        color: #777;
+      }
+      .startup-shell::after {
+        content: '';
+        width: 20px;
+        height: 20px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: startup-turn 0.8s linear infinite;
+      }
+      @keyframes startup-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        .startup-shell {
+          background: #252527;
+          color: #aaa;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .startup-shell::after {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app"><div class="startup-shell" role="status" aria-label="PDFMathReader"></div></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

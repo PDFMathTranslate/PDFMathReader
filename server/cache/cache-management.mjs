@@ -472,8 +472,8 @@ export function createCacheManager({
     });
   }
 
-  async function start() {
-    if (started) return stats();
+  async function start({ deferSweep = false } = {}) {
+    if (started) return deferSweep ? undefined : stats();
     await ensureDirectories();
     started = true;
     if (sweepIntervalMs > 0) {
@@ -482,6 +482,7 @@ export function createCacheManager({
       }, sweepIntervalMs);
       interval.unref?.();
     }
+    if (deferSweep) return;
     await sweep();
     return stats();
   }

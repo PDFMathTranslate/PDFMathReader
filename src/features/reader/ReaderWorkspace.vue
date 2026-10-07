@@ -12,6 +12,7 @@ defineProps([
   'resizeFit',
   'sidebar',
   'pages',
+  'loading',
   'restoringView',
   'sidebarKeyboard',
   'focusSidebarItem',
@@ -218,7 +219,15 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           immersiveIntent($event);
         "
       >
-        <div v-if="!pages.length" class="empty" :class="{ 'has-recents': recentDocuments.length }">
+        <div v-if="!pages.length && loading" class="document-loading" role="status">
+          <i class="status-dot" :class="{ busy: !reduceMotion }" aria-hidden="true"></i>
+          <span>{{ t('status.openingPDF') }}</span>
+        </div>
+        <div
+          v-else-if="!pages.length"
+          class="empty"
+          :class="{ 'has-recents': recentDocuments.length }"
+        >
           <div class="document-symbol">
             <span
               class="system-icon"

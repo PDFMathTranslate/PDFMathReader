@@ -7,6 +7,7 @@ import {
 } from './document-motion.mjs';
 import { nextTick } from 'vue';
 import { recentSurface } from '../library/useRecentDocuments.mjs';
+import { scheduleTaskCleanup } from './document-scheduling.mjs';
 
 export function createDocumentLifecycle({
   session,
@@ -21,6 +22,8 @@ export function createDocumentLifecycle({
   shell,
   actions,
 }) {
+  let pendingRelease = Promise.resolve();
+
   async function receiveDocuments() {
     if (session.receivingDocuments) return;
     session.receivingDocuments = true;
@@ -85,14 +88,17 @@ export function createDocumentLifecycle({
     }
   }
 
-  async function releaseDocument() {
+  function releaseDocument() {
     const id = session.documentId;
     session.documentId = undefined;
     translationState.forceRetranslation = false;
-    if (id)
-      try {
-        await actions.backendRequests.api('/api/documents/' + id, { method: 'DELETE' });
-      } catch {}
+    if (!id) return pendingRelease;
+    const release = pendingRelease
+      .catch(() => {})
+      .then(() => actions.backendRequests.api('/api/documents/' + id, { method: 'DELETE' }))
+      .catch(() => {});
+    pendingRelease = release;
+    return release;
   }
 
   async function closeDocument(closeStartPage = false) {
@@ -121,6 +127,13 @@ export function createDocumentLifecycle({
           signal: controller.signal,
         })
       : Promise.resolve();
+    let pageMotion = Promise.resolve();
+    const releaseMotion = () =>
+      Promise.allSettled([sidebarMotion, pageMotion]).then(() => {
+        releaseDocumentCapture(capture);
+        if (session.documentMotionController === controller)
+          session.documentMotionController = null;
+      });
     // Keep a frozen page above the start page while the document is released.
     if (capture) document.body.append(capture.element);
     try {
@@ -134,21 +147,17 @@ export function createDocumentLifecycle({
           .scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
         const visibility = target.style.visibility;
         target.style.visibility = 'hidden';
-        try {
-          await animateDocumentPage(capture, capture.rect, target.getBoundingClientRect(), {
-            thumbnail: target.getAttribute('src'),
-            signal: controller.signal,
-          });
-        } finally {
+        pageMotion = animateDocumentPage(capture, capture.rect, target.getBoundingClientRect(), {
+          thumbnail: target.getAttribute('src'),
+          signal: controller.signal,
+        }).finally(() => {
           target.style.visibility = visibility;
-        }
+        });
       }
     } finally {
-      await sidebarMotion;
-      releaseDocumentCapture(capture);
-      if (session.documentMotionController === controller) session.documentMotionController = null;
       session.documentClosing.value = false;
       session.closingDocument = false;
+      void releaseMotion();
     }
   }
 
@@ -156,23 +165,28 @@ export function createDocumentLifecycle({
     motion.referenceReturn.value = null;
     motion.referenceNavigation++;
     const documentToken = session.epoch;
-    await actions.rootActions.flushAnnotations();
-    await actions.readingPosition.saveReadingView();
+    await Promise.all([
+      actions.rootActions.flushAnnotations(),
+      actions.readingPosition.saveReadingView(),
+    ]);
+    if (documentToken !== session.epoch) return;
     annotations.annotations.value = [];
     shell.showAnnotations.value = true;
     annotations.annotationKey.value = '';
     shell.sidebarMode.value = 'thumbnails';
     shell.documentOutline.value = [];
     shell.selectedAnnotation.value = null;
-    await activity.performanceRecorder.finish();
-    await window.previewDocuments?.closed();
+    void activity.performanceRecorder.finish();
+    let closed = Promise.resolve();
+    try {
+      closed = Promise.resolve(window.previewDocuments?.closed()).catch(() => {});
+    } catch {}
+    await closed;
     if (documentToken !== session.epoch) return;
     session.currentRecentId = null;
     cancel();
-    const closingToken = session.epoch;
     actions.rootActions.closeSearch();
-    await releaseDocument();
-    if (closingToken !== session.epoch) return;
+    void releaseDocument();
     clearTimeout(translationState.timer);
     clearTimeout(motion.navigatorTimer);
     cancelAnimationFrame(motion.fitFrame);
@@ -205,17 +219,18 @@ export function createDocumentLifecycle({
     motion.navigatorVisible.value = false;
     if (view.reader.value) view.reader.value.scrollTop = view.reader.value.scrollLeft = 0;
     if (shell.fileInput.value) shell.fileInput.value.value = '';
+    void scheduleTaskCleanup(tasks, { afterCommit: nextTick }).catch(() => {});
     const token = session.epoch;
-    await Promise.allSettled([...tasks].map((task) => task.destroy()));
-    if (token !== session.epoch) return;
     if (window.previewRecents) {
-      try {
-        const entries = await window.previewRecents.list();
-        if (token === session.epoch) {
-          library.recentDocuments.value = entries;
-          actions.rootActions.scheduleRecentPreviews();
-        }
-      } catch {}
+      void Promise.resolve()
+        .then(() => window.previewRecents.list())
+        .then((entries) => {
+          if (token === session.epoch) {
+            library.recentDocuments.value = entries;
+            actions.rootActions.scheduleRecentPreviews();
+          }
+        })
+        .catch(() => {});
     }
   }
   return { receiveDocuments, cancel, releaseDocument, closeDocument, closeDocumentNow };

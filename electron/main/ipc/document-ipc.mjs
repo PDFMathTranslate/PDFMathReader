@@ -54,14 +54,18 @@ export function registerDocumentIPC({
   });
   handle('documents:closed', (event) => {
     const target = trustedWindow(event);
-    registry.stateFor(target).documentIdentity = null;
+    const state = registry.stateFor(target);
+    state.documentIdentity = null;
+    // The start page is reusable as soon as the document closes. Diagnostic
+    // snapshots may still finish asynchronously and do not own this state.
+    state.performance.hasDocument = false;
     return documentSession.close(target.id);
   });
   handle('documents:claim', async (event, path) => {
     const target = trustedWindow(event);
     if (!path) return true;
     await validateSystemPDF(path);
-    const identity = documentIdentity(path);
+    const identity = await documentIdentity(path);
     const existing =
       registry.findDocumentWindow(identity) ||
       (registry.openingDocuments.has(identity)

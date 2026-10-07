@@ -145,7 +145,7 @@ export async function startServer({
       pageLimiter.snapshot().tasks.length > 0 ||
       (engines.tasks?.().length || 0) > 0,
   });
-  await cacheManager.start();
+  await cacheManager.start({ deferSweep: true });
   const developerTests = createDeveloperTests({
     engines,
     layoutExtraction,
@@ -270,9 +270,12 @@ export async function startServer({
     listener.on('error', reject);
   });
   origin = `http://127.0.0.1:${server.address().port}`;
+  const cacheReady = cacheManager.sweep();
+  cacheReady.catch(() => {});
   let closed = false;
   return {
     origin,
+    ready: cacheReady,
     documentStats: documents.stats,
     close: async () => {
       if (closed) return;
@@ -285,7 +288,14 @@ export async function startServer({
       await localTranslator.close?.();
       await new Promise((r) => server.close(r));
       await vite?.close();
+      let cacheError;
+      try {
+        await cacheReady;
+      } catch (error) {
+        cacheError = error;
+      }
       await cacheManager.close();
+      if (cacheError) throw cacheError;
     },
   };
 }

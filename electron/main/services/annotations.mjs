@@ -1,11 +1,13 @@
 /* eslint-disable no-control-regex */
 
-import { editPDFPages } from './page-edits.mjs';
 import { transformPageAnnotations } from './page-edit-annotations.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { mkdir, open, readFile, unlink, stat } from 'node:fs/promises';
-import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib';
+let PDFDict, PDFDocument, PDFHexString, PDFName, PDFString;
+async function loadPDFEditing() {
+  ({ PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } = await import('pdf-lib'));
+}
 import { replaceFile } from '../../../runtime/node/atomic-file.mjs';
 
 const MAX_KEY_LENGTH = 1024;
@@ -305,6 +307,7 @@ export async function embedAnnotations(bytes, annotations, nativeRefs = []) {
     invalid('Invalid annotation native references.');
   const input = asBytes(bytes);
   const normalized = validateAnnotations(annotations);
+  await loadPDFEditing();
   const pdf = await PDFDocument.load(input, { updateMetadata: false });
   return embedAnnotationDocument(pdf, normalized, nativeRefs, input);
 }
@@ -312,6 +315,7 @@ export async function embedAnnotations(bytes, annotations, nativeRefs = []) {
 // Reuse an already parsed document during import. Preserve the original bytes
 // when there is nothing to replace, including unrelated links and form widgets.
 export async function embedAnnotationDocument(pdf, annotations, nativeRefs = [], originalBytes) {
+  await loadPDFEditing();
   if (
     !Array.isArray(nativeRefs) ||
     nativeRefs.some((ref) => typeof ref !== 'string' || !/^\d+ \d+ R$/.test(ref))
@@ -497,6 +501,7 @@ export async function createAnnotationStore(root) {
           ? await readFile(source.path)
           : (await readIfPresent(cachePath(key))) || source.bytes;
       if (!original) throw Error('No PDF source available for editing.');
+      const { editPDFPages } = await import('./page-edits.mjs');
       const result = await editPDFPages(original, { action: value.action, page: value.page });
       const updated = transformPageAnnotations(items, result.transforms);
       await performSave(key, updated, source, [...nativeRefs], result.bytes);

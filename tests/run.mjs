@@ -13,8 +13,14 @@ async function testFiles(directory) {
   return files.sort();
 }
 
-const files = await testFiles(fileURLToPath(new URL('./server/', import.meta.url)));
-if (!files.length) throw Error('No server regression tests found');
+const files = (
+  await Promise.all(
+    ['server', 'reader'].map((directory) =>
+      testFiles(fileURLToPath(new URL(`./${directory}/`, import.meta.url))),
+    ),
+  )
+).flat();
+if (!files.length) throw Error('No regression tests found');
 const child = spawn(process.execPath, ['--test', ...files], { stdio: 'inherit' });
 child.on('error', (error) => {
   console.error(error);

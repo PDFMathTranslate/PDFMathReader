@@ -68,6 +68,29 @@ export function releaseDocumentCapture(capture) {
   element.remove();
 }
 
+// Some inactive documents keep WAAPI's finished promise pending even after
+// cancellation. Decorative captures must eventually release their canvases
+// without keeping document lifecycle state locked.
+export function settleAnimation(animation, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    let settled = false,
+      timer;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    Promise.resolve(animation.finished).then(finish, finish);
+    timer = setTimeout(() => {
+      try {
+        animation.cancel();
+      } catch {}
+      finish();
+    }, timeoutMs);
+  });
+}
+
 export async function animateDocumentPage(
   capture,
   from,
@@ -112,7 +135,7 @@ export async function animateDocumentPage(
     const abort = () => animation.cancel();
     signal?.addEventListener('abort', abort, { once: true });
     try {
-      await animation.finished.catch(() => {});
+      await settleAnimation(animation);
     } finally {
       signal?.removeEventListener('abort', abort);
     }
@@ -136,20 +159,21 @@ export async function animateDocumentSidebar(sidebar, { opening = false, signal 
   element.style.height = rect.height + 'px';
   element.style.zIndex = '3';
   (app || document.body).append(element);
-  const hidden = { transform: `translateX(${-rect.width}px)`, opacity: 0 };
-  const visible = { transform: 'translateX(0)', opacity: 1 };
-  const animation = element.animate(opening ? [hidden, visible] : [visible, hidden], {
-    duration: opening ? 360 : 300,
-    easing: 'cubic-bezier(.22,.75,.2,1)',
-    fill: 'both',
-  });
-  const abort = () => animation.cancel();
-  signal?.addEventListener('abort', abort, { once: true });
+  let animation;
   try {
-    await animation.finished.catch(() => {});
-  } finally {
+    const hidden = { transform: `translateX(${-rect.width}px)`, opacity: 0 };
+    const visible = { transform: 'translateX(0)', opacity: 1 };
+    animation = element.animate(opening ? [hidden, visible] : [visible, hidden], {
+      duration: opening ? 360 : 300,
+      easing: 'cubic-bezier(.22,.75,.2,1)',
+      fill: 'both',
+    });
+    const abort = () => animation.cancel();
+    signal?.addEventListener('abort', abort, { once: true });
+    await settleAnimation(animation);
     signal?.removeEventListener('abort', abort);
-    animation.cancel();
+  } finally {
+    animation?.cancel();
     releaseDocumentCapture(capture);
   }
 }

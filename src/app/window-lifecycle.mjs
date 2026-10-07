@@ -17,38 +17,49 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     stopPreferences,
     stopAppearance,
     stopDocuments;
+  let disposed = false;
   onMounted(async () => {
     stopRendererFrameMetrics = startRendererFrameMetrics();
     document.addEventListener('visibilitychange', bindings.visibility);
+    // Issue independent IPC/config reads together. Apply preferences before
+    // receiving documents so restored views and translation defaults stay valid.
+    const initialState = Promise.all([
+      window.previewActivity?.current(),
+      !bindings.settingsWindowMode ? window.previewRecents?.list() : undefined,
+      window.previewWindow?.fullscreen(),
+      ['win32', 'linux'].includes(platform) ? window.previewWindow?.maximized() : undefined,
+      window.previewPreferences?.load(),
+      bindings.desktopServiceCredentials?.load?.().catch((loadError) => {
+        if (loadError?.message) bindings.error.value = loadError.message;
+        return undefined;
+      }),
+      window.previewAppearance?.current(),
+      bindings.api('/api/config'),
+    ]);
+    // Attach a rejection handler immediately while event subscriptions are set up.
+    void initialState.catch(() => {});
+    let activityChanges = 0,
+      preferenceChanges = 0,
+      fullscreenChanges = 0,
+      maximizedChanges = 0;
     if (window.previewActivity) {
-      let activityChanges = 0;
       stopActivity = window.previewActivity.onChange((value) => {
         activityChanges++;
         bindings.activityActive.value = value;
         bindings.visibility();
       });
-      const initialActivity = await window.previewActivity.current();
-      if (!activityChanges) bindings.activityActive.value = initialActivity;
-      bindings.foreground.value =
-        !bindings.reduceResourceUsage.value ||
-        (bindings.activityActive.value && !bindings.pageHidden());
-      window.previewActivityActive = bindings.foreground.value;
-    }
-    if (!bindings.settingsWindowMode && window.previewRecents) {
-      bindings.recentDocuments.value = await window.previewRecents.list();
-      bindings.scheduleRecentPreviews();
     }
     if (window.previewWindow) {
-      stopFullscreen = window.previewWindow.onFullscreen(
-        (value) => (bindings.fullscreen.value = value),
-      );
+      stopFullscreen = window.previewWindow.onFullscreen((value) => {
+        fullscreenChanges++;
+        bindings.fullscreen.value = value;
+      });
       if (['win32', 'linux'].includes(platform)) {
-        stopMaximized = window.previewWindow.onMaximized(
-          (value) => (bindings.maximized.value = value),
-        );
-        bindings.maximized.value = await window.previewWindow.maximized();
+        stopMaximized = window.previewWindow.onMaximized((value) => {
+          maximizedChanges++;
+          bindings.maximized.value = value;
+        });
       }
-      bindings.fullscreen.value = await window.previewWindow.fullscreen();
     }
     bindings.reader.value?.addEventListener('wheel', bindings.pinchWheel, { passive: false });
     document.addEventListener('keydown', bindings.keyboard);
@@ -56,21 +67,11 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     document.addEventListener('focusin', bindings.outsidePopover);
     window.addEventListener('blur', bindings.dismissPopovers);
     stopActions = window.previewActions?.onAction(bindings.readerAction);
-    if (window.previewPreferences) {
-      const saved = await window.previewPreferences.load();
-      bindings.engine.value = saved.engine || 'pdf_inspector';
-      bindings.applySavedSettings(saved);
-      stopPreferences = window.previewPreferences.onChange?.(bindings.applySavedSettings);
-      bindings.applyAppearance(saved);
-      bindings.direction.value = saved.direction || 'vertical';
-      bindings.columns.value = saved.columns || 1;
-      bindings.fitMode.value = saved.fit;
-      bindings.translationMode.value = saved.translationMode || 'reading';
-      if (saved.fit === 'manual') {
-        bindings.zoom.value = saved.zoom;
-        bindings.zoomEntry.value = formatPercentValue(bindings.zoom.value);
-      }
-    }
+    if (window.previewPreferences)
+      stopPreferences = window.previewPreferences.onChange?.((saved) => {
+        preferenceChanges++;
+        bindings.applySavedSettings(saved);
+      });
     stopSettingsCredentials = window.previewCredentials?.onChange?.(() => {
       for (const kernel of ['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise'])
         bindings.resetServiceHistory(kernel, 'openai');
@@ -87,13 +88,44 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
         })
         .catch(() => {});
     });
-    if (typeof bindings.desktopServiceCredentials?.load === 'function') {
-      try {
-        bindings.serviceCredentialValues.value = await bindings.desktopServiceCredentials.load();
-      } catch (loadError) {
-        if (loadError?.message) bindings.error.value = loadError.message;
+    const [
+      initialActivity,
+      recentDocuments,
+      fullscreen,
+      maximized,
+      saved,
+      serviceCredentialValues,
+      appearance,
+      config,
+    ] = await initialState;
+    if (disposed) return;
+    if (window.previewActivity) {
+      if (!activityChanges) bindings.activityActive.value = initialActivity;
+      bindings.foreground.value =
+        !bindings.reduceResourceUsage.value ||
+        (bindings.activityActive.value && !bindings.pageHidden());
+      window.previewActivityActive = bindings.foreground.value;
+    }
+    if (recentDocuments) bindings.recentDocuments.value = recentDocuments;
+    if (fullscreen !== undefined && !fullscreenChanges) bindings.fullscreen.value = fullscreen;
+    if (maximized !== undefined && !maximizedChanges) bindings.maximized.value = maximized;
+    if (saved && !preferenceChanges) {
+      bindings.engine.value = saved.engine || 'pdf_inspector';
+      bindings.applySavedSettings(saved);
+      bindings.applyAppearance(saved);
+      bindings.direction.value = saved.direction || 'vertical';
+      bindings.columns.value = saved.columns || 1;
+      bindings.fitMode.value = saved.fit;
+      bindings.translationMode.value = saved.translationMode || 'reading';
+      if (saved.fit === 'manual') {
+        bindings.zoom.value = saved.zoom;
+        bindings.zoomEntry.value = formatPercentValue(bindings.zoom.value);
       }
     }
+    if (serviceCredentialValues) bindings.serviceCredentialValues.value = serviceCredentialValues;
+    if (appearance) bindings.applyAppearance(appearance);
+    bindings.applyConfig(config);
+    bindings.model.value = config.model;
     await nextTick();
     bindings.syncScrubInputs();
     bindings.preferences.loadingPreferences = false;
@@ -102,13 +134,10 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     if (bindings.reader.value)
       resizeObserver.observe(bindings.reader.value, { box: 'content-box' });
     if (window.previewAppearance) {
-      bindings.applyAppearance(await window.previewAppearance.current());
       stopAppearance = window.previewAppearance.onChange(bindings.applyAppearance);
     }
     const engineReady = bindings.checkEngine().then(() => bindings.settle());
-    const c = await bindings.api('/api/config');
-    bindings.applyConfig(c);
-    bindings.model.value = c.model;
+    bindings.visibility();
     if (!bindings.settingsWindowMode && window.previewDocuments) {
       stopDocuments = window.previewDocuments.onAvailable(bindings.receiveDocuments);
       await bindings.receiveDocuments();
@@ -132,6 +161,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     window.previewReady = true;
   });
   onBeforeUnmount(() => {
+    disposed = true;
     stopRendererFrameMetrics?.();
     clearTimeout(lifecycle.kernelIgnoreTimer);
     stopSettingsSection?.();

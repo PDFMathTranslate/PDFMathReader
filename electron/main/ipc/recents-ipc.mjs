@@ -216,7 +216,7 @@ export function registerRecentsIPC({
       if (action === 'open') {
         const path = recents.path(value);
         if (!path) throw Error('Document no longer in history.');
-        const identity = documentIdentity(path);
+        const identity = await documentIdentity(path);
         const existing =
           registry.findDocumentWindow(identity) ||
           (registry.openingDocuments.has(identity)

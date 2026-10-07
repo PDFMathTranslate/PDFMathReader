@@ -99,7 +99,7 @@ export async function stageApplication({
     ? Object.keys(metadata.dependencies)
     : phase === 'dependencies'
       ? ['express', 'pdf-lib', '@firecrawl/pdf-inspector']
-      : ['@firecrawl/pdf-inspector'];
+      : ['@firecrawl/pdf-inspector', 'pdf-lib'];
   if (test && !names.includes('pdf-lib')) names.push('pdf-lib');
   const fallback = !hasNativeInspector(platform, arch);
   if (fallback && !names.includes('pdfjs-dist')) names.push('pdfjs-dist');
@@ -168,6 +168,9 @@ export async function stageApplication({
       mainFields: ['module', 'main'],
       external: [
         'electron',
+        // Keep PDF editing outside the startup bundles so dynamic imports also
+        // avoid parsing the library when only the Start Page is requested.
+        'pdf-lib',
         '@firecrawl/pdf-inspector',
         '@firecrawl/pdf-inspector/*',
         'pdfjs-dist/*',

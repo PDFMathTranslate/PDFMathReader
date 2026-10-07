@@ -4,143 +4,215 @@ export function createPerformanceRecorder({
   fetchStats = async () => null,
   now = () => performance.now(),
 } = {}) {
-  let report = null,
-    start = 0,
-    scrollUntil = 0,
+  let current = null,
     timer,
     observer,
-    polling = false,
     generation = 0,
-    transportBase = null,
+    resetInitialization = Promise.resolve(),
     active = true;
-  const marks = {};
   try {
     observer = new PerformanceObserver((list) => {
-      if (!report) return;
+      const state = current;
+      if (!state || state.closed) return;
       for (const entry of list.getEntries())
         if (
-          scrollUntil > 0 &&
-          entry.startTime + entry.duration >= start &&
-          entry.startTime <= scrollUntil &&
-          entry.startTime + entry.duration >= scrollUntil - 1000
+          state.scrollUntil > 0 &&
+          entry.startTime + entry.duration >= state.start &&
+          entry.startTime <= state.scrollUntil &&
+          entry.startTime + entry.duration >= state.scrollUntil - 1000
         ) {
-          const tasks = report.scrollLongTasks;
+          const tasks = state.report.scrollLongTasks;
           tasks.count++;
           tasks.totalMs += entry.duration;
           tasks.maxMs = Math.max(tasks.maxMs, entry.duration);
           if (tasks.samples.length < 40)
             tasks.samples.push({
-              startMs: Math.max(0, entry.startTime - start),
+              startMs: Math.max(0, entry.startTime - state.start),
               durationMs: entry.duration,
             });
         }
     });
     observer.observe({ type: 'longtask', buffered: false });
   } catch {}
-  async function sample() {
-    if (polling || !report) return;
-    polling = true;
-    const token = generation;
-    try {
-      const memory = await native?.sample();
-      if (token === generation && memory) report.memory = memory;
-    } catch {
-    } finally {
-      polling = false;
-    }
+  function owns(state) {
+    return !!state && state === current && state.token === generation;
   }
-  async function snapshot() {
-    if (!report) return null;
-    await sample();
+  function isCurrent(state) {
+    return owns(state) && !state.closed;
+  }
+  function sample(state = current) {
+    if (!state || !isCurrent(state)) return Promise.resolve();
+    if (state.samplePromise) return state.samplePromise;
+    state.samplePromise = (async () => {
+      try {
+        const memory = await native?.sample();
+        if (isCurrent(state) && memory) state.report.memory = memory;
+      } catch {}
+    })().finally(() => {
+      state.samplePromise = null;
+    });
+    return state.samplePromise;
+  }
+  async function snapshot(state = current) {
+    if (!state) return null;
+    if (state.closed) return structuredClone(state.report);
+    await state.baselineReady;
+    await sample(state);
+    if (!isCurrent(state)) return structuredClone(state.report);
     try {
       const total = await fetchStats();
-      if (total) {
-        report.transport = {
+      if (isCurrent(state) && total) {
+        const scoped = state.transportBaselineValid && state.transportBase;
+        state.report.transport = {
           ...total,
-          scope: 'since-document-open',
+          scope: scoped ? 'since-document-open' : 'window-session',
           timingScope: 'window-session',
         };
-        for (const key of ['requests', 'requestBodyBytes', 'responseBodyBytes', 'uploadBytes'])
-          report.transport[key] = Math.max(0, total[key] - (transportBase?.[key] || 0));
+        if (scoped)
+          for (const key of ['requests', 'requestBodyBytes', 'responseBodyBytes', 'uploadBytes'])
+            state.report.transport[key] = Math.max(
+              0,
+              total[key] - (state.transportBase?.[key] || 0),
+            );
       }
     } catch {}
-    return structuredClone(report);
+    return structuredClone(state.report);
   }
   function schedule() {
     clearInterval(timer);
-    if (active && report) timer = setInterval(sample, 5000);
+    if (active && current) timer = setInterval(() => sample(), 5000);
+  }
+  function initialize(state) {
+    const reset = resetInitialization
+      .catch(() => {})
+      .then(async () => {
+        if (!isCurrent(state)) return;
+        try {
+          await native?.reset?.();
+        } catch {}
+      });
+    resetInitialization = reset.catch(() => {});
+    const baseline = Promise.resolve()
+      .then(async () => {
+        try {
+          const value = await fetchStats();
+          if (isCurrent(state)) {
+            state.transportBase = value;
+            state.transportBaselineValid = !!value && !state.transportBaselineMissed;
+          }
+        } catch {
+          if (isCurrent(state)) {
+            state.transportBase = null;
+            state.transportBaselineValid = false;
+          }
+        } finally {
+          if (isCurrent(state)) state.transportBaselineReady = true;
+        }
+      })
+      .catch(() => {});
+    state.baselineReady = Promise.all([reset, baseline]).catch(() => {});
+    void state.baselineReady.then(() => {
+      if (isCurrent(state)) void sample(state);
+    });
   }
   return {
     setActive(value) {
       active = !!value;
       schedule();
     },
-    async start(bytes) {
-      generation++;
+    start(bytes) {
+      const token = ++generation;
       clearInterval(timer);
-      start = now();
-      scrollUntil = 0;
-      report = {
-        schemaVersion: 1,
-        openedAt: new Date().toISOString(),
-        fileBytes: bytes,
-        pageCount: 0,
-        firstScreenMs: null,
-        stages: {},
-        scrollLongTasks: { count: 0, totalMs: 0, maxMs: 0, samples: [] },
-        memory: null,
-        transport: null,
-        resize: { count: 0, layoutCommits: 0, snapshotTransitions: 0 },
-      };
-      for (const key of Object.keys(marks)) delete marks[key];
+      const state = (current = {
+        token,
+        start: now(),
+        scrollUntil: 0,
+        samplePromise: null,
+        baselineReady: Promise.resolve(),
+        transportBase: null,
+        transportBaselineReady: false,
+        transportBaselineValid: false,
+        transportStarted: false,
+        transportBaselineMissed: false,
+        closed: false,
+        finishPromise: null,
+        marks: {},
+        report: {
+          schemaVersion: 1,
+          openedAt: new Date().toISOString(),
+          fileBytes: bytes,
+          pageCount: 0,
+          firstScreenMs: null,
+          stages: {},
+          scrollLongTasks: { count: 0, totalMs: 0, maxMs: 0, samples: [] },
+          memory: null,
+          transport: null,
+          resize: { count: 0, layoutCommits: 0, snapshotTransitions: 0 },
+        },
+      });
       schedule();
-      try {
-        await native?.reset?.();
-        transportBase = await fetchStats();
-      } catch {
-        transportBase = null;
+      initialize(state);
+    },
+    beginTransport() {
+      if (!isCurrent(current)) return;
+      current.transportStarted = true;
+      if (!current.transportBaselineReady) {
+        current.transportBaselineMissed = true;
+        current.transportBaselineValid = false;
       }
-      void sample();
     },
     mark(name) {
-      if (report) report.stages[name] = now() - start;
+      if (isCurrent(current)) current.report.stages[name] = now() - current.start;
     },
     pages(count) {
-      if (report) report.pageCount = count;
+      if (isCurrent(current)) current.report.pageCount = count;
     },
     painted() {
-      const token = generation;
-      if (!report || report.firstScreenMs !== null || marks.paint) return;
-      marks.paint = true;
+      const state = current;
+      if (!isCurrent(state) || state.report.firstScreenMs !== null || state.marks.paint) return;
+      state.marks.paint = true;
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
-          if (token === generation && report) {
-            report.firstScreenMs = now() - start;
-            void snapshot()
-              .then((value) => native?.save(value))
+          if (isCurrent(state)) {
+            state.report.firstScreenMs = now() - state.start;
+            void snapshot(state)
+              .then((value) => {
+                if (value && isCurrent(state)) return native?.save(value);
+                return undefined;
+              })
               .catch(() => {});
           }
         }),
       );
     },
     scroll() {
-      scrollUntil = now() + 1000;
+      if (isCurrent(current)) current.scrollUntil = now() + 1000;
     },
     resize(name) {
-      if (report && name in report.resize) report.resize[name]++;
+      if (isCurrent(current) && name in current.report.resize) current.report.resize[name]++;
     },
     snapshot,
     async finish() {
-      const result = await snapshot();
+      const state = current,
+        token = state?.token;
+      if (!state) return null;
+      if (state.finishPromise) return state.finishPromise;
+      // Freeze before detached baseline/stats work can outlive this document.
+      state.closed = true;
       clearInterval(timer);
-      if (result)
+      const result = structuredClone(state.report);
+      let saved = Promise.resolve(),
+        ended = Promise.resolve();
+      if (owns(state) && token === generation) {
         try {
-          await native?.save(result);
+          saved = Promise.resolve(native?.save?.(result)).catch(() => {});
         } catch {}
-      try {
-        await native?.end?.();
-      } catch {}
-      return result;
+        try {
+          ended = Promise.resolve(native?.end?.()).catch(() => {});
+        } catch {}
+      }
+      state.finishPromise = Promise.all([saved, ended]).then(() => result);
+      return state.finishPromise;
     },
     destroy() {
       clearInterval(timer);

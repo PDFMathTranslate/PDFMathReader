@@ -1,6 +1,16 @@
 /* Extracted from src/style.css: @layer reader / feedback. */
 /* Empty and feedback states --------------------------------------------- */
 
+.document-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .empty {
   display: grid;
   align-content: center;

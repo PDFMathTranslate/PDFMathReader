@@ -7,6 +7,7 @@ import {
   motionCanvasSize,
   captureDocumentPage,
   releaseDocumentCapture,
+  settleAnimation,
   animateDocumentPage,
 } from '../../src/features/reader/document-motion.mjs';
 void (async () => {
@@ -29,6 +30,7 @@ void (async () => {
       motionCanvasSize,
       captureDocumentPage,
       releaseDocumentCapture,
+      settleAnimation,
       animateDocumentPage,
     ]
       .map((fn) => fn.toString())

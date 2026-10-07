@@ -32,7 +32,10 @@ import {
   validatePerformanceReport,
   writePerformanceReports,
 } from './main/services/performance-tracker.mjs';
-import { importPDFAnnotations } from './main/services/annotation-import.mjs';
+async function importPDFAnnotations(...args) {
+  const module = await import('./main/services/annotation-import.mjs');
+  return module.importPDFAnnotations(...args);
+}
 import { createAnnotationStore, stripManagedAnnotations } from './main/services/annotations.mjs';
 import { resolveUILanguage } from '../shared/i18n/ui-language.mjs';
 import { dependencyProjects } from '../shared/dependency-projects.mjs';
@@ -234,7 +237,9 @@ else {
   app
     .whenReady()
     .then(async () => {
-      await registerWindowsPDF({ packaged: app.isPackaged, smoke: !!smoke || ciLaunchCheck }).catch(
+      // Explorer registration can launch several reg.exe processes; it is not
+      // required for this window or an already delivered external document.
+      void registerWindowsPDF({ packaged: app.isPackaged, smoke: !!smoke || ciLaunchCheck }).catch(
         (error) => console.error('Windows PDF menu registration failed:', error.message),
       );
       if (process.platform === 'darwin' && !app.isPackaged && !smoke)
@@ -258,14 +263,34 @@ else {
         ].includes(smoke)
       )
         credentialOptions.environment = () => 'local-smoke-placeholder';
-      const credentialStore = await createCredentials(credentialOptions);
-      serviceCredentialStore = await createServiceCredentials({
-        path: join(app.getPath('userData'), 'translation-service-credentials.enc'),
-        safeStorage,
-      });
-      preferences = await createReaderPreferences(
-        join(app.getPath('userData'), 'reader-preferences.json'),
-      );
+      // These stores are independent; disk reads and Keychain unlocks should
+      // overlap rather than accumulate before the first window can load.
+      const [
+        credentialStore,
+        serviceCredentials,
+        readerPreferences,
+        annotationStore,
+        savedPerformanceReports,
+        savedDocumentSession,
+        recentStore,
+      ] = await Promise.all([
+        createCredentials(credentialOptions),
+        createServiceCredentials({
+          path: join(app.getPath('userData'), 'translation-service-credentials.enc'),
+          safeStorage,
+        }),
+        createReaderPreferences(join(app.getPath('userData'), 'reader-preferences.json')),
+        createAnnotationStore(join(app.getPath('userData'), 'annotations')),
+        loadPerformanceReports(join(app.getPath('userData'), 'performance.json')),
+        createDocumentSession(join(app.getPath('userData'), 'document-session.json')),
+        createRecents(join(app.getPath('userData'), 'recent-documents.json')),
+      ]);
+      serviceCredentialStore = serviceCredentials;
+      preferences = readerPreferences;
+      annotations = annotationStore;
+      performanceReports.items = savedPerformanceReports;
+      documentSession = savedDocumentSession;
+      recents = recentStore;
       appUpdates = await createAppUpdates({
         ...(smoke === 'app-updates'
           ? {
@@ -330,14 +355,6 @@ else {
           return status;
         },
       };
-      annotations = await createAnnotationStore(join(app.getPath('userData'), 'annotations'));
-      performanceReports.items = await loadPerformanceReports(
-        join(app.getPath('userData'), 'performance.json'),
-      );
-      documentSession = await createDocumentSession(
-        join(app.getPath('userData'), 'document-session.json'),
-      );
-      recents = await createRecents(join(app.getPath('userData'), 'recent-documents.json'));
       const quickLinks = createQuickLinkStore(join(app.getPath('userData'), 'quick-links'));
 
       menuController = createApplicationMenu({
