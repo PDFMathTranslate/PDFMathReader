@@ -1,4 +1,5 @@
 import { BrowserWindow as ElectronBrowserWindow, Menu as ElectronMenu, dialog } from 'electron';
+import { createPDFApplicationService } from '../services/pdf-applications.mjs';
 import { aboutPanelOptions } from '../services/about-panel.mjs';
 
 export function createApplicationMenu({
@@ -21,12 +22,71 @@ export function createApplicationMenu({
   closeWindowAccelerator,
   serializeApplicationMenu,
   menuPathItems,
+  pdfApplications = createPDFApplicationService({ platform, app }),
 }) {
   let applicationMenu = null;
   let menuActions = new Map();
+  const applicationCache = new Map();
+  const applicationRequests = new Set();
+  const documentPath = (target) => {
+    const state = registry.stateFor(target);
+    const source = state?.unkeyedAnnotationSource;
+    return state?.performance.hasDocument && source?.reliable && typeof source.path === 'string'
+      ? source.path
+      : null;
+  };
+  const refreshApplications = (target) => {
+    const path = documentPath(target);
+    if (!path || applicationRequests.has(path)) return;
+    const cached = applicationCache.get(path);
+    if (cached && Date.now() - cached.time < 30000) return;
+    applicationRequests.add(path);
+    void pdfApplications
+      .list(path)
+      .catch(() => [])
+      .then((items) => {
+        applicationCache.set(path, { items, time: Date.now() });
+        if (applicationCache.size > 16)
+          applicationCache.delete(applicationCache.keys().next().value);
+        applicationRequests.delete(path);
+        // A query may finish after its document or window has closed.
+        if (documentPath(focusedWindow()) === path) rebuild();
+      });
+  };
+  const externalApplicationItems = () => {
+    const path = documentPath(focusedWindow());
+    const choices = applicationCache.get(path)?.items || [];
+    if (!choices.length)
+      return [
+        { id: 'file-other-app-empty', label: 'No PDF Applications Available', enabled: false },
+      ];
+    return choices.map((choice, index) => ({
+      id: `file-other-app-${index}`,
+      label: choice.name,
+      click: async (_item, target) => {
+        const receiver = target || focusedWindow();
+        const currentPath = documentPath(receiver);
+        if (!currentPath) return;
+        try {
+          await validateSystemPDF(currentPath);
+          if (documentPath(receiver) !== currentPath || receiver.isDestroyed()) return;
+          await receiver.webContents.executeJavaScript('window.previewSaveReadingView?.()');
+          if (documentPath(receiver) !== currentPath || receiver.isDestroyed()) return;
+          await pdfApplications.open(choice, currentPath);
+        } catch (error) {
+          dialog.showErrorBox('PDFMathReader', error.message);
+        }
+      },
+    }));
+  };
 
   const focusedWindow = () => registry.focusedWindow();
   const updateMenu = (target) => {
+    refreshApplications(target);
+    const external = (applicationMenu || Menu.getApplicationMenu())?.getMenuItemById(
+      'file-other-app',
+    );
+    if (external) external.enabled = !!documentPath(target);
     const state = registry.stateFor(target)?.preferences;
     if (!state) return;
     const menu = applicationMenu || Menu.getApplicationMenu();
@@ -215,6 +275,12 @@ export function createApplicationMenu({
           { id: 'file-recents', label: 'Recent Documents', enabled: false },
           ...recentDocumentItems(),
           { type: 'separator' },
+          {
+            id: 'file-other-app',
+            label: 'Continue Reading in Another App',
+            enabled: !!documentPath(focusedWindow()),
+            submenu: externalApplicationItems(),
+          },
           command('Close Document', accelerator('W'), 'close-document', 'file-close-document'),
           {
             id: 'file-close-window',
@@ -353,6 +419,7 @@ export function createApplicationMenu({
           ? {
               label:
                 item.id?.startsWith('recent-document-') ||
+                (item.id?.startsWith('file-other-app-') && item.id !== 'file-other-app-empty') ||
                 item.id?.startsWith('translation-choice-')
                   ? item.label
                   : menuLabel(item.label, locale),
@@ -364,7 +431,7 @@ export function createApplicationMenu({
     if (['win32', 'linux'].includes(platform)) {
       const appItems = template.find((item) => item.id === 'app-menu').submenu;
       const fileItems = template.find((item) => item.id === 'file-menu').submenu;
-      const promotedIds = ['file-open', 'file-close-document', 'file-close-window', 'app-settings'];
+      const promotedIds = ['file-open', 'app-settings'];
       const promoted = promotedIds.map((id) =>
         [...fileItems, ...appItems].find((item) => item.id === id),
       );
