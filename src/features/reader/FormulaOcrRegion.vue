@@ -94,7 +94,9 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   border: 1px solid transparent;
   opacity: 0;
-  background: color-mix(in srgb, var(--surface, #f5f5f5) 35%, transparent);
+  /* Keep the equation readable beneath the hover region, including when the
+     application reduces transparency for other surfaces. */
+  background: color-mix(in srgb, var(--surface, #f5f5f5) 20%, transparent);
   transition: opacity 140ms ease;
   pointer-events: none;
 }
@@ -130,7 +132,6 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
 }
-:root[data-reduce-transparency='true'] .formula-ocr-popover,
 :root[data-reduce-transparency='true'] .formula-ocr-button {
   background: var(--surface, #f5f5f5);
   backdrop-filter: none;
