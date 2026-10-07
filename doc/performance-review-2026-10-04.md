@@ -30,7 +30,7 @@ Renderer + backend 的采样 RSS 峰值中位数最初为 780.5 MiB，最终为 
 - `node server/fast-benchmark.mjs`：真实 Fast 基准通过。
 - `node_modules/.bin/electron . --smoke-test=benchmark`：最终 1000 页桌面基准通过，滚动长任务计数为 0。
 - `node_modules/.bin/electron . --smoke-test=animation`：文字逐字动画、原始 PDF 字形、快速切换清理、减少动态效果、Fast 到达及返回动画通过。修正了测试的两个旧问题：按钮 8 px 装饰 halo 被误算为文字溢出，以及仍使用已移除的 kernel-switcher selector。文字横向溢出仍检查实际文本 scroller。
-- `node_modules/.bin/electron electron/motion-memory-smoke.mjs`：真实 canvas 分配上限和释放检查通过。
+- `node_modules/.bin/electron tests/desktop/motion-memory-smoke.mjs`：真实 canvas 分配上限和释放检查通过。
 - 额外的 `layout-settings` smoke 在键盘切换 Precise 的保存等待处超时；此轮未修改该键盘处理路径，该项仍未验证通过。
 
 ## 复现
@@ -42,7 +42,7 @@ SCHEDULING_OUTPUT=/tmp/reader-scheduling.json node server/scheduling-benchmark.m
 FAST_BENCHMARK_OUTPUT=/tmp/reader-fast.json node server/fast-benchmark.mjs
 PDF_READER_BENCHMARK_LABEL=review node_modules/.bin/electron . --smoke-test=benchmark
 node_modules/.bin/electron . --smoke-test=animation
-node_modules/.bin/electron electron/motion-memory-smoke.mjs
+node_modules/.bin/electron tests/desktop/motion-memory-smoke.mjs
 ```
 
 ## 本轮交付

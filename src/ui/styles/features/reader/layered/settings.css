@@ -1,0 +1,183 @@
+/* Extracted from src/style.css: @layer reader / settings. */
+/* Settings popover ------------------------------------------------------- */
+
+.settings {
+  position: fixed;
+  top: calc(var(--toolbar-height) + 10px);
+  right: 14px;
+  z-index: 20;
+  display: grid;
+  gap: 14px;
+  width: min(360px, calc(100vw - 28px));
+  max-height: calc(100dvh - var(--toolbar-height) - var(--statusbar-height) - 24px);
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-popover);
+  animation: settings-in 180ms var(--motion-ease) both;
+}
+
+.settings[hidden] {
+  display: none;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+.settings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+.settings-heading > button,
+.settings-header > button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.settings-heading > button:hover,
+.settings-header > button:hover {
+  color: var(--text);
+  background: var(--chrome-hover);
+}
+
+.settings h2,
+.settings h3,
+.settings p {
+  margin: 0;
+}
+
+.settings h2,
+.settings h3 {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.settings-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.settings-section + .settings-section {
+  padding-top: 13px;
+  border-top: 1px solid var(--chrome-divider);
+}
+
+.settings label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.settings label:has(input[type='checkbox']),
+.settings label:has(input[type='radio']) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.settings label > span:first-child,
+.settings label > strong:first-child {
+  min-width: 0;
+}
+
+.settings input:not([type='checkbox']):not([type='radio']),
+.settings select,
+.settings textarea {
+  min-width: 0;
+  padding: 6px 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-xs);
+  box-shadow: inset 0 0.5px 1px rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  outline: none;
+}
+
+.settings textarea {
+  resize: vertical;
+}
+
+.settings input:not([type='checkbox']):not([type='radio']):hover,
+.settings select:hover,
+.settings textarea:hover {
+  border-color: rgba(0, 0, 0, 0.24);
+}
+
+.settings input:not([type='checkbox']):not([type='radio']):focus,
+.settings select:focus,
+.settings textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent),
+    inset 0 0.5px 1px rgba(0, 0, 0, 0.05);
+}
+
+.settings input[type='range'] {
+  width: 132px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.settings input[type='checkbox'],
+.settings input[type='radio'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.settings .setting-help,
+.settings .muted {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.settings > button:not(.icon-button) {
+  min-height: 31px;
+  padding: 6px 11px;
+  color: var(--text-on-accent);
+  background: var(--accent);
+  border: 1px solid rgba(0, 82, 175, 0.16);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings > button:not(.icon-button):hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+@keyframes settings-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

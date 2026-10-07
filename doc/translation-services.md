@@ -13,7 +13,7 @@ Validation:
 ```sh
 bun run test
 bun run build
-node_modules/.bin/electron electron/service-credentials-smoke.mjs
+node_modules/.bin/electron tests/desktop/service-credentials-smoke.mjs
 node server/translation-services-smoke.mjs
 APPLE_NATIVE_SMOKE=1 node server/translation-services-smoke.mjs
 ```

@@ -1,0 +1,425 @@
+/* Extracted from src/style.css: unlayered / overlays. */
+/* Linux owns its chrome: traffic lights, custom menu, then sidebar toggle. */
+
+.desktop[data-platform='linux'] .toolbar > .windows-menu {
+  width: 36px;
+}
+
+.reader-viewport {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reference-return-button {
+  position: absolute;
+  left: 22px;
+  right: auto;
+  cursor: pointer;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text-primary, var(--text-secondary));
+}
+
+.reference-return-icon {
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.reference-return-button > span {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+}
+
+.reference-return-enter-active,
+.reference-return-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.reference-return-enter-from,
+.reference-return-leave-to {
+  opacity: 0;
+}
+
+.reference-return-leave-active {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reference-return-enter-active,
+  .reference-return-leave-active {
+    transition: none;
+  }
+}
+
+.sidebar {
+  position: relative;
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  top: var(--toolbar-height);
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle:focus-visible {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  outline: none;
+}
+
+/* Resizable tabs follow the header inset without animating dragged widths. */
+
+.desktop .sidebar.sidebar-resizable {
+  transition: padding-top 180ms ease;
+}
+
+.desktop .sidebar.sidebar-resizable.without-motion {
+  transition: none;
+}
+
+[data-reduce-motion='true'] .desktop .sidebar.sidebar-resizable {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop .sidebar.sidebar-resizable {
+    transition: none;
+  }
+}
+
+.reference-return-actions {
+  position: absolute;
+  left: 22px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 20;
+}
+
+.reference-return-actions .reference-return-button {
+  position: static;
+}
+
+.quick-return-create,
+.paragraph-quick-link {
+  border: 0;
+  border-radius: 11px;
+  background: #f0f0f0;
+  color: #575757;
+  box-shadow:
+    0 1px 2px #0000000a,
+    0 3px 8px #0000000d,
+    inset 0 0 0 1px #00000008;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-return-create:hover,
+.paragraph-quick-link:hover {
+  background: #e7e7e7;
+}
+
+.quick-return-create .system-icon,
+.paragraph-quick-link .system-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.quick-link-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.paragraph-quick-link {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.paragraph-quick-link:focus-visible,
+.quick-return-create:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Paired return controls share one surface; only their widths differ. */
+
+.app[data-platform]
+  .reference-return-actions
+  > button:is(.reference-return-button, .quick-return-create) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  min-height: 38px;
+  corner-shape: round;
+  padding: 8px 12px;
+  gap: 8px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  background: var(--chrome);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 3px 14px #0002;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.app .reference-return-actions > .quick-return-create {
+  width: 38px;
+  padding: 8px;
+}
+
+.reference-return-actions > button:hover {
+  background: var(--chrome-hover, var(--chrome));
+}
+
+.reference-return-actions > button:active {
+  background: var(--chrome-pressed, var(--chrome));
+}
+
+/* Dedicated settings windows let AppKit own the outer frame and clipping. */
+
+.app.native-settings-host {
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+  --toolbar-height: 0px;
+  --statusbar-height: 0px;
+}
+
+/* Reader controls share one anchored layout while retaining separate island surfaces. */
+
+.reader-floating-tools {
+  position: fixed;
+  right: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.reader-floating-tools > :is(.floating-zoom, .page-navigator) {
+  position: static;
+  inset: auto;
+  transform: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 5px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 3px 14px #0002;
+  color: var(--text-secondary);
+  pointer-events: auto;
+}
+
+.reader-floating-tools .page-navigator {
+  right: auto;
+  bottom: auto;
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  line-height: 0;
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) button:hover:not(:disabled) {
+  background: var(--chrome-hover);
+  color: var(--text);
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) button:active:not(:disabled) {
+  background: var(--chrome-pressed);
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) .system-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) input {
+  height: 28px;
+  padding: 3px 5px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--chrome-raised);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+  appearance: textfield;
+}
+
+.reader-floating-tools .floating-zoom input {
+  width: 52px;
+  min-width: 52px;
+}
+
+.reader-floating-tools .page-navigator input {
+  width: 42px;
+  min-width: 42px;
+}
+
+.reader-floating-tools :is(.floating-zoom, .page-navigator) input::-webkit-inner-spin-button {
+  appearance: none;
+}
+
+.is-fullscreen .reader-floating-tools,
+.is-fullscreen .toolbar,
+.is-fullscreen .page-navigator {
+  display: none;
+}
+
+/* Keep the kernel recovery surface anchored to its toolbar control. */
+
+.toolbar:has(.kernel-error-popover) {
+  overflow: visible;
+}
+
+.toolbar-kernel {
+  position: relative;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .reader-floating-tools {
+    right: 10px;
+    bottom: calc(var(--statusbar-height) + 12px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+    max-width: calc(100vw - 20px);
+  }
+  .reader-floating-tools > :is(.floating-zoom, .page-navigator) {
+    min-width: 0;
+  }
+  .reader-floating-tools .floating-zoom input {
+    width: 48px;
+    min-width: 48px;
+  }
+}
+
+@media (max-width: 420px) {
+  .reader-floating-tools {
+    right: 8px;
+    bottom: calc(var(--statusbar-height) + 10px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 16px);
+  }
+  .reader-floating-tools > :is(.floating-zoom, .page-navigator) {
+    gap: 3px;
+    padding: 4px;
+  }
+  .reader-floating-tools :is(.floating-zoom, .page-navigator) button {
+    width: 27px;
+    height: 27px;
+    min-width: 27px;
+    min-height: 27px;
+  }
+  .reader-floating-tools .floating-zoom input {
+    width: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .reader-floating-tools > :is(.floating-zoom, .page-navigator) {
+    background: var(--chrome-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-floating-tools.navigator-motion-enter-active,
+  .reader-floating-tools.navigator-motion-leave-active,
+  .kernel-error-popover.settings-motion-enter-active,
+  .kernel-error-popover.settings-motion-leave-active {
+    transition: none !important;
+  }
+}
+
+.reduced-motion .reader-floating-tools.navigator-motion-enter-active,
+.reduced-motion .reader-floating-tools.navigator-motion-leave-active,
+.reduced-motion .kernel-error-popover.settings-motion-enter-active,
+.reduced-motion .kernel-error-popover.settings-motion-leave-active,
+[data-reduced-motion='true'] .reader-floating-tools.navigator-motion-enter-active,
+[data-reduced-motion='true'] .reader-floating-tools.navigator-motion-leave-active,
+[data-reduced-motion='true'] .kernel-error-popover.settings-motion-enter-active,
+[data-reduced-motion='true'] .kernel-error-popover.settings-motion-leave-active {
+  transition: none !important;
+}
+
+/* Settings labels and descriptions behave like native UI; fields stay editable. */
+
+.settings,
+.settings * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.settings :is(input, textarea, [contenteditable='true']),
+.settings [contenteditable='true'] * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.information-subcategories {
+  padding-inline-start: 20px;
+  border-inline-start: 1px solid var(--chrome-divider);
+  margin-inline-start: 4px;
+}

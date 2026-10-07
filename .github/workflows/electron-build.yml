@@ -97,7 +97,7 @@ jobs:
             electron/AppIcon.ico
             electron/AppIcon.png
             public/symbols
-          key: icons-v1-${{ matrix.runner }}-${{ hashFiles('doc/icon.png', 'electron/generate-icon.mjs', 'electron/export-symbols.swift', '.github/workflows/electron-build.yml') }}
+          key: icons-v1-${{ matrix.runner }}-${{ hashFiles('doc/icon.png', 'electron/build/generate-icon.mjs', 'electron/build/export-symbols.swift', '.github/workflows/electron-build.yml') }}
       - name: Generate macOS icons and symbols
         if: matrix.platform == 'darwin' && steps.icons.outputs.cache-hit != 'true'
         run: bun run icons:mac
@@ -105,16 +105,16 @@ jobs:
       - name: Build frontend
         run: bun run build
       - name: Package primary architecture
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned --distribute
+        run: node electron/build/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }} --unsigned --distribute
       - name: Launch packaged application
         if: matrix.platform != 'linux'
-        run: node electron/launch-check.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
+        run: node tests/desktop/launch-check.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
       - name: Launch packaged application on Linux
         if: matrix.platform == 'linux'
-        run: xvfb-run --auto-servernum node electron/launch-check.mjs --platform=linux --arch=x64 --no-sandbox
+        run: xvfb-run --auto-servernum node tests/desktop/launch-check.mjs --platform=linux --arch=x64 --no-sandbox
       - name: Package secondary architecture
         if: matrix.extra-arch != ''
-        run: node electron/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned --distribute
+        run: node electron/build/package.mjs --platform=${{ matrix.platform }} --arch=${{ matrix.extra-arch }} --electron-version=43.4.1 --unsigned --distribute
       - name: Upload primary app
         uses: actions/upload-artifact@v6
         with:

@@ -1,0 +1,167 @@
+/* Common control base styles. */
+/* App layout belongs below the library's control metrics in the cascade. */
+
+:root {
+  --macvue-accent: #3d647a;
+}
+
+.settings:not(.paragraph-detail) {
+  width: min(420px, calc(100vw - 28px));
+  padding: 18px;
+}
+
+.settings:not(.paragraph-detail) .settings-section {
+  margin: 0 0 14px;
+  padding: 14px;
+  gap: 12px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(244, 244, 244, 0.78);
+}
+
+.settings:not(.paragraph-detail) .settings-section + .settings-section {
+  padding-top: 14px;
+  border-top: 0;
+}
+
+.settings:not(.paragraph-detail) .settings-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 30px;
+  font-size: 13px;
+}
+
+.setting-row + .setting-row {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 12px;
+}
+
+.setting-row > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-row > .macvue-switch {
+  flex: none;
+}
+
+.setting-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.setting-slider > .muted {
+  text-align: right;
+}
+
+.mac-mode-control,
+.mac-translation-control {
+  width: 100%;
+}
+
+.mac-mode-control > .macvue-segment,
+.mac-translation-control > .macvue-segment {
+  flex: 1;
+}
+
+.api-key-row > .macvue-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings .api-key-row input {
+  width: 100%;
+}
+
+.settings .api-key-row .key-invalid input {
+  background: #fff0d7;
+  border-color: #e5a342;
+  color: #805114;
+}
+
+.settings .api-key-row .key-invalid input::placeholder {
+  color: #805114;
+  opacity: 1;
+}
+
+.settings .api-key-row .key-clear {
+  color: #d92d20;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 5px;
+  width: 30px;
+  height: 30px;
+}
+
+.settings .settings-heading > button {
+  padding: 6px;
+  width: 28px;
+  height: 28px;
+}
+
+.settings .setting-row .macvue-pop-up-button {
+  max-width: 190px;
+}
+
+.empty > .primary {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.recent-heading > .macvue-button {
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .setting-slider {
+    width: 125px;
+  }
+  .setting-row {
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .settings:not(.paragraph-detail) .settings-section {
+    background: #f4f4f4;
+  }
+}
+
+.toolbar .icon-button.macvue-button {
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  border-radius: 6px;
+}
+
+.toolbar .icon-button.macvue-button:hover {
+  background: var(--chrome-hover);
+}
+
+.toolbar .icon-button.macvue-button:active {
+  background: var(--chrome-pressed);
+}
+
+.toolbar .translation-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--chrome-hover);
+}
+
+.toolbar .zoom-popup {
+  min-width: 70px;
+}

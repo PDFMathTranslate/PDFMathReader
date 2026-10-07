@@ -1,0 +1,61 @@
+/* Extracted from src/style.css: @layer reader / motion. */
+/* Translucency and motion preferences ----------------------------------- */
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .toolbar,
+  .statusbar,
+  .sidebar,
+  .settings {
+    background-color: var(--chrome-solid);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .toolbar,
+  .statusbar,
+  .sidebar,
+  .settings,
+  .empty-card {
+    background-color: var(--chrome-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.reduced-transparency .toolbar,
+.reduced-transparency .statusbar,
+.reduced-transparency .sidebar,
+.reduced-transparency .settings,
+.reduced-transparency .empty-card,
+[data-reduced-transparency='true'] .toolbar,
+[data-reduced-transparency='true'] .statusbar,
+[data-reduced-transparency='true'] .sidebar,
+[data-reduced-transparency='true'] .settings,
+[data-reduced-transparency='true'] .empty-card {
+  background-color: var(--chrome-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after,
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

@@ -1,0 +1,183 @@
+/* Extracted from src/style.css: @layer reader / chrome. */
+/* Main application frame ------------------------------------------------- */
+
+.app {
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: var(--toolbar-height) minmax(0, 1fr) var(--statusbar-height);
+  width: 100%;
+  min-width: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--reader);
+}
+
+.toolbar,
+.statusbar,
+.sidebar,
+.settings {
+  background-color: var(--chrome);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  backdrop-filter: blur(20px) saturate(1.25);
+}
+
+.toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 13px;
+  border-bottom: 1px solid var(--chrome-divider);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  user-select: none;
+}
+
+.traffic-lights {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.traffic-lights > button,
+.traffic-lights > span,
+.traffic-lights > a,
+.traffic-lights > i {
+  position: relative;
+  display: block;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.48),
+    0 0.5px 1px rgba(0, 0, 0, 0.08);
+  transition:
+    filter var(--motion-duration) var(--motion-ease),
+    transform var(--motion-duration) var(--motion-ease);
+}
+
+.traffic-lights > button:hover,
+.traffic-lights > a:hover {
+  filter: brightness(0.93) saturate(1.08);
+}
+
+.traffic-lights > button:active,
+.traffic-lights > a:active {
+  transform: scale(0.9);
+}
+
+.traffic-lights > button:nth-child(1),
+.traffic-lights > .close,
+.traffic-lights > [data-action='close'] {
+  background: #ff5f57;
+}
+
+.traffic-lights > button:nth-child(2),
+.traffic-lights > .minimize,
+.traffic-lights > [data-action='minimize'] {
+  background: #febc2e;
+}
+
+.traffic-lights > button:nth-child(3),
+.traffic-lights > .zoom,
+.traffic-lights > [data-action='zoom'] {
+  background: #28c840;
+}
+
+.traffic-lights > button:focus-visible,
+.traffic-lights > a:focus-visible {
+  outline-width: 2px;
+  outline-offset: 3px;
+}
+
+.title {
+  position: absolute;
+  left: 50%;
+  max-width: min(42vw, 440px);
+  min-width: 0;
+  overflow: hidden;
+  transform: translateX(-50%);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title .muted,
+.title-muted {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.toolbar > .icon-button:first-of-type {
+  margin-left: 12px;
+}
+
+.toolbar-actions > button:not(.icon-button):not(.segmented),
+.toolbar-actions > select {
+  min-height: 30px;
+  padding: 5px 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.2;
+  transition:
+    color var(--motion-duration) var(--motion-ease),
+    background-color var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease),
+    transform var(--motion-duration) var(--motion-ease);
+}
+
+.toolbar-actions > button:not(.icon-button):not(.segmented):hover:not(:disabled),
+.toolbar-actions > select:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--chrome-hover);
+  border-color: var(--chrome-border);
+}
+
+.toolbar-actions > button:not(.icon-button):not(.segmented):active:not(:disabled) {
+  background: var(--chrome-pressed);
+  transform: scale(0.97);
+}
+
+.toolbar-actions > select {
+  min-width: 64px;
+  padding-right: 6px;
+  text-align: center;
+  text-align-last: center;
+}
+
+.toolbar-actions > .separator {
+  width: 1px;
+  height: 20px;
+  margin: 0 5px;
+  background: var(--chrome-divider);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}

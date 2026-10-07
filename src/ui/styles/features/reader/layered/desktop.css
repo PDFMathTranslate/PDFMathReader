@@ -1,0 +1,340 @@
+/* Extracted from src/style.css: @layer reader / desktop. */
+/* Desktop uses the native macOS window bar; actions live in the navigation rail. */
+
+.desktop.app {
+  grid-template-rows: minmax(0, 1fr) var(--statusbar-height);
+}
+
+.desktop .sidebar {
+  display: flex;
+  flex: 0 0 210px;
+  padding: 0;
+  gap: 0;
+}
+
+.desktop-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--chrome-divider);
+  flex-shrink: 0;
+}
+
+.desktop-navigation strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.desktop-navigation button,
+.desktop-navigation select,
+.settings form button {
+  background: var(--chrome-raised);
+  border: 1px solid var(--chrome-border);
+  border-radius: 6px;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+.desktop-navigation button:hover,
+.settings form button:hover {
+  background: var(--chrome-hover);
+}
+
+.navigation-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.navigation-controls select {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar .thumbnail-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px 22px;
+}
+
+.sidebar .thumbnail-list .thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 6px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.sidebar .thumbnail-list .thumb canvas {
+  display: block;
+  max-width: 128px;
+  max-height: 160px;
+  min-height: 0;
+  object-fit: contain;
+  margin: 0;
+  box-shadow: 0 1px 4px #0003;
+  border: 1px solid #0002;
+}
+
+.sidebar .thumbnail-list .thumb.selected {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 33%, transparent);
+}
+
+.sidebar .thumbnail-list .thumb.selected canvas {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sidebar .thumbnail-list .thumb span {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.sidebar .thumbnail-list .thumb small {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.desktop .settings {
+  top: 12px;
+  max-height: calc(100dvh - 52px);
+}
+
+.settings input[type='password'] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 6px;
+  background: white;
+}
+
+.settings form > div {
+  display: flex;
+  gap: 8px;
+}
+
+.settings form {
+  border-bottom: 1px solid var(--chrome-divider);
+  padding-bottom: 12px;
+}
+
+/* One integrated toolbar, matching the supplied macOS Preview reference. */
+
+.desktop.app {
+  --toolbar-height: 64px;
+  grid-template-rows: 64px minmax(0, 1fr) var(--statusbar-height);
+}
+
+.desktop .toolbar {
+  -webkit-app-region: drag;
+  overflow: visible;
+  padding: 0 14px 0 108px;
+  gap: 12px;
+  background: #fafafa;
+}
+
+.desktop .toolbar button,
+.desktop .toolbar select {
+  -webkit-app-region: no-drag;
+}
+
+.desktop .traffic-lights {
+  display: none;
+}
+
+.desktop .toolbar > .icon-button:first-of-type {
+  margin: 0 22px 0 0;
+}
+
+.desktop .toolbar .title {
+  position: static;
+  transform: none;
+  text-align: left;
+  flex: 1;
+  max-width: none;
+  line-height: 1.35;
+  font-size: 13px;
+}
+
+.desktop .toolbar-actions {
+  margin-left: 0;
+  gap: 6px;
+}
+
+.desktop .toolbar-actions .icon-button {
+  width: 32px;
+  height: 32px;
+}
+
+.desktop .sidebar {
+  flex-basis: 210px;
+  background: #ececee;
+}
+
+.desktop .sidebar-heading {
+  display: none;
+}
+
+.desktop .thumbnail-list {
+  padding: 10px 14px 20px;
+  gap: 14px;
+}
+
+.desktop .thumbnail-list .thumb {
+  padding: 8px 6px 6px;
+  gap: 6px;
+  border: 0;
+}
+
+.desktop .thumbnail-list .thumb.selected {
+  background: #9ca3a8;
+  color: white;
+}
+
+.desktop .thumbnail-list .thumb.selected canvas {
+  outline: none;
+}
+
+.desktop .thumbnail-list .thumb canvas {
+  border-radius: 4px;
+  box-shadow: none;
+  border: 0;
+  max-width: 154px;
+  max-height: 200px;
+}
+
+.desktop .thumbnail-list .thumb small {
+  display: none;
+}
+
+.desktop .settings {
+  top: 70px;
+  max-height: calc(100dvh - 112px);
+}
+
+@media (max-width: 900px) {
+  .desktop .toolbar {
+    gap: 8px;
+    padding-right: 8px;
+  }
+  .desktop .toolbar-actions {
+    gap: 2px;
+  }
+  .desktop .sidebar {
+    flex-basis: 190px;
+  }
+}
+
+.system-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+  mask-image: var(--symbol);
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  vertical-align: middle;
+}
+
+.toolbar button,
+.settings-heading button,
+.settings form button,
+.empty > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.document-symbol .system-icon {
+  position: static;
+  width: 52px;
+  height: 52px;
+  color: var(--accent);
+}
+
+:root {
+  accent-color: var(--accent);
+}
+
+.desktop .thumbnail-list .thumb.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.paragraph.translated:hover,
+.paragraph.translated:focus-visible {
+  background: color-mix(in srgb, var(--accent) 6%, white);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* Temporarily hide desktop status chrome; retain the browser demo status. */
+
+.desktop.app {
+  --statusbar-height: 0px;
+  grid-template-rows: 64px minmax(0, 1fr);
+}
+
+.toolbar .translation-toggle {
+  color: var(--text-secondary);
+}
+
+.toolbar .translation-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: transparent;
+  border-color: transparent;
+}
+
+.toolbar .translation-toggle:hover {
+  background: var(--chrome-hover);
+}
+
+.paragraph.math {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.paragraph.math.outlined {
+  outline: 1px solid var(--accent);
+}
+
+.paragraph.math:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.paragraph-detail .comparison-text {
+  white-space: pre-wrap;
+  user-select: text;
+  line-height: 1.55;
+  text-align: left;
+  overflow-wrap: anywhere;
+}

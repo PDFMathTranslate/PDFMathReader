@@ -1,0 +1,683 @@
+/* Extracted from src/style.css: @layer reader / reader-layout. */
+/* The spacer owns document geometry; only nearby page/card nodes are mounted. */
+
+.page-layout.virtual-layout {
+  display: block;
+  position: relative;
+  box-sizing: content-box;
+}
+
+.page-layout.virtual-layout > .page-wrap {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.page-wrap.cropped {
+  box-shadow: var(--shadow-page);
+}
+
+.page-wrap.cropped > .page {
+  box-shadow: none;
+}
+
+.thumbnail-list > .thumbnail-inner {
+  position: relative;
+  width: 100%;
+  flex: none;
+}
+
+.sidebar .thumbnail-list .thumbnail-inner > .thumb {
+  position: absolute;
+  left: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.background-paused *,
+.background-paused *::before,
+.background-paused *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+/* The PDF scrolls behind the header; blur samples in-window document pixels. */
+
+.content-glass .workspace {
+  margin-top: calc(-1 * var(--toolbar-height));
+}
+
+.content-glass .reader {
+  padding-top: calc(var(--toolbar-height) + var(--page-gutter));
+  scroll-padding-top: var(--toolbar-height);
+}
+
+.content-glass .sidebar {
+  padding-top: var(--toolbar-height);
+}
+
+/* Expose macOS behind-window vibrancy through the thumbnail rail only. */
+
+body:has(.content-glass),
+.content-glass.app,
+.content-glass .workspace {
+  background: transparent;
+}
+
+.content-glass .reader {
+  background: var(--reader);
+}
+
+.content-glass .sidebar {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.content-glass .toolbar {
+  background: rgba(247, 247, 249, 0.64);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow: none;
+}
+
+.content-glass.is-fullscreen .workspace {
+  margin-top: 0;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .content-glass .toolbar {
+    background: var(--chrome-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.paragraph.math .math-region {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: white;
+}
+
+/* Fit the selection to the preview and page number with equal outer insets. */
+
+.desktop .sidebar .thumbnail-list .thumbnail-inner > .thumb {
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--thumbnail-width) + 16px);
+  height: auto !important;
+  padding: 8px;
+  justify-content: flex-start;
+}
+
+/* Native Windows/Linux title bars own dragging and window controls. */
+
+.desktop.app:is([data-platform='win32'], [data-platform='linux']) {
+  --toolbar-height: 56px;
+  grid-template-rows: var(--toolbar-height) minmax(0, 1fr) var(--statusbar-height);
+}
+
+.desktop:is([data-platform='win32'], [data-platform='linux']) .toolbar {
+  -webkit-app-region: no-drag;
+  padding: 0 16px;
+  gap: 10px;
+  background: var(--chrome-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Acrylic tint also blurs reader content on Windows without native backdrops. */
+
+/* Let the thumbnail rail expose the native Windows Acrylic backdrop. */
+
+.desktop:is([data-platform='win32'], [data-platform='linux']) .toolbar .system-icon {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 900px) {
+  .desktop:is([data-platform='win32'], [data-platform='linux']) .toolbar {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .desktop:is([data-platform='win32'], [data-platform='linux']) .toolbar-actions {
+    gap: 2px;
+  }
+}
+
+.desktop.app:is([data-platform='win32'], [data-platform='linux']).is-fullscreen {
+  --toolbar-height: 0px;
+  grid-template-rows: 0 minmax(0, 1fr);
+}
+
+/* One shared selection surface glides between virtualized thumbnail buttons. */
+
+.thumbnail-highlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  background: var(--accent);
+  border-radius: 7px;
+  pointer-events: none;
+  transition:
+    transform 220ms var(--motion-ease),
+    width 220ms var(--motion-ease),
+    height 220ms var(--motion-ease);
+}
+
+.sidebar .thumbnail-inner > .thumb {
+  transition:
+    top 220ms var(--motion-ease),
+    width 220ms var(--motion-ease),
+    height 220ms var(--motion-ease),
+    color 160ms var(--motion-ease),
+    background-color 160ms var(--motion-ease),
+    border-color 160ms var(--motion-ease);
+}
+
+.sidebar .thumbnail-inner > .thumb canvas {
+  transition:
+    width 220ms var(--motion-ease),
+    height 220ms var(--motion-ease);
+}
+
+.desktop .sidebar .thumbnail-inner > .thumb {
+  z-index: 1;
+}
+
+.desktop .sidebar .thumbnail-inner > .thumb.selected {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.thumbnail-highlight.without-motion {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumbnail-highlight,
+  .sidebar .thumbnail-inner > .thumb,
+  .sidebar .thumbnail-inner > .thumb canvas {
+    transition: none;
+  }
+}
+
+.sidebar.without-motion .thumbnail-inner > .thumb,
+.sidebar.without-motion .thumbnail-inner > .thumb canvas {
+  transition: none;
+}
+
+/* Layout commits once after a screenshot transition, never on animation frames. */
+
+.layout-frozen .page,
+.layout-frozen .paragraph,
+.layout-frozen .sidebar {
+  transition: none !important;
+}
+
+.resize-snapshot img {
+  user-select: none;
+  pointer-events: none;
+}
+
+.sidebar {
+  transition: none;
+}
+
+/* Fit changes and their scroll anchor must use the same final geometry. */
+
+.reader[data-fitting] .page,
+.reader[data-fitting] .page > canvas,
+.reader[data-fitting] .paragraph {
+  transition: none !important;
+}
+
+.empty .startup-description {
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Hover feedback stays separate from PDF text geometry. */
+
+.paragraph.math:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.paragraph {
+  transition:
+    width 180ms var(--motion-ease),
+    height 180ms var(--motion-ease),
+    left 180ms var(--motion-ease),
+    top 180ms var(--motion-ease),
+    background-color 140ms ease;
+}
+
+/* Resize geometry follows the live viewport without an interpolated screenshot. */
+
+.page-wrap,
+.page,
+.page > canvas,
+.paragraph {
+  transition-property: background-color, color, border-color, box-shadow;
+}
+
+/* Give paragraph hover highlights breathing room without moving PDF content. */
+
+.paragraph.math {
+  overflow: visible;
+}
+
+.paragraph.math:hover,
+.paragraph.math:focus-visible {
+  background: transparent;
+}
+
+.paragraph.math::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.paragraph.math:hover::before,
+.paragraph.math:focus-visible::before {
+  opacity: 1;
+}
+
+.paragraph.math.outlined {
+  outline-offset: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paragraph.math::before {
+    transition: none;
+  }
+}
+
+.sidebar-motion-enter-active,
+.sidebar-motion-leave-active {
+  overflow: hidden;
+  transition:
+    flex-basis 200ms var(--motion-ease),
+    opacity 200ms var(--motion-ease),
+    transform 200ms var(--motion-ease) !important;
+  min-width: 0;
+}
+
+.sidebar-motion-enter-from,
+.sidebar-motion-leave-to {
+  flex-basis: 0 !important;
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+.sidebar-motion-enter-active > *,
+.sidebar-motion-leave-active > * {
+  width: var(--sidebar-width);
+  box-sizing: border-box;
+}
+
+.sidebar-motion-enter-active > .sidebar-navigation-switch,
+.sidebar-motion-leave-active > .sidebar-navigation-switch {
+  width: calc(var(--sidebar-width) - 20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-motion-enter-active,
+  .sidebar-motion-leave-active {
+    transition: none !important;
+  }
+}
+
+/* Let the native behind-window material fill the entire macOS start page. */
+
+.content-glass.startup-page .reader {
+  background: transparent;
+}
+
+.content-glass.startup-page .toolbar {
+  background: rgba(247, 247, 249, 0.22);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .content-glass.startup-page .toolbar {
+    background: rgba(30, 30, 32, 0.22);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .content-glass.startup-page .reader {
+    background: var(--reader);
+  }
+  .content-glass.startup-page .toolbar {
+    background: var(--chrome-solid);
+  }
+}
+
+.empty .document-symbol {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Keep the popover mounted through its exit transition. */
+
+.settings:not(.paragraph-detail) {
+  animation: none;
+}
+
+.settings-motion-enter-active {
+  transition:
+    opacity 180ms var(--motion-ease),
+    transform 180ms var(--motion-ease);
+}
+
+.settings-motion-leave-active {
+  transition:
+    opacity 140ms var(--motion-ease),
+    transform 140ms var(--motion-ease);
+  pointer-events: none;
+}
+
+.settings-motion-enter-from,
+.settings-motion-leave-to {
+  opacity: 0;
+  transform: translateY(-5px) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-motion-enter-active,
+  .settings-motion-leave-active {
+    transition: none !important;
+  }
+}
+
+/* Neutral translucent surfaces over the native macOS material. */
+
+:root {
+  --reader: #fcfcfc;
+}
+
+.sidebar,
+.desktop .sidebar {
+  background: #edeceb;
+}
+
+.content-glass .sidebar {
+  background: rgba(237, 236, 235, 0.72);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.content-glass .reader,
+.content-glass.startup-page .reader {
+  background: rgba(252, 252, 252, 0.72);
+}
+
+.content-glass.startup-page .toolbar {
+  background: rgba(252, 252, 252, 0.72);
+}
+
+.thumbnail-highlight {
+  background: rgba(174, 171, 168, 0.42);
+}
+
+.sidebar .thumbnail-list .thumb.selected {
+  background: rgba(174, 171, 168, 0.42);
+  border-color: rgba(100, 98, 96, 0.18);
+  color: #454545;
+}
+
+.sidebar .thumbnail-list .thumb.selected canvas {
+  outline: none;
+}
+
+.desktop .sidebar .thumbnail-inner > .thumb.selected {
+  background: transparent;
+  border-color: transparent;
+  color: #454545;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .content-glass .sidebar {
+    background: #edeceb;
+  }
+  .content-glass .reader,
+  .content-glass.startup-page .reader,
+  .content-glass.startup-page .toolbar {
+    background: #fcfcfc;
+  }
+}
+
+/* Settings use two type sizes; grouping is carried by spacing and separators. */
+
+.settings:not(.paragraph-detail) {
+  gap: 0;
+  padding: 18px 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-optical-sizing: auto;
+  letter-spacing: 0;
+}
+
+.settings:not(.paragraph-detail) .settings-heading {
+  margin-bottom: 18px;
+}
+
+.settings:not(.paragraph-detail) :is(h2, h3) {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.settings:not(.paragraph-detail) .settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 0 18px;
+  margin: 0;
+}
+
+.settings:not(.paragraph-detail) .settings-section + .settings-section {
+  padding-top: 18px;
+  border-top: 1px solid var(--chrome-divider);
+}
+
+.settings:not(.paragraph-detail) .settings-section:last-child {
+  padding-bottom: 0;
+}
+
+.settings:not(.paragraph-detail) :is(label, .kernel-setting, form) {
+  margin: 0;
+}
+
+.settings:not(.paragraph-detail) .kernel-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings:not(.paragraph-detail) form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings:not(.paragraph-detail) label {
+  gap: 8px;
+  color: var(--text);
+}
+
+.settings:not(.paragraph-detail) label.check {
+  align-items: center;
+  gap: 8px;
+}
+
+.settings:not(.paragraph-detail) :is(p, .muted) {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.settings:not(.paragraph-detail) :is(input, select, button, label, .kernel-setting > span) {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.settings:not(.paragraph-detail) .settings-section > button {
+  align-self: flex-start;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--chrome-raised);
+  font-weight: 500;
+}
+
+.settings:not(.paragraph-detail) .settings-section > button:hover:not(:disabled) {
+  background: var(--chrome-hover);
+}
+
+.settings:not(.paragraph-detail) .settings-section > button:active:not(:disabled) {
+  background: var(--chrome-pressed);
+}
+
+.settings:not(.paragraph-detail) :is(.kernel-switcher, .translation-mode-switcher) button {
+  font-weight: 500;
+}
+
+.settings:not(.paragraph-detail) form {
+  border: 0;
+  padding: 0;
+}
+
+.settings:not(.paragraph-detail) label:not(.check) {
+  align-items: stretch;
+  text-align: left;
+}
+
+.settings:not(.paragraph-detail) input[type='range'] {
+  width: 100%;
+}
+
+.settings:not(.paragraph-detail) p.error {
+  color: var(--danger);
+}
+
+.settings:not(.paragraph-detail) p.warning {
+  color: #b76a00;
+}
+
+.settings:not(.paragraph-detail) .api-key-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings:not(.paragraph-detail) .api-key-row input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 34px;
+}
+
+.settings:not(.paragraph-detail) .api-key-row input.key-invalid {
+  background: #fff0d7;
+  border-color: #e5a342;
+  color: #805114;
+}
+
+.settings:not(.paragraph-detail) .api-key-row input.key-invalid::placeholder {
+  color: #805114;
+  opacity: 1;
+}
+
+.settings:not(.paragraph-detail) .api-key-row .key-clear {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 34px;
+  padding: 5px;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #d92d20;
+}
+
+.settings:not(.paragraph-detail) .api-key-row .key-clear:hover {
+  background: rgba(217, 45, 32, 0.08);
+}
+
+.settings:not(.paragraph-detail) .api-key-form > button[hidden] {
+  display: none;
+}
+
+.kernel-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.kernel-traffic-light {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #a5a5a5;
+}
+
+.kernel-traffic-light[data-status='error'] {
+  background: #e5484d;
+}
+
+.kernel-traffic-light[data-status='busy'] {
+  background: #e5a000;
+}
+
+.kernel-traffic-light[data-status='ready'] {
+  background: #30a46c;
+}
+
+.kernel-uv-version {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Windows owns its chrome; the reading viewport extends beneath the header. */
+
+/* Fit horizontal pages to the reading height, including the area beneath auto-hidden chrome.
+   Keep that geometry stable when the header is revealed over the document. */
+
+.app.horizontal-immersive .workspace {
+  margin-top: calc(-1 * var(--toolbar-height));
+}
+
+.app.horizontal-immersive .reader {
+  padding-top: var(--page-gutter);
+  scroll-padding-top: 0;
+}

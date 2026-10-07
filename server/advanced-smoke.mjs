@@ -7,7 +7,7 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { startServer } from './index.mjs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { advancedOptionsToArgs } from './kernel-options.mjs';
+import { advancedOptionsToArgs } from './kernels/kernel-options.mjs';
 const root = await mkdtemp(join(tmpdir(), 'pdfmathreader-advanced-'));
 let calls = 0;
 const server = await startServer({

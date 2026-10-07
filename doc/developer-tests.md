@@ -15,7 +15,7 @@ Validation:
 ```zsh
 bun run build
 node --test server/developer-test-runner.test.mjs server/developer-tests.test.mjs
-node_modules/.bin/electron electron/developer-quick-tests-smoke.mjs
+node_modules/.bin/electron tests/desktop/developer-quick-tests-smoke.mjs
 ```
 
 The standalone Electron smoke uses isolated settings, a temporary cache, and simulated provider responses; it does not contact a real translation provider.

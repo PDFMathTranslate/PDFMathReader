@@ -1,0 +1,140 @@
+/* Extracted from src/style.css: @layer reader / base. */
+/*
+ * PDF Reader
+ * A quiet, Preview-inspired surface for a browser-based document reader.
+ * The component markup owns behavior; this file owns the visual language.
+ */
+
+:root {
+  color-scheme: light;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Arial,
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --accent: #007aff;
+  --accent-hover: color-mix(in srgb, var(--accent) 90%, black);
+  --accent-pressed: color-mix(in srgb, var(--accent) 80%, black);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-softer: color-mix(in srgb, var(--accent) 7%, transparent);
+
+  --text: #1d1d1f;
+  --text-secondary: #68686d;
+  --text-tertiary: #8c8c91;
+  --text-on-accent: #ffffff;
+
+  --chrome: rgba(247, 247, 249, 0.78);
+  --chrome-solid: #f7f7f9;
+  --chrome-raised: rgba(255, 255, 255, 0.86);
+  --chrome-hover: rgba(0, 0, 0, 0.055);
+  --chrome-pressed: rgba(0, 0, 0, 0.09);
+  --chrome-border: rgba(0, 0, 0, 0.13);
+  --chrome-divider: rgba(0, 0, 0, 0.095);
+
+  --reader: #e3e3e3;
+  --reader-deep: #d9d9d9;
+  --paper: #ffffff;
+  --paper-edge: rgba(0, 0, 0, 0.1);
+  --shadow-page: 0 2px 8px rgba(0, 0, 0, 0.08), 0 14px 34px rgba(0, 0, 0, 0.11);
+  --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.17), 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  --success: #248a3d;
+  --warning: #b66d00;
+  --danger: #d92d20;
+  --danger-soft: rgba(217, 45, 32, 0.1);
+
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 15px;
+  --radius-xl: 20px;
+
+  --toolbar-height: 54px;
+  --statusbar-height: 28px;
+  --sidebar-width: 238px;
+  --page-width: 794px;
+  --motion-duration: 160ms;
+  --motion-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--chrome-solid);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+select,
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  border: 0;
+}
+
+button:not(:disabled),
+select:not(:disabled),
+input[type='button']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 23%, transparent);
+}

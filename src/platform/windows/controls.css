@@ -1,0 +1,295 @@
+/* Windows control and application chrome styles. */
+/* controls */
+.app .toolbar > .windows-menu {
+  width: 36px;
+  min-width: 36px;
+  flex: 0 0 36px;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls button {
+  box-sizing: border-box;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  flex: 0 0 48px;
+}
+
+/* windows */
+.desktop[data-platform='win32'] .toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.desktop[data-platform='win32'] .toolbar > .windows-window-controls,
+.desktop[data-platform='win32'] .toolbar > .windows-menu,
+.desktop[data-platform='win32'] .toolbar > .icon-button,
+.desktop[data-platform='win32'] .toolbar > .toolbar-actions {
+  flex: 0 0 auto;
+}
+
+.desktop[data-platform='win32'] .toolbar > .title {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.desktop[data-platform='win32'] .toolbar .icon-button.macvue-button {
+  min-width: 30px;
+  max-width: 30px;
+  min-height: 30px;
+  flex-shrink: 0;
+}
+
+.desktop[data-platform='win32'] .toolbar > .windows-menu {
+  width: 30px;
+}
+
+.desktop[data-platform='win32'] .windows-menu-trigger {
+  box-sizing: border-box;
+  width: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  height: 30px;
+  padding: 0;
+  margin: 0;
+}
+
+.desktop[data-platform='win32'] .toolbar > .icon-button {
+  margin: 0;
+}
+
+.desktop[data-platform='win32'] .settings fluent-tablist.macvue-segmented {
+  height: auto;
+  min-height: 36px;
+  align-items: stretch;
+}
+
+.desktop[data-platform='win32'] .settings fluent-tab.macvue-segment {
+  color: var(--text);
+  height: auto;
+  min-height: 36px;
+  min-width: 0;
+  flex: 1 1 0%;
+  padding: 8px 10px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.desktop[data-platform='win32'] .settings fluent-tab.macvue-segment[data-state='on'] {
+  color: var(--text);
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
+.app[data-platform='win32'] {
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+}
+
+.app[data-platform='win32']
+  :is(
+    .settings,
+    .document-search,
+    .windows-menu-panel,
+    .page-navigator,
+    .copy-toast,
+    .error-banner
+  ) {
+  border-radius: 8px;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .settings-section {
+  border-radius: 4px;
+}
+
+.app[data-platform='win32']
+  :is(
+    .macvue-button,
+    .macvue-field,
+    .macvue-pop-up-button,
+    .macvue-segmented,
+    .macvue-segment,
+    .appearance-preview,
+    .recent-document,
+    .thumb,
+    .github-link
+  ),
+.app[data-platform='win32'] .toolbar :is(.icon-button.macvue-button, input.zoom-popup),
+.app[data-platform='win32'] .settings :is(input, select, button) {
+  border-radius: 4px;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.app[data-platform='win32']
+  .settings:not(.paragraph-detail)
+  :is(h2, h3, label, p, .muted, .setting-row, .parallel-setting, .parallel-levels) {
+  line-height: 20px;
+}
+
+.app[data-platform='win32']
+  .settings:not(.paragraph-detail)
+  :is(h2, h3, label, p, .kernel-setting, form) {
+  margin: 0;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .settings-heading {
+  margin: 0;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .settings-section {
+  flex: none;
+  margin: 0;
+  padding: 16px;
+  gap: 12px;
+  border: 0;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .setting-row {
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.app[data-platform='win32']
+  .settings:not(.paragraph-detail)
+  :is(
+    .kernel-setting,
+    .translation-service-account,
+    .translation-service-option,
+    .parallel-setting
+  ) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .parallel-settings {
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.app[data-platform='win32']
+  .settings:not(.paragraph-detail)
+  :is(.appearance-row, .appearance-effects) {
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.app[data-platform='win32']
+  .settings:not(.paragraph-detail)
+  :is(.appearance-row, .appearance-effects)
+  > span {
+  padding: 0;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .appearance-effects > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .advanced-option {
+  padding-block: 12px;
+}
+
+.app[data-platform='win32'] .settings:not(.paragraph-detail) .advanced-option p {
+  margin-top: 8px;
+}
+
+.app[data-platform='win32'] .settings #settings-account {
+  font-weight: 400;
+}
+
+.desktop[data-platform='win32'] .toolbar {
+  padding-right: 0;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls {
+  align-self: stretch;
+  display: flex;
+  gap: 0;
+  margin-left: 8px;
+  height: auto;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls button {
+  width: 46px;
+  height: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--text);
+  -webkit-app-region: no-drag;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls button:hover {
+  background: var(--accent-soft);
+}
+
+.desktop[data-platform='win32'] .windows-window-controls .windows-close:hover {
+  background: #c42b1c;
+  color: white;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.desktop[data-platform='win32'] .windows-window-controls svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.desktop[data-platform='win32'] .windows-menu-cascade {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-height: calc(100vh - 16px);
+  min-width: 250px;
+  max-width: calc(100vw - 16px);
+  margin: 0;
+  z-index: 70;
+  overscroll-behavior: contain;
+}
+
+.desktop[data-platform='win32']
+  .windows-menu-cascade
+  :is(.windows-menu-item, .windows-menu-separator) {
+  flex: none;
+}
+
+.desktop[data-platform='win32'] .windows-menu-cascade .windows-menu-item {
+  width: auto;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.desktop[data-platform='win32'] .windows-menu-item.submenu-open {
+  background: var(--accent-soft);
+}

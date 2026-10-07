@@ -1,0 +1,473 @@
+/* Extracted from src/style.css: @layer reader / toolbar. */
+/* Empty sidebar space moves the window; navigation and resizing stay interactive. */
+
+.desktop .sidebar {
+  -webkit-app-region: drag;
+}
+
+.desktop
+  .sidebar
+  :is(
+    button,
+    input,
+    select,
+    textarea,
+    label,
+    fluent-button,
+    fluent-tablist,
+    fluent-tab,
+    fluent-text-input,
+    .sidebar-resize-handle
+  ) {
+  -webkit-app-region: no-drag;
+}
+
+/* The Windows rail extends behind the toolbar. Its native drag rectangle
+     otherwise covers the menu and sidebar toggle despite their stacking order. */
+
+.desktop .sidebar :is(.thumbnail-list, .sidebar-navigation-list)::-webkit-scrollbar {
+  -webkit-app-region: no-drag;
+}
+
+.desktop .sidebar.sidebar-motion-enter-from,
+.desktop .sidebar.sidebar-motion-leave-to,
+.sidebar.sidebar-motion-enter-from,
+.sidebar.sidebar-motion-leave-to {
+  flex-basis: 0;
+  opacity: 0;
+}
+
+.sidebar-motion-enter-active,
+.sidebar-motion-leave-active {
+  overflow: hidden;
+  transition:
+    flex-basis 220ms var(--motion-ease),
+    opacity 180ms var(--motion-ease);
+}
+
+.page-navigator {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  background: var(--chrome);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 3px 14px #0002;
+  color: var(--text-secondary);
+}
+
+.page-navigator button {
+  padding: 3px;
+  min-height: 28px;
+  width: 28px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.page-navigator .system-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.page-navigator form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.page-navigator input {
+  width: 42px;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--chrome-raised);
+  text-align: center;
+  appearance: textfield;
+}
+
+.page-navigator input::-webkit-inner-spin-button {
+  appearance: none;
+}
+
+.navigator-motion-enter-active,
+.navigator-motion-leave-active {
+  transition:
+    opacity 160ms var(--motion-ease),
+    transform 160ms var(--motion-ease);
+}
+
+.navigator-motion-enter-from,
+.navigator-motion-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.desktop .toolbar .title {
+  min-width: 0;
+}
+
+.desktop .toolbar .title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page > canvas,
+  .paragraph,
+  .desktop .sidebar,
+  :is(.kernel-switcher, .translation-mode-switcher)::before,
+  .navigator-motion-enter-active,
+  .navigator-motion-leave-active {
+    transition: none !important;
+  }
+}
+
+/* The title occupies only the space remaining after fixed-size toolbar controls. */
+
+.toolbar .title,
+.desktop .toolbar .title {
+  position: static;
+  left: auto;
+  transform: none;
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+  text-align: left;
+}
+
+.toolbar .title strong {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar-actions,
+.desktop .toolbar-actions {
+  flex: 0 0 auto;
+}
+
+.toolbar > .icon-button,
+.toolbar-actions > .icon-button,
+.toolbar-actions > select {
+  flex-shrink: 0;
+}
+
+/* Reserve the tools' intrinsic width; the filename alone absorbs resizing. */
+
+.desktop .toolbar {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) max-content;
+  flex-wrap: nowrap;
+}
+
+.desktop .toolbar:not(.has-document) {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.desktop .toolbar > .icon-button:first-of-type {
+  margin: 0;
+}
+
+.desktop .toolbar .title {
+  width: 100%;
+  padding-inline: 0;
+  min-width: 0;
+}
+
+.desktop .toolbar-actions {
+  justify-self: end;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  margin-left: 0;
+}
+
+.desktop .toolbar-actions > .icon-button {
+  display: inline-flex;
+}
+
+/* Pager symbols share one centered box, independent of text baselines. */
+
+.page-navigator button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  line-height: 0;
+}
+
+.page-navigator .system-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  vertical-align: initial;
+}
+
+/* Compensate the SF Symbol raster's small difference in optical weight. */
+
+.page-navigator [aria-label='Previous page'] .system-icon {
+  transform: translateY(-0.35px);
+}
+
+.desktop.app.is-fullscreen {
+  --toolbar-height: 0px;
+  grid-template-rows: 0 minmax(0, 1fr);
+}
+
+.is-fullscreen .toolbar,
+.is-fullscreen .page-navigator {
+  display: none;
+}
+
+.is-fullscreen .workspace {
+  grid-row: 2;
+}
+
+.desktop.is-fullscreen .settings {
+  top: 12px;
+  max-height: calc(100dvh - 36px);
+}
+
+.reader {
+  --page-gutter: 24px;
+  padding: var(--page-gutter);
+  padding-inline: calc(var(--page-gutter) - var(--scrollbar-inline-inset, 0px));
+  padding-bottom: calc(var(--page-gutter) - var(--scrollbar-block-inset, 0px));
+}
+
+.reader:has(.page-layout) {
+  justify-content: safe center;
+}
+
+.page-layout {
+  display: grid;
+  grid-template-columns: repeat(var(--page-columns), max-content);
+  gap: var(--page-gutter);
+  margin-inline: auto;
+  flex: none;
+  align-items: start;
+  padding-inline-end: var(--overflow-end-inset, 0px);
+}
+
+.page-layout.horizontal {
+  display: flex;
+  gap: var(--page-gutter);
+  margin-inline: 0;
+  align-self: flex-start;
+  align-items: center;
+}
+
+.page-layout.horizontal .page-wrap {
+  align-self: center;
+}
+
+.page-layout .page-wrap {
+  margin: 0;
+  align-self: start;
+}
+
+.empty {
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.empty.has-recents {
+  margin-block: auto;
+  padding-block: 24px;
+  min-height: 0;
+}
+
+.recent-documents {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 28px;
+  text-align: left;
+}
+
+.recent-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.empty .recent-heading h2 {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.recent-heading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-sm);
+  background: var(--chrome);
+  color: var(--text);
+  box-shadow:
+    inset 0 0.5px 0 #ffffff45,
+    0 1px 2px #00000015;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  transition:
+    background-color var(--motion-duration) var(--motion-ease),
+    box-shadow var(--motion-duration) var(--motion-ease),
+    transform var(--motion-duration) var(--motion-ease);
+}
+
+.recent-heading button:hover {
+  background: var(--chrome-raised);
+  box-shadow:
+    inset 0 0.5px 0 #ffffff45,
+    0 2px 4px #00000020;
+}
+
+.recent-heading button:active {
+  background: var(--chrome-pressed);
+  box-shadow: inset 0 1px 2px #00000020;
+  transform: translateY(1px);
+}
+
+.recent-gallery {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 4px 4px 14px;
+  scroll-snap-type: x proximity;
+}
+
+.recent-document {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: max-content;
+  height: auto;
+  padding: 8px;
+  background: var(--chrome);
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  box-shadow: none;
+  scroll-snap-align: start;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.recent-document:hover {
+  background: var(--chrome-raised);
+  border-color: var(--accent);
+}
+
+.recent-document .recent-pin {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  color: #636366;
+  pointer-events: none;
+}
+
+.recent-document:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.recent-document img {
+  display: block;
+  width: auto;
+  height: 182px;
+  max-width: none;
+  max-height: none;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: white;
+  box-shadow: 0 2px 8px #00000018;
+  pointer-events: none;
+}
+
+.recent-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 132px;
+  height: 182px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-align: center;
+}
+
+.recent-placeholder .system-icon {
+  width: 30px;
+  height: 38px;
+}
+
+.recent-placeholder.is-loading {
+  position: relative;
+  isolation: isolate;
+}
+
+.recent-placeholder.is-loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, #ffffff50 50%, transparent 70%);
+  animation: recent-preview-loading 1.6s ease-in-out infinite;
+}
+
+@keyframes recent-preview-loading {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recent-placeholder.is-loading::before {
+    animation: none;
+  }
+  .recent-document {
+    transition: none;
+  }
+}
+
+.reader.restoring-view .page,
+.reader.restoring-view .page > canvas,
+.reader.restoring-view .paragraph {
+  transition: none !important;
+}
+
+.reader.restoring-view {
+  scroll-behavior: auto !important;
+}

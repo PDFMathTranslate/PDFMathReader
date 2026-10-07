@@ -1,0 +1,969 @@
+/* Common control and application layout styles. */
+/* Portaled menus use viewport coordinates, outside the scrolling, filtered settings panel. */
+
+.macvue-pop-up-button-content {
+  width: max-content;
+  min-width: max-content;
+  z-index: 100;
+}
+
+/* Portaled options can overlap the draggable toolbar. Electron hit testing
+   needs an explicit exclusion on the menu, including its non-button items. */
+
+.macvue-pop-up-button-content,
+.macvue-pop-up-button-content * {
+  -webkit-app-region: no-drag;
+}
+
+.macvue-pop-up-button-item-text {
+  white-space: nowrap;
+}
+
+/* Tint above replacement PDF canvases as well as the surrounding page. */
+
+.paragraph.math::before {
+  z-index: 5;
+  mix-blend-mode: multiply;
+}
+
+.toolbar .translation-toggle:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.translation-progress {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke-width: 2.2;
+}
+
+.translation-progress-track {
+  stroke: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.translation-progress-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dasharray 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .translation-progress-fill {
+    transition: none;
+  }
+}
+
+.copy-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: rgba(245, 245, 245, 0.92);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-popover);
+  color: var(--text);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.copy-toast-enter-active,
+.copy-toast-leave-active {
+  transition:
+    opacity 140ms ease,
+    translate 140ms ease;
+}
+
+.copy-toast-enter-from,
+.copy-toast-leave-to {
+  opacity: 0;
+  translate: 0 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-toast-enter-active,
+  .copy-toast-leave-active {
+    transition: none;
+  }
+}
+
+.appearance-row,
+.appearance-effects {
+  display: grid;
+  grid-template-columns: 85px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 13px;
+  align-items: start;
+}
+
+.appearance-row + .appearance-row,
+.appearance-effects {
+  border-top: 1px solid var(--chrome-divider);
+  padding-top: 14px;
+}
+
+.appearance-row > span,
+.appearance-effects > span {
+  padding-top: 6px;
+}
+
+.appearance-options {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.appearance-choice,
+.color-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 0;
+}
+
+.appearance-choice[aria-pressed='true'],
+.color-choice[aria-pressed='true'],
+.color-choice.selected {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.appearance-preview {
+  display: block;
+  position: relative;
+  width: 94px;
+  height: 64px;
+  border-radius: 8px;
+  border: 1px solid var(--chrome-border);
+  background: linear-gradient(135deg, #b8d9ef 10%, #087cbc 45%, #34459c 65%, #9bd4df);
+  overflow: hidden;
+  box-shadow: 0 2px 5px #0002;
+}
+
+.appearance-choice[aria-pressed='true'] .appearance-preview {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.preview-window,
+.preview-panel {
+  position: absolute;
+  border-radius: 5px;
+  border: 1px solid #ffffff80;
+  background: #f4f4f4e8;
+  box-shadow: 0 2px 4px #0003;
+}
+
+.preview-window {
+  top: 8px;
+  left: 6px;
+  width: 47px;
+  height: 29px;
+  padding: 4px;
+}
+
+.preview-window > i {
+  display: block;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.preview-window > b {
+  display: block;
+  width: 26px;
+  height: 2px;
+  margin-top: 3px;
+  background: #939393;
+}
+
+.preview-panel {
+  right: -4px;
+  bottom: -4px;
+  width: 71px;
+  height: 32px;
+  display: flex;
+  gap: 4px;
+  padding: 9px;
+}
+
+.preview-panel > b {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff6259;
+}
+
+.preview-panel > b:nth-child(2) {
+  background: #ffc12c;
+}
+
+.preview-panel > b:nth-child(3) {
+  background: #27c840;
+}
+
+[data-preview='dark'] {
+  background: linear-gradient(135deg, #514a9b, #182073 45%, #1660aa 60%, #161933);
+}
+
+[data-preview='dark'] .preview-window,
+[data-preview='dark'] .preview-panel {
+  background: #222328ed;
+  border-color: #ffffff30;
+}
+
+[data-preview='system'] {
+  background: linear-gradient(90deg, #73b9e0 50%, #302663 50%);
+}
+
+[data-preview='system'] .preview-panel {
+  background: linear-gradient(90deg, #f4f4f4 50%, #222328 50%);
+}
+
+.color-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px 8px;
+  padding: 5px 0;
+}
+
+.color-swatch {
+  display: block;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid #0002;
+  position: relative;
+}
+
+.spectrum {
+  background: conic-gradient(
+    #bf39e1,
+    #fb2980,
+    #fa7e20,
+    #f8d222,
+    #58bd42,
+    #1cb4cf,
+    #3574ee,
+    #bf39e1
+  );
+}
+
+.color-choice[aria-pressed='true'] .color-swatch,
+.color-choice.selected .color-swatch {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.settings label.custom-color {
+  margin: 0;
+  gap: 8px;
+}
+
+.custom-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.custom-color:focus-within .color-swatch {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.appearance-effects .setting-row + .setting-row {
+  margin-top: 12px;
+}
+
+:root[data-appearance='dark'] {
+  color-scheme: dark;
+  --text: #f1f1f3;
+  --text-secondary: #b3b3b8;
+  --text-tertiary: #96969c;
+  --chrome: rgba(35, 35, 38, 0.78);
+  --chrome-solid: #28282b;
+  --chrome-raised: rgba(55, 55, 58, 0.9);
+  --chrome-hover: rgba(255, 255, 255, 0.09);
+  --chrome-pressed: rgba(255, 255, 255, 0.15);
+  --chrome-border: rgba(255, 255, 255, 0.18);
+  --chrome-divider: rgba(255, 255, 255, 0.12);
+  --reader: #222225;
+  --reader-deep: #1b1b1e;
+}
+
+[data-appearance='dark'] .desktop .toolbar,
+[data-appearance='dark'] .toolbar {
+  background: rgba(35, 35, 38, 0.78);
+  color: var(--text);
+}
+
+[data-appearance='dark'] .desktop .sidebar,
+[data-appearance='dark'] .sidebar {
+  background: rgba(40, 40, 43, 0.8);
+  color: var(--text);
+}
+
+[data-appearance='dark'] .desktop .reader,
+[data-appearance='dark'] .reader,
+[data-appearance='dark'] .empty {
+  background: rgba(30, 30, 33, 0.75);
+  color: var(--text);
+}
+
+[data-appearance='dark'] .settings,
+[data-appearance='dark'] .document-search,
+[data-appearance='dark'] .copy-toast {
+  background: rgba(40, 40, 43, 0.94);
+  color: var(--text);
+}
+
+[data-appearance='dark'] .settings:not(.paragraph-detail) .settings-section {
+  background: rgba(55, 55, 58, 0.78);
+}
+
+[data-appearance='dark'] .recent-document,
+[data-appearance='dark'] .recent-heading > button {
+  background: var(--chrome-raised);
+  color: var(--text);
+}
+
+:root[data-reduce-motion='true'] *,
+:root[data-reduce-motion='true'] *::before,
+:root[data-reduce-motion='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-reduce-transparency='true'] .toolbar,
+:root[data-reduce-transparency='true'] .sidebar,
+:root[data-reduce-transparency='true'] .reader,
+:root[data-reduce-transparency='true'] .empty,
+:root[data-reduce-transparency='true'] .settings,
+:root[data-reduce-transparency='true'] .document-search,
+:root[data-reduce-transparency='true'] .copy-toast {
+  background: #fcfcfc !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-reduce-transparency='true'] .sidebar {
+  background: #edeceb !important;
+}
+
+:root[data-reduce-transparency='true'] .settings-section {
+  background: #f4f4f4 !important;
+}
+
+:root[data-reduce-transparency='true'][data-appearance='dark'] .toolbar,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .sidebar,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .reader,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .empty,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .settings,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .document-search,
+:root[data-reduce-transparency='true'][data-appearance='dark'] .copy-toast {
+  background: #28282b !important;
+}
+
+:root[data-reduce-transparency='true'][data-appearance='dark'] .settings-section {
+  background: #37373a !important;
+}
+
+@media (max-width: 540px) {
+  .appearance-row,
+  .appearance-effects {
+    grid-template-columns: 1fr;
+  }
+  .appearance-options {
+    justify-content: flex-start;
+  }
+  .appearance-preview {
+    width: 84px;
+  }
+  .color-options {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.color-options {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+@media (max-width: 540px) {
+  .color-options {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Expand settings to 120% of its previous 336px width. */
+
+.settings:not(.paragraph-detail) {
+  width: min(403.2px, calc(100vw - 28px));
+}
+
+.appearance-row,
+.appearance-effects {
+  grid-template-columns: 1fr;
+}
+
+.appearance-options {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.appearance-preview {
+  width: 76px;
+  height: 56px;
+}
+
+.color-options {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.settings .kernel-module {
+  white-space: normal;
+}
+
+/* One hover surface for every kernel, above white replacement layers. */
+
+.paragraph {
+  overflow: visible;
+}
+
+.paragraph.translated > .paragraph-text {
+  height: 100%;
+  overflow: auto;
+}
+
+.paragraph::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+  z-index: 5;
+  mix-blend-mode: multiply;
+}
+
+.paragraph:hover::before,
+.paragraph:focus-visible::before {
+  opacity: 1;
+}
+
+.paragraph:hover,
+.paragraph:focus-visible {
+  background: transparent;
+}
+
+.paragraph.translated:hover,
+.paragraph.translated:focus-visible {
+  background: #fff;
+}
+
+.paragraph.outlined {
+  outline-offset: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paragraph::before {
+    transition: none;
+  }
+}
+
+/* Slide chrome without resizing the reading viewport or its page canvases. */
+
+.toolbar {
+  transform: none;
+  transition: transform 180ms ease;
+}
+
+/* Move all sidebar tabs with the same timing as the header's slide. */
+
+.content-glass .sidebar,
+.desktop[data-platform='win32'] .sidebar {
+  transition: padding-top 180ms ease;
+}
+
+.content-glass .sidebar.without-motion,
+.desktop[data-platform='win32'] .sidebar.without-motion {
+  transition: none;
+}
+
+/* Release the titlebar inset when its chrome slides out of view. */
+
+.content-glass.immersive-header-hidden .sidebar,
+.desktop[data-platform='win32'].immersive-header-hidden .sidebar {
+  padding-top: 0;
+}
+
+.immersive-header-hidden .toolbar {
+  transform: translateY(-100%);
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
+.header-reveal-zone {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 12px;
+  z-index: 35;
+  -webkit-app-region: no-drag;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar,
+  .content-glass .sidebar,
+  .desktop[data-platform='win32'] .sidebar {
+    transition: none;
+  }
+}
+
+/* PDF.js selection runs align with the rendered page, including rotated PDFs. */
+
+.reading-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: initial;
+  transform-origin: 0 0;
+  z-index: 3;
+  user-select: text;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+  text-size-adjust: none;
+  forced-color-adjust: none;
+}
+
+.reading-text-layer :is(span, br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+  user-select: text;
+}
+
+.reading-text-layer > :not(.markedContent),
+.reading-text-layer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.reading-text-layer .markedContent {
+  display: contents;
+}
+
+.reading-text-layer ::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: transparent;
+}
+
+.reading-paragraphs {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.reading-paragraph {
+  position: absolute;
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+  background: #fff;
+  color: #202024;
+  line-height: 1.2;
+  box-shadow: 0 0 0 var(--cover-padding, 3px) #fff;
+  text-align: left;
+  white-space: normal;
+}
+
+.reading-paragraph > .paragraph-text {
+  height: 100%;
+  overflow: auto;
+  user-select: text;
+}
+
+.reading-interaction .page {
+  user-select: text;
+}
+
+.settings [aria-label='Interaction mode'] {
+  width: 100%;
+}
+
+.settings [aria-label='Interaction mode'] > .macvue-segment {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* Continuous pages use the same zero spacing in CSS and virtual geometry. */
+
+:root[data-reduce-padding='true'] .app:not(.startup-page) .reader {
+  --page-gutter: 0px;
+  scrollbar-gutter: auto;
+  padding: 0;
+  scroll-padding: 0;
+}
+
+:root[data-reduce-padding='true'] .page-layout {
+  gap: 0;
+  padding: 0;
+}
+
+/* Keep the first vertical page clear of revealed chrome, even with reduced padding. */
+
+:root .app.vertical-immersive .reader,
+:root[data-reduce-padding='true'] .app.vertical-immersive .reader {
+  padding-top: max(12px, var(--page-gutter));
+}
+
+:root .app.vertical-immersive.content-glass .reader,
+:root .desktop.app.vertical-immersive[data-platform='win32'] .reader {
+  padding-top: calc(var(--toolbar-height) + max(12px, var(--page-gutter)));
+  scroll-padding-top: var(--toolbar-height);
+}
+
+/* Reduced padding stays zero even under immersive toolbar rules. */
+
+:root[data-reduce-padding='true'] .app:not(.startup-page) .reader,
+:root[data-reduce-padding='true'] .desktop.app.vertical-immersive[data-platform='win32'] .reader {
+  padding: 0;
+  scroll-padding: 0;
+}
+
+:root[data-reduce-padding='true'] .page {
+  border: 0;
+}
+
+/* Shadows do not affect layout; show them only for manual zoom in compact mode. */
+
+:root[data-reduce-padding='true'] .reader:not(.manual-zoom) .page,
+:root[data-reduce-padding='true'] .reader:not(.manual-zoom) .page-wrap.cropped {
+  box-shadow: none;
+}
+
+/* Crossfade theme snapshots without reflowing document pages. */
+
+::view-transition-old(root) {
+  animation: appearance-fade-out 220ms ease both;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: appearance-fade-in 220ms ease both;
+  mix-blend-mode: normal;
+}
+
+@keyframes appearance-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes appearance-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-reduce-motion='true']::view-transition-old(root),
+:root[data-reduce-motion='true']::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* Keep PDF pages, translated overlays, and document previews consistent on every platform. */
+
+[data-appearance='dark'] .reader .page,
+[data-appearance='dark'] .sidebar .thumb canvas,
+[data-appearance='dark'] .recent-document img {
+  filter: invert(0.75);
+}
+
+.scrub-input.alt-scrub {
+  cursor: ew-resize;
+}
+
+.toolbar input.zoom-popup {
+  width: 70px;
+  min-width: 70px;
+  padding: 5px 7px;
+  text-align: center;
+  border: 0;
+  border-radius: 6px;
+  background: var(--chrome-hover);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.toolbar input.zoom-popup:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.advanced-settings > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advanced-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-settings > summary::before {
+  content: '›';
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 140ms ease;
+}
+
+.advanced-settings[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced-options {
+  margin-top: 16px;
+}
+
+.advanced-option {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--chrome-border);
+}
+
+.advanced-option:first-of-type {
+  padding-top: 0;
+}
+
+.settings .advanced-option label {
+  margin: 0;
+  display: block;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.advanced-option .setting-row {
+  gap: 16px;
+}
+
+.advanced-option p {
+  font-size: 13px;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.advanced-option input[type='number'] {
+  width: 80px;
+  flex: none;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.advanced-option .macvue-text-field {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.advanced-options > .macvue-button {
+  margin-top: 12px;
+}
+
+.advanced-option > .macvue-field {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.advanced-kernel-update {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--chrome-divider);
+}
+
+/* Keep nested disclosure spacing independent of the outer settings cards. */
+
+.settings:not(.paragraph-detail) .settings-section > .advanced-settings {
+  display: block;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--chrome-divider);
+  border-bottom: 1px solid var(--chrome-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+details.advanced-settings:not([open]) > .advanced-options {
+  display: none;
+}
+
+.settings:not(.paragraph-detail) .settings-section > .advanced-settings + .kernel-status-line {
+  padding-top: 0;
+}
+
+.settings:not(.paragraph-detail)
+  .settings-section
+  > :is(.setting-row, .translation-service-account, .translation-service-option, .kernel-setting)
+  + :is(.setting-row, .translation-service-account, .translation-service-option, .kernel-setting) {
+  border-top: 1px solid var(--chrome-divider);
+  padding-top: 12px;
+  margin-top: 0;
+}
+
+.settings .translation-service-account {
+  display: grid;
+  gap: 8px;
+}
+
+.settings .translation-service-option {
+  margin-top: 0;
+}
+
+.settings .parallel-settings {
+  border-top-color: var(--chrome-divider);
+}
+
+.settings .parallel-setting + .parallel-setting {
+  border-top: 1px solid var(--chrome-divider);
+  padding-top: 12px;
+}
+
+.settings .mac-translation-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  height: auto;
+  min-height: 32px;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.settings .mac-translation-control > .macvue-segment {
+  min-width: 0;
+  height: auto;
+  min-height: 32px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Fixed square hit areas keep toolbar icons aligned on every platform. */
+
+.app .toolbar .icon-button.macvue-button,
+.app .toolbar .windows-menu-trigger {
+  box-sizing: border-box;
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Floating zoom uses the pager's shared island, button and input styles. */
+
+/* Keep the mode pop-up at toolbar scale rather than the library's form scale. */
+
+/* Match the palette's continuous corners in the macOS thumbnail rail. */
+
+/* Use the same nested continuous corners on the macOS start-page cards. */
+
+/* macOS settings: narrower panel and generously rounded controls, excluding switches. */
+
+/* Equal-height option switchers throughout macOS settings. */
+
+/* Softer dividers throughout settings, including expanded advanced options. */
+
+.settings:not(.paragraph-detail) {
+  --settings-divider: rgba(0, 0, 0, 0.045);
+  --chrome-divider: var(--settings-divider);
+}
+
+[data-appearance='dark'] .settings:not(.paragraph-detail) {
+  --settings-divider: rgba(255, 255, 255, 0.06);
+}
+
+.settings:not(.paragraph-detail)
+  :is(
+    .setting-row,
+    .appearance-row,
+    .appearance-effects,
+    .parallel-settings,
+    .parallel-setting,
+    .advanced-settings,
+    .advanced-option,
+    .advanced-kernel-update,
+    .translation-service-account,
+    .translation-service-option,
+    .kernel-setting
+  ) {
+  border-top-color: var(--settings-divider);
+  border-bottom-color: var(--settings-divider);
+}
+
+/* The library paints selection in a separate pill, so round that layer too. */
+
+.translation-progress.cache-reading .translation-progress-fill {
+  stroke: var(--text-secondary, #8e8e93);
+}

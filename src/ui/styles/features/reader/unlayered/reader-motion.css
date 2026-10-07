@@ -1,0 +1,23 @@
+/* Extracted from src/style.css: unlayered / reader-motion. */
+/* Keep the destination from appearing before its thumbnail arrives. */
+
+.reader.document-opening .page-wrap {
+  visibility: hidden;
+}
+
+.workspace.document-opening > .sidebar,
+.workspace.document-closing > .sidebar {
+  visibility: hidden;
+}
+
+/* Windows commits the rail width once; only its surface moves between frames. */
+
+/* Native Acrylic already supplies the blur; avoid a second moving backdrop. */
+
+/* Snapshot motion owns the corners; suppress competing geometry transitions. */
+
+.reader.layout-transitioning .page,
+.reader.layout-transitioning .page > canvas,
+.reader.layout-transitioning .paragraph {
+  transition: none !important;
+}

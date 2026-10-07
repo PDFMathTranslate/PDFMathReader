@@ -5,11 +5,11 @@
   "scripts": {
     "dev": "node server/index.mjs",
     "build": "vite build",
-    "test": "node --test server/*.test.mjs",
+    "test": "node tests/run.mjs",
     "desktop": "bun run build && electron .",
-    "package:mac": "bun run icons:mac && bun run build && node electron/package.mjs --distribute",
-    "icons:mac": "node electron/generate-icon.mjs && swift electron/export-symbols.swift public/symbols",
-    "package:win": "bun run build && node electron/package.mjs --platform=win32 --arch=x64 --distribute",
+    "package:mac": "bun run icons:mac && bun run build && node electron/build/package.mjs --distribute",
+    "icons:mac": "node electron/build/generate-icon.mjs && swift electron/build/export-symbols.swift public/symbols",
+    "package:win": "bun run build && node electron/build/package.mjs --platform=win32 --arch=x64 --distribute",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -17,7 +17,8 @@
     "lint:fix": "eslint . --fix --max-warnings=0",
     "style:check": "bun run lint && bun run format:check && node scripts/native-style.mjs check",
     "style:fix": "bun run lint:fix && bun run format && node scripts/native-style.mjs fix",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "index:code": "node scripts/index-codegraph.mjs"
   },
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",

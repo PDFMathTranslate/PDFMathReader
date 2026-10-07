@@ -28,7 +28,7 @@ It is not a measurement of the compressed distribution ZIP.
 - `npm run build`: passed.
 - `npm test`: 155 tests passed, including staged backend HTTP authentication,
   PDF upload/text extraction, and portable target dependency checks.
-- `node electron/package.mjs --test --unsigned`: generated an ASAR macOS arm64
+- `node electron/build/package.mjs --test --unsigned`: generated an ASAR macOS arm64
   test app with Electron 44.5.1. Test fixtures make this larger than production.
 - Desktop startup invocation exited with status 1 after a macOS
   `sandbox_extension_issue_file_to_process` permission error; GUI startup remains

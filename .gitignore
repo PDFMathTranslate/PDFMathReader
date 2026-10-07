@@ -248,3 +248,7 @@ __marimo__/
 .cursor/
 .codegraph/
 dist-pages/
+
+# Electron build scripts are source, not generated Python output.
+!electron/build/
+!electron/build/**

@@ -1,0 +1,190 @@
+/* Extracted from src/style.css: @layer reader / feedback. */
+/* Empty and feedback states --------------------------------------------- */
+
+.empty {
+  display: grid;
+  align-content: center;
+  place-items: center;
+  min-width: 0;
+  min-height: 100%;
+  padding: 38px 24px;
+  text-align: center;
+}
+
+.empty-card {
+  display: grid;
+  justify-items: center;
+  gap: 13px;
+  width: min(100%, 390px);
+  padding: 34px 30px 32px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.07),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.8);
+}
+
+.empty::before,
+.empty-card::before {
+  content: '';
+  display: block;
+  width: 52px;
+  height: 62px;
+  margin-bottom: 2px;
+  background: linear-gradient(135deg, transparent 0 14px, #ffffff 14px 100%);
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  clip-path: polygon(0 0, 68% 0, 100% 32%, 100% 100%, 0 100%);
+}
+
+.empty:has(.document-symbol)::before {
+  display: none;
+}
+
+.document-symbol {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 68px;
+  margin-bottom: 2px;
+  color: var(--accent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    color-mix(in srgb, var(--accent) 4%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 7px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.document-symbol span {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.empty-card::before {
+  display: none;
+}
+
+.empty h1,
+.empty h2,
+.empty p {
+  margin: 0;
+}
+
+.empty h1,
+.empty h2 {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.empty p {
+  max-width: 30em;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.empty .primary {
+  margin-top: 0;
+}
+
+.empty > button:not(.primary) {
+  padding: 0 7px;
+  color: var(--accent);
+  background: transparent;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.empty > button:not(.primary):hover {
+  background: var(--accent-soft);
+}
+
+.empty .muted {
+  font-size: 11px;
+}
+
+.empty-card .empty-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 64px;
+  color: var(--accent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    color-mix(in srgb, var(--accent) 4%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.empty-card .empty-icon svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.error-banner {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--statusbar-height) + 14px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(460px, calc(100vw - 28px));
+  padding: 10px 10px 10px 13px;
+  color: #8f2118;
+  background: rgba(255, 245, 244, 0.94);
+  border: 1px solid rgba(217, 45, 32, 0.28);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.error-banner > button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border-radius: 5px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.error-banner > button:hover {
+  background: rgba(217, 45, 32, 0.1);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

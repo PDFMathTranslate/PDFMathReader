@@ -1,0 +1,153 @@
+/* Extracted from src/style.css: @layer reader / reader-controls. */
+/* Reader controls follow macOS motion and accessibility preferences. */
+
+.page-wrap {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-inline: auto;
+  position: relative;
+}
+
+.page,
+.page > canvas,
+.paragraph {
+  transition:
+    width 180ms var(--motion-ease),
+    height 180ms var(--motion-ease),
+    left 180ms var(--motion-ease),
+    top 180ms var(--motion-ease);
+}
+
+.page-caption {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  max-width: calc(100% - 12px);
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 2px 6px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+  background: var(--chrome-raised);
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.page-caption.progress,
+.settings .progress {
+  color: var(--text-secondary);
+}
+
+.page-caption.warning,
+.settings .warning {
+  color: #d47a00;
+}
+
+.page-caption.error,
+.settings .error {
+  color: var(--danger);
+}
+
+.page-caption button {
+  margin-left: 8px;
+  padding: 0 4px;
+  min-height: 0;
+  height: 16px;
+  line-height: 16px;
+  color: inherit;
+  background: transparent;
+  font-size: 11px;
+}
+
+.kernel-setting {
+  margin: 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:is(.kernel-switcher, .translation-mode-switcher) {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--chrome-hover);
+  border: 1px solid var(--chrome-border);
+}
+
+:is(.kernel-switcher, .translation-mode-switcher)::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  border-radius: 5px;
+  background: var(--chrome-raised);
+  box-shadow: 0 1px 3px #0002;
+  transform: translateX(calc(var(--selected) * 100%));
+  transition: transform 180ms var(--motion-ease);
+}
+
+:is(.kernel-switcher, .translation-mode-switcher) button {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 5px 3px;
+  min-height: 28px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+:is(.kernel-switcher, .translation-mode-switcher) button[aria-checked='true'] {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.desktop .sidebar {
+  overflow: hidden;
+  transition:
+    flex-basis 220ms var(--motion-ease),
+    opacity 180ms var(--motion-ease);
+}
+
+/* Keep overflowed translation text accessible without paragraph scrollbar marks. */
+
+.paragraph.translated {
+  scrollbar-width: none;
+}
+
+.paragraph.translated::-webkit-scrollbar {
+  display: none;
+}
+
+.translation-mode-switcher {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.translation-mode-switcher::before {
+  width: calc((100% - 6px) / 2);
+}
+
+/* Keep scrollbar geometry stable, showing the thumb only during scrolling. */
+
+:is(.reader, .thumbnail-list, .sidebar-navigation-list):not([data-scrolling]) {
+  scrollbar-color: transparent transparent;
+}
+
+:is(.reader, .thumbnail-list, .sidebar-navigation-list):not(
+    [data-scrolling]
+  )::-webkit-scrollbar-thumb,
+:is(.reader, .thumbnail-list, .sidebar-navigation-list):not(
+    [data-scrolling]
+  )::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+}

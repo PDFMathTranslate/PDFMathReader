@@ -1,0 +1,78 @@
+/* Extracted from src/style.css: @layer reader / statusbar. */
+/* Status bar ------------------------------------------------------------- */
+
+.statusbar {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 12px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--chrome-divider);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+}
+
+.statusbar > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusbar .status-left,
+.statusbar .status-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusbar > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: var(--success);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(36, 138, 61, 0.12);
+}
+
+.status-dot.busy {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+  animation: status-pulse 1.2s step-end infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.statusbar .separator {
+  width: 1px;
+  height: 13px;
+  background: var(--chrome-divider);
+}
+
+.statusbar .icon-button {
+  width: 23px;
+  height: 23px;
+  margin: -2px 0;
+  font-size: 12px;
+}

@@ -73,7 +73,7 @@ Read scientific documents in any language, with realtime translation, on any pla
     </tr>
   </tbody>
 </table>
-
+  *Due to the limited devices for testing, the compatibility checks on Windows and Linux are done periodically.*
 ## Development
 
 <details>

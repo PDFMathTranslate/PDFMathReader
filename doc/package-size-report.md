@@ -20,9 +20,9 @@ Third-party license notices for browser libraries and inlined backend dependenci
 
 ## Implementation
 
-`electron/production-stage.mjs` builds a fresh temporary staging directory. It copies runtime assets and dependency versions explicitly, then bundles `electron/main.mjs` and `server/index.mjs` with esbuild. The utility-process launcher and preload remain separate. Development source and installed dependencies are left intact.
+`electron/build/production-stage.mjs` builds a fresh temporary staging directory. It copies runtime assets and dependency versions explicitly, then bundles `electron/main.mjs` and `server/index.mjs` with esbuild. The utility-process launcher and preload remain separate. Development source and installed dependencies are left intact.
 
-`electron/package.mjs` packages that staging directory and writes `package-size.json` beside the output app. The default stage is `bundle`; the intermediate stages are available through `--stage=whitelist`, `--stage=pdf`, `--stage=skia`, and `--stage=dependencies` for diagnosis. Test packages include their mock-provider smoke scripts and fixture-generation dependencies; their total size is therefore larger than production.
+`electron/build/package.mjs` packages that staging directory and writes `package-size.json` beside the output app. The default stage is `bundle`; the intermediate stages are available through `--stage=whitelist`, `--stage=pdf`, `--stage=skia`, and `--stage=dependencies` for diagnosis. Test packages include their mock-provider smoke scripts and fixture-generation dependencies; their total size is therefore larger than production.
 
 ## Validation
 
@@ -34,7 +34,7 @@ The long-document check also exposed a rendering race: visible rows were calcula
 
 ```zsh
 npm run package:mac
-node electron/package.mjs --test
+node electron/build/package.mjs --test
 '/tmp/pdfmathreader-slim-test-build/PDFMathReader Tests-darwin-arm64/PDFMathReader Tests.app/Contents/MacOS/PDFMathReader Tests' --smoke-test=performance
 ```
 

@@ -11,7 +11,7 @@ Render the saved scene:
 ```zsh
 /Applications/Blender.app/Contents/MacOS/Blender -b doc/icon-3d/PDFMathReader-icon.blend -f 1
 cp doc/icon-3d/equal-margins-icon0001.png doc/icon.png
-node electron/generate-icon.mjs
+node electron/build/generate-icon.mjs
 sips -z 128 128 doc/icon.png --out doc/icon-small.png
 ```
 

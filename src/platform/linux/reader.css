@@ -1,0 +1,82 @@
+/* Linux reader compatibility styles. */
+@layer reader {
+  /* reader-layout */
+  .app[data-platform='linux'] {
+    font-family: system-ui, 'Ubuntu', 'Cantarell', 'Noto Sans', sans-serif;
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --chrome-solid: #f6f5f4;
+  }
+
+  .desktop[data-platform='linux'] .toolbar {
+    padding-inline: 12px;
+  }
+
+  .desktop[data-platform='linux'] .toolbar .icon-button {
+    border-radius: 8px;
+  }
+}
+/* overlays */
+.desktop[data-platform='linux'] .toolbar {
+  -webkit-app-region: drag;
+  grid-template-columns: max-content 36px minmax(0, 1fr) max-content;
+}
+
+.desktop[data-platform='linux'] .toolbar.has-document {
+  grid-template-columns: max-content 36px 36px minmax(0, 1fr) max-content;
+}
+
+.desktop[data-platform='linux'].immersive-header-hidden .toolbar {
+  visibility: hidden;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
+.linux-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.linux-traffic-lights button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid #0002;
+  border-radius: 50%;
+  color: #0009;
+  font: 12px/1 sans-serif;
+  cursor: default;
+}
+
+.linux-traffic-lights .close {
+  background: #ff5f57;
+}
+
+.linux-traffic-lights .minimize {
+  background: #febc2e;
+}
+
+.linux-traffic-lights .maximize {
+  background: #28c840;
+}
+
+.linux-traffic-lights span {
+  opacity: 0;
+}
+
+.linux-traffic-lights:hover span,
+.linux-traffic-lights button:focus-visible span {
+  opacity: 1;
+}
+
+.linux-traffic-lights button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

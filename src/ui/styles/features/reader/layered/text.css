@@ -1,0 +1,179 @@
+/* Extracted from src/style.css: @layer reader / text. */
+/* Cover glyph descenders/antialiasing outside Inspector's text rectangle. */
+
+.paragraph.translated,
+.paragraph.translated:hover,
+.paragraph.translated:focus-visible {
+  box-shadow: 0 0 0 var(--cover-padding, 3px) #fff;
+}
+
+/* Use optically sized SF Symbols without double-shrinking transparent margins. */
+
+.desktop .toolbar .system-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.desktop .toolbar .icon-button,
+.desktop .toolbar-actions .icon-button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.desktop .toolbar-actions > button,
+.desktop .toolbar-actions > select {
+  min-height: 36px;
+}
+
+.desktop .toolbar button:active {
+  background: var(--chrome-pressed);
+  transition-duration: 80ms;
+}
+
+.settings-heading > button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+/* Masked, staggered text replacement; glyphs never crossfade over old text. */
+
+.paragraph-text {
+  display: block;
+  text-align: var(--paragraph-align, left);
+}
+
+.reveal-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.reveal-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-block: 0.08em;
+  margin-block: -0.08em;
+}
+
+.reveal-letter {
+  display: inline-block;
+}
+
+.text-revealing .reveal-letter,
+.pdf-glyph-rise {
+  animation: glyph-rise 300ms cubic-bezier(0.2, 0.75, 0.25, 1.12) both;
+  animation-delay: calc(40ms + var(--reveal-delay, 0ms));
+}
+
+@keyframes glyph-rise {
+  0% {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+  72% {
+    transform: translateY(-7%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pdf-text-reveal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.pdf-reveal-region {
+  position: absolute;
+  background: white;
+  overflow: hidden;
+}
+
+.pdf-glyph-mask {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+}
+
+.pdf-glyph-rise {
+  background-image: var(--pdf-reveal-image);
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+}
+
+.pdf-reveal-old {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: clear-old-text 40ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes clear-old-text {
+  to {
+    opacity: 0;
+  }
+}
+
+.native-paragraph-reveal {
+  display: block;
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.paragraph.revealing {
+  background: #fff;
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-letter,
+  .pdf-glyph-rise,
+  .pdf-reveal-old {
+    animation: none !important;
+  }
+}
+
+.paragraph.revealing {
+  overflow: hidden;
+}
+
+.paragraph.revealing:has(.native-paragraph-reveal) {
+  overflow: visible;
+}
+
+.reader.pinching {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+.reader {
+  overflow-anchor: none;
+}
+
+.reader.pinching .page,
+.reader.pinching .page > canvas,
+.reader.pinching .paragraph {
+  transition: none;
+}
+
+.reader.pinching .page canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.page > canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
