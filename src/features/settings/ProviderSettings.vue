@@ -670,7 +670,7 @@ onBeforeUnmount(() => {
   min-width: 190px;
   overflow: hidden;
   padding: 18px 12px;
-  background: var(--paper);
+  background: var(--chrome-solid);
   display: grid;
   align-content: start;
   grid-template-rows: minmax(0, 1fr) auto;

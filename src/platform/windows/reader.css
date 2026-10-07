@@ -34,6 +34,9 @@
     --radius-sm: 6px;
     --chrome-solid: #f3f3f3;
   }
+  [data-appearance='dark'] .app[data-platform='win32'] {
+    --chrome-solid: #28282b;
+  }
 
   .desktop[data-platform='win32'] .toolbar .title {
     font-weight: 600;

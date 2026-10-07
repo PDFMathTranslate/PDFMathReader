@@ -218,9 +218,24 @@ export async function verifyWindowsControls(window) {
     `document.querySelector('.fluent-kernel-modes fluent-tab[data-kernel-mode=pdf_math_precise]').dataset.state==='on'`,
   );
   await category('providers');
+  assert.equal(
+    await run(
+      `(()=>{const actions=document.querySelector('.workspace-actions').getBoundingClientRect();const header=document.querySelector('.workspace-heading');const rect=header.getBoundingClientRect();return Math.abs(rect.right-actions.right-parseFloat(getComputedStyle(header).paddingRight))<2;})()`,
+    ),
+    true,
+    'Provider search and close controls must align to the trailing edge',
+  );
   await wait(`!!document.querySelector('fluent-button.provider-list-item')`);
   await run(`document.querySelector('fluent-button.provider-list-item').click()`);
   await wait(`!!document.querySelector('fluent-button.provider-list-item.is-browse')`);
+  await run(`document.documentElement.dataset.appearance='dark'`);
+  assert.equal(
+    await run(
+      `(()=>{const background=el=>getComputedStyle(el).backgroundColor;const dark=color=>{const channels=color.match(/[\\d.]+/g);return channels&&channels.slice(0,3).every(value=>Number(value)<100)};return ['.workspace-heading','.workspace-page','.provider-browser'].every(selector=>dark(background(document.querySelector(selector))));})()`,
+    ),
+    true,
+    'Settings and provider surfaces must use dark backgrounds',
+  );
   window.show();
   await new Promise((resolve) => setTimeout(resolve, 350));
   await writeFile(

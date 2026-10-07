@@ -255,6 +255,7 @@ fluent-button.category-button {
   width: 100%;
 }
 fluent-button.category-button::part(content) {
+  color: inherit;
   display: flex;
   box-sizing: border-box;
   width: 100%;
@@ -480,6 +481,7 @@ section.settings.settings-workspace.native-settings-window[data-section] {
 }
 .workspace-actions {
   display: flex;
+  margin-inline-start: auto;
   align-items: center;
   gap: 12px;
 }
