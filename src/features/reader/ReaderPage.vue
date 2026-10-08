@@ -1,11 +1,12 @@
 <script setup>
-import { computed, nextTick, onMounted, onBeforeUnmount, shallowRef } from 'vue';
+import { computed, watch, nextTick, onMounted, onBeforeUnmount, shallowRef } from 'vue';
 import ReadingAnnotations from '../annotations/ReadingAnnotations.vue';
 import ReadingLinks from './ReadingLinks.vue';
 import { quickLinkBox } from './quick-links.mjs';
 import ReadingTextLayer from './ReadingTextLayer.vue';
 import TopicSentenceText from '../translation/TopicSentenceText.vue';
 import TextReveal from '../../ui/motion/TextReveal.vue';
+import { revealPDF } from '../../ui/motion/text-reveal.mjs';
 import MathRegion from './MathRegion.vue';
 import FormulaOcrRegion from './FormulaOcrRegion.vue';
 import { formulaRegions } from './formula-regions.mjs';
@@ -118,7 +119,55 @@ const hostRef = (el) => {
   props.registerHost(props.page.number, el);
 };
 onMounted(() => props.registerCanvas(props.page.number, host.value.querySelector('canvas')));
+let refocusController;
+watch(
+  () => [props.zoom, props.foreground, props.page.visible],
+  () => refocusController?.abort(),
+);
+watch(
+  () => props.translations,
+  async (translated) => {
+    refocusController?.abort();
+    // PDF-backed results animate after their new canvas frame is presented.
+    if (
+      props.page.mathDocument ||
+      props.interactionMode !== 'reading' ||
+      !props.foreground ||
+      !props.page.visible
+    )
+      return;
+    const controller = new AbortController();
+    refocusController = controller;
+    await nextTick();
+    const blocks = props.page.blocks.filter((b) => !b.math && b.translation);
+    if (!host.value || (translated && blocks.length)) return;
+    try {
+      const source = blocks.length
+        ? props.nativeSource(props.page.number, blocks[0])
+        : {
+            canvas: host.value.querySelector('canvas'),
+            page: props.pdfDocument?.getPage(props.pdfPageNumber || props.page.number),
+            scale: props.zoom,
+          };
+      if (!source.page) return;
+      await revealPDF({
+        ...source,
+        page: await source.page,
+        host: host.value,
+        origin: { x: 0, y: 0 },
+        signal: controller.signal,
+        boxes: blocks.map((b) => ({
+          x: b.x * props.zoom,
+          y: b.y * props.zoom,
+          width: b.width * props.zoom,
+          height: Math.max(b.height, b.fontSize * 1.1) * props.zoom,
+        })),
+      });
+    } catch {}
+  },
+);
 onBeforeUnmount(() => {
+  refocusController?.abort();
   emit('hover', null);
   props.registerCanvas(props.page.number, null);
 });
@@ -155,8 +204,35 @@ function mathBox(b) {
     height: Math.max(a.y + a.height, c.y + c.height) - Math.min(a.y, c.y),
   };
 }
-function click(b, event) {
-  if (event.detail <= 1) emit('toggle', b);
+async function click(b, event) {
+  if (event.detail > 1) return;
+  refocusController?.abort();
+  emit('toggle', b);
+  // Returning from a cropped PDF override exposes the base canvas again.
+  if (!b.math || b.translated !== props.translations || !props.foreground || !props.page.visible)
+    return;
+  const controller = new AbortController();
+  refocusController = controller;
+  await nextTick();
+  const box = mathBox(b),
+    scale = props.zoom;
+  try {
+    await revealPDF({
+      canvas: host.value?.querySelector('canvas'),
+      page: await props.mathSource(props.page.number, props.translations),
+      scale,
+      host: host.value,
+      signal: controller.signal,
+      boxes: [
+        {
+          x: box.x * scale,
+          y: box.y * scale,
+          width: box.width * scale,
+          height: box.height * scale,
+        },
+      ],
+    });
+  } catch {}
 }
 function fit(el, b) {
   if (b.math) return;
@@ -258,13 +334,13 @@ function fit(el, b) {
           :data-block-id="b.id"
           :style="blockStyle(b)"
         >
-          <span class="paragraph-text"
-            ><TopicSentenceText
-              :text="paragraphDisplayText(b.translation)"
-              :enabled="emphasizeTopic(b)"
-              :information="emphasizeInformation"
-              :information-categories="informationCategories"
-          /></span>
+          <TextReveal
+            :text="b.translation"
+            :scale="zoom"
+            :emphasize-topic-sentences="emphasizeTopic(b)"
+            :emphasize-information="emphasizeInformation"
+            :information-categories="informationCategories"
+          />
         </div>
       </div>
       <template v-else
@@ -298,7 +374,7 @@ function fit(el, b) {
             :source="() => mathSource(p.number, b.translated)"
             :box="mathBox(b)"
             :zoom="zoom"
-            :active="foreground"
+            :active="foreground && !!p.visible"
           /><TextReveal
             :emphasize-topic-sentences="emphasizeTopic(b)"
             :emphasize-information="emphasizeInformation"

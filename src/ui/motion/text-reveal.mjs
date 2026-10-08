@@ -1,3 +1,4 @@
+export { refocusPDF as revealPDF } from './digital-refocus.mjs';
 import { loadPDFRuntime } from '../../features/reader/pdf-runtime.mjs';
 export const revealDuration = 520;
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -16,7 +17,7 @@ export function snapshot(canvas) {
   return copy;
 }
 // Reveal crops of the rendered PDF: its typography and formula glyphs stay native.
-export async function revealPDF({
+export async function revealCharactersPDF({
   canvas,
   page,
   scale,

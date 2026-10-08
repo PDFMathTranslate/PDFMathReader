@@ -1,11 +1,13 @@
 <script setup>
 import { computed, watch } from 'vue';
+import { platform } from '../../platform/runtime.mjs';
 import { AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
 import { t, setUILanguage, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
 const props = defineProps({
   showKernelToolbarShortcut: Boolean,
   effectsOnly: Boolean,
   showEffects: { type: Boolean, default: true },
+  interfaceStyle: { type: String, default: 'default' },
   appearance: String,
   accentColor: String,
   reduceMotion: Boolean,
@@ -15,6 +17,7 @@ const props = defineProps({
 });
 const emit = defineEmits([
   'update:showKernelToolbarShortcut',
+  'update:interfaceStyle',
   'update:appearance',
   'update:accentColor',
   'update:reduceMotion',
@@ -33,6 +36,17 @@ const kernelShortcutLabel = computed(
       fr: 'Afficher le raccourci de changement de moteur dans la barre d’outils',
       es: 'Mostrar el acceso para cambiar de motor en la barra de herramientas',
     })[currentUILanguage.value] || 'Show kernel switching shortcut in toolbar',
+);
+const glassLabels = computed(
+  () =>
+    ({
+      'zh-CN': ['界面样式', '默认', '可能消耗更多性能'],
+      'zh-TW': ['介面樣式', '預設', '可能消耗更多效能'],
+      ja: ['インターフェイス', 'デフォルト', 'パフォーマンスへの負荷が増える場合があります'],
+      ko: ['인터페이스 스타일', '기본', '더 많은 성능 자원을 사용할 수 있습니다'],
+      fr: ['Style de l’interface', 'Par défaut', 'Peut consommer davantage de ressources'],
+      es: ['Estilo de interfaz', 'Predeterminado', 'Puede consumir más recursos'],
+    })[currentUILanguage.value] || ['Interface style', 'Default', 'May use more resources'],
 );
 const themes = [
   ['light', 'appearance.light'],
@@ -139,6 +153,18 @@ function changeUILanguage(code) {
   >
     <h3 id="settings-interface">{{ t('appearance.interface') }}</h3>
     <div class="settings-section-body">
+      <div v-if="platform === 'darwin'" class="appearance-row" data-setting="interface-style">
+        <div>
+          <span id="interface-style-label">Liquid Glass</span>
+          <p id="interface-style-warning" class="muted">{{ glassLabels[2] }}</p>
+        </div>
+        <AppSwitch
+          :model-value="interfaceStyle === 'liquid-glass'"
+          aria-labelledby="interface-style-label"
+          aria-describedby="interface-style-warning"
+          @update:model-value="emit('update:interfaceStyle', $event ? 'liquid-glass' : 'default')"
+        />
+      </div>
       <div class="appearance-row">
         <span>{{ t('appearance.language') }}</span
         ><AppPopUpButton

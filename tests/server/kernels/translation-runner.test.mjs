@@ -12,6 +12,7 @@ class Child extends EventEmitter {
     super();
     this.pid = 12345;
     this.stderr = new PassThrough();
+    this.stdout = new PassThrough();
     this.finish = finish;
   }
 }
@@ -24,7 +25,8 @@ async function fixture(t, finish, options = {}) {
     root,
     baseCacheDir: join(root, 'cache'),
     processes: {
-      spawn: () => {
+      spawn: (command, args, options) => {
+        child.spawnOptions = options;
         queueMicrotask(() => child.finish(child));
         return child;
       },
@@ -99,3 +101,70 @@ test('translation cancellation remains Cancelled despite stderr', async (t) => {
     message: 'Cancelled',
   });
 });
+
+// Precise logs subprocess failures to stdout and can still exit successfully.
+test('precise zero exit without PDF preserves stdout permission error and redacts token', async (t) => {
+  const data = await fixture(t, (child) => {
+    child.stdout.write('openai.PermissionDenied');
+    child.stdout.write('Error: token=test-secret\n');
+    child.stdout.write('ERROR Error type: SubprocessError\n');
+    child.emit('close', 0, null);
+  });
+  await assert.rejects(data.translate({ id: 'pdf_math_precise' }), {
+    message: 'Kernel translation failed: openai.PermissionDeniedError: token=[redacted]',
+  });
+});
+
+test('nonzero exit preserves stdout error when stderr is empty', async (t) => {
+  const data = await fixture(t, (child) => {
+    child.stdout.write('RuntimeError: subprocess initialization failed\n');
+    child.emit('close', 1, null);
+  });
+  await assert.rejects(data.translate({ id: 'pdf_math_precise' }), {
+    message: 'Kernel translation failed: RuntimeError: subprocess initialization failed',
+  });
+});
+
+for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
+  test(`${id} native OpenAI without endpoint never inherits the local proxy URL`, async (t) => {
+    const prefix = id === 'pdf_math_precise' ? 'PDF2ZH_' : '';
+    const data = await fixture(t, (child) => child.emit('close', 1, null), {
+      serviceCatalog: {
+        get: async () => ({
+          services: [
+            {
+              id: 'openai',
+              fields: [
+                {
+                  id: 'key',
+                  env: prefix + 'OPENAI_API_KEY',
+                  type: 'string',
+                  secret: true,
+                  required: true,
+                },
+                { id: 'base_url', env: prefix + 'OPENAI_BASE_URL', type: 'string', default: null },
+                {
+                  id: 'model',
+                  env: prefix + 'OPENAI_MODEL',
+                  type: 'string',
+                  default: 'native-model',
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    });
+    await assert.rejects(
+      data.translate({
+        id,
+        translationService: { id: 'openai', values: { key: 'native-secret' } },
+      }),
+    );
+    const env = data.child.spawnOptions.env;
+    assert.equal(env[prefix + 'OPENAI_API_KEY'], 'native-secret');
+    assert.equal(env[prefix + 'OPENAI_MODEL'], 'native-model');
+    assert.equal(env.OPENAI_BASE_URL, undefined);
+    assert.equal(env.PDF2ZH_OPENAI_BASE_URL, undefined);
+  });
+}

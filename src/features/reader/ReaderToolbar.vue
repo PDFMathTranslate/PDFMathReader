@@ -53,6 +53,9 @@ const settings = defineModel('settings');
     @focusin="revealHeader"
     @dblclick="headerDoubleClick"
   >
+    <div v-if="platform === 'darwin'" class="toolbar-progressive-blur" aria-hidden="true">
+      <span v-for="level in 7" :key="level" :data-blur-level="level"></span>
+    </div>
     <div v-if="platform === 'darwin'" class="traffic-lights" aria-hidden="true">
       <i></i><i></i><i></i>
     </div>

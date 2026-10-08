@@ -1,0 +1,102 @@
+/* Match the official Progressive Blur example's seven-level falloff. Backdrop
+   layers sample only the titlebar strip, leaving PDF nodes and controls intact. */
+.toolbar-progressive-blur {
+  display: none;
+}
+:root[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar {
+  isolation: isolate;
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar-progressive-blur {
+  display: block;
+  position: absolute;
+  inset: 0 0 -28px;
+  z-index: -1;
+  pointer-events: none;
+  user-select: none;
+  --progressive-tint: 250 250 252;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--progressive-tint) / 48%),
+    rgb(var(--progressive-tint) / 18%) 60%,
+    transparent
+  );
+}
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .app.desktop[data-platform='darwin']
+  .toolbar-progressive-blur {
+  --progressive-tint: 28 28 32;
+}
+.toolbar-progressive-blur > span {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(var(--progressive-blur)) saturate(125%);
+  backdrop-filter: blur(var(--progressive-blur)) saturate(125%);
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 var(--progressive-start),
+    transparent var(--progressive-end)
+  );
+}
+.toolbar-progressive-blur > [data-blur-level='1'] {
+  --progressive-blur: 1px;
+  --progressive-start: 80%;
+  --progressive-end: 100%;
+}
+.toolbar-progressive-blur > [data-blur-level='2'] {
+  --progressive-blur: 2px;
+  --progressive-start: 66%;
+  --progressive-end: 94%;
+}
+.toolbar-progressive-blur > [data-blur-level='3'] {
+  --progressive-blur: 4px;
+  --progressive-start: 52%;
+  --progressive-end: 80%;
+}
+.toolbar-progressive-blur > [data-blur-level='4'] {
+  --progressive-blur: 6px;
+  --progressive-start: 38%;
+  --progressive-end: 66%;
+}
+.toolbar-progressive-blur > [data-blur-level='5'] {
+  --progressive-blur: 10px;
+  --progressive-start: 24%;
+  --progressive-end: 52%;
+}
+.toolbar-progressive-blur > [data-blur-level='6'] {
+  --progressive-blur: 16px;
+  --progressive-start: 10%;
+  --progressive-end: 38%;
+}
+.toolbar-progressive-blur > [data-blur-level='7'] {
+  --progressive-blur: 20px;
+  --progressive-start: 0%;
+  --progressive-end: 24%;
+}
+/* A solid bar is still needed when the user requests less transparency. */
+:root[data-interface-style='liquid-glass'][data-liquid-glass='solid']
+  .app.desktop[data-platform='darwin']
+  .toolbar {
+  background: var(--chrome-solid, #f5f5f7);
+}
+:root[data-interface-style='liquid-glass'][data-liquid-glass='solid'] .toolbar-progressive-blur {
+  display: none;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar {
+    background: var(--chrome-solid, #f5f5f7);
+  }
+  :root[data-interface-style='liquid-glass']
+    .app.desktop[data-platform='darwin']
+    .toolbar-progressive-blur {
+    display: none;
+  }
+}

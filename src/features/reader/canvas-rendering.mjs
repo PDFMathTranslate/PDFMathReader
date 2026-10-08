@@ -203,11 +203,10 @@ export function createCanvasRendering({
     return task.previewResult;
   }
 
-  async function animatePDF(p, page, previous) {
+  async function animatePDF(p, page, previous, translated = view.showTranslations.value) {
     try {
-      if (preferences.interactionMode.value === 'reading') return;
       const host = renderState.pageEls.get(p.number);
-      if (!host || !p.blocks.length) return;
+      if (!host) return;
       const rect = host.getBoundingClientRect(),
         readerRect = view.reader.value.getBoundingClientRect();
       if (
@@ -220,7 +219,8 @@ export function createCanvasRendering({
       const scale = view.zoom.value;
       const boxes = p.blocks
         .filter((b) => b.math && b.text !== b.translation)
-        .map((b) => (view.showTranslations.value ? b.translatedBox : b.sourceBox))
+        .map((b) => (translated ? b.translatedBox : b.sourceBox))
+        .filter((b) => b && [b.x, b.y, b.width, b.height].every(Number.isFinite))
         .map((b) => ({
           x: b.x * scale,
           y: b.y * scale,
@@ -273,12 +273,13 @@ export function createCanvasRendering({
     for (const source of ordered) {
       const p = actions.rootActions.displayedPage(source);
       if (token !== renderState.renderEpoch || !session.pdf) return;
-      const page = await (p.mathDocument && view.showTranslations.value
+      const translated = view.showTranslations.value;
+      const page = await (p.mathDocument && translated
         ? p.mathDocument.getPage(1)
         : session.pdf.getPage(p.number));
       if (token !== renderState.renderEpoch) return;
       let previous =
-        preferences.interactionMode.value !== 'reading' && animate && p.mathDocument && p.visible
+        animate && p.mathDocument && p.visible
           ? snapshot(renderState.canvasEls.get(p.number))
           : null;
       try {
@@ -290,7 +291,7 @@ export function createCanvasRendering({
         );
         if (token !== renderState.renderEpoch) return;
         if (previous) {
-          void animatePDF(p, page, previous);
+          void animatePDF(p, page, previous, translated);
           previous = null;
         }
       } finally {

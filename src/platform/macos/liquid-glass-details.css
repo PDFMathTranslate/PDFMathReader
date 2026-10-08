@@ -1,0 +1,257 @@
+/* Detail materials for macOS controls. The parent handles the main chrome. */
+
+/* Selection palettes are teleported to body, so the root style flag is their
+   only application-level ancestor. Keep the platform attribute on the popup
+   itself so these rules remain inert on every other platform. */
+:root[data-interface-style='liquid-glass']
+  .annotation-ui.annotation-toolbar[data-platform='darwin'] {
+  --annotation-surface: rgb(255 255 255 / 54%);
+  --annotation-surface-solid: #f5f5f7;
+  --annotation-border: rgb(255 255 255 / 70%);
+  --annotation-inner-edge: rgb(255 255 255 / 82%);
+  --annotation-shadow: 0 7px 20px rgb(0 0 0 / 12%), 0 1px 3px rgb(0 0 0 / 7%);
+  --annotation-foreground: #1d1d1f;
+  --annotation-secondary: rgb(29 29 31 / 68%);
+  background: var(--annotation-surface);
+  border-color: var(--annotation-border);
+  box-shadow:
+    inset 0 1px 0 var(--annotation-inner-edge),
+    var(--annotation-shadow);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  color: var(--annotation-foreground);
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .annotation-ui.annotation-toolbar[data-platform='darwin'] {
+  --annotation-surface: rgb(45 45 48 / 72%);
+  --annotation-surface-solid: #2c2c2e;
+  --annotation-border: rgb(255 255 255 / 20%);
+  --annotation-inner-edge: rgb(255 255 255 / 24%);
+  --annotation-shadow: 0 8px 22px rgb(0 0 0 / 28%), 0 2px 5px rgb(0 0 0 / 18%);
+  --annotation-foreground: rgb(255 255 255 / 94%);
+  --annotation-secondary: rgb(255 255 255 / 68%);
+}
+
+/* The real lens is supplied by the glass host when available. These CSS
+   values remain readable when the host falls back to ordinary blur. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .sidebar-navigation-switch {
+  background: rgb(255 255 255 / 28%);
+  border-color: rgb(255 255 255 / 66%);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 46%),
+    inset 0 1px 0 rgb(255 255 255 / 72%),
+    0 2px 10px rgb(0 0 0 / 8%);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch {
+  background: rgb(255 255 255 / 11%);
+  border-color: rgb(255 255 255 / 22%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 15%),
+    inset 0 1px 0 rgb(255 255 255 / 25%),
+    0 2px 10px rgb(0 0 0 / 28%);
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  button {
+  color: var(--text);
+}
+
+/* Keep the existing geometry and transform supplied by the component. Only
+   the track and its inset lens become glass, so switching tabs behaves as
+   before and the native focus ring remains available. */
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  .sidebar-tab-indicator {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 62%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 60%),
+    inset 0 1px 0 rgb(255 255 255 / 86%),
+    0 1px 3px rgb(0 0 0 / 12%);
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  .sidebar-tab-indicator {
+  background: rgb(255 255 255 / 20%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 34%),
+    0 1px 3px rgb(0 0 0 / 24%);
+}
+
+/* Reduced transparency and high-contrast modes intentionally use a solid,
+   high-legibility surface. data-liquid-glass is set by the native material
+   bridge; the preference and media queries cover the bridge's first frame. */
+:root[data-interface-style='liquid-glass']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .annotation-ui.annotation-toolbar[data-platform='darwin'],
+:root[data-interface-style='liquid-glass']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch {
+  background: var(--chrome-solid, #f5f5f7);
+  border-color: color-mix(in srgb, var(--text) 28%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent),
+    0 1px 4px rgb(0 0 0 / 8%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .annotation-ui.annotation-toolbar[data-platform='darwin'],
+:root[data-interface-style='liquid-glass'][data-appearance='dark']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch {
+  background: var(--chrome-solid, #2c2c2e);
+  border-color: color-mix(in srgb, var(--text) 34%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--text) 34%, transparent),
+    0 1px 5px rgb(0 0 0 / 22%);
+}
+
+:root[data-interface-style='liquid-glass']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  .sidebar-tab-indicator {
+  background: color-mix(in srgb, var(--text) 13%, var(--chrome-solid, #f5f5f7));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  .sidebar-tab-indicator {
+  background: color-mix(in srgb, var(--text) 18%, var(--chrome-solid, #2c2c2e));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent);
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root[data-interface-style='liquid-glass']
+    .annotation-ui.annotation-toolbar[data-platform='darwin'],
+  :root[data-interface-style='liquid-glass']
+    .app[data-platform='darwin']
+    .sidebar-navigation-switch {
+    background: var(--chrome-solid, #f5f5f7);
+    border-color: color-mix(in srgb, var(--text) 36%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--text) 36%, transparent),
+      0 1px 4px rgb(0 0 0 / 8%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  :root[data-interface-style='liquid-glass'][data-appearance='dark']
+    .annotation-ui.annotation-toolbar[data-platform='darwin'],
+  :root[data-interface-style='liquid-glass'][data-appearance='dark']
+    .app[data-platform='darwin']
+    .sidebar-navigation-switch {
+    background: var(--chrome-solid, #2c2c2e);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--text) 42%, transparent),
+      0 1px 5px rgb(0 0 0 / 22%);
+  }
+
+  :root[data-interface-style='liquid-glass']
+    .app[data-platform='darwin']
+    .sidebar-navigation-switch
+    .sidebar-tab-indicator {
+    background: color-mix(in srgb, var(--text) 13%, var(--chrome-solid, #f5f5f7));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 24%, transparent);
+  }
+
+  :root[data-interface-style='liquid-glass'][data-appearance='dark']
+    .app[data-platform='darwin']
+    .sidebar-navigation-switch
+    .sidebar-tab-indicator {
+    background: color-mix(in srgb, var(--text) 18%, var(--chrome-solid, #2c2c2e));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 32%, transparent);
+  }
+}
+
+/* Decorative glass must never participate in segmented-control hit testing. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .sidebar-navigation-switch {
+  -webkit-app-region: no-drag;
+}
+.sidebar-navigation-switch > .reader-glass-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.sidebar-navigation-switch > .reader-glass-layer * {
+  pointer-events: none;
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .sidebar-navigation-switch
+  > button {
+  z-index: 2;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .sidebar-tab-indicator {
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Page-margin comments use the same round glass icon treatment as the toolbar. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .annotation-note {
+  box-sizing: border-box;
+  border: 1px solid var(--reader-glass-rim);
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--reader-glass-fill);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: var(--reader-glass-shadow);
+}
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .annotation-note:hover {
+  background: color-mix(in srgb, var(--reader-glass-fill) 90%, var(--text) 10%);
+}
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .annotation-note:active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--reader-glass-fill));
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .annotation-note:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+:root[data-interface-style='liquid-glass'][data-liquid-glass='solid']
+  .app[data-platform='darwin']
+  .annotation-note {
+  background: var(--chrome-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

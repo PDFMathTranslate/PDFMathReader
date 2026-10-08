@@ -17,4 +17,21 @@ if (new URLSearchParams(location.search).get('developer') === '1') {
 } else {
   const { default: App } = await import('./App.vue');
   createApp(App).mount('#app');
+  if (document.querySelector('.app[data-platform="darwin"]')) {
+    await import('@glass-sdk/liquid-glass/styles.css');
+    await import('./platform/macos/liquid-glass.css');
+    await import('./platform/macos/liquid-glass-details.css');
+    await import('./platform/macos/progressive-titlebar.css');
+    await import('./platform/macos/liquid-glass-feedback.css');
+    await import('./platform/macos/glass-context-menu.css');
+    await import('./platform/macos/liquid-glass-popovers.css');
+    const { installLiquidGlass } = await import('./platform/macos/liquid-glass.mjs');
+    const disposeGlass = installLiquidGlass();
+    const { installGlassContextMenu } = await import('./platform/macos/glass-context-menu.mjs');
+    const disposeMenu = installGlassContextMenu();
+    window.addEventListener('pagehide', disposeMenu, { once: true });
+    if (import.meta.hot) import.meta.hot.dispose(disposeMenu);
+    window.addEventListener('pagehide', disposeGlass, { once: true });
+    if (import.meta.hot) import.meta.hot.dispose(disposeGlass);
+  }
 }

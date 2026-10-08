@@ -41,6 +41,7 @@ export function createPreferenceState() {
   const translationServices = ref({});
   const translationServiceHistory = ref({});
   const glossaries = ref(loadGlossaries());
+  const interfaceStyle = ref('default');
   const appearanceChoice = ref('system');
   const accentColor = ref('system');
   const reduceMotion = ref(false);
@@ -87,6 +88,7 @@ export function createPreferenceState() {
     translationServices,
     translationServiceHistory,
     glossaries,
+    interfaceStyle,
     appearanceChoice,
     accentColor,
     reduceMotion,

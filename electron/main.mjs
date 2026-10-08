@@ -1,3 +1,4 @@
+import { registerGlassMenuIPC } from './main/services/glass-menu.mjs';
 import { app, dialog, ipcMain, nativeTheme, safeStorage, systemPreferences } from 'electron';
 import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -113,6 +114,7 @@ else {
     ipcMain,
     operationMetrics: developerOperationMetrics,
   });
+  registerGlassMenuIPC({ handle: handleMeasuredIPC });
   let backend;
   let window;
   let credentials;
@@ -145,6 +147,7 @@ else {
     return {
       platform: process.platform,
       accent: '#' + systemAccent(),
+      interfaceStyle: state.interfaceStyle || 'default',
       appearance: state.appearance || 'system',
       accentColor: state.accentColor || 'system',
       reduceMotion: !!state.reduceMotion,

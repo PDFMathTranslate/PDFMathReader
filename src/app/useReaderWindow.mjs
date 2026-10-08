@@ -81,6 +81,7 @@ export function useReaderWindow() {
     translationServices,
     translationServiceHistory,
     glossaries,
+    interfaceStyle,
     appearanceChoice,
     accentColor,
     reduceMotion,
@@ -608,10 +609,20 @@ export function useReaderWindow() {
     systemAccentColor = ref('#007aff');
   let appearanceTransition, appearanceTarget;
 
-  watch([appearanceChoice, accentColor, reduceMotion, reduceTransparency, reducePadding], () => {
-    featureActions.renderAppearance();
-    featureActions.saveView();
-  });
+  watch(
+    [
+      interfaceStyle,
+      appearanceChoice,
+      accentColor,
+      reduceMotion,
+      reduceTransparency,
+      reducePadding,
+    ],
+    () => {
+      featureActions.renderAppearance();
+      featureActions.saveView();
+    },
+  );
 
   const keyPlaceholder = computed(
     () =>
@@ -959,6 +970,7 @@ export function useReaderWindow() {
     annotationNotice,
     annotationToast,
     annotations,
+    interfaceStyle,
     appearanceChoice,
     autoAlignDocumentWidth,
     autoHideHeader,

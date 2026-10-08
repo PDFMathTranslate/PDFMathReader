@@ -1,3 +1,5 @@
+import { platform } from '../../platform/runtime.mjs';
+
 export function createAppearanceSettings({ preferences, appearance, runtime }) {
   function renderAppearance() {
     const root = document.documentElement,
@@ -9,6 +11,8 @@ export function createAppearanceSettings({ preferences, appearance, runtime }) {
           : preferences.appearanceChoice.value;
     const reduced =
       preferences.reduceMotion.value || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.dataset.interfaceStyle =
+      platform === 'darwin' ? preferences.interfaceStyle.value : 'default';
     root.dataset.reduceMotion = String(preferences.reduceMotion.value);
     root.dataset.reduceTransparency = String(preferences.reduceTransparency.value);
     root.dataset.reducePadding = String(preferences.reducePadding.value);
@@ -48,6 +52,8 @@ export function createAppearanceSettings({ preferences, appearance, runtime }) {
     if (typeof dark === 'boolean') appearance.systemDark.value = dark;
     if (accent) appearance.systemAccentColor.value = accent.slice(0, 7);
     if (state.appearance) {
+      preferences.interfaceStyle.value =
+        state.interfaceStyle === 'liquid-glass' ? 'liquid-glass' : 'default';
       preferences.appearanceChoice.value = state.appearance;
       preferences.accentColor.value = state.accentColor || 'system';
       preferences.reduceMotion.value = !!state.reduceMotion;

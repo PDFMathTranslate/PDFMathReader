@@ -1,0 +1,205 @@
+/* The regular material is reserved for navigation and controls, never PDF paper. */
+[data-interface-style='liquid-glass'] .app[data-platform='darwin'] {
+  --reader-glass-fill: rgb(250 250 252 / 72%);
+  --reader-glass-rim: rgb(255 255 255 / 78%);
+  --reader-glass-shadow: 0 4px 18px rgb(0 0 0 / 9%), inset 0 0 0 1px var(--reader-glass-rim);
+}
+[data-appearance='dark'][data-interface-style='liquid-glass'] .app[data-platform='darwin'] {
+  --reader-glass-fill: rgb(38 38 42 / 82%);
+  --reader-glass-rim: rgb(255 255 255 / 18%);
+}
+[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(
+    .toolbar,
+    .floating-zoom,
+    .page-navigator,
+    .annotation-toolbar,
+    .annotation-menu,
+    .paragraph-detail
+  ) {
+  background: var(--reader-glass-fill);
+  backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: var(--reader-glass-shadow);
+  border-color: var(--reader-glass-rim);
+}
+[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.floating-zoom, .page-navigator, .annotation-toolbar, .annotation-menu, .paragraph-detail) {
+  border-radius: 22px;
+}
+.reader-glass-host {
+  isolation: isolate;
+}
+.reader-glass-backdrop,
+.reader-glass-material {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: -1;
+}
+.reader-glass-backdrop {
+  /* An explicit bounded DOM substrate: the SDK cannot sample native vibrancy
+     or PDF canvases. Transparent chrome still reveals native window material. */
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 12%),
+    transparent 42%,
+    rgb(128 128 128 / 8%)
+  );
+  overflow: hidden;
+}
+.reader-glass-material {
+  background: transparent;
+}
+[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.toolbar, .floating-zoom, .page-navigator, .annotation-toolbar)
+  button {
+  border-radius: 999px;
+}
+[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.toolbar, .floating-zoom, .page-navigator, .annotation-toolbar)
+  button:active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+[data-liquid-glass='solid']
+  .app[data-platform='darwin']
+  :is(
+    .toolbar,
+    .floating-zoom,
+    .page-navigator,
+    .annotation-toolbar,
+    .annotation-menu,
+    .paragraph-detail
+  ) {
+  background: #f5f5f7;
+  backdrop-filter: none;
+  border: 1px solid #86868b;
+}
+[data-appearance='dark'][data-liquid-glass='solid']
+  .app[data-platform='darwin']
+  :is(
+    .toolbar,
+    .floating-zoom,
+    .page-navigator,
+    .annotation-toolbar,
+    .annotation-menu,
+    .paragraph-detail
+  ) {
+  background: #26262a;
+}
+
+/* Preview-style title bar: one thin material band, independent control lenses. */
+[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar {
+  background: rgb(250 250 252 / 38%);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: none;
+  border-bottom: 1px solid rgb(128 128 128 / 14%);
+  border-radius: 0;
+  overflow: visible;
+}
+[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar .title strong {
+  font-weight: 600;
+  font-size: 13px;
+}
+[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar-actions {
+  gap: 8px;
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  :is(.icon-button, .toolbar-kernel) {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgb(128 128 128 / 17%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 62%), rgb(255 255 255 / 18%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 90%),
+    0 1px 3px rgb(0 0 0 / 4%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+[data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar .icon-button {
+  width: 38px;
+  height: 34px;
+  min-height: 34px;
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  .icon-button:hover {
+  background-color: rgb(255 255 255 / 36%);
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  .icon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+[data-appearance='dark'][data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar {
+  background: rgb(30 30 34 / 48%);
+}
+[data-appearance='dark'][data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  :is(.icon-button, .toolbar-kernel) {
+  background: linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 4%));
+  border-color: rgb(255 255 255 / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 1px 3px rgb(0 0 0 / 12%);
+}
+[data-liquid-glass='solid'] .app.desktop[data-platform='darwin'] .toolbar,
+[data-liquid-glass='solid']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  :is(.icon-button, .toolbar-kernel) {
+  background: var(--chrome-solid, #f5f5f7);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (max-width: 700px) {
+  [data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar-actions {
+    gap: 4px;
+  }
+  [data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar .icon-button {
+    width: 34px;
+  }
+}
+
+[data-interface-style='liquid-glass']
+  .annotation-ui.annotation-toolbar[data-platform='darwin']:not(.annotation-toolbar-with-comment) {
+  border-radius: 999px;
+  corner-shape: round;
+}
+[data-interface-style='liquid-glass']
+  .annotation-ui.annotation-toolbar[data-platform='darwin']
+  button {
+  border-radius: 999px;
+  corner-shape: round;
+}
+
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .toolbar
+  :is(.icon-button, .toolbar-kernel),
+[data-interface-style='liquid-glass'] .reader-glass-material {
+  corner-shape: round;
+}
+
+/* The sidebar is a transparent rail; only its floating controls carry glass. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .sidebar {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: transparent;
+  box-shadow: none;
+}

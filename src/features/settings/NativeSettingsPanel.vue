@@ -84,6 +84,7 @@ const reduceMotion = defineModel('reduceMotion');
 const reduceTransparency = defineModel('reduceTransparency');
 const reducePadding = defineModel('reducePadding');
 const showKernelToolbarShortcut = defineModel('showKernelToolbarShortcut');
+const interfaceStyle = defineModel('interfaceStyle');
 const appearanceChoice = defineModel('appearanceChoice');
 const accentColor = defineModel('accentColor');
 const glossaries = defineModel('glossaries');
@@ -272,6 +273,7 @@ const keyEntry = defineModel('keyEntry');
         <AppearanceSettings
           :show-effects="false"
           v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
+          v-model:interface-style="interfaceStyle"
           v-model:appearance="appearanceChoice"
           v-model:accent-color="accentColor"
           v-model:reduce-motion="reduceMotion"

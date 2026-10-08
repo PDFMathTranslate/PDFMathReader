@@ -1,3 +1,4 @@
+import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
@@ -401,6 +402,17 @@ export function createWindowController({
           click: () => void shellApi.openExternal(`https://scholar.google.com/scholar?q=${query}`),
         },
       );
+      if (
+        popupGlassMenu({
+          target,
+          template,
+          Menu: MenuApi,
+          enabled: registry.stateFor(target)?.preferences?.interfaceStyle === 'liquid-glass',
+          x: params.x,
+          y: params.y,
+        })
+      )
+        return;
       MenuApi.buildFromTemplate(template).popup({ window: target });
     });
     const session = target.webContents.session;

@@ -1,3 +1,4 @@
+import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createAIDiscussionService } from '../services/ai-discussion.mjs';
 import { clipboard, dialog, Menu, ShareMenu, shell } from 'electron';
 
@@ -89,10 +90,17 @@ export function registerAnnotationIPC({
         ...(kind === 'comment' ? [item('修改')] : []),
         item('删除'),
       ];
-      Menu.buildFromTemplate(template).popup({
-        window: target,
-        callback: () => resolve(selected),
-      });
+      const callback = () => resolve(selected);
+      if (
+        !popupGlassMenu({
+          target,
+          template,
+          Menu,
+          callback,
+          enabled: registry.stateFor(target)?.preferences?.interfaceStyle === 'liquid-glass',
+        })
+      )
+        Menu.buildFromTemplate(template).popup({ window: target, callback });
     });
   });
   handle('previewAnnotations:markDeleteHint', async (event) => {

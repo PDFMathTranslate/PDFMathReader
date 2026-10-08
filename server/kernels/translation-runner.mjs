@@ -231,7 +231,20 @@ export function createTranslationRunner({
           PDFMATHREADER_GLOSSARY_PATH: glossary.length ? glossaryPath : '',
         };
         delete env.OPENAI_API_KEY_REAL;
-        if (service) Object.assign(env, service.env);
+        if (service) {
+          // Native services own their credentials and endpoint. An omitted
+          // endpoint must use the upstream default, never our token-only proxy.
+          for (const name of [
+            'OPENAI_API_KEY',
+            'OPENAI_BASE_URL',
+            'OPENAI_MODEL',
+            'PDF2ZH_OPENAI_API_KEY',
+            'PDF2ZH_OPENAI_BASE_URL',
+            'PDF2ZH_OPENAI_MODEL',
+          ])
+            delete env[name];
+          Object.assign(env, service.env);
+        }
         if (localTranslation) env.PDFMATHREADER_LOCAL_TRANSLATION = '1';
         const args =
           id === 'pdf_math_fast'
@@ -292,6 +305,7 @@ export function createTranslationRunner({
           } else args.splice(args.indexOf('--openai'), 1, ...service.args);
         }
         step('prepareInput');
+        let kernelError = '';
         await new Promise((resolve, reject) => {
           if (signal?.aborted) return reject(Error('Cancelled'));
           const child = processes.spawn(
@@ -318,15 +332,20 @@ export function createTranslationRunner({
           );
           const secrets = [proxy?.token, ...(service?.secrets || [])];
           let stderrTail = '';
-          child.stderr.on('data', (chunk) => {
+          let stdoutTail = '';
+          const capture = (chunk, stream) => {
             const text = String(chunk);
             const message = redactDiagnosticText(text, {
               secrets,
               maxLength: Math.max(text.length, 1),
             });
-            stderrTail = appendTail(stderrTail, message, MAX_STDERR_TAIL_LENGTH);
+            if (stream === 'stderr')
+              stderrTail = appendTail(stderrTail, message, MAX_STDERR_TAIL_LENGTH);
+            else stdoutTail = appendTail(stdoutTail, message, MAX_STDERR_TAIL_LENGTH);
             onDiagnostic?.(message);
-          });
+          };
+          child.stderr.on('data', (chunk) => capture(chunk, 'stderr'));
+          child.stdout?.on('data', (chunk) => capture(chunk, 'stdout'));
           const kill = () => {
             void processes.terminate(child).catch((error) => onDiagnostic?.(error.message));
           };
@@ -336,6 +355,12 @@ export function createTranslationRunner({
           child.on('close', (code, exitSignal) => {
             clearTimeout(timer);
             signal?.removeEventListener('abort', kill);
+            const details = [stderrTail, stdoutTail].filter(Boolean).join('\n');
+            kernelError =
+              details
+                .split(/\r?\n/)
+                .find((line) => /(?:PermissionDeniedError|AuthenticationError):/.test(line))
+                ?.trim() || (USEFUL_ERROR_LINE.test(details) ? finalStderrMessage(details) : '');
             code === 0
               ? resolve()
               : reject(
@@ -343,8 +368,9 @@ export function createTranslationRunner({
                     signal?.aborted
                       ? 'Cancelled'
                       : `Kernel translation failed: ${
+                          kernelError ||
                           finalStderrMessage(
-                            redactDiagnosticText(stderrTail, {
+                            redactDiagnosticText(stderrTail || stdoutTail, {
                               secrets,
                               maxLength: MAX_STDERR_TAIL_LENGTH,
                             }),
@@ -362,7 +388,12 @@ export function createTranslationRunner({
         } catch {}
         const names = await readdir(dir);
         const output = names.find((n) => /mono.*\.pdf$/i.test(n) || /\.mono\.pdf$/i.test(n));
-        if (!output) throw Error('Kernel did not produce a translated PDF');
+        if (!output)
+          throw Error(
+            kernelError
+              ? `Kernel translation failed: ${kernelError}`
+              : 'Kernel did not produce a translated PDF',
+          );
         const raw = await readFile(join(dir, output));
         await onOutput?.(raw, id);
         const { PDFDocument } = await loadPdfLib();

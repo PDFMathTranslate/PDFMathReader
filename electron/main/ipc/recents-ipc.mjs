@@ -1,3 +1,4 @@
+import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { app, clipboard, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
 
@@ -197,10 +198,17 @@ export function registerRecentsIPC({
             },
           ];
           try {
-            Menu.buildFromTemplate(template).popup({
-              window: target,
-              callback: () => pending.then(() => resolve(selected), reject),
-            });
+            const callback = () => pending.then(() => resolve(selected), reject);
+            if (
+              !popupGlassMenu({
+                target,
+                template,
+                Menu,
+                callback,
+                enabled: preferences?.load?.().interfaceStyle === 'liquid-glass',
+              })
+            )
+              Menu.buildFromTemplate(template).popup({ window: target, callback });
           } catch (error) {
             reject(error);
           }

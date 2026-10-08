@@ -42,6 +42,7 @@ const SETTINGS_PREFERENCES = [
   'translationServiceHistory',
 ];
 const APPEARANCE_PREFERENCES = [
+  'interfaceStyle',
   'appearance',
   'accentColor',
   'reduceMotion',

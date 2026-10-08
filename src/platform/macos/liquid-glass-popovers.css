@@ -1,0 +1,165 @@
+/* Copy feedback and kernel recovery use the neutral Regular material. */
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.copy-toast, .kernel-error-popover) {
+  --popover-glass-fill: var(--reader-glass-fill, rgb(250 250 252 / 72%));
+  --popover-glass-rim: var(--reader-glass-rim, rgb(255 255 255 / 78%));
+  --popover-glass-text: var(--text, #1d1d1f);
+  --popover-glass-secondary: var(--text-secondary, #68686d);
+  isolation: isolate;
+  border: 1px solid var(--popover-glass-rim);
+  background: var(--popover-glass-fill);
+  color: var(--popover-glass-text);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 var(--popover-glass-rim),
+    0 7px 24px rgb(0 0 0 / 13%);
+}
+
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .app[data-platform='darwin']
+  :is(.copy-toast, .kernel-error-popover) {
+  --popover-glass-fill: var(--reader-glass-fill, rgb(38 38 42 / 82%));
+  --popover-glass-rim: var(--reader-glass-rim, rgb(255 255 255 / 18%));
+  --popover-glass-text: var(--text, #f1f1f3);
+  --popover-glass-secondary: var(--text-secondary, #b3b3b8);
+  box-shadow:
+    inset 0 1px 0 var(--popover-glass-rim),
+    0 8px 26px rgb(0 0 0 / 28%);
+}
+
+/* Toasts stay compact and capsule-shaped while keeping detail text legible. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .copy-toast {
+  border-radius: 999px;
+  corner-shape: round;
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .copy-toast
+  .copy-toast-detail {
+  color: var(--popover-glass-secondary);
+}
+
+/* The recovery surface keeps the existing 22px panel geometry. */
+:root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .kernel-error-popover {
+  border-radius: 22px;
+  corner-shape: round;
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(h2, .kernel-error-message) {
+  color: var(--popover-glass-text);
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  .kernel-error-name {
+  color: var(--popover-glass-secondary);
+}
+
+/* Buttons remain high-contrast and retain a visible keyboard focus ring. */
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(button, fluent-button) {
+  min-height: 32px;
+  border: 1px solid var(--popover-glass-rim);
+  border-radius: 999px;
+  corner-shape: round;
+  background: color-mix(in srgb, var(--popover-glass-fill) 88%, var(--text) 12%);
+  color: var(--popover-glass-text);
+  box-shadow: inset 0 1px 0 var(--popover-glass-rim);
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(button, fluent-button):is(:hover, :active):not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--popover-glass-fill));
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(button, fluent-button):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(button, fluent-button):disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+/* Retry is the prominent action, so it keeps the application accent. */
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(.macvue-button--prominent, fluent-button[appearance='primary']) {
+  border-color: color-mix(in srgb, var(--accent) 76%, var(--popover-glass-rim));
+  background: var(--accent);
+  color: var(--text-on-accent, #ffffff);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 28%),
+    0 1px 2px rgb(0 0 0 / 12%);
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(.macvue-button--prominent, fluent-button[appearance='primary']):hover:not(:disabled) {
+  background: var(--accent-hover, var(--accent));
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(.macvue-button--prominent, fluent-button[appearance='primary']):active:not(:disabled) {
+  background: var(--accent-pressed, var(--accent));
+}
+
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .kernel-error-popover
+  :is(.macvue-button--prominent, fluent-button[appearance='primary']):disabled {
+  background: color-mix(in srgb, var(--accent) 42%, var(--popover-glass-fill));
+  color: color-mix(in srgb, var(--text-on-accent, #ffffff) 68%, var(--popover-glass-fill));
+}
+
+/* Solid material is used for the native accessibility and preference fallbacks. */
+:root[data-interface-style='liquid-glass']:is(
+    [data-liquid-glass='solid'],
+    [data-reduce-transparency='true']
+  )
+  .app[data-platform='darwin']
+  :is(.copy-toast, .kernel-error-popover) {
+  background: var(--chrome-solid, #f7f7f9);
+  border-color: color-mix(in srgb, var(--text) 30%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent),
+    0 6px 20px rgb(0 0 0 / 12%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root[data-interface-style='liquid-glass']
+    .app[data-platform='darwin']
+    :is(.copy-toast, .kernel-error-popover) {
+    background: var(--chrome-solid, #f7f7f9);
+    border-color: color-mix(in srgb, var(--text) 30%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent),
+      0 6px 20px rgb(0 0 0 / 12%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

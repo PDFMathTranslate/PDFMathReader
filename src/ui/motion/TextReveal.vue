@@ -1,6 +1,12 @@
 <script setup>
 import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue';
-import { characters, reducedMotion, revealDuration, revealPDF } from './text-reveal.mjs';
+import {
+  characters,
+  reducedMotion,
+  revealDuration,
+  revealPDF,
+  revealCharactersPDF,
+} from './text-reveal.mjs';
 import TopicSentenceText from '../../features/translation/TopicSentenceText.vue';
 import { firstSentenceLength } from '../../features/translation/topic-sentences.mjs';
 import { importantInformationRanges } from '../../features/translation/information-emphasis.mjs';
@@ -8,6 +14,7 @@ import { uiLanguage } from '../../i18n/index.mjs';
 import { paragraphDisplayText } from '../../../shared/translation/spacing.mjs';
 const props = defineProps({
   text: String,
+  effect: { type: String, default: 'refocus' },
   original: Boolean,
   nativeSource: Function,
   scale: Number,
@@ -94,7 +101,7 @@ watch(
           width: box.width + 6 + 'px',
           height: box.height + 6 + 'px',
         });
-        await revealPDF({
+        await (props.effect === 'characters' ? revealCharactersPDF : revealPDF)({
           ...source,
           page: await source.page,
           host: nativeHost.value,
@@ -138,7 +145,12 @@ onBeforeUnmount(() => {
     class="native-paragraph-reveal"
     aria-hidden="true"
   ></span>
-  <span v-else-if="!original && !active" class="paragraph-text" aria-hidden="true"
+  <span
+    v-else-if="!original && (!active || effect === 'refocus')"
+    :key="generation"
+    class="paragraph-text"
+    :class="{ 'digital-refocusing': active }"
+    aria-hidden="true"
     ><TopicSentenceText
       :text="displayText"
       :enabled="emphasizeTopicSentences"

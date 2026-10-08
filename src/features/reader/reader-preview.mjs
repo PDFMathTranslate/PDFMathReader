@@ -59,16 +59,15 @@ export function createReaderPreview({
         )
           continue;
         const display = actions.rootActions.displayedPage(p);
-        const page = await (display.mathDocument && view.showTranslations.value
+        const translated = view.showTranslations.value;
+        const page = await (display.mathDocument && translated
           ? display.mathDocument.getPage(1)
           : session.pdf.getPage(number));
         if (token !== session.epoch) return;
         const changed =
           renderState.canvasCache.get(renderState.canvasEls.get(number))?.page !== page;
         let previous =
-          preferences.interactionMode.value !== 'reading' && changed && p.mathDocument
-            ? snapshot(renderState.canvasEls.get(number))
-            : null;
+          changed && p.mathDocument ? snapshot(renderState.canvasEls.get(number)) : null;
         try {
           if (
             (await actions.canvasRendering.draw(
@@ -80,7 +79,7 @@ export function createReaderPreview({
             previous &&
             !renderState.previewScrolling
           ) {
-            void actions.canvasRendering.animatePDF(p, page, previous);
+            void actions.canvasRendering.animatePDF(p, page, previous, translated);
             previous = null;
           }
         } finally {

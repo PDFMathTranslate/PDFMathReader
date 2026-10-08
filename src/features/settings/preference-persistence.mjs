@@ -34,6 +34,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       if (saved[key] !== undefined) target.value = saved[key];
     if (typeof saved.formulaOcrEnabled === 'boolean')
       preferences.formulaOcrEnabled.value = saved.formulaOcrEnabled;
+    if (['default', 'liquid-glass'].includes(saved.interfaceStyle))
+      preferences.interfaceStyle.value = saved.interfaceStyle;
     if (saved.engine) preferences.engine.value = saved.engine;
     if (saved.translationMode) preferences.translationMode.value = saved.translationMode;
     if (saved.direction) view.direction.value = saved.direction;
@@ -134,6 +136,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         layoutVisible: preferences.layoutVisible.value,
         kernelAdvancedOptions: cloneKernelAdvancedOptions(preferences.kernelAdvancedOptions.value),
         translationServices: cloneTranslationServices(preferences.translationServices.value),
+        interfaceStyle: preferences.interfaceStyle.value,
         appearance: preferences.appearanceChoice.value,
         accentColor: preferences.accentColor.value,
         reduceMotion: preferences.reduceMotion.value,

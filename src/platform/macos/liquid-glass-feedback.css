@@ -1,0 +1,69 @@
+/* Errors share the Regular glass material; long details stay neutral/readable. */
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.page-translation-toast, .error-banner) {
+  isolation: isolate;
+  border-radius: 20px;
+  corner-shape: round;
+  border: 1px solid var(--reader-glass-rim);
+  background: var(--reader-glass-fill);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 var(--reader-glass-rim),
+    0 6px 22px rgb(0 0 0 / 13%);
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .page-translation-toast.error
+  strong {
+  color: #b42318;
+}
+:root[data-interface-style='liquid-glass'][data-appearance='dark']
+  .app[data-platform='darwin']
+  .page-translation-toast.error
+  strong {
+  color: #ff9a91;
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.page-translation-toast, .error-banner)
+  button {
+  border: 1px solid var(--reader-glass-rim);
+  border-radius: 999px;
+  corner-shape: round;
+  background: color-mix(in srgb, var(--accent) 12%, var(--reader-glass-fill));
+  box-shadow: inset 0 1px 0 var(--reader-glass-rim);
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.page-translation-toast, .error-banner)
+  button:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--reader-glass-fill));
+}
+:root[data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  :is(.page-translation-toast, .error-banner)
+  button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+:root[data-interface-style='liquid-glass'][data-liquid-glass='solid']
+  .app[data-platform='darwin']
+  :is(.page-translation-toast, .error-banner) {
+  background: var(--chrome-solid);
+  border-color: var(--text-secondary);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root[data-interface-style='liquid-glass']
+    .app[data-platform='darwin']
+    :is(.page-translation-toast, .error-banner) {
+    background: var(--chrome-solid);
+    border-color: var(--text-secondary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

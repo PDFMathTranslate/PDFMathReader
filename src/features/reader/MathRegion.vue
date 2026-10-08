@@ -1,5 +1,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue';
+import { reducedMotion } from '../../ui/motion/text-reveal.mjs';
+import { refocusFrames, refocusDuration } from '../../ui/motion/digital-refocus.mjs';
 const props = defineProps({
   source: Function,
   box: Object,
@@ -7,12 +9,14 @@ const props = defineProps({
   active: { type: Boolean, default: true },
 });
 const canvas = ref();
+let animation, lastPage;
 let task,
   generation = 0;
 watch(
   () => [props.source, props.box, props.zoom, props.active],
   async () => {
     const id = ++generation;
+    animation?.cancel();
     task?.cancel();
     task = null;
     if (!props.active) return;
@@ -44,6 +48,13 @@ watch(
       el.width = frame.width;
       el.height = frame.height;
       el.getContext('2d').drawImage(frame, 0, 0);
+      const changed = lastPage !== page;
+      lastPage = page;
+      if (changed && !reducedMotion() && !document.hidden && window.previewActivityActive !== false)
+        animation = el.animate(refocusFrames, {
+          duration: refocusDuration,
+          easing: 'cubic-bezier(.22,.75,.2,1)',
+        });
     } catch (e) {
       if (e.name !== 'RenderingCancelledException') console.error('Paragraph render failed', e);
     } finally {
@@ -55,6 +66,7 @@ watch(
 );
 onBeforeUnmount(() => {
   generation++;
+  animation?.cancel();
   task?.cancel();
 });
 </script>

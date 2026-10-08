@@ -1,0 +1,70 @@
+.reader-glass-menu {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: 5px;
+  border: 1px solid var(--reader-glass-rim);
+  border-radius: 20px;
+  corner-shape: round;
+  isolation: isolate;
+  background: var(--reader-glass-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  backdrop-filter: blur(24px) saturate(145%);
+  box-shadow:
+    inset 0 1px 0 var(--reader-glass-rim),
+    0 10px 30px rgb(0 0 0 / 18%);
+  color: var(--text);
+  font: 13px/1.4 system-ui;
+  -webkit-app-region: no-drag;
+}
+.reader-glass-menu > button {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: none;
+  cursor: default;
+}
+.reader-glass-menu > button:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--accent);
+  color: white;
+  outline: none;
+}
+.reader-glass-menu > button:disabled {
+  opacity: 0.45;
+}
+.reader-glass-menu > hr {
+  width: auto;
+  height: 1px;
+  flex: none;
+  margin: 4px 8px;
+  border: 0;
+  background: var(--chrome-divider);
+}
+[data-liquid-glass='solid'] .reader-glass-menu {
+  background: var(--chrome-solid);
+  border-color: var(--text-secondary);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .reader-glass-menu {
+    background: var(--chrome-solid);
+    border-color: var(--text-secondary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

@@ -20,6 +20,7 @@ const {
   annotationToast,
   annotations,
   api,
+  interfaceStyle,
   appearanceChoice,
   autoAlignDocumentWidth,
   autoHideHeader,
@@ -541,6 +542,7 @@ const copyToastDetail = computed(() =>
       v-model:reduce-transparency="reduceTransparency"
       v-model:reduce-padding="reducePadding"
       v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
+      v-model:interface-style="interfaceStyle"
       v-model:appearance-choice="appearanceChoice"
       v-model:accent-color="accentColor"
       v-model:glossaries="glossaries"
@@ -615,6 +617,7 @@ const copyToastDetail = computed(() =>
       v-model:auto-hide-header="autoHideHeader"
       v-model:reduce-resource-usage="reduceResourceUsage"
       v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
+      v-model:interface-style="interfaceStyle"
       v-model:appearance-choice="appearanceChoice"
       v-model:accent-color="accentColor"
       v-model:reduce-motion="reduceMotion"

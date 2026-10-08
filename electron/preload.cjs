@@ -296,3 +296,20 @@ contextBridge.exposeInMainWorld(
     },
   }),
 );
+
+contextBridge.exposeInMainWorld(
+  'previewGlassMenu',
+  Object.freeze({
+    choose: (value) => ipcRenderer.invoke('glass-menu:choice', value),
+    onOpen: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('glass-menu:open', listener);
+      return () => ipcRenderer.removeListener('glass-menu:open', listener);
+    },
+    onClose: (callback) => {
+      const listener = (_event, id) => callback(id);
+      ipcRenderer.on('glass-menu:closed', listener);
+      return () => ipcRenderer.removeListener('glass-menu:closed', listener);
+    },
+  }),
+);

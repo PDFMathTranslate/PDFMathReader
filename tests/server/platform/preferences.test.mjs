@@ -28,6 +28,7 @@ const DEFAULT_PREFERENCES = {
   emphasizeOrdinals: true,
   emphasizeKeyVerbs: true,
   emphasizeLogicalConnectives: true,
+  interfaceStyle: 'default',
   appearance: 'system',
   accentColor: 'system',
   reduceMotion: false,
@@ -71,6 +72,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         documentOpenMode: 'manual',
         formulaOcrEnabled: true,
         translationErrorDismissals: ['translation-error-dismissed:document-a'],
+        interfaceStyle: 'liquid-glass',
         appearance: 'dark',
         accentColor: '#a1B2c3',
         reduceMotion: true,
@@ -85,6 +87,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     );
     await preferences.save(initial);
     const beforeInvalid = preferences.load();
+    assert.throws(() => preferences.save({ interfaceStyle: 'invalid' }));
     assert.throws(() => preferences.save({ language: 'Esperanto' }));
     assert.throws(() => preferences.save({ documentOpenMode: 'invalid' }));
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
