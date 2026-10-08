@@ -161,7 +161,7 @@ export function createCanvasRendering({
     if (
       current?.previewPage === page &&
       current.previewScale === scale &&
-      current.previewDpr === dpr &&
+      current.previewDpr >= dpr &&
       current.previewCrop === cropKey
     )
       return current.previewResult;
@@ -174,8 +174,16 @@ export function createCanvasRendering({
       reusable = renderState.bitmapFrames.get(key);
     if (reusable) {
       renderState.renderMetrics.cacheHits++;
-      presentFrame(canvas, reusable, page, scale, dpr);
+      if (!number || renderState.visiblePages.has(number))
+        presentFrame(canvas, reusable, page, scale, dpr);
       return true;
+    }
+    if (number && renderState.visiblePages.has(number) && !canvas.width) {
+      const previewDpr = scrollPixelRatio(geometry.width, geometry.height, devicePixelRatio);
+      const fallback = renderState.bitmapFrames.get(
+        renderState.bitmapIds.get(page) + ':' + scale + ':' + previewDpr + ':' + cropKey,
+      );
+      if (fallback) presentFrame(canvas, fallback, page, scale, previewDpr);
     }
     const viewport = page.getViewport({ scale }),
       frame = document.createElement('canvas');
@@ -219,7 +227,8 @@ export function createCanvasRendering({
           !activity.foreground.value
         )
           return false;
-        presentFrame(canvas, frame, page, scale, dpr);
+        if (!number || renderState.visiblePages.has(number))
+          presentFrame(canvas, frame, page, scale, dpr);
         renderState.bitmapFrames.set(key, frame);
         return true;
       } catch (e) {
@@ -302,8 +311,15 @@ export function createCanvasRendering({
         }
       }
     }
+    // Keep offscreen prefetch frames in the bounded cache, not in a second
+    // resident/composited canvas. High zoom otherwise exhausts GPU tile memory.
+    for (const [number, canvas] of renderState.canvasEls) {
+      if (renderState.visiblePages.has(number) || !canvas.width) continue;
+      renderState.canvasCache.delete(canvas);
+      canvas.width = canvas.height = 0;
+    }
     const token = ++renderState.renderEpoch;
-    for (const source of ordered) {
+    const renderPage = async (source) => {
       const p = actions.rootActions.displayedPage(source);
       if (token !== renderState.renderEpoch || !session.pdf) return;
       const translated = view.showTranslations.value;
@@ -316,14 +332,14 @@ export function createCanvasRendering({
           ? snapshot(renderState.canvasEls.get(p.number))
           : null;
       try {
-        await draw(
+        const painted = await draw(
           page,
           renderState.canvasEls.get(p.number),
           view.zoom.value,
           renderState.previewScrolling && !force,
         );
         if (token !== renderState.renderEpoch) return;
-        if (previous) {
+        if (previous && painted) {
           void animatePDF(p, page, previous, translated);
           previous = null;
         }
@@ -343,7 +359,22 @@ export function createCanvasRendering({
         bytes -= canvas.width * canvas.height * 4;
         releaseCanvas(canvas);
       }
+    };
+    // A slow page must not leave its visible neighbour blank. Keep two paint
+    // lanes for visible pages; prefetch starts only after those lanes finish.
+    const visible = ordered.filter((p) => renderState.visiblePages.has(p.number));
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(2, visible.length) }, async () => {
+        while (next < visible.length && token === renderState.renderEpoch)
+          await renderPage(visible[next++]);
+      }),
+    );
+    for (const source of ordered) {
+      if (token !== renderState.renderEpoch) return;
+      if (!renderState.visiblePages.has(source.number)) await renderPage(source);
     }
+    if (token !== renderState.renderEpoch) return;
     if (actions.readerFit.updateReaderInsets() && view.fitMode.value !== 'manual')
       actions.readerFit.applyFit();
   }

@@ -79,7 +79,7 @@ export function createReaderPreview({
             previous &&
             !renderState.previewScrolling
           ) {
-            void actions.canvasRendering.animatePDF(p, page, previous, translated);
+            void actions.canvasRendering.animatePDF(display, page, previous, translated);
             previous = null;
           }
         } finally {
