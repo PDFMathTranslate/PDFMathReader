@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+import { appendFileSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { shouldRelease, parseVersion } from './release-version.mjs';
+import { previousRelease, releaseNotes } from './release-notes.mjs';
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 const api = (path) => JSON.parse(gh('api', path));
 const repo = process.env.GH_REPO,
@@ -113,6 +114,14 @@ if (
 )
   throw Error('Existing release tag points to a different commit');
 const existing = releases().find((release) => release.tag_name === tag);
+const previous = previousRelease(version, releases());
+const historyPath = previous
+  ? `repos/${repo}/compare/${encodeURIComponent(previous.tag_name)}...${sha}?per_page=100`
+  : `repos/${repo}/commits?sha=${sha}&per_page=100`;
+const pages = JSON.parse(gh('api', '--paginate', '--slurp', historyPath));
+const commits = previous ? pages.flatMap((page) => page.commits) : pages.flat().reverse();
+const notesPath = 'artifacts/release-notes.md';
+writeFileSync(notesPath, releaseNotes({ repo, version, sha, previous, commits, assets }));
 if (existing) {
   if (!existing.draft) throw Error('Release already exists');
   gh('release', 'upload', tag, ...assets, '--repo', repo, '--clobber');
@@ -128,13 +137,14 @@ if (existing) {
     sha,
     '--title',
     tag,
-    '--generate-notes',
+    '--notes-file',
+    notesPath,
     '--draft',
     ...(parseVersion(version).pre.length > 0 ? ['--prerelease'] : []),
   );
 }
 // Only make the release public after every validated package has been uploaded.
-gh('release', 'edit', tag, '--repo', repo, '--draft=false');
+gh('release', 'edit', tag, '--repo', repo, '--notes-file', notesPath, '--draft=false');
 const url = gh('release', 'view', tag, '--repo', repo, '--json', 'url', '--jq', '.url').trim();
 summary(
   `Published ${url}\n\nTested commit: ${sha}\n\nSource CI: ${run.html_url}\n\nAll six installation packages attached.`,

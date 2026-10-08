@@ -59,3 +59,23 @@ fixes; bump the version again to release a fix.
 
 The packages retain the existing CI signing policy: macOS builds are unsigned
 and are not notarized. This workflow does not introduce signing credentials.
+
+## Automatic release notes
+
+CI writes the release description from commits between the highest earlier
+published semantic-version release and the exact tested commit. Draft releases
+are excluded from the baseline. The first release uses the commit history up to
+that tested commit. All history pages are included.
+
+The description contains the version, a change-count summary, **New features**
+(`feat:`), **Fixes and improvements** (`fix:`, `perf:`, `ux:`, `ui:`), update
+instructions, links to the six validated installation packages, and a full
+changelog link. Scoped prefixes such as `feat(reader):` are supported. Each
+change has a bold title and includes its commit body when provided; write
+user-facing titles and bodies to produce useful descriptions. Internal commits
+such as `ci:`, `docs:`, `chore:`, and release markers stay in the full changelog.
+No AI service or additional credentials are required.
+
+The generated description is applied both to new drafts and when retrying an
+existing draft, before making the release public. Published releases are not
+rewritten. Regression tests run as part of the release gate.
