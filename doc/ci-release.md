@@ -7,6 +7,8 @@ It also supplies the packaged application metadata. CI never increments it.
 
 `.github/workflows/electron-build.yml` (`Packaging`) runs on code pushes,
 pull requests, and manual dispatch. Commit prefixes do not control whether it runs.
+Push workflows intentionally have no file-path filter so empty release commits
+also run Packaging and the required README check.
 It builds macOS ARM64 and Intel, Windows x64 and ia32, and Linux x64 and ARMv7 packages.
 
 The actual packaged application must launch on macOS (both architectures),
