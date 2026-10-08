@@ -1,3 +1,4 @@
+import { mapCompactRect } from './paragraph-compaction.mjs';
 import { readOutline } from './sidebar-outline.mjs';
 import { resolvePDFDestination, destinationPoint, destinationScale } from './pdf-navigation.mjs';
 import { nextTick } from 'vue';
@@ -117,7 +118,8 @@ export function createReferenceNavigation({
     if (token !== session.epoch) return;
     const host = renderState.pageEls.get(a.page),
       el = view.reader.value,
-      box = a.rects[0];
+      cuts = actions.rootActions.displayedPage(p).paragraphCompaction,
+      box = cuts ? mapCompactRect(a.rects[0], cuts) : a.rects[0];
     if (host && el && box) {
       const bounds = el.getBoundingClientRect(),
         rect = host.getBoundingClientRect();

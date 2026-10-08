@@ -149,6 +149,19 @@ export async function verifyTranslationPrefetch(window, recents) {
       ),
       true,
     );
+    window.webContents.send('reader:action', 'close-document');
+    await wait('!!document.querySelector(".empty")');
+    await run(`window.previewPreferences.save({translationMode:'reading-ahead'})`);
+    await recents.setView(id, { ...savedView, page: 1, offsetY: 0 });
+    await reload();
+    await installMock();
+    await run(`document.querySelector('[data-recent-id="${id}"]').click();true`);
+    await wait('window.previewRenderDiagnostics().translationOrder.includes(7)');
+    const ahead = await run('window.previewRenderDiagnostics()');
+    assert.equal(ahead.translationOrder[0], ahead.active);
+    assert.ok(ahead.translationOrder.length < 24, 'lookahead stays bounded');
+    await wait('window.prefetchEvents.some(e=>e.kind==="start"&&e.page===7)');
+    console.log('READING_AHEAD_SIX_PAGES_PASS');
     console.log(
       JSON.stringify({
         manualOpeningOverridesSavedView: true,

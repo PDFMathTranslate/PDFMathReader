@@ -239,13 +239,17 @@ export function createReaderCommands({
   }
 
   function modeKeys(e) {
-    let i = shell.translationModes.findIndex((m) => m.id === preferences.translationMode.value);
-    if (e.key === 'ArrowLeft' || e.key === 'Home') i = 0;
-    else if (e.key === 'ArrowRight' || e.key === 'End') i = 1;
+    const modes = shell.translationModes;
+    let i = modes.findIndex((m) => m.id === preferences.translationMode.value);
+    if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = modes.length - 1;
+    else if (e.key === 'ArrowLeft') i = Math.max(0, i - 1);
+    else if (e.key === 'ArrowRight') i = Math.min(modes.length - 1, i + 1);
     else return;
+    if (!modes.length) return;
     e.preventDefault();
     const group = e.currentTarget;
-    preferences.translationMode.value = shell.translationModes[i].id;
+    preferences.translationMode.value = modes[i].id;
     nextTick(() => group?.querySelector('.macvue-segment[data-state="on"]')?.focus());
   }
   return { readerAction, keyboard, headerDoubleClick, toolbarHint, modeKeys };

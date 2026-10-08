@@ -23,6 +23,7 @@ const SETTINGS_PREFERENCES = [
   'reduceResourceUsage',
   'restoreDocuments',
   'interactionMode',
+  'optimizeParagraphGaps',
   'language',
   'sourceLanguage',
   'concurrency',

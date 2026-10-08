@@ -11,11 +11,12 @@ const DEFAULT_PREFERENCES = {
   columns: 1,
   fit: 'width',
   zoom: 1,
-  translationMode: 'reading',
+  translationMode: 'reading-ahead',
   autoCheckUpdates: true,
   cacheLimitMB: null,
   documentOpenMode: 'translation',
   interactionMode: 'reading',
+  optimizeParagraphGaps: false,
   restoreDocuments: true,
   formulaOcrEnabled: false,
   translationErrorDismissals: [],
@@ -61,6 +62,8 @@ test('partial saves keep every current setting and unknown key', async () => {
   try {
     const path = join(dir, 'reader.json'),
       preferences = await createReaderPreferences(path);
+    assert.equal(preferences.load().translationMode, 'reading-ahead');
+    assert.equal(preferences.load().optimizeParagraphGaps, false);
     const initial = withPreferences(
       {
         engine: 'pdf_math_precise',
@@ -70,6 +73,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         zoom: 1.8,
         translationMode: 'full',
         documentOpenMode: 'manual',
+        optimizeParagraphGaps: true,
         formulaOcrEnabled: true,
         translationErrorDismissals: ['translation-error-dismissed:document-a'],
         interfaceStyle: 'liquid-glass',
@@ -91,16 +95,37 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ language: 'Esperanto' }));
     assert.throws(() => preferences.save({ documentOpenMode: 'invalid' }));
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
+    assert.throws(() => preferences.save({ optimizeParagraphGaps: 'true' }));
+    assert.throws(() => preferences.save({ translationMode: 'invalid' }));
     assert.throws(() => preferences.save({ translationErrorDismissals: [null] }));
     assert.deepEqual(preferences.load(), beforeInvalid);
     assert.deepEqual((await createReaderPreferences(path)).load(), beforeInvalid);
     await preferences.save({ fit: 'width', zoom: 1 });
     assert.deepEqual(preferences.load(), { ...initial, fit: 'width', zoom: 1 });
-    await preferences.save({ language: 'French', pageConcurrency: 3 });
-    const expected = { ...initial, fit: 'width', zoom: 1, language: 'French', pageConcurrency: 3 };
+    await preferences.save({ language: 'French', pageConcurrency: 3, translationMode: 'reading' });
+    const expected = {
+      ...initial,
+      fit: 'width',
+      zoom: 1,
+      language: 'French',
+      pageConcurrency: 3,
+      translationMode: 'reading',
+    };
     assert.deepEqual(preferences.load(), expected);
     await preferences.flush();
     assert.deepEqual((await createReaderPreferences(path)).load(), expected);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('missing translation mode upgrades to reading-ahead', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'missing-translation-mode-'));
+  try {
+    const path = join(dir, 'reader.json');
+    await writeFile(path, JSON.stringify({ engine: 'pdf_inspector' }));
+    const preferences = await createReaderPreferences(path);
+    assert.equal(preferences.load().translationMode, 'reading-ahead');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

@@ -53,7 +53,8 @@ export async function refocusPDF({
     textures = [];
   const crop = (source, box, holder) => {
     const texture = document.createElement('canvas');
-    const ratio = Math.min(2, source.width / view.width);
+    const frame = source.pdfFrame || { x: 0, y: 0, width: view.width, height: view.height };
+    const ratio = Math.min(2, source.width / frame.width);
     texture.width = Math.max(1, Math.ceil(box.width * ratio));
     texture.height = Math.max(1, Math.ceil(box.height * ratio));
     texture.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
@@ -61,10 +62,10 @@ export async function refocusPDF({
       .getContext('2d')
       .drawImage(
         source,
-        (box.x * source.width) / view.width,
-        (box.y * source.height) / view.height,
-        (box.width * source.width) / view.width,
-        (box.height * source.height) / view.height,
+        ((box.x - frame.x) * source.width) / frame.width,
+        ((box.y - frame.y) * source.height) / frame.height,
+        (box.width * source.width) / frame.width,
+        (box.height * source.height) / frame.height,
         0,
         0,
         texture.width,

@@ -28,6 +28,21 @@ export function translationPages(mode, current, total, options) {
       pageCount,
     );
 
+  if (mode === 'reading-ahead') {
+    const direction = settings.direction === -1 ? -1 : 1;
+    const orderedVisible = boundedUnique([...currentPage, ...visible], pageCount);
+    const frontier = orderedVisible.length
+      ? direction === 1
+        ? Math.max(...orderedVisible)
+        : Math.min(...orderedVisible)
+      : 1;
+    const forward = Array.from({ length: 6 }, (_, i) => frontier + (i + 1) * direction);
+    const behind = currentPage.length ? [current - direction, current - 2 * direction] : [];
+    // Keep the same bounded lookahead while scrolling; do not expand to the
+    // whole document or postpone all prefetch until scrolling settles.
+    return boundedUnique([...orderedVisible, ...forward, ...behind], pageCount);
+  }
+
   const hasViewportOptions =
     options &&
     typeof options === 'object' &&

@@ -13,6 +13,7 @@ export function snapshot(canvas) {
   const copy = document.createElement('canvas');
   copy.width = canvas.width;
   copy.height = canvas.height;
+  copy.pdfFrame = canvas.pdfFrame;
   copy.getContext('2d').drawImage(canvas, 0, 0);
   return copy;
 }
@@ -38,6 +39,7 @@ export async function revealCharactersPDF({
     return;
   const { Util } = await loadPDFRuntime();
   const view = page.getViewport({ scale }),
+    frame = canvas.pdfFrame || { x: 0, y: 0, width: view.width, height: view.height },
     content = await page.getTextContent();
   if (signal?.aborted || !host.isConnected) return;
   const blob = await new Promise((resolve) => canvas.toBlob(resolve));
@@ -71,11 +73,11 @@ export async function revealCharactersPDF({
     });
     const x = Math.min(
         sample.width - 1,
-        Math.max(0, Math.floor((region.x * sample.width) / view.width)),
+        Math.max(0, Math.floor(((region.x - frame.x) * sample.width) / frame.width)),
       ),
       y = Math.min(
         sample.height - 1,
-        Math.max(0, Math.floor((region.y * sample.height) / view.height)),
+        Math.max(0, Math.floor(((region.y - frame.y) * sample.height) / frame.height)),
       ),
       offset = (y * sample.width + x) * 4;
     fill.style.backgroundColor = `rgb(${pixels[offset]},${pixels[offset + 1]},${pixels[offset + 2]})`;
@@ -136,8 +138,8 @@ export async function revealCharactersPDF({
         const glyph = document.createElement('span');
         glyph.className = 'pdf-glyph-rise';
         Object.assign(glyph.style, {
-          backgroundSize: `${view.width}px ${view.height}px`,
-          backgroundPosition: `${-x}px ${-run.y}px`,
+          backgroundSize: `${frame.width}px ${frame.height}px`,
+          backgroundPosition: `${frame.x - x}px ${frame.y - run.y}px`,
           '--reveal-delay': Math.min(index++ * 6, 180) + 'ms',
         });
         mask.append(glyph);
@@ -153,8 +155,11 @@ export async function revealCharactersPDF({
   // A short outgoing phase precedes all incoming glyphs; the mask is opaque.
   if (previous) {
     previous.className = 'pdf-reveal-old';
-    previous.style.width = view.width + 'px';
-    previous.style.height = view.height + 'px';
+    const oldFrame = previous.pdfFrame || { x: 0, y: 0, width: view.width, height: view.height };
+    previous.style.width = oldFrame.width + 'px';
+    previous.style.height = oldFrame.height + 'px';
+    previous.style.left = oldFrame.x - origin.x + 'px';
+    previous.style.top = oldFrame.y - origin.y + 'px';
     layer.append(previous);
   }
   host.append(layer);

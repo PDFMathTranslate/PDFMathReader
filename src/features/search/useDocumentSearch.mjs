@@ -1,3 +1,4 @@
+import { mapCompactRect } from '../reader/paragraph-compaction.mjs';
 import { ref, shallowRef, computed, reactive, watch, nextTick } from 'vue';
 import { searchSegments, pdfSearchSegments } from './document-search.mjs';
 import { t } from '../../i18n/index.mjs';
@@ -18,6 +19,7 @@ export function useDocumentSearch({
   scheduleViewport,
   scheduleReadingSave,
   navigation,
+  mapDisplayPage = (p) => p,
 }) {
   const searchOpen = ref(false),
     searchQuery = ref(''),
@@ -161,7 +163,8 @@ export function useDocumentSearch({
         return;
       const host = getPageHost(hit.page),
         el = reader.value,
-        box = hit.boxes[0];
+        cuts = mapDisplayPage(displayedPage(pages.value[hit.page - 1])).paragraphCompaction,
+        box = cuts ? mapCompactRect(hit.boxes[0], cuts) : hit.boxes[0];
       if (host && el && box) {
         const bounds = el.getBoundingClientRect(),
           rect = host.getBoundingClientRect();

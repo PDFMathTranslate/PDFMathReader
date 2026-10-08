@@ -70,6 +70,7 @@ const engineBusy = defineModel('engineBusy');
 const error = defineModel('error');
 const documentOpenMode = defineModel('documentOpenMode');
 const interactionMode = defineModel('interactionMode');
+const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const restoreDocuments = defineModel('restoreDocuments');
 const autoHideHeader = defineModel('autoHideHeader');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
@@ -188,6 +189,17 @@ const keyEntry = defineModel('keyEntry');
                 }}</AppPopUpButtonItem>
               </AppPopUpButton>
             </div>
+            <div class="setting-row" data-setting="optimize-paragraph-gaps">
+              <span id="optimize-paragraph-gaps-label">{{
+                t('settings.optimizeParagraphGaps')
+              }}</span>
+              <AppSwitch
+                v-model="optimizeParagraphGaps"
+                aria-labelledby="optimize-paragraph-gaps-label"
+                :aria-label="t('settings.optimizeParagraphGaps')"
+              />
+            </div>
+            <p class="muted">{{ t('settings.optimizeParagraphGapsDescription') }}</p>
             <div class="setting-row" data-setting="restore-documents">
               <span id="restore-documents-label">{{ t('settings.restoreDocuments') }}</span>
               <AppSwitch v-model="restoreDocuments" aria-labelledby="restore-documents-label" />
@@ -338,7 +350,9 @@ const keyEntry = defineModel('keyEntry');
                 {{
                   translationMode === 'full'
                     ? t('translation.fullDescription')
-                    : t('translation.readingDescription')
+                    : translationMode === 'reading-ahead'
+                      ? t('translation.readingAheadDescription')
+                      : t('translation.readingDescription')
                 }}
               </p>
             </div>

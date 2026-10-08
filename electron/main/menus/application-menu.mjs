@@ -68,12 +68,18 @@ export function createApplicationMenu({
         const receiver = target || focusedWindow();
         const currentPath = documentPath(receiver);
         if (!currentPath) return;
+        const source = registry.stateFor(receiver)?.unkeyedAnnotationSource;
+        const stillCurrent = () =>
+          !receiver.isDestroyed() &&
+          documentPath(receiver) === currentPath &&
+          registry.stateFor(receiver)?.unkeyedAnnotationSource === source;
         try {
           await validateSystemPDF(currentPath);
-          if (documentPath(receiver) !== currentPath || receiver.isDestroyed()) return;
+          if (!stillCurrent()) return;
           await receiver.webContents.executeJavaScript('window.previewSaveReadingView?.()');
-          if (documentPath(receiver) !== currentPath || receiver.isDestroyed()) return;
+          if (!stillCurrent()) return;
           await pdfApplications.open(choice, currentPath);
+          if (stillCurrent()) receiver.webContents.send('reader:action', 'close-document');
         } catch (error) {
           dialog.showErrorBox('PDFMathReader', error.message);
         }

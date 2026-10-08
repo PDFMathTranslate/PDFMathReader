@@ -10,6 +10,7 @@ export function createPreferenceState() {
   const layoutVisible = ref(false);
   const reuseTranslations = ref(localStorage.getItem('reuseTranslations') !== 'false');
   const interactionMode = ref('reading');
+  const optimizeParagraphGaps = ref(false);
   const formulaOcrEnabled = ref(localStorage.getItem('formulaOcrEnabled') === 'true');
   const restoreDocuments = ref(true);
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
@@ -34,7 +35,9 @@ export function createPreferenceState() {
   );
   const autoHideHeader = ref(true);
   const translationMode = ref(
-    localStorage.getItem('translationMode') === 'full' ? 'full' : 'reading',
+    ['full', 'reading', 'reading-ahead'].includes(localStorage.getItem('translationMode'))
+      ? localStorage.getItem('translationMode')
+      : 'reading-ahead',
   );
   const engine = ref(localStorage.getItem('engine') || 'pdf_inspector');
   const kernelAdvancedOptions = ref({ pdf_math_fast: {}, pdf_math_precise: {} });
@@ -65,6 +68,7 @@ export function createPreferenceState() {
     layoutVisible,
     reuseTranslations,
     interactionMode,
+    optimizeParagraphGaps,
     formulaOcrEnabled,
     restoreDocuments,
     documentOpenMode,

@@ -88,12 +88,17 @@ async function toggleDeveloper(enabled) {
         />
       </div>
       <p class="muted">{{ dt('developerHint') }}</p>
-      <AppButton v-if="developerEnabled" :disabled="developerBusy" @click="toggleDeveloper(true)">{{
-        dt('openWindow')
-      }}</AppButton>
-      <AppButton class="install-guide-trigger" @click="openInstallGuide">{{
-        zh() ? '调试安装引导…' : 'Debug installation guide…'
-      }}</AppButton>
+      <div class="developer-entry-actions">
+        <AppButton
+          v-if="developerEnabled"
+          :disabled="developerBusy"
+          @click="toggleDeveloper(true)"
+          >{{ dt('openWindow') }}</AppButton
+        >
+        <AppButton class="install-guide-trigger" @click="openInstallGuide">{{
+          zh() ? '调试安装引导…' : 'Debug installation guide…'
+        }}</AppButton>
+      </div>
       <Teleport to="body">
         <dialog
           ref="installDialog"
@@ -146,8 +151,18 @@ async function toggleDeveloper(enabled) {
   margin-bottom: 8px;
   border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
 }
-.install-guide-trigger {
-  margin-top: 8px;
+.developer-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block: 4px;
+}
+.developer-entry-actions > :deep(*) {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
 }
 .install-guide-dialog {
   width: min(560px, calc(100vw - 40px));

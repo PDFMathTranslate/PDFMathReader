@@ -176,6 +176,9 @@ export const extraMessages = {
       fullDescription: '開啟文件時翻譯整份文件',
       reading: '減少翻譯請求',
       readingDescription: '自動翻譯目前可見頁面，並沿閱讀方向提前準備下一屏',
+      readingAhead: '減少翻譯請求，但在瀏覽時提前翻譯更多',
+      readingAheadDescription:
+        '優先翻譯目前可見頁面，沿閱讀方向提前翻譯最多六頁，並在後方保留兩頁，同時維持有限的翻譯範圍。',
       language: '翻譯語言',
       siliconflowFreeFallback: '尚未設定 OpenAI 金鑰。正在使用 SiliconFlow 免費翻譯服務。',
     },
@@ -415,6 +418,9 @@ export const extraMessages = {
       reading: 'Réduire les requêtes de traduction',
       readingDescription:
         'Traduire automatiquement les pages visibles et préparer l’écran suivant dans le sens de lecture',
+      readingAhead: 'Réduire les requêtes et traduire davantage en avance',
+      readingAheadDescription:
+        'Priorise les pages visibles, prétraduit jusqu’à six pages dans le sens de lecture et deux pages en arrière, tout en gardant une portée limitée.',
       language: 'Langue de traduction',
       siliconflowFreeFallback:
         'Aucune clé API OpenAI n’est configurée. Utilisation du service de traduction gratuit SiliconFlow.',
@@ -655,6 +661,9 @@ export const extraMessages = {
       reading: 'Reducir las solicitudes de traducción',
       readingDescription:
         'Traducir automáticamente las páginas visibles y preparar la siguiente pantalla en la dirección de lectura',
+      readingAhead: 'Reducir solicitudes y traducir más por adelantado',
+      readingAheadDescription:
+        'Da prioridad a las páginas visibles, pretraduce hasta seis páginas en la dirección de lectura y dos páginas hacia atrás, manteniendo un alcance limitado.',
       language: 'Idioma de traducción',
       siliconflowFreeFallback:
         'No hay ninguna clave de API de OpenAI configurada. Se está utilizando el servicio de traducción gratuito de SiliconFlow.',
@@ -895,6 +904,9 @@ export const extraMessages = {
       fullDescription: '문서를 열 때 전체 문서 번역',
       reading: '번역 요청 줄이기',
       readingDescription: '보이는 페이지를 자동 번역하고 읽는 방향의 다음 화면을 미리 준비',
+      readingAhead: '번역 요청을 줄이고 탐색 중 더 많이 미리 번역',
+      readingAheadDescription:
+        '보이는 페이지를 우선하고 읽는 방향으로 최대 6페이지, 뒤쪽으로 2페이지를 미리 번역하면서 범위는 제한합니다.',
       language: '번역 언어',
       siliconflowFreeFallback:
         'OpenAI API 키가 구성되지 않았습니다. SiliconFlow 무료 번역 서비스를 사용합니다.',

@@ -23,6 +23,7 @@ export function createReaderDocumentSurface({
   viewportPages,
   scheduleViewport,
   scheduleReadingSave,
+  mapDisplayPage,
   importFile,
   ensurePDF,
   active,
@@ -64,6 +65,7 @@ export function createReaderDocumentSurface({
     viewportPages,
     scheduleViewport,
     scheduleReadingSave,
+    mapDisplayPage,
     navigation: {
       begin() {
         motion.referenceJumping = true;

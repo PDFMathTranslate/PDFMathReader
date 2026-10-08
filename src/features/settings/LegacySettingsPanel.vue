@@ -248,7 +248,9 @@ const reducePadding = defineModel('reducePadding');
             {{
               translationMode === 'full'
                 ? t('translation.fullDescription')
-                : t('translation.readingDescription')
+                : translationMode === 'reading-ahead'
+                  ? t('translation.readingAheadDescription')
+                  : t('translation.readingDescription')
             }}
           </p>
         </div>

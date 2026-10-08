@@ -193,6 +193,9 @@ const messages = {
       reading: 'Reduce translation requests',
       readingDescription:
         'Automatically translate visible pages and prepare the next screen in your reading direction',
+      readingAhead: 'Reduce translation requests, translate further ahead while browsing',
+      readingAheadDescription:
+        'Prioritizes visible pages, pretranslates up to six pages in your reading direction and two pages behind, while keeping the translation scope limited.',
       language: 'Translation language',
       siliconflowFreeFallback:
         'No OpenAI API key configured. Using SiliconFlow free translation service.',
@@ -426,6 +429,9 @@ const messages = {
       fullDescription: '打开文档时翻译整份文档',
       reading: '降低翻译请求',
       readingDescription: '自动翻译当前可见页面，并沿阅读方向提前准备下一屏',
+      readingAhead: '降低翻译请求，但在浏览时提前翻译更多',
+      readingAheadDescription:
+        '优先翻译可见页面，沿阅读方向提前翻译最多六页，并在后方保留两页，同时保持有限的翻译范围。',
       language: '翻译语言',
       siliconflowFreeFallback: '未配置 OpenAI 密钥。正在使用 SiliconFlow 免费翻译服务。',
     },
@@ -659,6 +665,9 @@ const messages = {
       fullDescription: '文書を開いたときに文書全体を翻訳',
       reading: '翻訳リクエストを減らす',
       readingDescription: '表示中のページを自動翻訳し、読む方向の次の画面を先に準備',
+      readingAhead: '翻訳リクエストを減らし、閲覧中にさらに先まで翻訳',
+      readingAheadDescription:
+        '表示中のページを優先し、読む方向に最大6ページ、後方に2ページを先行翻訳しながら、翻訳範囲を限定します。',
       language: '翻訳言語',
       siliconflowFreeFallback:
         'OpenAI API キーが設定されていません。SiliconFlow の無料翻訳サービスを使用しています。',
@@ -1203,6 +1212,37 @@ for (const [locale, [label, hint]] of Object.entries(resourceUsageLabels)) {
   messages[locale].settings.reduceResourceUsage = label;
   messages[locale].settings.reduceResourceUsageHint = hint;
 }
+const paragraphGapOptimizationLabels = {
+  en: [
+    'Optimize paragraph gaps in reading mode',
+    'In vertical reading mode, reduce extra gaps to use screen space more efficiently.',
+  ],
+  'zh-CN': [
+    '阅读模式段落间隙优化',
+    '在竖向阅读模式中，通过缩减额外的间隙在排版中充分利用屏幕空间。',
+  ],
+  'zh-TW': ['閱讀模式段落間距最佳化', '在直向閱讀模式中，縮減額外間距，讓排版更充分利用螢幕空間。'],
+  ja: [
+    '読書モードの段落間隔を最適化',
+    '縦書きの読書モードで余分な間隔を縮め、画面をより有効に使います。',
+  ],
+  ko: [
+    '읽기 모드 단락 간격 최적화',
+    '세로 읽기 모드에서 추가 간격을 줄여 화면 공간을 더 효율적으로 사용합니다.',
+  ],
+  fr: [
+    'Optimiser les espaces entre les paragraphes en mode lecture',
+    'En mode lecture vertical, réduire les espaces superflus pour mieux utiliser l’écran.',
+  ],
+  es: [
+    'Optimizar los espacios entre párrafos en el modo de lectura',
+    'En el modo de lectura vertical, reduce los espacios adicionales para aprovechar mejor la pantalla.',
+  ],
+};
+for (const [locale, [label, description]] of Object.entries(paragraphGapOptimizationLabels)) {
+  messages[locale].settings.optimizeParagraphGaps = label;
+  messages[locale].settings.optimizeParagraphGapsDescription = description;
+}
 const translationServiceLabels = {
   en: {
     translationService: 'Translation service',
@@ -1543,17 +1583,29 @@ for (const [locale, [title, app, recent, empty, loading, unavailable]] of Object
 ))
   messages[locale].aboutVersions = { title, app, recent, empty, loading, unavailable };
 
-const kernelCategoryLabels = {
-  en: 'Kernel',
-  'zh-CN': '内核',
-  'zh-TW': '核心',
-  ja: 'カーネル',
-  ko: '커널',
-  fr: 'Noyau',
-  es: 'Núcleo',
+const advancedCategoryLabels = {
+  en: 'Advanced Settings',
+  'zh-CN': '高级设置',
+  'zh-TW': '進階設定',
+  ja: '詳細設定',
+  ko: '고급 설정',
+  fr: 'Réglages avancés',
+  es: 'Ajustes avanzados',
 };
-for (const [locale, label] of Object.entries(kernelCategoryLabels))
-  messages[locale].settings.kernel = label;
+for (const [locale, label] of Object.entries(advancedCategoryLabels))
+  messages[locale].settings.advancedCategory = label;
+
+const translationBehaviorLabels = {
+  en: 'Translation Behavior',
+  'zh-CN': '翻译行为',
+  'zh-TW': '翻譯行為',
+  ja: '翻訳の動作',
+  ko: '번역 동작',
+  fr: 'Comportement de traduction',
+  es: 'Comportamiento de traducción',
+};
+for (const [locale, label] of Object.entries(translationBehaviorLabels))
+  messages[locale].settings.translationBehavior = label;
 
 const systemLanguageLabels = {
   en: 'System language',

@@ -30,28 +30,32 @@ export function annotationLineRects(rects) {
 }
 
 // Keep every marker on the same page rail, with a screen-space edge inset.
-export function annotationRailX(pageWidth, textRight, zoom) {
+export function annotationRailX(pageWidth, textRight, zoom, crop = { x: 0, y: 0 }) {
   const size = 34 / zoom,
     gap = 8 / zoom,
-    limit = Math.max(0, pageWidth - size - gap);
-  return Math.max(0, Math.min(limit, textRight + gap));
+    left = (pageWidth * crop.x) / 2,
+    right = pageWidth - left,
+    limit = Math.max(left, right - size - gap);
+  return crop.x ? limit : Math.max(left, Math.min(limit, textRight + gap));
 }
 
 // Pack markers down the shared rail, then pull back from the page bottom.
-export function annotationNotePositions(notes, pageHeight, zoom) {
+export function annotationNotePositions(notes, pageHeight, zoom, cropY = 0) {
   const sorted = notes
     .map((n) => ({ ...n }))
     .sort((a, b) => a.y - b.y || String(a.id).localeCompare(String(b.id)));
   const size = 34 / zoom,
-    gap = 6 / zoom;
+    gap = 6 / zoom,
+    top = (pageHeight * cropY) / 2,
+    bottom = pageHeight - top;
   for (let i = 0; i < sorted.length; i++)
-    sorted[i].y = Math.max(sorted[i].y, i ? sorted[i - 1].y + size + gap : 0);
+    sorted[i].y = Math.max(sorted[i].y, i ? sorted[i - 1].y + size + gap : top);
   if (sorted.length) {
-    sorted.at(-1).y = Math.min(sorted.at(-1).y, Math.max(0, pageHeight - size));
+    sorted.at(-1).y = Math.min(sorted.at(-1).y, Math.max(top, bottom - size));
     for (let i = sorted.length - 2; i >= 0; i--)
       sorted[i].y = Math.min(sorted[i].y, sorted[i + 1].y - size - gap);
   }
-  return new Map(sorted.map((n) => [n.id, Math.max(0, n.y)]));
+  return new Map(sorted.map((n) => [n.id, Math.max(top, n.y)]));
 }
 
 // Shared search and annotation spacing in screen pixels.

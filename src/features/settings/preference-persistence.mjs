@@ -37,7 +37,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
     if (['default', 'liquid-glass'].includes(saved.interfaceStyle))
       preferences.interfaceStyle.value = saved.interfaceStyle;
     if (saved.engine) preferences.engine.value = saved.engine;
-    if (saved.translationMode) preferences.translationMode.value = saved.translationMode;
+    if (['full', 'reading', 'reading-ahead'].includes(saved.translationMode))
+      preferences.translationMode.value = saved.translationMode;
     if (saved.direction) view.direction.value = saved.direction;
     if (saved.columns !== undefined) view.columns.value = saved.columns;
     if (saved.fit) view.fitMode.value = saved.fit;
@@ -67,6 +68,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
     if (saved.reuseTranslations !== undefined)
       preferences.reuseTranslations.value = !!saved.reuseTranslations;
     if (saved.interactionMode) preferences.interactionMode.value = saved.interactionMode;
+    if (saved.optimizeParagraphGaps !== undefined)
+      preferences.optimizeParagraphGaps.value = !!saved.optimizeParagraphGaps;
     if (saved.language) preferences.language.value = saved.language;
     if (saved.glossaries !== undefined)
       preferences.glossaries.value = cloneGlossaries(saved.glossaries);
@@ -124,6 +127,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         emphasizeKeyVerbs: preferences.emphasizeKeyVerbs.value,
         emphasizeLogicalConnectives: preferences.emphasizeLogicalConnectives.value,
         interactionMode: preferences.interactionMode.value,
+        optimizeParagraphGaps: preferences.optimizeParagraphGaps.value,
         language: preferences.language.value,
         glossaries: cloneGlossaries(preferences.glossaries.value),
         sourceLanguage: preferences.sourceLanguage.value,

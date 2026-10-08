@@ -12,3 +12,18 @@ export function renderPixelRatio(width, height, screenRatio = 1, visible = true)
 export function scrollPixelRatio(width, height, screenRatio = 1) {
   return renderPixelRatio(width, height, screenRatio, false);
 }
+
+// Render the retained area, rather than spending the bitmap budget on margins
+// that the crop frame hides. Coordinates remain in the original page space.
+export function renderFrame(width, height, crop = { x: 0, y: 0 }) {
+  const x = Math.max(0, Math.min(0.8, Number(crop.x) || 0));
+  const y = Math.max(0, Math.min(0.8, Number(crop.y) || 0));
+  return {
+    x: (width * x) / 2,
+    y: (height * y) / 2,
+    width: width * (1 - x),
+    height: height * (1 - y),
+    fullWidth: width,
+    fullHeight: height,
+  };
+}

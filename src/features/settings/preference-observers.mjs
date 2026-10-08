@@ -58,6 +58,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.emphasizeKeyVerbs,
       bindings.emphasizeLogicalConnectives,
       bindings.autoHideHeader,
+      bindings.optimizeParagraphGaps,
       bindings.showKernelToolbarShortcut,
       uiLanguageChoice,
     ],

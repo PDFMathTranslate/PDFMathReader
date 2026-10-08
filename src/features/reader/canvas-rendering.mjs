@@ -1,4 +1,4 @@
-import { renderPixelRatio, scrollPixelRatio } from './render-resolution.mjs';
+import { renderPixelRatio, scrollPixelRatio, renderFrame } from './render-resolution.mjs';
 import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';
 import { nextTick } from 'vue';
 
@@ -63,7 +63,7 @@ export function createCanvasRendering({
     };
   }
 
-  function presentFrame(canvas, frame, page, scale, dpr) {
+  function presentFrame(canvas, frame, page, scale, dpr, geometry = frame.pdfFrame) {
     if (
       canvas.closest('.page') &&
       renderState.visiblePages.has(Number(canvas.parentElement.dataset.page))
@@ -97,9 +97,28 @@ export function createCanvasRendering({
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(frame, 0, 0);
-    canvas.style.width = frame.width / dpr + 'px';
-    canvas.style.height = frame.height / dpr + 'px';
-    renderState.canvasCache.set(canvas, { page, scale, dpr });
+    canvas.pdfFrame = geometry;
+    if (canvas.closest('.page')) {
+      // Percentages also let the existing pinch preview follow the page size.
+      canvas.style.setProperty(
+        'width',
+        (geometry.width / geometry.fullWidth) * 100 + '%',
+        'important',
+      );
+      // The page height may change before its replacement bitmap is ready.
+      // Derive height from this frame's aspect ratio, never stretch an old full
+      // page into the compacted page's shorter container.
+      canvas.style.setProperty('height', 'auto', 'important');
+      canvas.style.aspectRatio = geometry.width + ' / ' + geometry.height;
+      canvas.style.position = 'absolute';
+      canvas.style.left = (geometry.x / geometry.fullWidth) * 100 + '%';
+      canvas.style.top = `calc(var(--page-zoom, ${scale}) * ${geometry.y / scale}px)`;
+    } else {
+      canvas.style.width = frame.width / dpr + 'px';
+      canvas.style.height = frame.height / dpr + 'px';
+    }
+    const cropKey = geometry.x + ':' + geometry.y + ':' + geometry.width + ':' + geometry.height;
+    renderState.canvasCache.set(canvas, { page, scale, dpr, geometry, cropKey });
     canvas.dispatchEvent(new CustomEvent('pdf-frame-presented', { bubbles: true }));
     renderState.renderMetrics.peakResidentBytes = Math.max(
       renderState.renderMetrics.peakResidentBytes,
@@ -115,17 +134,24 @@ export function createCanvasRendering({
     const number = Number(canvas.closest('.page')?.dataset.page);
     if (number && !renderState.renderWindow.value.has(number)) return false;
     const base = page.getViewport({ scale }),
+      geometry = renderFrame(base.width, base.height, number ? view.pageCrop.value : undefined),
+      cropKey = geometry.x + ':' + geometry.y + ':' + geometry.width + ':' + geometry.height,
       dpr = preview
-        ? scrollPixelRatio(base.width, base.height, devicePixelRatio)
+        ? scrollPixelRatio(geometry.width, geometry.height, devicePixelRatio)
         : renderPixelRatio(
-            base.width,
-            base.height,
+            geometry.width,
+            geometry.height,
             devicePixelRatio,
             !!number && renderState.visiblePages.has(number),
           ),
       cached = renderState.canvasCache.get(canvas),
       current = renderState.pageTasks.get(canvas);
-    if (cached?.page === page && cached.scale === scale && cached.dpr >= dpr) {
+    if (
+      cached?.page === page &&
+      cached.scale === scale &&
+      cached.dpr >= dpr &&
+      cached.cropKey === cropKey
+    ) {
       if (current) {
         renderState.pageTasks.delete(canvas);
         current.cancel();
@@ -135,7 +161,8 @@ export function createCanvasRendering({
     if (
       current?.previewPage === page &&
       current.previewScale === scale &&
-      current.previewDpr === dpr
+      current.previewDpr === dpr &&
+      current.previewCrop === cropKey
     )
       return current.previewResult;
     if (current) {
@@ -143,7 +170,7 @@ export function createCanvasRendering({
       current.cancel();
     }
     if (!renderState.bitmapIds.has(page)) renderState.bitmapIds.set(page, ++renderState.bitmapId);
-    const key = renderState.bitmapIds.get(page) + ':' + scale + ':' + dpr,
+    const key = renderState.bitmapIds.get(page) + ':' + scale + ':' + dpr + ':' + cropKey,
       reusable = renderState.bitmapFrames.get(key);
     if (reusable) {
       renderState.renderMetrics.cacheHits++;
@@ -152,14 +179,20 @@ export function createCanvasRendering({
     }
     const viewport = page.getViewport({ scale }),
       frame = document.createElement('canvas');
-    frame.width = Math.ceil(viewport.width * dpr);
-    frame.height = Math.ceil(viewport.height * dpr);
+    frame.width = Math.ceil(geometry.width * dpr);
+    frame.height = Math.ceil(geometry.height * dpr);
+    frame.pdfFrame = geometry;
     const task = page.render({
       canvasContext: frame.getContext('2d'),
       viewport,
-      transform: [dpr, 0, 0, dpr, 0, 0],
+      transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
     });
-    Object.assign(task, { previewPage: page, previewScale: scale, previewDpr: dpr });
+    Object.assign(task, {
+      previewPage: page,
+      previewScale: scale,
+      previewDpr: dpr,
+      previewCrop: cropKey,
+    });
     renderState.pageTasks.set(canvas, task);
     task.onContinue = (continuation) => {
       const resume = () => {

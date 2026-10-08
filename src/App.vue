@@ -119,6 +119,7 @@ const {
   openRecent,
   openSearch,
   openSettings,
+  optimizeParagraphGaps,
   pageConcurrency,
   pageCrop,
   pageEntry,
@@ -528,6 +529,7 @@ const copyToastDetail = computed(() =>
       v-model:error="error"
       v-model:document-open-mode="documentOpenMode"
       v-model:interaction-mode="interactionMode"
+      v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
       v-model:restore-documents="restoreDocuments"
       v-model:auto-hide-header="autoHideHeader"
       v-model:emphasize-topic-sentences="emphasizeTopicSentences"

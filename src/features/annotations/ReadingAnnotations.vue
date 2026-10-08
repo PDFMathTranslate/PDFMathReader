@@ -33,6 +33,7 @@ function updatePopupLayout() {
 const props = defineProps({
   host: Function,
   page: Object,
+  crop: { type: Object, default: () => ({ x: 0, y: 0 }) },
   zoom: Number,
   annotations: Array,
   translated: Boolean,
@@ -154,7 +155,7 @@ const noteRail = computed(() => {
           : b.sourceBox) || b;
       right = Math.max(right, box.x + box.width);
     }
-  return annotationRailX(props.page.width, right, props.zoom);
+  return annotationRailX(props.page.width, right, props.zoom, props.crop);
 });
 watch(noteRail, (x) => emit('rail', x), { immediate: true });
 function baseNoteRect(a) {
@@ -163,13 +164,15 @@ function baseNoteRect(a) {
     box = translated ? b?.translatedBox || b : b?.sourceBox || b;
   const line = a.rects[0],
     anchor = box || line,
-    markerSize = 34 / props.zoom;
+    markerSize = 34 / props.zoom,
+    top = (props.page.height * props.crop.y) / 2,
+    bottom = props.page.height - top;
   return {
     x: noteRail.value,
     y: Math.max(
-      0,
+      top,
       Math.min(
-        props.page.height - markerSize,
+        bottom - markerSize,
         anchor.y + (Math.min(line.height, anchor.height) - markerSize) / 2,
       ),
     ),
@@ -189,6 +192,7 @@ const notePositions = computed(() =>
       .map((a) => ({ id: a.id, y: baseNoteRect(a).y })),
     props.page.height,
     props.zoom,
+    props.crop.y,
   ),
 );
 function noteRect(a) {

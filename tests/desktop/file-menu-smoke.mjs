@@ -8,11 +8,13 @@ import { createApplicationMenu } from '../../electron/main/menus/application-men
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 import { serializeApplicationMenu, menuPathItems } from '../../shared/commands/menu.mjs';
 
-async function verifyExternalApplicationTargeting() {
+export async function verifyExternalApplicationTargeting() {
   const opened = [];
+  const actions = [];
+  let onOpen;
   const target = {
     isDestroyed: () => false,
-    webContents: { executeJavaScript: async () => {}, send: () => {} },
+    webContents: { executeJavaScript: async () => {}, send: (...args) => actions.push(args) },
   };
   const state = {
     preferences: {},
@@ -35,7 +37,10 @@ async function verifyExternalApplicationTargeting() {
     },
     pdfApplications: {
       list: async () => [{ id: 'preview', name: 'Preview' }],
-      open: async (choice, path) => opened.push([choice.id, path]),
+      open: async (choice, path) => {
+        opened.push([choice.id, path]);
+        await onOpen?.();
+      },
     },
     validateSystemPDF: async () => {},
     resolveUILanguage: () => 'zh-CN',
@@ -55,10 +60,18 @@ async function verifyExternalApplicationTargeting() {
   choice.click(undefined, target);
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(opened, [['preview', '/second.pdf']]);
+  assert.deepEqual(actions, [['reader:action', 'close-document']]);
+  actions.length = 0;
+  onOpen = () => {
+    state.unkeyedAnnotationSource = { path: '/replacement.pdf', reliable: true };
+  };
+  choice.click(undefined, target);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(actions.length, 0, 'Do not close a replacement document during handoff');
   state.performance.hasDocument = false;
   choice.click(undefined, target);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(opened.length, 1);
+  assert.equal(opened.length, 2);
 }
 
 export async function verifyFileMenu(window, recents) {

@@ -1,3 +1,7 @@
+import {
+  createParagraphCompaction,
+  mapCompactY,
+} from '../features/reader/paragraph-compaction.mjs';
 import { installRenderDiagnostics } from '../features/reader/render-diagnostics.mjs';
 import { installReaderViewObservers } from '../features/reader/view-observers.mjs';
 import { installReaderPreferenceObservers } from '../features/settings/preference-observers.mjs';
@@ -59,6 +63,7 @@ export function useReaderWindow() {
     layoutVisible,
     reuseTranslations,
     interactionMode,
+    optimizeParagraphGaps,
     restoreDocuments,
     documentOpenMode,
     defaultPageCropEnabled,
@@ -327,6 +332,7 @@ export function useReaderWindow() {
     viewportPages: featureActions.viewportPages,
     scheduleViewport: featureActions.scheduleViewport,
     scheduleReadingSave: featureActions.scheduleReadingSave,
+    mapDisplayPage: (p) => displayedPage(p),
     importFile: featureActions.importFile,
     ensurePDF: featureActions.ensurePDF,
     active,
@@ -347,7 +353,7 @@ export function useReaderWindow() {
     searchPages,
     searchPageCount,
     searchHit,
-    displayedPage,
+    displayedPage: searchedPage,
     openSearch,
     closeSearch,
     scheduleSearch,
@@ -431,6 +437,44 @@ export function useReaderWindow() {
 
   // Display-only, total fraction removed symmetrically from each axis.
   const pageCrop = ref({ x: 0, y: 0 });
+  const compactParagraphPage = createParagraphCompaction({
+    enabled: computed(
+      () =>
+        preferences.optimizeParagraphGaps.value &&
+        direction.value === 'vertical' &&
+        columns.value === 1 &&
+        interactionMode.value === 'reading' &&
+        showTranslations.value,
+    ),
+    pages,
+    sourceDocument: () => session.pdf,
+    getDocument: (options) => session.getDocument(options),
+    changing: (page, result) => {
+      const el = reader.value,
+        number = active.value;
+      const host = renderState.pageEls.get(number);
+      if (!el || !host) return () => {};
+      const top = el.getBoundingClientRect().top;
+      const offset = top - host.getBoundingClientRect().top;
+      const mapped =
+        page.number === number
+          ? mapCompactY(offset / zoom.value, result.cuts) * zoom.value
+          : offset;
+      return () => {
+        const current = renderState.pageEls.get(number);
+        if (current && reader.value === el)
+          el.scrollTop += current.getBoundingClientRect().top + mapped - top;
+      };
+    },
+    changed: (restore) =>
+      nextTick(() => {
+        restore?.();
+        featureActions.renderPages(false, true);
+      }),
+  });
+  function displayedPage(p) {
+    return compactParagraphPage(searchedPage(p));
+  }
   // Read geometry only: spreading a reactive page subscribes the full-document
   // layout to visibility, translation and annotation updates on every scroll.
 
@@ -481,6 +525,11 @@ export function useReaderWindow() {
       id: 'reading',
       labelKey: 'translation.reading',
       descriptionKey: 'translation.readingDescription',
+    },
+    {
+      id: 'reading-ahead',
+      labelKey: 'translation.readingAhead',
+      descriptionKey: 'translation.readingAheadDescription',
     },
   ];
 
@@ -808,6 +857,7 @@ export function useReaderWindow() {
       emphasizeTopicSentences,
       showKernelToolbarShortcut,
       autoHideHeader,
+      optimizeParagraphGaps,
       kernelAdvancedOptions,
       translationServices,
       glossaries,
@@ -1013,6 +1063,7 @@ export function useReaderWindow() {
     informationCategories,
     informationCategorySettings,
     interactionMode,
+    optimizeParagraphGaps,
     kernelAdvancedOptions,
     kernelErrorVisible,
     kernelFailure,

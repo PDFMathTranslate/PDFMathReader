@@ -28,10 +28,14 @@ const labels = computed(() => words[uiLanguage.value] || words.en);
 const sections = computed(() => [
   { id: 'general', label: labels.value[0], symbol: 'gearshape.fill' },
   { id: 'appearance', label: t('appearance.section'), symbol: 'circle.lefthalf.filled' },
-  { id: 'translation', label: t('settings.translation'), symbol: 'character.book.closed.fill' },
+  {
+    id: 'translation',
+    label: t('settings.translationBehavior'),
+    symbol: 'character.book.closed.fill',
+  },
   { id: 'providers', label: labels.value[1], symbol: 'network' },
-  { id: 'kernel', label: t('settings.kernel'), symbol: 'cpu.fill' },
   { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'gearshape.fill' },
+  { id: 'kernel', label: t('settings.advancedCategory'), symbol: 'cpu.fill' },
   {
     id: 'performance',
     label:
@@ -890,15 +894,17 @@ section.settings.settings-workspace
 }
 section.settings.settings-workspace
   .workspace-page
-  :deep(.developer-kernel-actions .macvue-button) {
+  :deep(
+    :is(.developer-entry-actions, .developer-kernel-actions) :is(.macvue-button, fluent-button)
+  ) {
   width: auto;
   max-width: 100%;
-  min-height: 28px;
+  min-height: 32px;
   height: auto;
   margin: 0;
-  padding: 6px 16px;
-  border-radius: 999px;
-  corner-shape: round;
+  padding: 7px 12px;
+  border-radius: 9px;
+  corner-shape: squircle;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.25;

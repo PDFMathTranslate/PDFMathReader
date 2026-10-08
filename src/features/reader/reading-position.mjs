@@ -12,6 +12,7 @@ export function createReadingPosition({
   actions,
 }) {
   function croppedPage(p) {
+    p = actions.rootActions.displayedPage(p);
     return {
       number: p.number,
       width: p.width * (1 - readerView.pageCrop.value.x),

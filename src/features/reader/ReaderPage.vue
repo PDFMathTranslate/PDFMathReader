@@ -6,6 +6,7 @@ import { quickLinkBox } from './quick-links.mjs';
 import ReadingTextLayer from './ReadingTextLayer.vue';
 import TopicSentenceText from '../translation/TopicSentenceText.vue';
 import TextReveal from '../../ui/motion/TextReveal.vue';
+import { mapCompactRect } from './paragraph-compaction.mjs';
 import { revealPDF } from '../../ui/motion/text-reveal.mjs';
 import MathRegion from './MathRegion.vue';
 import FormulaOcrRegion from './FormulaOcrRegion.vue';
@@ -43,6 +44,28 @@ const props = defineProps({
   selectedAnnotation: String,
   showAnnotations: { type: Boolean, default: true },
 });
+function mapAnnotation(a, inverse = false) {
+  const cuts = props.page.paragraphCompaction;
+  if (!cuts || a.page !== props.page.number) return a;
+  return {
+    ...a,
+    rects: a.rects.map((r) => mapCompactRect(r, cuts, inverse)),
+    sourceRect: mapCompactRect(a.sourceRect, cuts, inverse),
+    translationRect: mapCompactRect(a.translationRect, cuts, inverse),
+  };
+}
+const displayAnnotations = computed(() => (props.annotations || []).map((a) => mapAnnotation(a)));
+function saveDisplayAnnotations(list) {
+  emit(
+    'annotations',
+    list.map((a) => mapAnnotation(a, true)),
+  );
+}
+const displaySearchBoxes = computed(() =>
+  (props.searchBoxes || []).map((r) =>
+    props.page.paragraphCompaction ? mapCompactRect(r, props.page.paragraphCompaction) : r,
+  ),
+);
 const commentRail = shallowRef(null);
 const linkRail = computed(() => {
   if (props.interactionMode === 'reading' && props.showAnnotations && commentRail.value !== null)
@@ -54,7 +77,7 @@ const linkRail = computed(() => {
       return box ? box.x + box.width : 0;
     }),
   );
-  return annotationRailX(props.page.width, right, props.zoom);
+  return annotationRailX(props.page.width, right, props.zoom, props.crop);
 });
 function quickLinkStyle(button, index) {
   const box =
@@ -86,7 +109,7 @@ const p = computed(() => props.page),
 // Unchanged math content needs no switch target; upstream can merge remote table/header runs.
 const blocks = computed(() => p.value.blocks.filter((b) => !b.math || b.text !== b.translation));
 const searchHighlightBoxes = computed(() => {
-  const rects = annotationLineRects(props.searchBoxes || []);
+  const rects = annotationLineRects(displaySearchBoxes.value);
   return rects.map((rect) => highlightLineRect(rect, rects, p.value, props.zoom));
 });
 const paragraphBoxes = computed(() =>
@@ -267,6 +290,7 @@ function fit(el, b) {
       :data-page="p.number"
       :ref="hostRef"
       :style="{
+        '--page-zoom': zoom,
         width: p.width * zoom + 'px',
         height: p.height * zoom + 'px',
         left: (-p.width * crop.x * zoom) / 2 + 'px',
@@ -395,12 +419,13 @@ function fit(el, b) {
           <ReadingAnnotations
             :host="() => host"
             :page="p"
+            :crop="crop"
             :zoom="zoom"
-            :annotations="annotations || []"
+            :annotations="displayAnnotations"
             :selected-annotation="selectedAnnotation"
             :translated="translations"
             @rail="commentRail = $event"
-            @change="emit('annotations', $event)"
+            @change="saveDisplayAnnotations"
             @notice="emit('notice', $event)"
             @search-document="emit('search-document', $event)"
           /></div

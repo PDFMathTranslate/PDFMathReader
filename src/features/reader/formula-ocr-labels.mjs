@@ -20,7 +20,7 @@ const labels = {
     download: '正在下载 Pix2Text MFR1.5…',
     ready: '已准备好离线识别',
     retry: '重试',
-    recognize: '识别并复制公式',
+    recognize: '识别公式并复制',
     recognizing: '正在识别公式…',
     copied: '公式已复制',
     failed: '公式识别失败',

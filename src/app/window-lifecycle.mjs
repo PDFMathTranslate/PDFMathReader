@@ -116,7 +116,11 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
       bindings.direction.value = saved.direction || 'vertical';
       bindings.columns.value = saved.columns || 1;
       bindings.fitMode.value = saved.fit;
-      bindings.translationMode.value = saved.translationMode || 'reading';
+      bindings.translationMode.value = ['full', 'reading', 'reading-ahead'].includes(
+        saved.translationMode,
+      )
+        ? saved.translationMode
+        : 'reading-ahead';
       if (saved.fit === 'manual') {
         bindings.zoom.value = saved.zoom;
         bindings.zoomEntry.value = formatPercentValue(bindings.zoom.value);

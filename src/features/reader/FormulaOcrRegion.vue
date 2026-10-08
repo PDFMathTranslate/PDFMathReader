@@ -1,9 +1,10 @@
 <script setup>
-import { inject, ref, computed, onBeforeUnmount } from 'vue';
+import { inject, ref, computed, onBeforeUnmount, useId } from 'vue';
 import { formulaOcrLabel } from './formula-ocr-labels.mjs';
 const props = defineProps({ source: Function, box: Object, zoom: Number });
 const ocr = inject('formulaOcr', null);
 const busy = ref(false);
+const hintId = useId();
 const enabled = computed(() => ocr?.enabled.value === true);
 const controller = new AbortController();
 let rendering,
@@ -65,7 +66,7 @@ onBeforeUnmount(() => {
       <button
         class="formula-ocr-button"
         :disabled="busy"
-        :title="formulaOcrLabel('recognize')"
+        :aria-describedby="hintId"
         :aria-label="formulaOcrLabel(busy ? 'recognizing' : 'recognize')"
         :aria-busy="busy"
         @click.stop="recognize"
@@ -79,6 +80,9 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         ></span>
       </button>
+      <span :id="hintId" class="formula-ocr-hint" role="tooltip">
+        {{ formulaOcrLabel(busy ? 'recognizing' : 'recognize') }}
+      </span>
     </div>
   </div>
 </template>
@@ -122,6 +126,29 @@ onBeforeUnmount(() => {
   color: var(--text);
   cursor: pointer;
   pointer-events: auto;
+}
+.formula-ocr-hint {
+  position: absolute;
+  right: 3px;
+  top: 39px;
+  z-index: 1;
+  padding: 5px 9px;
+  border: 1px solid var(--separator, #8883);
+  border-radius: 7px;
+  background: var(--surface, #f5f5f5);
+  color: var(--text);
+  box-shadow: 0 3px 12px #0002;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.formula-ocr-button:hover + .formula-ocr-hint,
+.formula-ocr-button:focus-visible + .formula-ocr-hint {
+  opacity: 1;
+  visibility: visible;
 }
 .formula-ocr-button progress {
   width: 19px;
