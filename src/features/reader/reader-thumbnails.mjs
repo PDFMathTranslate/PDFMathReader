@@ -55,7 +55,7 @@ export function createThumbnails({ renderState, motion, session, shell, activity
     const root = renderState.thumbnailList.value,
       item = view.thumbnailLayout.value.frames[number - 1];
     if (!root || !item) return;
-    const top = item.offset + 14,
+    const top = item.offset + parseFloat(getComputedStyle(root).paddingTop),
       bottom = top + item.height;
     if (top < root.scrollTop) root.scrollTop = top;
     else if (bottom > root.scrollTop + root.clientHeight)

@@ -62,7 +62,7 @@
   overflow-x: hidden;
   align-items: center;
   gap: 14px;
-  padding: 14px 12px 22px;
+  padding: 24px 12px 22px;
 }
 
 .sidebar .thumbnail-list .thumb {
@@ -195,7 +195,7 @@
 }
 
 .desktop .thumbnail-list {
-  padding: 10px 14px 20px;
+  padding: 24px 14px 20px;
   gap: 14px;
 }
 

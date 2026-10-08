@@ -1,7 +1,8 @@
 import { selectionSearchQuery } from '../search/document-search.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { uiLanguage } from '../../i18n/index.mjs';
-import { shortcutAction } from '../../../shared/commands/shortcuts.mjs';
+import { shortcutAction, effectiveShortcutBindings } from '../../../shared/commands/shortcuts.mjs';
+import { initializeShortcutState, shortcutOverrides } from './shortcut-state.mjs';
 import { nextTick } from 'vue';
 
 export function createReaderCommands({
@@ -14,7 +15,31 @@ export function createReaderCommands({
   search,
   actions,
 }) {
+  initializeShortcutState();
   function readerAction(action, selectionText) {
+    if (action === 'chat-selection') {
+      const text = typeof selectionText === 'string' ? selectionText.trim() : '';
+      if (!text) return;
+      void (async () => {
+        try {
+          if (!window.previewAnnotations?.handover)
+            throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
+          const result = await window.previewAnnotations.handover(text);
+          if (result.cancelled) return;
+          actions.rootActions.notifyCopy(
+            result.delivery === 'prefilled'
+              ? `已请求 ${result.client} 将选中文本填入新对话，请检查后发送`
+              : result.delivery === 'pasted'
+                ? `已向 ${result.client} 对话输入框粘贴上下文，请检查后发送`
+                : `已打开 ${result.client}，上下文已复制，请在对话输入框中粘贴。`,
+            4500,
+          );
+        } catch (error) {
+          actions.rootActions.notifyCopy(error.message || '无法打开 AI Chat。', 4500);
+        }
+      })();
+      return;
+    }
     if (action === 'force-retranslate') {
       if (!session.pages.value.length || shell.settingsWindowMode) return;
       translationState.forceRetranslation = true;
@@ -67,6 +92,11 @@ export function createReaderCommands({
     } else if (action === 'page-next') {
       if (session.pages.value.length)
         actions.pageNavigation.go(view.active.value + 1, { animate: true });
+    } else if (action === 'page-first' || action === 'page-last') {
+      if (session.pages.value.length)
+        actions.pageNavigation.go(action === 'page-first' ? 1 : session.pages.value.length, {
+          animate: true,
+        });
     } else if (action === 'sidebar') {
       if (session.pages.value.length) actions.readerFit.toggleSidebar();
     } else if (action === 'settings') {
@@ -146,33 +176,19 @@ export function createReaderCommands({
       actions.readerPopovers.dismissPopovers();
       return;
     }
-    const nativePageAction =
-      session.pages.value.length > 0 &&
-      !editable &&
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      (e.key === 'PageUp' ||
-        e.key === 'PageDown' ||
-        (e.shiftKey && ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(e.key)));
-    if (nativePageAction) {
-      e.preventDefault();
-      readerAction(
-        e.key === 'PageUp' || e.key === 'ArrowUp' || e.key === 'ArrowLeft'
-          ? 'page-previous'
-          : 'page-next',
-      );
-      return;
-    }
-    const action = shortcutAction(shell.platform, {
-      type: 'keyDown',
-      key: e.key,
-      code: e.code,
-      meta: e.metaKey,
-      control: e.ctrlKey,
-      alt: e.altKey,
-      shift: e.shiftKey,
-    });
+    const action = shortcutAction(
+      shell.platform,
+      {
+        type: 'keyDown',
+        key: e.key,
+        code: e.code,
+        meta: e.metaKey,
+        control: e.ctrlKey,
+        alt: e.altKey,
+        shift: e.shiftKey,
+      },
+      shortcutOverrides.value,
+    );
     if (action && action !== 'close-window' && !editable) {
       e.preventDefault();
       readerAction(action);
@@ -196,9 +212,30 @@ export function createReaderCommands({
   }
 
   function toolbarHint(description, key) {
-    return key
-      ? `${description} (${shell.platform === 'darwin' ? '⌘' + key : 'Ctrl+' + key})`
-      : description;
+    const id = {
+      F: 'search',
+      R: 'translation',
+      B: 'sidebar',
+      ',': 'settings',
+      K: 'kernel',
+      L: 'language',
+      '−': 'zoom-out',
+      '-': 'zoom-out',
+      '=': 'zoom-in',
+    }[key];
+    const bindings = effectiveShortcutBindings(shell.platform, shortcutOverrides.value);
+    const accelerator = id ? bindings[id]?.[0] : null;
+    if (!accelerator) return description;
+    const label =
+      shell.platform === 'darwin'
+        ? accelerator
+            .replace(/CommandOrControl|Command/g, '⌘')
+            .replace(/Control|Ctrl/g, '⌃')
+            .replace(/Alt/g, '⌥')
+            .replace(/Shift/g, '⇧')
+            .replace(/\+/g, '')
+        : accelerator.replace(/CommandOrControl/g, 'Ctrl');
+    return `${description} (${label})`;
   }
 
   function modeKeys(e) {

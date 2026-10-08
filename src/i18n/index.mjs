@@ -1428,9 +1428,9 @@ for (const [locale, [ignore, retry, bundled]] of Object.entries(kernelRecoveryLa
   messages[locale].kernelRecovery = { ignore, retry, bundled };
 
 const kernelDocumentIgnoreLabels = {
-  en: 'Ignore errors in this document',
-  'zh-CN': '忽略本文档错误',
-  'zh-TW': '忽略此文件錯誤',
+  en: 'Don’t prompt again for this document',
+  'zh-CN': '以后不要提示本文档',
+  'zh-TW': '以後不要提示此文件',
   ja: 'この文書のエラーを無視',
   ko: '이 문서의 오류 무시',
   fr: 'Ignorer les erreurs de ce document',

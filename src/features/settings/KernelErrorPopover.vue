@@ -4,11 +4,9 @@ import { t } from '../../i18n/index.mjs';
 defineProps({
   message: String,
   kernelLabel: String,
-  bundled: Boolean,
   busy: Boolean,
-  ignoreDocument: Boolean,
 });
-const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
+const emit = defineEmits(['ignore', 'retry']);
 </script>
 
 <template>
@@ -17,7 +15,6 @@ const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
     role="alert"
     aria-labelledby="kernel-error-title"
     aria-describedby="kernel-error-message"
-    @keydown.esc.stop.prevent="emit('ignore')"
   >
     <header class="kernel-error-heading">
       <svg
@@ -35,24 +32,13 @@ const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
         <circle cx="12" cy="17.5" r=".7" fill="currentColor" stroke="none" />
       </svg>
       <div>
-        <h2 id="kernel-error-title">{{ t('engine.error') }}</h2>
+        <h2 id="kernel-error-title">{{ t('pageStatus.translationFailed') }}</h2>
         <p class="kernel-error-name">{{ kernelLabel }}</p>
       </div>
     </header>
     <p id="kernel-error-message" class="kernel-error-message">{{ message }}</p>
-    <p v-if="bundled" class="kernel-error-hint">{{ t('kernelRecovery.bundled') }}</p>
-    <div v-else class="kernel-error-repairs">
-      <AppButton :disabled="busy" @click="emit('reinstall')">{{
-        t('kernelRecovery.reinstall')
-      }}</AppButton>
-      <AppButton :disabled="busy" @click="emit('rebuild')">{{
-        t('kernelRecovery.rebuild')
-      }}</AppButton>
-    </div>
     <footer class="kernel-error-actions">
-      <AppButton @click="emit('ignore')">{{
-        t(ignoreDocument ? 'kernelRecovery.ignoreDocument' : 'kernelRecovery.ignore')
-      }}</AppButton>
+      <AppButton @click="emit('ignore')">{{ t('kernelRecovery.ignoreDocument') }}</AppButton>
       <AppButton variant="prominent" :disabled="busy" @click="emit('retry')">{{
         t('kernelRecovery.retry')
       }}</AppButton>
@@ -136,16 +122,6 @@ const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
   user-select: text;
   -webkit-user-select: text;
 }
-.kernel-error-hint {
-  margin: 10px 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-.kernel-error-repairs {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-}
 .kernel-error-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(90px, 0.7fr);
@@ -166,14 +142,6 @@ const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
   font: inherit;
   line-height: 1.3;
   white-space: normal;
-}
-.kernel-error-repairs :deep(button) {
-  background: var(--chrome-hover);
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--chrome-divider);
-}
-.kernel-error-repairs :deep(button:hover:not(:disabled)) {
-  background: var(--chrome-pressed);
 }
 .kernel-error-popover :deep(button:focus-visible) {
   outline: 3px solid var(--accent);
@@ -202,8 +170,7 @@ const emit = defineEmits(['ignore', 'retry', 'reinstall', 'rebuild']);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  .kernel-error-name,
-  .kernel-error-hint {
+  .kernel-error-name {
     color: var(--text);
   }
 }

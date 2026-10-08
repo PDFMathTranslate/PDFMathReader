@@ -166,13 +166,9 @@ const settings = defineModel('settings');
             v-if="kernelErrorVisible"
             :message="kernelFailure.message"
             :kernel-label="t(kernelOptions.find((option) => option.id === engine)?.labelKey)"
-            :bundled="engine === 'pdf_inspector'"
             :busy="engineBusy"
-            :ignore-document="offerDocumentIgnore"
             @ignore="ignoreKernelFailure"
             @retry="recoverKernel()"
-            @reinstall="recoverKernel('release')"
-            @rebuild="recoverKernel('git')"
         /></Transition>
       </div>
       <AppButton

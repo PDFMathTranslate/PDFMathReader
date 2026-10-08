@@ -4,10 +4,37 @@ import { createHash } from 'node:crypto';
 import { translationAdvancedArgs } from './kernel-options.mjs';
 import { createTranslationCache } from '../translation/translation-cache.mjs';
 import { buildKernelServiceConfig } from './kernel-services.mjs';
+import { redactDiagnosticText } from '../diagnostics/developer-diagnostics.mjs';
 import {
   isTranslationLanguageSupported,
   translationLanguageCode,
 } from '../../shared/translation/languages.mjs';
+
+const MAX_STDERR_TAIL_LENGTH = 4 * 1024;
+const USEFUL_ERROR_LINE =
+  /(?:^|[\s:])(?:[A-Za-z_][\w.]*(?:Error|Exception|Failure|Interrupt)\b|(?:error|exception|failure|fatal|failed)\b)/i;
+
+function appendTail(current, value, limit) {
+  const next = current + value;
+  return next.length > limit ? next.slice(-limit) : next;
+}
+
+function finalStderrMessage(stderr) {
+  const lines = String(stderr)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return '';
+  const exception = [...lines]
+    .reverse()
+    .find(
+      (line) =>
+        USEFUL_ERROR_LINE.test(line) && !/^Traceback \(most recent call last\):$/i.test(line),
+    );
+  if (exception) return exception;
+  const last = lines.at(-1);
+  return /^Traceback \(most recent call last\):$/i.test(last) ? '' : last;
+}
 
 let pdfLib;
 
@@ -289,10 +316,15 @@ export function createTranslationRunner({
               secrets: [proxy?.token, ...(service?.secrets || [])],
             },
           );
+          const secrets = [proxy?.token, ...(service?.secrets || [])];
+          let stderrTail = '';
           child.stderr.on('data', (chunk) => {
-            let message = String(chunk);
-            for (const secret of [proxy.token, ...(service?.secrets || [])])
-              if (secret) message = message.replaceAll(secret, '[redacted]');
+            const text = String(chunk);
+            const message = redactDiagnosticText(text, {
+              secrets,
+              maxLength: Math.max(text.length, 1),
+            });
+            stderrTail = appendTail(stderrTail, message, MAX_STDERR_TAIL_LENGTH);
             onDiagnostic?.(message);
           });
           const kill = () => {
@@ -301,7 +333,7 @@ export function createTranslationRunner({
           const timer = setTimeout(kill, 15 * 60 * 1000);
           signal?.addEventListener('abort', kill, { once: true });
           child.on('error', () => reject(Error('Kernel could not start')));
-          child.on('close', (code) => {
+          child.on('close', (code, exitSignal) => {
             clearTimeout(timer);
             signal?.removeEventListener('abort', kill);
             code === 0
@@ -310,7 +342,15 @@ export function createTranslationRunner({
                   Error(
                     signal?.aborted
                       ? 'Cancelled'
-                      : 'Kernel translation failed. Check its runtime assets and provider configuration.',
+                      : `Kernel translation failed: ${
+                          finalStderrMessage(
+                            redactDiagnosticText(stderrTail, {
+                              secrets,
+                              maxLength: MAX_STDERR_TAIL_LENGTH,
+                            }),
+                          ) ||
+                          (exitSignal ? `signal ${exitSignal}` : `exit code ${code ?? 'unknown'}`)
+                        }`,
                   ),
                 );
           });

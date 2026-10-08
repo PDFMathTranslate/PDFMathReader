@@ -2,6 +2,7 @@
 import { computed, ref, shallowRef, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { t, uiLanguage } from '../../i18n/index.mjs';
 import { AppButton, AppSearchField, platform } from '../../ui/controls.mjs';
+import { shortcutLabels } from './shortcut-labels.mjs';
 const CategoryButton = platform === 'win32' ? AppButton : 'button';
 const props = defineProps({
   section: { type: String, default: 'general' },
@@ -30,6 +31,7 @@ const sections = computed(() => [
   { id: 'translation', label: t('settings.translation'), symbol: 'character.book.closed.fill' },
   { id: 'providers', label: labels.value[1], symbol: 'network' },
   { id: 'kernel', label: t('settings.kernel'), symbol: 'cpu.fill' },
+  { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'gearshape.fill' },
   {
     id: 'performance',
     label:

@@ -284,8 +284,17 @@ export function createWindowController({
       target.on(event, activityChanged);
     target.webContents.setZoomFactor(1);
     target.webContents.setVisualZoomLevelLimits(1, 1);
+    const cancelShortcutRecording = () => {
+      const state = registry.stateFor(target);
+      if (state) state.shortcutRecording = false;
+      if (!target.webContents.isDestroyed()) target.webContents.setIgnoreMenuShortcuts(false);
+    };
+    target.on('blur', cancelShortcutRecording);
+    target.webContents.on('did-start-loading', cancelShortcutRecording);
+    target.webContents.on('render-process-gone', cancelShortcutRecording);
     target.webContents.on('before-input-event', (event, input) => {
       const state = registry.stateFor(target);
+      if (state?.shortcutRecording) return;
       if (
         state?.preferences?.interactionMode === 'reading' &&
         input.type === 'keyDown' &&
@@ -310,8 +319,13 @@ export function createWindowController({
         target.webContents.send('reader:action', 'copy-paragraph');
         return;
       }
-      const action = shortcutAction(process.platform, input);
-      if (action === 'page-previous' || action === 'page-next') return;
+      const action = shortcutAction(
+        process.platform,
+        input,
+        state?.preferences?.shortcutBindings || {},
+      );
+      // Unmodified browsing keys are handled in the renderer so text fields
+      // retain their normal caret and scrolling behavior.
       if (action === 'new-window') {
         event.preventDefault();
         void createWindow().catch(handleBackendFailure);
@@ -327,6 +341,7 @@ export function createWindowController({
         target.close();
         return;
       }
+      if (action && !input.meta && !input.control && !input.alt) return;
       if (action) {
         event.preventDefault();
         target.webContents.send('reader:action', action);
@@ -355,6 +370,13 @@ export function createWindowController({
             target.webContents.send('reader:action', 'search-selection', params.selectionText),
         },
       ];
+      if (process.platform === 'darwin') {
+        template.push({
+          label: 'AI Chat…',
+          click: () =>
+            target.webContents.send('reader:action', 'chat-selection', params.selectionText),
+        });
+      }
       if (
         process.platform === 'darwin' &&
         typeof target.webContents.showDefinitionForSelection === 'function'
@@ -545,6 +567,7 @@ export function createWindowController({
         'translation',
         'providers',
         'kernel',
+        'shortcuts',
         'about',
       ].includes(section)
     )

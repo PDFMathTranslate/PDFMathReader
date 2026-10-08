@@ -1,4 +1,5 @@
 import { cloneGlossaries, validGlossaries } from '../../../shared/translation/glossary.mjs';
+import { validShortcutOverrides } from '../../../shared/commands/shortcuts.mjs';
 import {
   cloneTranslationServiceHistory,
   isValidTranslationServiceHistory,
@@ -30,6 +31,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   interactionMode: 'reading',
   restoreDocuments: true,
   formulaOcrEnabled: false,
+  translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
   reuseTranslations: true,
@@ -64,6 +66,7 @@ const OPTIONAL_KEYS = Object.freeze([
   'translationServices',
   'translationServiceHistory',
   'glossaries',
+  'shortcutBindings',
 ]);
 const PREFERENCE_KEYS = Object.freeze([...KNOWN_KEYS, ...OPTIONAL_KEYS]);
 const KNOWN_KEY_SET = new Set(PREFERENCE_KEYS);
@@ -209,6 +212,8 @@ function clonePreferences(value) {
     ...value,
     kernelAdvancedOptions: cloneKernelAdvancedOptions(value?.kernelAdvancedOptions),
   };
+  if (Object.hasOwn(value || {}, 'shortcutBindings'))
+    clone.shortcutBindings = { ...value.shortcutBindings };
   if (Object.prototype.hasOwnProperty.call(value || {}, 'translationServices'))
     clone.translationServices = cloneTranslationServices(value.translationServices);
   if (Object.hasOwn(value || {}, 'translationServiceHistory'))
@@ -221,6 +226,7 @@ function clonePreferences(value) {
 }
 
 const VALIDATORS = {
+  shortcutBindings: (value) => validShortcutOverrides(process.platform, value),
   autoCheckUpdates: (value) => typeof value === 'boolean',
   cacheLimitMB: (value) => value === null || [512, 1024, 2048, 5120, 10240].includes(value),
   documentOpenMode: (value) => ['translation', 'original', 'manual'].includes(value),
@@ -229,6 +235,8 @@ const VALIDATORS = {
   reduceBackgroundFrameRate: (value) => typeof value === 'boolean',
   reuseTranslations: (value) => typeof value === 'boolean',
   formulaOcrEnabled: (value) => typeof value === 'boolean',
+  translationErrorDismissals: (value) =>
+    Array.isArray(value) && value.every((id) => typeof id === 'string' && id.length <= 1024),
   emphasizeTopicSentences: (value) => typeof value === 'boolean',
   emphasizeInformation: (value) => typeof value === 'boolean',
   emphasizeResearchFindings: (value) => typeof value === 'boolean',

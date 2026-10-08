@@ -1,6 +1,7 @@
 import { BrowserWindow as ElectronBrowserWindow, Menu as ElectronMenu, dialog } from 'electron';
 import { createPDFApplicationService } from '../services/pdf-applications.mjs';
 import { aboutPanelOptions } from '../services/about-panel.mjs';
+import { shortcutCatalog, effectiveShortcutBindings } from '../../../shared/commands/shortcuts.mjs';
 
 export function createApplicationMenu({
   app,
@@ -377,6 +378,8 @@ export function createApplicationMenu({
         submenu: [
           command('Previous Page', undefined, 'page-previous', 'go-previous'),
           command('Next Page', undefined, 'page-next', 'go-next'),
+          command('First Page', undefined, 'page-first', 'go-first'),
+          command('Last Page', undefined, 'page-last', 'go-last'),
           { type: 'separator' },
           ...Array.from({ length: 9 }, (_, i) =>
             command(
@@ -449,7 +452,40 @@ export function createApplicationMenu({
         ...appItems.filter((item) => item.type !== 'separator' && !promotedIds.includes(item.id)),
       ];
     }
-    const localized = localize(platformTemplate);
+    const bindings = effectiveShortcutBindings(
+      platform,
+      preferences?.load?.().shortcutBindings || {},
+    );
+    const catalog = shortcutCatalog(platform);
+    const bind = (items) =>
+      items.map((item) => {
+        const entry = catalog.find((entry) => entry.menuId === item.id);
+        // Display every binding, but route keyboard input through our shared
+        // dispatcher so editable fields and shortcut recording retain focus.
+        const binding = entry ? bindings[entry.id][0] : undefined;
+        const accelerator = binding;
+        return {
+          ...item,
+          ...(entry
+            ? {
+                accelerator,
+                registerAccelerator: false,
+                ...(item.role === 'togglefullscreen'
+                  ? {
+                      role: undefined,
+                      label: 'Toggle Full Screen',
+                      click: (_item, target) => {
+                        const receiver = target || focusedWindow();
+                        receiver?.setFullScreen(!receiver.isFullScreen());
+                      },
+                    }
+                  : {}),
+              }
+            : {}),
+          ...(Array.isArray(item.submenu) ? { submenu: bind(item.submenu) } : {}),
+        };
+      });
+    const localized = localize(bind(platformTemplate));
     const actions = new Map();
     const indexActions = (items) => {
       for (const item of items) {

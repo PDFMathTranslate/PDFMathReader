@@ -35,7 +35,7 @@ export async function verifyKernelError(window, createWindow) {
     await run(
       `[...document.querySelectorAll('.kernel-error-popover button')].map(b=>b.textContent.trim())`,
     ),
-    ['Reinstall kernel', 'Build latest source', 'Ignore for 5 minutes', 'Retry'],
+    ['Don’t prompt again for this document', 'Retry'],
   );
   assert.equal(
     await run(
@@ -61,23 +61,12 @@ export async function verifyKernelError(window, createWindow) {
     '/tmp/pdfmathreader-kernel-error-light.png',
     (await window.webContents.capturePage()).toPNG(),
   );
-  for (const [index, source] of [
-    [0, 'release'],
-    [1, 'git'],
-  ]) {
-    await run(`document.querySelectorAll('.kernel-error-repairs button')[${index}].click()`);
-    await wait(
-      `window.kernelRecoveryCalls.filter(c=>c.body).some(c=>JSON.parse(c.body).source==='${source}')`,
-    );
-    await pause(250);
-    await wait(
-      `!!document.querySelector('.kernel-error-popover:not(.settings-motion-leave-active) .kernel-error-repairs button:not(:disabled)')`,
-    );
-    assert.equal(
-      await run(`JSON.parse(window.kernelRecoveryCalls.filter(c=>c.body).at(-1).body).source`),
-      source,
-    );
-  }
+  assert.equal(await run(`document.querySelectorAll('.kernel-error-repairs button').length`), 0);
+  assert.ok(
+    await run(
+      `document.querySelector('#kernel-error-message').textContent.includes('The translation kernel could not start.')`,
+    ),
+  );
   await save(`window.previewPreferences.save({appearance:'dark'})`);
   await wait(`document.documentElement.dataset.appearance==='dark'`);
   await pause(100);
@@ -113,16 +102,8 @@ export async function verifyKernelError(window, createWindow) {
   await pause(250);
   await run(`document.querySelector('.kernel-error-actions button:first-child').click()`);
   await wait(`!document.querySelector('.kernel-error-popover')`);
-  await save(`window.previewPreferences.save({engine:'pdf_inspector',reduceTransparency:false})`);
-  await wait(`!!document.querySelector('.kernel-error-popover')`);
-  assert.equal(await run(`document.querySelectorAll('.kernel-error-popover button').length`), 2);
-  assert.ok(await run(`!!document.querySelector('.kernel-error-hint')`));
-  await run(
-    `document.querySelector('.kernel-error-actions button').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`,
-  );
-  await wait(`!document.querySelector('.kernel-error-popover')`);
   console.log(
-    'Kernel error smoke passed: recovery actions, prominent retry, light/dark, reduced transparency, opaque surface over document text, bounds, ignore and Escape.',
+    'Kernel error smoke passed: two actions, specific error, prominent retry, light/dark, reduced transparency, bounds and dismissal.',
   );
   settings.close();
   window.close();

@@ -10,7 +10,9 @@ export async function runDesktopSmoke({
   credentials,
 }) {
   const checks = await import('./smoke.mjs');
-  if (smoke === 'operation-performance')
+  if (smoke === 'shortcuts')
+    await (await import('./shortcuts-smoke.mjs')).verifyShortcuts(window, createWindow);
+  else if (smoke === 'operation-performance')
     await (
       await import('./operation-performance-smoke.mjs')
     ).verifyOperationPerformance(window, windows, createWindow);

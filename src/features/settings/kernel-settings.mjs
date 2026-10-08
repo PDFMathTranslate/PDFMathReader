@@ -11,8 +11,23 @@ export function createKernelSettings({
   shell,
   actions,
 }) {
-  function reportKernelFailure(message, id = preferences.engine.value) {
+  const documentIgnoreKey = () => {
+    const id = session.currentRecentId || session.pdf?.fingerprints?.[0];
+    return id ? `translation-error-dismissed:${id}` : null;
+  };
+
+  async function reportKernelFailure(message, id = preferences.engine.value) {
     if (!message || id !== preferences.engine.value) return;
+    const key = documentIgnoreKey();
+    let dismissed = key && localStorage.getItem(key) === 'true';
+    if (key && window.previewPreferences) {
+      try {
+        const saved = await window.previewPreferences.load();
+        dismissed = saved.translationErrorDismissals?.includes(key) || dismissed;
+      } catch {}
+      if (key !== documentIgnoreKey() || id !== preferences.engine.value) return;
+    }
+    if (dismissed) kernel.kernelDocumentIgnored.value = true;
     kernel.kernelFailure.value = { id, message };
     if (!kernel.kernelIgnored.value && !kernel.kernelDocumentIgnored.value)
       actions.rootActions.revealHeader();
@@ -26,21 +41,23 @@ export function createKernelSettings({
     kernel.kernelFailure.value = null;
   }
 
-  function ignoreKernelFailure() {
+  async function ignoreKernelFailure() {
     clearTimeout(runtime.kernelIgnoreTimer);
-    if (kernel.offerDocumentIgnore.value) {
-      kernel.kernelDocumentIgnored.value = true;
-      return;
+    const key = documentIgnoreKey();
+    if (key) localStorage.setItem(key, 'true');
+    kernel.kernelDocumentIgnored.value = true;
+    if (key && window.previewPreferences) {
+      try {
+        const saved = await window.previewPreferences.load();
+        await window.previewPreferences.save({
+          translationErrorDismissals: [
+            ...new Set([...(saved.translationErrorDismissals || []), key]),
+          ],
+        });
+      } catch (error) {
+        feedback.error.value = error.message;
+      }
     }
-    kernel.kernelIgnoreUsed.value = true;
-    kernel.kernelIgnored.value = true;
-    runtime.kernelIgnoreTimer = setTimeout(
-      () => {
-        kernel.kernelIgnored.value = false;
-        if (kernel.kernelErrorVisible.value) actions.rootActions.revealHeader();
-      },
-      5 * 60 * 1000,
-    );
   }
 
   function dismissKernelFailureFromDocument() {

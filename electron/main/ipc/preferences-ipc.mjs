@@ -1,5 +1,10 @@
 import { nativeTheme, shell } from 'electron';
 import { mkdir } from 'node:fs/promises';
+import {
+  shortcutCatalog,
+  effectiveShortcutBindings,
+  validateShortcutBinding,
+} from '../../../shared/commands/shortcuts.mjs';
 
 const WINDOW_LOCAL_PREFERENCES = [
   'engine',
@@ -72,6 +77,52 @@ export function registerPreferencesIPC({
   rebuildMenu,
   updateMenu,
 }) {
+  const shortcutSnapshot = () => {
+    const overrides = preferences.load().shortcutBindings || {};
+    return {
+      catalog: shortcutCatalog(process.platform),
+      bindings: effectiveShortcutBindings(process.platform, overrides),
+      overrides,
+    };
+  };
+  const syncShortcuts = () => {
+    const snapshot = shortcutSnapshot();
+    for (const [window, state] of registry.windows) {
+      state.preferences.shortcutBindings = { ...snapshot.overrides };
+      window.webContents.send('shortcuts:changed', snapshot);
+    }
+    rebuildMenu();
+    return snapshot;
+  };
+  handle('shortcuts:load', (event) => {
+    trustedWindow(event);
+    return shortcutSnapshot();
+  });
+  handle('shortcuts:recording', (event, active) => {
+    const target = trustedWindow(event);
+    if (typeof active !== 'boolean') throw Error('Invalid shortcut recording state');
+    registry.stateFor(target).shortcutRecording = active;
+    target.webContents.setIgnoreMenuShortcuts(active);
+    return active;
+  });
+  for (const action of ['save', 'reset'])
+    handle(`shortcuts:${action}`, async (event, id, value) => {
+      trustedWindow(event);
+      const current = preferences.load().shortcutBindings || {};
+      const next =
+        action === 'reset' && id === undefined
+          ? {}
+          : validateShortcutBinding(
+              process.platform,
+              current,
+              id,
+              action === 'reset' ? undefined : value,
+            );
+      const write = preferences.save({ shortcutBindings: next });
+      const snapshot = syncShortcuts();
+      await write;
+      return snapshot;
+    });
   for (const action of ['load', 'save'])
     handle(`preferences:${action}`, async (event, value) => {
       const target = trustedWindow(event);
@@ -80,6 +131,8 @@ export function registerPreferencesIPC({
       const previous = preferences.load();
       const write = preferences.save(value);
       const next = preferences.load();
+      if (JSON.stringify(previous.shortcutBindings) !== JSON.stringify(next.shortcutBindings))
+        syncShortcuts();
       if (previous.autoCheckUpdates !== next.autoCheckUpdates)
         appUpdates.setAutomatic(next.autoCheckUpdates);
       if (previous.cacheLimitMB !== next.cacheLimitMB) {

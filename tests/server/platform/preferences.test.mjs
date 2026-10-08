@@ -18,6 +18,7 @@ const DEFAULT_PREFERENCES = {
   interactionMode: 'reading',
   restoreDocuments: true,
   formulaOcrEnabled: false,
+  translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
   reuseTranslations: true,
@@ -69,6 +70,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         translationMode: 'full',
         documentOpenMode: 'manual',
         formulaOcrEnabled: true,
+        translationErrorDismissals: ['translation-error-dismissed:document-a'],
         appearance: 'dark',
         accentColor: '#a1B2c3',
         reduceMotion: true,
@@ -86,6 +88,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ language: 'Esperanto' }));
     assert.throws(() => preferences.save({ documentOpenMode: 'invalid' }));
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
+    assert.throws(() => preferences.save({ translationErrorDismissals: [null] }));
     assert.deepEqual(preferences.load(), beforeInvalid);
     assert.deepEqual((await createReaderPreferences(path)).load(), beforeInvalid);
     await preferences.save({ fit: 'width', zoom: 1 });

@@ -524,6 +524,18 @@ function localeMessages(locale) {
   return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
 }
 
+const pageBoundaryLabels = {
+  en: ['First Page', 'Last Page'],
+  'zh-CN': ['第一页', '最后一页'],
+  'zh-TW': ['第一頁', '最後一頁'],
+  ja: ['最初のページ', '最後のページ'],
+  ko: ['첫 페이지', '마지막 페이지'],
+  fr: ['Première page', 'Dernière page'],
+  es: ['Primera página', 'Última página'],
+};
+for (const [locale, labels] of Object.entries(pageBoundaryLabels))
+  Object.assign(menuMessages[locale], { 'First Page': labels[0], 'Last Page': labels[1] });
+
 export function menuLabel(label, locale = 'en') {
   if (typeof label !== 'string' || properName.test(label)) return label;
   const code = supportedLocales.has(locale) ? locale : 'en';

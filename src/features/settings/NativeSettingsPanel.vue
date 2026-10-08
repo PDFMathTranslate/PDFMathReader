@@ -24,6 +24,7 @@ const SettingsWorkspace = defineAsyncComponent(() => import('./SettingsWorkspace
 const AppearanceSettings = defineAsyncComponent(() => import('./AppearanceSettings.vue'));
 const ProviderSettings = defineAsyncComponent(() => import('./ProviderSettings.vue'));
 const AdvancedSettings = defineAsyncComponent(() => import('./AdvancedSettings.vue'));
+const ShortcutSettings = defineAsyncComponent(() => import('./ShortcutSettings.vue'));
 defineProps([
   'effectiveTranslationSummary',
   'settingsWindowMode',
@@ -249,6 +250,9 @@ const keyEntry = defineModel('keyEntry');
           v-model:crop-y="defaultPageCropY"
           v-model:align-width="autoAlignDocumentWidth"
         />
+      </template>
+      <template #shortcuts>
+        <ShortcutSettings v-if="settingsSection === 'shortcuts'" />
       </template>
       <template #performance>
         <PerformanceResources

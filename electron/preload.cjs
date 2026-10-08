@@ -121,6 +121,21 @@ contextBridge.exposeInMainWorld(
 );
 
 contextBridge.exposeInMainWorld(
+  'previewShortcuts',
+  Object.freeze({
+    load: () => ipcRenderer.invoke('shortcuts:load'),
+    save: (id, value) => ipcRenderer.invoke('shortcuts:save', id, value),
+    reset: (id) => ipcRenderer.invoke('shortcuts:reset', id),
+    recording: (active) => ipcRenderer.invoke('shortcuts:recording', active),
+    onChange: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('shortcuts:changed', listener);
+      return () => ipcRenderer.removeListener('shortcuts:changed', listener);
+    },
+  }),
+);
+
+contextBridge.exposeInMainWorld(
   'previewWindow',
   Object.freeze({
     new: () => ipcRenderer.invoke('window:new'),
