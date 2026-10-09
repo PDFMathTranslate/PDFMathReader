@@ -32,6 +32,13 @@ export function captureDocumentPage(page) {
     if (original.width && original.height)
       canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
   });
+  // SDK filters have document-wide IDs and live observers. A frozen motion
+  // capture keeps the CSS material, never a second copy of those GPU resources.
+  copy.querySelectorAll('.reader-glass-layer').forEach((layer) => layer.remove());
+  copy.querySelectorAll('.reader-glass-host').forEach((host) => {
+    host.classList.remove('reader-glass-host');
+  });
+  copy.classList.remove('reader-glass-host');
   copy.classList.add('document-motion-snapshot');
   copy.removeAttribute('data-page');
   copy.setAttribute('aria-hidden', 'true');

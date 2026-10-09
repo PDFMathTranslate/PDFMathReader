@@ -4,6 +4,10 @@ import { PDFDocument, PDFName, PDFHexString } from 'pdf-lib';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import {
+  captureDocumentPage,
+  motionCanvasSize,
+} from '../../src/features/reader/document-motion.mjs';
 export async function verifySidebar(window, recents) {
   const run = (code) =>
     window.webContents.executeJavaScript(code).catch((error) => {
@@ -29,11 +33,16 @@ export async function verifySidebar(window, recents) {
   try {
     await wait('window.previewReady');
     await run(
-      `window.previewPreferences.save({interactionMode:'reading',automatic:false,uiLanguage:'en'})`,
+      `window.previewPreferences.save({interactionMode:'reading',automatic:false,documentOpenMode:'manual',uiLanguage:'en',interfaceStyle:${JSON.stringify(process.argv.includes('--smoke-test=sidebar-glass') ? 'liquid-glass' : 'default')}})`,
     );
     const pdf = await PDFDocument.load(
       await readFile(new URL('../../public/sample.pdf', import.meta.url)),
     );
+    if (process.argv.includes('--smoke-test=sidebar-glass'))
+      for (let i = 0; i < 7; i++) {
+        const [page] = await pdf.copyPages(pdf, [0]);
+        pdf.addPage(page);
+      }
     if (process.argv.includes('--smoke-test=sidebar-keys'))
       for (let i = 0; i < 38; i++) pdf.addPage([612, 792]);
     const root = pdf.context.obj({ Type: 'Outlines' }),
@@ -73,6 +82,94 @@ export async function verifySidebar(window, recents) {
     await wait(
       `!window.previewRenderDiagnostics().opening&&document.querySelectorAll('.sidebar-navigation-switch :is(button,fluent-tab)').length===3`,
     );
+    if (process.argv.includes('--smoke-test=sidebar-glass')) {
+      window.show();
+      window.focus();
+      window.webContents.focus();
+      await wait(`document.querySelector('.thumb canvas')?.width>0`);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await wait(`document.documentElement.dataset.liquidGlass==='ready'`);
+      const geometry = () =>
+        run(`(()=>{
+        const rect=e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+        return {footer:rect(document.querySelector('.sidebar-navigation-switch')),
+          viewport:rect(document.querySelector('.thumbnail-list')),
+          rows:[...document.querySelectorAll('.thumb')].map(e=>({
+            number:e.dataset.pageNumber,row:rect(e),canvas:rect(e.querySelector('canvas')),
+            label:rect(e.querySelector('span')),
+          }))};
+      })()`);
+      const verifyGeometry = async () => {
+        const state = await geometry();
+        assert.ok(
+          state.viewport.bottom <= state.footer.top,
+          'footer reserves space below the scroller',
+        );
+        for (let i = 0; i < state.rows.length; i++) {
+          const item = state.rows[i];
+          assert.ok(item.canvas.bottom <= item.label.top + 1, 'page number stays below its image');
+          assert.ok(item.label.bottom <= item.row.bottom + 1, 'page number stays inside its row');
+          if (i)
+            assert.ok(state.rows[i - 1].row.bottom <= item.row.top, 'virtual rows never overlap');
+        }
+      };
+      await verifyGeometry();
+      // Real opening animations clone the rail. Frozen captures must not carry
+      // duplicate SVG filter IDs or acquire a second live scene.
+      const cloned = await run(`(()=>{
+        const motionCanvasSize=${motionCanvasSize.toString()};
+        const capture=(${captureDocumentPage.toString()})(document.querySelector('.sidebar'));
+        capture.element.id='glass-motion-check';
+        document.querySelector('.app').append(capture.element);
+        return {layers:capture.element.querySelectorAll('.reader-glass-layer').length,
+          hosts:capture.element.querySelectorAll('.reader-glass-host').length};
+      })()`);
+      assert.deepEqual(cloned, { layers: 0, hosts: 0 });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.equal(
+        await run(`document.querySelector('#glass-motion-check .reader-glass-layer')!==null`),
+        false,
+      );
+      await run(`document.querySelector('#glass-motion-check').remove()`);
+      for (let i = 0; i < 3; i++) {
+        for (const tab of [1, 2, 0]) {
+          await run(
+            `document.querySelectorAll('.sidebar-navigation-switch > button')[${tab}].click()`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+        await run(
+          `(()=>{const list=document.querySelector('.thumbnail-list');list.scrollTop=${i % 2 ? 0 : 650};list.dispatchEvent(new Event('scroll'));})()`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await verifyGeometry();
+        assert.equal(
+          await run(
+            `document.querySelectorAll('.sidebar-navigation-switch > .reader-glass-layer').length`,
+          ),
+          0,
+        );
+        assert.equal(await run(`document.documentElement.dataset.liquidGlass`), 'ready');
+      }
+      await run(`document.querySelector('.thumb[data-page-number="4"]').click()`);
+      await wait(`window.previewRenderDiagnostics().active===4`);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await verifyGeometry();
+      await writeFile(
+        '/tmp/pdfmathreader-sidebar-glass-fixed.png',
+        (await window.webContents.capturePage()).toPNG(),
+      );
+      console.log(
+        JSON.stringify({
+          liquidGlassSidebar: true,
+          stableVirtualRows: true,
+          isolatedMotionCapture: true,
+          stableGlassLayers: true,
+          tabSwitchAndScroll: true,
+        }),
+      );
+      return;
+    }
     if (await run(`window.previewAppearance.platform==='win32'`)) {
       window.show();
       window.focus();
@@ -180,6 +277,11 @@ export async function verifySidebar(window, recents) {
       );
       assert.equal(prevented, false, 'search field retains arrow keys');
     }
+    if (process.argv.includes('--smoke-test=sidebar-glass'))
+      for (let i = 0; i < 7; i++) {
+        const [page] = await pdf.copyPages(pdf, [0]);
+        pdf.addPage(page);
+      }
     if (process.argv.includes('--smoke-test=sidebar-keys')) {
       await verifyKeys();
       console.log(

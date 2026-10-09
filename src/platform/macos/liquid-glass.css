@@ -31,6 +31,18 @@
 .reader-glass-host {
   isolation: isolate;
 }
+.reader-glass-host > .reader-glass-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  contain: layout paint;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+.reader-glass-host > .reader-glass-layer * {
+  pointer-events: none;
+}
 .reader-glass-backdrop,
 .reader-glass-material {
   position: absolute;

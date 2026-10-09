@@ -106,8 +106,9 @@ body:has(.content-glass),
   left: 50%;
   transform: translateX(-50%);
   width: calc(var(--thumbnail-width) + 16px);
-  height: auto !important;
   padding: 8px;
+  overflow: clip;
+  contain: layout paint;
   justify-content: flex-start;
 }
 
@@ -169,18 +170,15 @@ body:has(.content-glass),
 
 .sidebar .thumbnail-inner > .thumb {
   transition:
-    top 220ms var(--motion-ease),
-    width 220ms var(--motion-ease),
-    height 220ms var(--motion-ease),
     color 160ms var(--motion-ease),
     background-color 160ms var(--motion-ease),
     border-color 160ms var(--motion-ease);
 }
 
 .sidebar .thumbnail-inner > .thumb canvas {
-  transition:
-    width 220ms var(--motion-ease),
-    height 220ms var(--motion-ease);
+  /* Raster dimensions and virtual row geometry must commit in the same frame. */
+  flex-shrink: 0;
+  transition: none;
 }
 
 .desktop .sidebar .thumbnail-inner > .thumb {

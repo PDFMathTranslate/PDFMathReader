@@ -33,8 +33,7 @@
   --annotation-secondary: rgb(255 255 255 / 68%);
 }
 
-/* The real lens is supplied by the glass host when available. These CSS
-   values remain readable when the host falls back to ordinary blur. */
+/* One bounded native/CSS glass material for the scrolling sidebar switch. */
 :root[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .sidebar-navigation-switch {
   background: rgb(255 255 255 / 28%);
   border-color: rgb(255 255 255 / 66%);
@@ -205,6 +204,8 @@
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: clip;
+  contain: layout paint;
   border-radius: inherit;
   pointer-events: none;
 }

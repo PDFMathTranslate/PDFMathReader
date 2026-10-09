@@ -2,8 +2,10 @@ import { platform } from '../runtime.mjs';
 
 // Keep GPU/filter work confined to chrome. PDF canvases and text selection never
 // enter a filtered layer, and Vue-owned nodes are never moved or replaced.
+// The scrolling sidebar switch uses one CSS/native glass material; an SVG
+// refraction scene there can retain stale scroll pixels and duplicate its rim.
 const hosts =
-  '.app[data-platform="darwin"] .toolbar > .icon-button, .app[data-platform="darwin"] .toolbar-actions > .icon-button, .app[data-platform="darwin"] .toolbar-kernel, .app[data-platform="darwin"] .sidebar-navigation-switch, .app[data-platform="darwin"] .floating-zoom, .app[data-platform="darwin"] .page-navigator, .annotation-ui.annotation-toolbar[data-platform="darwin"], .annotation-ui.annotation-menu[data-platform="darwin"], .app[data-platform="darwin"] .paragraph-detail, .app[data-platform="darwin"] .page-translation-toast, .app[data-platform="darwin"] .error-banner, .app[data-platform="darwin"] .annotation-note, .app[data-platform="darwin"] .copy-toast, .app[data-platform="darwin"] .kernel-error-popover, .reader-glass-menu[data-platform="darwin"]';
+  '.app[data-platform="darwin"] .toolbar > .icon-button, .app[data-platform="darwin"] .toolbar-actions > .icon-button, .app[data-platform="darwin"] .toolbar-kernel, .app[data-platform="darwin"] .floating-zoom, .app[data-platform="darwin"] .page-navigator, .annotation-ui.annotation-toolbar[data-platform="darwin"], .annotation-ui.annotation-menu[data-platform="darwin"], .app[data-platform="darwin"] .paragraph-detail, .app[data-platform="darwin"] .page-translation-toast, .app[data-platform="darwin"] .error-banner, .app[data-platform="darwin"] .annotation-note, .app[data-platform="darwin"] .copy-toast, .app[data-platform="darwin"] .kernel-error-popover, .reader-glass-menu[data-platform="darwin"]';
 
 export function installLiquidGlass() {
   if (platform !== 'darwin') return () => {};
@@ -13,9 +15,10 @@ export function installLiquidGlass() {
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const scenes = new Map();
   let sdk,
-    pending = false,
+    pending = 0,
     stopped = false,
     revision = '',
+    generation = 0,
     failed = false;
   function clear() {
     for (const release of scenes.values()) release();
@@ -23,13 +26,13 @@ export function installLiquidGlass() {
   }
   function schedule() {
     if (pending || stopped) return;
-    pending = true;
-    requestAnimationFrame(() => {
-      pending = false;
+    pending = requestAnimationFrame(() => {
+      pending = 0;
       void refresh();
     });
   }
   async function refresh() {
+    if (stopped) return;
     const enabled = root.dataset.interfaceStyle === 'liquid-glass';
     const accessible =
       root.dataset.reduceTransparency === 'true' || transparency.matches || contrast.matches;
@@ -42,16 +45,19 @@ export function installLiquidGlass() {
       document.hidden,
     ].join(':');
     if (next !== revision) {
+      generation++;
       clear();
       revision = next;
       failed = false;
     }
-    root.dataset.liquidGlass = enabled ? (accessible ? 'solid' : 'fallback') : 'off';
+    const currentGeneration = generation;
+    if (!enabled || accessible || failed || !scenes.size)
+      root.dataset.liquidGlass = enabled ? (accessible ? 'solid' : 'fallback') : 'off';
     if (!enabled || accessible || document.hidden || failed) return;
     if (!navigator.gpu) return;
     try {
       sdk ||= await import('@glass-sdk/liquid-glass/dom');
-      if (stopped || next !== revision) return;
+      if (stopped || currentGeneration !== generation) return;
       for (const [host, release] of scenes) {
         if (!host.isConnected) {
           release();
@@ -59,7 +65,8 @@ export function installLiquidGlass() {
         }
       }
       for (const host of document.querySelectorAll(hosts)) {
-        if (scenes.has(host)) continue;
+        if (scenes.has(host) || host.closest('.document-motion-snapshot, .resize-snapshot'))
+          continue;
         const backdrop = document.createElement('div');
         backdrop.className = 'reader-glass-backdrop lg-content';
         backdrop.setAttribute('aria-hidden', 'true');
@@ -67,26 +74,23 @@ export function installLiquidGlass() {
         surface.className = 'reader-glass-material lg-surface';
         surface.setAttribute('aria-hidden', 'true');
         host.classList.add('reader-glass-host');
-        // Keep SDK-generated nodes out of the Vue-owned segmented control.
-        // Its buttons and moving indicator must remain independent hit targets.
-        const isolatedLayer = host.matches('.sidebar-navigation-switch')
-          ? document.createElement('div')
-          : null;
-        if (isolatedLayer) {
-          isolatedLayer.className = 'reader-glass-layer';
-          isolatedLayer.setAttribute('aria-hidden', 'true');
-          isolatedLayer.append(backdrop, surface);
-          host.prepend(isolatedLayer);
-        } else host.prepend(backdrop, surface);
-        const scene = sdk.createGlassScene(isolatedLayer || host, {
+        // Observe an owned decorative layer, never Vue's changing controls.
+        const isolatedLayer = document.createElement('div');
+        isolatedLayer.className = 'reader-glass-layer';
+        isolatedLayer.setAttribute('aria-hidden', 'true');
+        isolatedLayer.append(backdrop, surface);
+        host.prepend(isolatedLayer);
+        const scene = sdk.createGlassScene(isolatedLayer, {
           maxSurfaces: 2,
           onDiagnostic: ({ error, maps }) => {
-            if (stopped || next !== revision) return;
+            if (stopped || currentGeneration !== generation) return;
             if (error) {
               // Defer teardown out of the renderer callback. CSS stays readable.
               failed = true;
               root.dataset.liquidGlass = 'fallback';
-              queueMicrotask(clear);
+              queueMicrotask(() => {
+                if (currentGeneration === generation) clear();
+              });
             } else if (maps && !failed) root.dataset.liquidGlass = 'ready';
           },
         });
@@ -145,6 +149,8 @@ export function installLiquidGlass() {
   schedule();
   return () => {
     stopped = true;
+    generation++;
+    if (pending) cancelAnimationFrame(pending);
     observer.disconnect();
     clear();
     for (const query of [transparency, contrast, motion])

@@ -66,7 +66,7 @@ export async function runDesktopSmoke({
     ).verifyTranslationPrefetch(window, recents);
   else if (smoke === 'pdf-navigation')
     await (await import('./pdf-navigation-smoke.mjs')).verifyPDFNavigation(window, recents);
-  else if (['sidebar', 'sidebar-keys'].includes(smoke))
+  else if (['sidebar', 'sidebar-keys', 'sidebar-glass'].includes(smoke))
     await (await import('./sidebar-smoke.mjs')).verifySidebar(window, recents);
   else if (smoke === 'advanced-cache')
     await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);
