@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { app, Menu } from 'electron';
 import { PDFDocument } from 'pdf-lib';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApplicationMenu } from '../../electron/main/menus/application-menu.mjs';
+import { createDocumentFileActions } from '../../electron/main/services/document-file-actions.mjs';
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 import { serializeApplicationMenu, menuPathItems } from '../../shared/commands/menu.mjs';
 
@@ -88,6 +89,45 @@ export async function verifyFileMenu(window, recents) {
   const dir = await mkdtemp(join(tmpdir(), 'file-menu-'));
   try {
     await verifyExternalApplicationTargeting();
+    const translatedPages = [];
+    for (const width of [200, 300]) {
+      const pdf = await PDFDocument.create();
+      pdf.addPage([width, 400]);
+      translatedPages.push(Array.from(await pdf.save()));
+    }
+    const source = { path: join(dir, 'original.pdf'), reliable: true };
+    const fileState = { unkeyedAnnotationSource: source };
+    const fileTarget = {
+      isDestroyed: () => false,
+      webContents: { executeJavaScript: async () => translatedPages },
+    };
+    const revealed = [],
+      shared = [];
+    const fileActions = createDocumentFileActions({
+      app: { getPath: () => dir },
+      platform: 'darwin',
+      registry: { stateFor: () => fileState },
+      documentPath: () => source.path,
+      validateSystemPDF: async () => {},
+      reveal: (path) => revealed.push(path),
+      runAirDrop: async (...args) => shared.push(args),
+    });
+    await fileActions.perform(fileTarget, 'original', 'reveal');
+    assert.equal(revealed[0], source.path);
+    await fileActions.perform(fileTarget, 'translated', 'reveal');
+    const assembled = await PDFDocument.load(await readFile(revealed[1]));
+    assert.deepEqual(
+      assembled.getPages().map((page) => page.getWidth()),
+      [200, 300],
+    );
+    await fileActions.perform(fileTarget, 'translated', 'airdrop');
+    assert.equal(shared[0][0], '/usr/bin/osascript');
+    assert.equal(shared[0][1].at(-1), revealed[1]);
+    fileTarget.webContents.executeJavaScript = async () => null;
+    await assert.rejects(
+      fileActions.perform(fileTarget, 'translated', 'reveal'),
+      /Translate every page/,
+    );
     await wait('window.previewReady===true');
     assert.ok(
       menu()
@@ -97,7 +137,14 @@ export async function verifyFileMenu(window, recents) {
     assert.ok(!file().items.some((item) => item.id === 'file-preferences'));
     const externalIndex = file().items.findIndex((item) => item.id === 'file-other-app');
     const closeIndex = file().items.findIndex((item) => item.id === 'file-close-document');
-    assert.equal(externalIndex + 1, closeIndex);
+    assert.ok(closeIndex > externalIndex);
+    for (const action of ['reveal', 'airdrop']) {
+      for (const kind of ['original', 'translated']) {
+        const entry = menu().getMenuItemById(`file-${action}-${kind}`);
+        if (process.platform === 'darwin') assert.equal(entry.enabled, false);
+        else assert.ok(!entry);
+      }
+    }
     assert.equal(file().items[externalIndex - 1].type, 'separator');
     assert.equal(menu().getMenuItemById('file-other-app').enabled, false);
     assert.equal(menu().getMenuItemById('file-recents').enabled, false);
@@ -121,6 +168,15 @@ export async function verifyFileMenu(window, recents) {
       'window.previewRenderDiagnostics?.().totalPages===1 && !window.previewRenderDiagnostics().opening',
     );
     assert.equal(menu().getMenuItemById('file-other-app').enabled, true);
+    if (process.platform === 'darwin') {
+      assert.equal(menu().getMenuItemById('file-reveal-original').enabled, true);
+      assert.equal(menu().getMenuItemById('file-airdrop-original').enabled, true);
+      assert.equal(menu().getMenuItemById('file-reveal-translated').enabled, false);
+      await evaluate('window.previewActions.translatedFileReady(true)');
+      assert.equal(menu().getMenuItemById('file-reveal-translated').enabled, true);
+      assert.equal(menu().getMenuItemById('file-airdrop-translated').enabled, true);
+      await evaluate('window.previewActions.translatedFileReady(false)');
+    }
     // Wait for asynchronous OS discovery, without opening another application.
     for (
       let attempt = 0;

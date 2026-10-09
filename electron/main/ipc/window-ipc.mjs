@@ -13,6 +13,12 @@ export function registerWindowIPC({
   createWindow,
   app,
 }) {
+  handle('window:translated-file-ready', (event, ready) => {
+    const target = trustedWindow(event);
+    registry.stateFor(target).translatedFileReady = ready === true;
+    menu.updateMenu(target);
+    return true;
+  });
   handle('window:register-options', (event, value) => {
     const target = trustedWindow(event);
     const options = {};

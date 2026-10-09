@@ -1,6 +1,7 @@
 import { BrowserWindow as ElectronBrowserWindow, Menu as ElectronMenu, dialog } from 'electron';
 import { createPDFApplicationService } from '../services/pdf-applications.mjs';
 import { aboutPanelOptions } from '../services/about-panel.mjs';
+import { createDocumentFileActions } from '../services/document-file-actions.mjs';
 import { shortcutCatalog, effectiveShortcutBindings } from '../../../shared/commands/shortcuts.mjs';
 
 export function createApplicationMenu({
@@ -25,6 +26,13 @@ export function createApplicationMenu({
   menuPathItems,
   pdfApplications = createPDFApplicationService({ platform, app }),
 }) {
+  const fileActions = createDocumentFileActions({
+    app,
+    platform,
+    registry,
+    documentPath: (target) => documentPath(target),
+    validateSystemPDF,
+  });
   let applicationMenu = null;
   let menuActions = new Map();
   const applicationCache = new Map();
@@ -94,6 +102,16 @@ export function createApplicationMenu({
       'file-other-app',
     );
     if (external) external.enabled = !!documentPath(target);
+    const currentMenu = applicationMenu || Menu.getApplicationMenu();
+    for (const kind of ['original', 'translated']) {
+      const enabled =
+        !!documentPath(target) &&
+        (kind === 'original' || registry.stateFor(target)?.translatedFileReady === true);
+      for (const action of ['reveal', 'airdrop']) {
+        const entry = currentMenu?.getMenuItemById(`file-${action}-${kind}`);
+        if (entry) entry.enabled = enabled;
+      }
+    }
     const state = registry.stateFor(target)?.preferences;
     if (!state) return;
     const menu = applicationMenu || Menu.getApplicationMenu();
@@ -288,6 +306,29 @@ export function createApplicationMenu({
             enabled: !!documentPath(focusedWindow()),
             submenu: externalApplicationItems(),
           },
+          ...(platform === 'darwin'
+            ? [
+                { type: 'separator' },
+                ...['reveal', 'airdrop'].flatMap((action) =>
+                  ['original', 'translated'].map((kind) => ({
+                    id: `file-${action}-${kind}`,
+                    label:
+                      action === 'reveal'
+                        ? `View ${kind === 'original' ? 'Original' : 'Translated'} File in Finder`
+                        : `AirDrop ${kind === 'original' ? 'Original' : 'Translated'} File`,
+                    enabled: false,
+                    click: async (_item, target) => {
+                      try {
+                        await fileActions.perform(target || focusedWindow(), kind, action);
+                      } catch (error) {
+                        dialog.showErrorBox('PDFMathReader', error.message);
+                      }
+                    },
+                  })),
+                ),
+                { type: 'separator' },
+              ]
+            : []),
           command('Close Document', accelerator('W'), 'close-document', 'file-close-document'),
           {
             id: 'file-close-window',

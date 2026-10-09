@@ -99,6 +99,7 @@ contextBridge.exposeInMainWorld(
 contextBridge.exposeInMainWorld(
   'previewActions',
   Object.freeze({
+    translatedFileReady: (ready) => ipcRenderer.invoke('window:translated-file-ready', ready),
     onAction: (callback) => {
       const listener = (_event, action, selectionText) => callback(action, selectionText);
       ipcRenderer.on('reader:action', listener);
