@@ -19,7 +19,8 @@ function fixture(api) {
   };
   const preferences = {
     documentLanguageDetection: { value: true },
-    sourceLanguage: { value: 'English' },
+    language: { value: 'English' },
+    sourceLanguage: { value: 'Japanese' },
     jevApiToken: { value: 'custom' },
   };
   return {
@@ -35,7 +36,7 @@ test('reads only three pages with 100 Unicode characters; concurrent requests sh
     calls++;
     assert.equal(path, '/api/document-language');
     const body = JSON.parse(options.body);
-    assert.equal(body.sourceLanguage, 'English');
+    assert.equal(body.targetLanguage, 'English');
     assert.equal(body.token, 'custom');
     assert.deepEqual(
       body.samples.map((s) => Array.from(s).length),
@@ -61,14 +62,14 @@ test('failure permits automatic translation', async () => {
   });
   assert.equal(await f.allow(), true);
 });
-test('changed source language reruns judgment', async () => {
+test('changed target language reruns judgment', async () => {
   let calls = 0;
   const f = fixture(async () => {
     calls++;
     return { skipAutomaticTranslation: true };
   });
   await f.allow();
-  f.preferences.sourceLanguage.value = 'Japanese';
+  f.preferences.language.value = 'Japanese';
   await f.allow();
   assert.equal(calls, 2);
 });

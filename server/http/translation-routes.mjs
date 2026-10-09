@@ -18,16 +18,16 @@ export function registerTranslationRoutes(
 ) {
   const { providerFor, complete, serviceHeader, providerClient } = providerRuntime;
   app.post('/api/document-language', express.json({ limit: '16kb' }), async (req, res) => {
-    const { samples, sourceLanguage, token } = req.body || {};
+    const { samples, targetLanguage, token } = req.body || {};
     if (
       !Array.isArray(samples) ||
       samples.some((sample) => typeof sample !== 'string') ||
-      typeof sourceLanguage !== 'string' ||
-      sourceLanguage.length > 128 ||
+      typeof targetLanguage !== 'string' ||
+      targetLanguage.length > 128 ||
       (token !== undefined && (typeof token !== 'string' || token.length > 4096))
     )
       return res.status(400).json({ error: 'Invalid language detection request' });
-    res.json(await detectDocumentLanguage({ samples, sourceLanguage, token }));
+    res.json(await detectDocumentLanguage({ samples, targetLanguage, token }));
   });
   app.post('/api/translate', express.json({ limit: '100kb' }), async (req, res) =>
     cacheManager.runTask('translation', async () => {

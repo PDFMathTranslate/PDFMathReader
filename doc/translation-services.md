@@ -23,7 +23,7 @@ The integration smoke requires the installed Legacy and Next environments under 
 ## Experimental document language check
 
 Enable **Document language check** in Settings → Experimental to ask Jev whether
-an opened PDF matches the configured **source language**. A confident match skips
+an opened PDF matches the configured **target language**. A confident match skips
 automatic translation; manual page translation and force retranslation remain
 available. The feature is off by default.
 

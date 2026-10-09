@@ -32,6 +32,29 @@ test('production bundle serves and extracts PDFs without an external Express ins
     const headers = { 'X-Preview-Token': 'package-test' };
     assert.equal((await fetch(backend.origin, { headers })).status, 200);
     assert.equal((await fetch(backend.origin)).status, 403);
+    // Scanned PDFs rely on decoder binaries outside the worker bundle.
+    for (const name of ['jbig2.wasm', 'openjpeg.wasm', 'qcms_bg.wasm']) {
+      const decoder = await fetch(backend.origin + '/assets/pdfjs/wasm/' + name, { headers });
+      assert.equal(decoder.status, 200);
+      assert.match(decoder.headers.get('content-type'), /application\/wasm/);
+      const bytes = new Uint8Array(await decoder.arrayBuffer());
+      assert.deepEqual([...bytes.subarray(0, 4)], [0, 97, 115, 109]);
+      assert.ok(WebAssembly.validate(bytes));
+    }
+    const fallback = await fetch(backend.origin + '/assets/pdfjs/wasm/jbig2_nowasm_fallback.js', {
+      headers,
+    });
+    assert.equal(fallback.status, 200);
+    assert.ok((await fallback.text()).includes('JBig2'));
+
+    for (const path of ['cmaps/Adobe-GB1-UCS2.bcmap', 'standard_fonts/FoxitSerif.pfb']) {
+      const resource = await fetch(backend.origin + '/assets/pdfjs/' + path, { headers });
+      assert.equal(resource.status, 200);
+      assert.deepEqual(
+        Buffer.from(await resource.arrayBuffer()),
+        await readFile(new URL('../../node_modules/pdfjs-dist/' + path, import.meta.url)),
+      );
+    }
     const formulaStatus = await fetch(backend.origin + '/api/formula-ocr/status', { headers });
     assert.equal(formulaStatus.status, 200);
     assert.equal((await formulaStatus.json()).ready, false);

@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { readFile, readdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { readBuildInfo } from './scripts/build-info.mjs';
 
 function buildInfoPlugin() {
@@ -24,8 +27,46 @@ function buildInfoPlugin() {
   };
 }
 
+function pdfRuntimeAssetsPlugin() {
+  const root = dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
+  const files = new Map();
+  return {
+    name: 'pdf-runtime-assets',
+    async buildStart() {
+      files.clear();
+      for (const kind of ['wasm', 'cmaps', 'standard_fonts'])
+        for (const name of await readdir(join(root, kind)))
+          files.set(`/assets/pdfjs/${kind}/${name}`, join(root, kind, name));
+    },
+    configureServer(server) {
+      server.middlewares.use(async (request, response, next) => {
+        const path = request.url?.split('?')[0];
+        const file = files.get(path);
+        if (!file) return next();
+        try {
+          response.setHeader(
+            'Content-Type',
+            path.endsWith('.wasm')
+              ? 'application/wasm'
+              : path.endsWith('.js')
+                ? 'text/javascript'
+                : 'application/octet-stream',
+          );
+          response.end(await readFile(file));
+        } catch (error) {
+          next(error);
+        }
+      });
+    },
+    async generateBundle() {
+      for (const [path, file] of files)
+        this.emitFile({ type: 'asset', fileName: path.slice(1), source: await readFile(file) });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue(), buildInfoPlugin()],
+  plugins: [vue(), buildInfoPlugin(), pdfRuntimeAssetsPlugin()],
   build: {
     rollupOptions: {
       output: {

@@ -48,25 +48,48 @@ export async function verifySession(first, windows, createWindow) {
     assert.equal(third.isVisible(), true);
     assert.equal(third.isFocused(), false);
     assert.equal(second.isFocused(), true);
+    const otherWindowState = await first.webContents.executeJavaScript(
+      "({totalPages: window.previewRenderDiagnostics().totalPages, empty: !!document.querySelector('.empty')})",
+    );
     await second.webContents.executeJavaScript('window.previewSaveReadingView()');
     await third.webContents.executeJavaScript('window.previewSaveReadingView()');
     const restored = (await createDocumentSession(store)).restore();
     assert.equal(restored.length, 2);
     assert.equal(restored.find((e) => e.path === a).view.page, 2);
+    const secondClosed = new Promise((resolve) => second.once('closed', resolve));
     second.webContents.send('reader:action', 'close-document');
-    await wait(second, 'window.previewRenderDiagnostics().totalPages===0');
+    await secondClosed;
+    assert.equal(second.isDestroyed(), true);
+    assert.equal(windows.has(second), false);
     assert.deepEqual(
       (await createDocumentSession(store)).restore().map((e) => e.path),
       [b],
     );
+    assert.deepEqual(
+      await first.webContents.executeJavaScript(
+        "({totalPages: window.previewRenderDiagnostics().totalPages, empty: !!document.querySelector('.empty')})",
+      ),
+      otherWindowState,
+    );
     third.webContents.send('reader:action', 'close-document');
-    await wait(third, 'window.previewRenderDiagnostics().totalPages===0');
+    await wait(
+      third,
+      "window.previewRenderDiagnostics().totalPages===0 && !!document.querySelector('.empty')",
+    );
+    assert.equal(third.isDestroyed(), false);
+    assert.equal(windows.has(third), true);
     assert.deepEqual((await createDocumentSession(store)).restore(), []);
+    assert.deepEqual(
+      await first.webContents.executeJavaScript(
+        "({totalPages: window.previewRenderDiagnostics().totalPages, empty: !!document.querySelector('.empty')})",
+      ),
+      otherWindowState,
+    );
     await first.webContents.executeJavaScript(
       'window.previewPreferences.save({restoreDocuments:false})',
     );
     assert.equal(
-      await second.webContents.executeJavaScript(
+      await first.webContents.executeJavaScript(
         'window.previewPreferences.load().then(p=>p.restoreDocuments)',
       ),
       false,
@@ -78,6 +101,9 @@ export async function verifySession(first, windows, createWindow) {
         backgroundRestorePreservesFocus: true,
         restoredPosition: true,
         allDocumentsClosed: true,
+        documentWindowClosed: true,
+        lastDocumentReturnsToStartPage: true,
+        otherWindowUnchanged: true,
         sharedOptOut: true,
       }),
     );

@@ -21,7 +21,8 @@ export function createCanvasRendering({
 
   function resetBitmaps() {
     renderState.bitmapFrames.clear();
-    renderState.visibleThumbnails.clear();
+    // Bitmap eviction must retain the mounted sidebar window so foreground
+    // resume can repaint it even when its scroll position has not changed.
     renderState.thumbnailEpoch++;
     for (const canvas of [...renderState.canvasEls.values(), ...renderState.thumbEls.values()])
       releaseCanvas(canvas);
@@ -208,7 +209,8 @@ export function createCanvasRendering({
         if (
           renderState.previewScrolling &&
           !motion.pinching.value &&
-          (!number || !renderState.visiblePages.has(number))
+          number &&
+          !renderState.visiblePages.has(number)
         ) {
           renderState.pageTasks.delete(canvas);
           task.cancel();
@@ -305,7 +307,7 @@ export function createCanvasRendering({
       for (const [canvas, task] of renderState.pageTasks) {
         if (!task.previewPage) continue;
         const number = Number(canvas.closest('.page')?.dataset.page);
-        if (!number || !renderState.visiblePages.has(number)) {
+        if (number && !renderState.visiblePages.has(number)) {
           renderState.pageTasks.delete(canvas);
           task.cancel();
         }

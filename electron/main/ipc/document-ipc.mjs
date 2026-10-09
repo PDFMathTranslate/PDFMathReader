@@ -52,14 +52,33 @@ export function registerDocumentIPC({
     }
     return { ...result, ticket };
   });
-  handle('documents:closed', (event) => {
+  handle('documents:closed', async (event) => {
     const target = trustedWindow(event);
     const state = registry.stateFor(target);
+    const hadDocument = !!(
+      state.documentIdentity ||
+      state.performance.hasDocument ||
+      state.documents.length
+    );
     state.documentIdentity = null;
     // The start page is reusable as soon as the document closes. Diagnostic
     // snapshots may still finish asynchronously and do not own this state.
     state.performance.hasDocument = false;
-    return documentSession.close(target.id);
+    const closeWindow =
+      hadDocument &&
+      [...registry.windows].some(
+        ([other, candidate]) =>
+          other !== target &&
+          !other.isDestroyed() &&
+          !candidate.settingsOwner &&
+          !candidate.closing &&
+          (candidate.documentIdentity ||
+            candidate.performance.hasDocument ||
+            candidate.documents.length),
+      );
+    await documentSession.close(target.id);
+    // Let the renderer finish releasing its document before closing its window.
+    return { closeWindow };
   });
   handle('documents:claim', async (event, path) => {
     const target = trustedWindow(event);

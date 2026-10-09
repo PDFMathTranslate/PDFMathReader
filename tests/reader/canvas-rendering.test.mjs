@@ -182,3 +182,55 @@ test('a prefetched preview stays visible while its sharper replacement is pendin
     f.restore();
   }
 });
+
+test('reader scroll keeps sidebar thumbnail tasks alive through continuation and page rendering', async () => {
+  const f = fixture(),
+    gate = deferred();
+  const oldRaf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (fn) => {
+    fn();
+    return 1;
+  };
+  let cancellations = 0,
+    continued = false;
+  const task = { promise: gate.promise, cancel: () => cancellations++ };
+  const page = { getViewport: () => ({ width: 128, height: 160 }), render: () => task };
+  const target = { ...f.state.canvasEls.get(1), closest: () => null };
+  f.state.thumbEls.set(106, target);
+  f.state.previewScrolling = true;
+  try {
+    const drawing = f.renderer.draw(page, target, 1);
+    task.onContinue(() => {
+      continued = true;
+    });
+    await f.renderer.renderPages();
+    assert.equal(continued, true);
+    assert.equal(cancellations, 0);
+    gate.resolve();
+    assert.equal(await drawing, true);
+    assert.ok(target.width > 0);
+  } finally {
+    gate.resolve();
+    f.restore();
+    globalThis.requestAnimationFrame = oldRaf;
+  }
+});
+
+test('bitmap eviction preserves the thumbnail window for foreground repaint', async () => {
+  const f = fixture();
+  f.state.visibleThumbnails = new Set([106, 107]);
+  f.state.thumbnailEpoch = 0;
+  const target = { ...f.state.canvasEls.get(1), closest: () => null };
+  f.state.thumbEls.set(106, target);
+  try {
+    await f.renderer.draw(f.pdfPages[0], target, 1);
+    assert.ok(target.width > 0);
+    f.renderer.resetBitmaps();
+    assert.equal(target.width, 0);
+    assert.deepEqual([...f.state.visibleThumbnails], [106, 107]);
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
+    assert.ok(target.width > 0);
+  } finally {
+    f.restore();
+  }
+});

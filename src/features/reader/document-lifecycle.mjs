@@ -137,7 +137,11 @@ export function createDocumentLifecycle({
     // Keep a frozen page above the start page while the document is released.
     if (capture) document.body.append(capture.element);
     try {
-      await closeDocumentNow();
+      const closeWindow = await closeDocumentNow();
+      if (closeWindow) {
+        await window.previewWindow?.close();
+        return;
+      }
       await nextTick();
       if (session.pages.value.length || controller.signal.aborted) return;
       const target = recentSurface(recentId);
@@ -181,7 +185,7 @@ export function createDocumentLifecycle({
     try {
       closed = Promise.resolve(window.previewDocuments?.closed()).catch(() => {});
     } catch {}
-    await closed;
+    const closeResult = await closed;
     if (documentToken !== session.epoch) return;
     session.currentRecentId = null;
     cancel();
@@ -232,6 +236,7 @@ export function createDocumentLifecycle({
         })
         .catch(() => {});
     }
+    return closeResult?.closeWindow === true;
   }
   return { receiveDocuments, cancel, releaseDocument, closeDocument, closeDocumentNow };
 }

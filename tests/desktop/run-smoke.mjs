@@ -72,6 +72,10 @@ export async function runDesktopSmoke({
     await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);
   else if (smoke === 'large-open')
     await (await import('./large-open-smoke.mjs')).verifyLargeOpen(window, recents);
+  else if (smoke === 'scanned-sidebar')
+    await (await import('./scanned-sidebar-smoke.mjs')).verifyScannedSidebar(window, recents);
+  else if (smoke === 'cjk-font')
+    await (await import('./cjk-font-smoke.mjs')).verifyCJKFont(window, recents);
   else if (smoke === 'file-menu')
     await (await import('./file-menu-smoke.mjs')).verifyFileMenu(window, recents);
   else if (smoke === 'recent-menu')

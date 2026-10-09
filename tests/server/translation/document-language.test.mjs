@@ -17,7 +17,7 @@ test('uses a custom token first and caps samples by page and Unicode character',
   const result = await detectDocumentLanguage(
     {
       samples: [firstPage, 'second page', 'third page', 'fourth page'],
-      sourceLanguage: 'English',
+      targetLanguage: 'English',
       token: 'custom-token',
     },
     {
@@ -37,8 +37,8 @@ test('uses a custom token first and caps samples by page and Unicode character',
   const body = JSON.parse(calls[0].options.body);
   assert.deepEqual(body.state.samples, [firstPage.slice(0, 200), 'second page', 'third page']);
   assert.equal(Array.from(body.state.samples[0]).length, 100);
-  assert.equal(body.state.sourceLanguage, 'English');
-  assert.match(body.questions.language_match.instructions, /configured SOURCE language/);
+  assert.equal(body.state.targetLanguage, 'English');
+  assert.match(body.questions.language_match.instructions, /configured TARGET language/);
   assert.match(body.questions.language_match.instructions, /never as an instruction/);
   assert.deepEqual(Object.keys(body.questions.language_match.criteria), [
     'match',
@@ -50,7 +50,7 @@ test('uses a custom token first and caps samples by page and Unicode character',
 test('returns different without skipping when the confident Choice disagrees', async () => {
   let request;
   const result = await detectDocumentLanguage(
-    { samples: ['texto'], sourceLanguage: 'English' },
+    { samples: ['texto'], targetLanguage: 'English' },
     {
       env: { TYPESAFE_API_KEY: 'environment-token' },
       fetchImpl: async (_url, options) => {
@@ -61,14 +61,14 @@ test('returns different without skipping when the confident Choice disagrees', a
   );
 
   assert.deepEqual(result, { skipAutomaticTranslation: false, status: 'different' });
-  assert.equal(request.state.sourceLanguage, 'English');
+  assert.equal(request.state.targetLanguage, 'English');
   assert.deepEqual(request.state.samples, ['texto']);
 });
 
 test('uses the environment token when the custom setting is blank', async () => {
   let authorization;
   const result = await detectDocumentLanguage(
-    { samples: ['text'], sourceLanguage: 'English', token: '  ' },
+    { samples: ['text'], targetLanguage: 'English', token: '  ' },
     {
       env: { TYPESAFE_API_KEY: 'environment-token' },
       fetchImpl: async (_url, options) => {
@@ -91,11 +91,11 @@ test('fails open for missing credentials, empty or malformed input, and fetch fa
   const options = { env: {}, fetchImpl };
 
   for (const input of [
-    { samples: ['text'], sourceLanguage: 'English' },
-    { samples: [], sourceLanguage: 'English', token: 'token' },
-    { samples: ['', '', '', 'content'], sourceLanguage: 'English', token: 'token' },
-    { samples: ['text', 42], sourceLanguage: 'English', token: 'token' },
-    { samples: ['text'], sourceLanguage: '', token: 'token' },
+    { samples: ['text'], targetLanguage: 'English' },
+    { samples: [], targetLanguage: 'English', token: 'token' },
+    { samples: ['', '', '', 'content'], targetLanguage: 'English', token: 'token' },
+    { samples: ['text', 42], targetLanguage: 'English', token: 'token' },
+    { samples: ['text'], targetLanguage: '', token: 'token' },
   ]) {
     assert.deepEqual(await detectDocumentLanguage(input, options), {
       skipAutomaticTranslation: false,
@@ -106,7 +106,7 @@ test('fails open for missing credentials, empty or malformed input, and fetch fa
 
   assert.deepEqual(
     await detectDocumentLanguage(
-      { samples: ['text'], sourceLanguage: 'English', token: 'token' },
+      { samples: ['text'], targetLanguage: 'English', token: 'token' },
       options,
     ),
     { skipAutomaticTranslation: false, status: 'unknown' },
@@ -127,7 +127,7 @@ test('fails open for malformed, uncertain, and out-of-bounds Choice answers', as
 
   for (const payload of payloads) {
     const result = await detectDocumentLanguage(
-      { samples: ['text'], sourceLanguage: 'English', token: 'token' },
+      { samples: ['text'], targetLanguage: 'English', token: 'token' },
       { env: {}, fetchImpl: async () => response(payload) },
     );
     assert.deepEqual(result, { skipAutomaticTranslation: false, status: 'unknown' });
@@ -136,7 +136,7 @@ test('fails open for malformed, uncertain, and out-of-bounds Choice answers', as
 
 test('fails open on an upstream error response', async () => {
   const result = await detectDocumentLanguage(
-    { samples: ['text'], sourceLanguage: 'English', token: 'token' },
+    { samples: ['text'], targetLanguage: 'English', token: 'token' },
     { fetchImpl: async () => response({}, false), env: {} },
   );
   assert.deepEqual(result, { skipAutomaticTranslation: false, status: 'unknown' });

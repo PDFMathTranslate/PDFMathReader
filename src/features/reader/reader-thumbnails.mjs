@@ -27,28 +27,37 @@ export function createThumbnails({ renderState, motion, session, shell, activity
   }
 
   async function renderThumbnails() {
-    if (!activity.foreground.value || motion.fitResizing || renderState.previewScrolling) return;
+    if (!activity.foreground.value || motion.fitResizing) return;
     const token = ++renderState.thumbnailEpoch,
       documentToken = session.epoch;
-    for (const n of [...renderState.visibleThumbnails]) {
-      if (
-        token !== renderState.thumbnailEpoch ||
-        documentToken !== session.epoch ||
-        !session.pdf ||
-        !activity.foreground.value ||
-        renderState.previewScrolling
-      )
-        return;
-      const p = session.pages.value[n - 1],
-        page = await session.pdf.getPage(n);
-      if (token !== renderState.thumbnailEpoch || documentToken !== session.epoch) return;
-      if (renderState.visibleThumbnails.has(n))
-        await actions.canvasRendering.draw(
-          page,
-          renderState.thumbEls.get(n),
-          Math.min(128 / p.width, 160 / p.height),
-        );
-    }
+    const numbers = [...renderState.visibleThumbnails];
+    let next = 0;
+    const current = () =>
+      token === renderState.thumbnailEpoch &&
+      documentToken === session.epoch &&
+      session.pdf &&
+      activity.foreground.value;
+    // Scanned pages may take much longer to decode than their neighbours.
+    // Keep thumbnails independent of the reader's scroll preview and bound
+    // parallel work so a slow image does not leave the whole sidebar blank.
+    await Promise.all(
+      Array.from({ length: Math.min(2, numbers.length) }, async () => {
+        while (next < numbers.length && current()) {
+          const n = numbers[next++],
+            p = session.pages.value[n - 1],
+            canvas = renderState.thumbEls.get(n);
+          if (!p || !canvas) continue;
+          const page = await session.pdf.getPage(n);
+          if (!current()) return;
+          if (renderState.visibleThumbnails.has(n) && renderState.thumbEls.get(n) === canvas)
+            await actions.canvasRendering.draw(
+              page,
+              canvas,
+              Math.min(128 / p.width, 160 / p.height),
+            );
+        }
+      }),
+    );
   }
 
   function scrollThumbnailTo(number) {

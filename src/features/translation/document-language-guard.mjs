@@ -6,16 +6,16 @@ export function createDocumentLanguageGuard({ session, preferences, api }) {
     const pdf = session.pdf;
     if (!pdf) return true;
     const epoch = session.epoch;
-    const sourceLanguage = preferences.sourceLanguage.value;
+    const targetLanguage = preferences.language.value;
     const token = preferences.jevApiToken.value;
     if (
       current?.pdf === pdf &&
       current.epoch === epoch &&
-      current.sourceLanguage === sourceLanguage &&
+      current.targetLanguage === targetLanguage &&
       current.token === token
     )
       return current.promise;
-    const entry = { pdf, epoch, sourceLanguage, token };
+    const entry = { pdf, epoch, targetLanguage, token };
     current = entry;
     entry.promise = (async () => {
       let timer;
@@ -26,7 +26,7 @@ export function createDocumentLanguageGuard({ session, preferences, api }) {
         session.pdf === pdf &&
         session.epoch === epoch &&
         preferences.documentLanguageDetection.value &&
-        preferences.sourceLanguage.value === sourceLanguage &&
+        preferences.language.value === targetLanguage &&
         preferences.jevApiToken.value === token;
       try {
         const result = await Promise.race([
@@ -51,7 +51,7 @@ export function createDocumentLanguageGuard({ session, preferences, api }) {
             return api('/api/document-language', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ samples, sourceLanguage, token }),
+              body: JSON.stringify({ samples, targetLanguage, token }),
             });
           })(),
           new Promise((resolve) => {
