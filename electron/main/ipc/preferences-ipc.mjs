@@ -29,6 +29,8 @@ const SETTINGS_PREFERENCES = [
   'concurrency',
   'pageConcurrency',
   'automatic',
+  'documentLanguageDetection',
+  'jevApiToken',
   'layoutVisible',
   'emphasizeTopicSentences',
   'emphasizeInformation',

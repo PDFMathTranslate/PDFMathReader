@@ -1,3 +1,4 @@
+import { createDocumentLanguageGuard } from './document-language-guard.mjs';
 import { t } from '../../i18n/index.mjs';
 import { reactive } from 'vue';
 
@@ -10,7 +11,15 @@ export function createTranslationQueue({
   view,
   actions,
 }) {
-  function schedulePages() {
+  const allowAutomaticTranslation = createDocumentLanguageGuard({
+    session,
+    preferences,
+    api: (...args) => actions.backendRequests.api(...args),
+  });
+  async function schedulePages() {
+    const epoch = session.epoch;
+    if (!translationState.forceRetranslation && !(await allowAutomaticTranslation())) return;
+    if (epoch !== session.epoch) return;
     actions.translationScope.pruneTranslationQueue();
     const candidates = actions.translationScope
       .readingTranslationPages()
@@ -50,6 +59,12 @@ export function createTranslationQueue({
   async function processPage(p, manual = false) {
     if (!p || p.status === 'detecting') return;
     const token = session.epoch;
+    if (!manual && !translationState.forceRetranslation && !(await allowAutomaticTranslation())) {
+      if (token === session.epoch && p.status === 'queued')
+        p.status = p.blocks.length ? 'ready' : 'idle';
+      return;
+    }
+    if (token !== session.epoch) return;
     if (preferences.engine.value !== 'pdf_inspector')
       return actions.mathTranslation.mathPage(p, token, manual);
     if (!p.blocks.length && p.status !== 'ready') {

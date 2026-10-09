@@ -50,6 +50,8 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.concurrency,
       bindings.pageConcurrency,
       bindings.automatic,
+      bindings.preferences.documentLanguageDetection,
+      bindings.preferences.jevApiToken,
       bindings.layoutVisible,
       bindings.emphasizeTopicSentences,
       bindings.emphasizeInformation,
@@ -75,6 +77,12 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.settle();
     },
   );
+  watch([bindings.preferences.documentLanguageDetection, bindings.preferences.jevApiToken], () => {
+    if (!bindings.preferences.loadingPreferences && !bindings.settingsWindowMode) {
+      bindings.pruneTranslationQueue();
+      bindings.settle();
+    }
+  });
   watch(bindings.showKernelToolbarShortcut, (value) =>
     localStorage.setItem('showKernelToolbarShortcut', String(value)),
   );

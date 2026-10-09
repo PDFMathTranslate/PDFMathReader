@@ -25,6 +25,9 @@ export function createPreferencePersistence({ preferences, session, view, provid
 
   function applySavedSettings(saved) {
     preferences.applyingSavedSettings = true;
+    if (typeof saved.documentLanguageDetection === 'boolean')
+      preferences.documentLanguageDetection.value = saved.documentLanguageDetection;
+    if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
     for (const [key, target] of Object.entries({
       defaultPageCropEnabled: preferences.defaultPageCropEnabled,
       defaultPageCropX: preferences.defaultPageCropX,
@@ -137,6 +140,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
         concurrency: preferences.concurrency.value,
         pageConcurrency: preferences.pageConcurrency.value,
         automatic: preferences.automatic.value,
+        documentLanguageDetection: preferences.documentLanguageDetection.value,
+        jevApiToken: preferences.jevApiToken.value,
         layoutVisible: preferences.layoutVisible.value,
         kernelAdvancedOptions: cloneKernelAdvancedOptions(preferences.kernelAdvancedOptions.value),
         translationServices: cloneTranslationServices(preferences.translationServices.value),

@@ -54,6 +54,7 @@ export function useReaderWindow() {
   const translationState = createTranslationQueueState();
   const { translationDeferred } = translationState;
   const preferences = createPreferenceState();
+  provide('documentLanguagePreferences', preferences);
   const {
     language,
     sourceLanguage,

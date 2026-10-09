@@ -1,21 +1,23 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { platform } from '../../platform/runtime.mjs';
 import { AppSwitch } from '../../ui/controls.mjs';
 import { t, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
+import DocumentLanguageSettings from './DocumentLanguageSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
+const languagePreferences = inject('documentLanguagePreferences');
 const interfaceStyle = defineModel('interfaceStyle', { default: 'default' });
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const glassLabels = computed(
   () =>
     ({
-      'zh-CN': ['界面样式', '默认', '可能消耗更多性能'],
-      'zh-TW': ['介面樣式', '預設', '可能消耗更多效能'],
-      ja: ['インターフェイス', 'デフォルト', 'パフォーマンスへの負荷が増える場合があります'],
-      ko: ['인터페이스 스타일', '기본', '더 많은 성능 자원을 사용할 수 있습니다'],
-      fr: ['Style de l’interface', 'Par défaut', 'Peut consommer davantage de ressources'],
-      es: ['Estilo de interfaz', 'Predeterminado', 'Puede consumir más recursos'],
-    })[currentUILanguage.value] || ['Interface style', 'Default', 'May use more resources'],
+      'zh-CN': ['液态玻璃界面', '默认', '可能消耗更多性能'],
+      'zh-TW': ['液態玻璃介面', '預設', '可能消耗更多效能'],
+      ja: ['Liquid Glass', 'デフォルト', 'パフォーマンスへの負荷が増える場合があります'],
+      ko: ['Liquid Glass', '기본', '더 많은 성능 자원을 사용할 수 있습니다'],
+      fr: ['Liquid Glass', 'Par défaut', 'Peut consommer davantage de ressources'],
+      es: ['Liquid Glass', 'Predeterminado', 'Puede consumir más recursos'],
+    })[currentUILanguage.value] || ['Liquid Glass', 'Default', 'May use more resources'],
 );
 </script>
 <template>
@@ -24,7 +26,7 @@ const glassLabels = computed(
     <div class="settings-section-body">
       <div v-if="platform === 'darwin'" class="setting-row" data-setting="interface-style">
         <div>
-          <span id="interface-style-label">Liquid Glass</span>
+          <span id="interface-style-label">{{ glassLabels[0] }}</span>
           <p id="interface-style-warning" class="muted">{{ glassLabels[2] }}</p>
         </div>
         <AppSwitch
@@ -34,6 +36,7 @@ const glassLabels = computed(
           @update:model-value="interfaceStyle = $event ? 'liquid-glass' : 'default'"
         />
       </div>
+      <DocumentLanguageSettings v-if="languagePreferences" />
       <FormulaOcrSettings />
       <div class="setting-row" data-setting="optimize-paragraph-gaps">
         <span id="optimize-paragraph-gaps-label">{{ t('settings.optimizeParagraphGaps') }}</span>

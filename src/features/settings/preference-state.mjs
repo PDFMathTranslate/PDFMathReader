@@ -7,6 +7,8 @@ export function createPreferenceState() {
   const concurrency = ref(2);
   const pageConcurrency = ref(2);
   const automatic = ref(true);
+  const documentLanguageDetection = ref(false);
+  const jevApiToken = ref('');
   const layoutVisible = ref(false);
   const reuseTranslations = ref(localStorage.getItem('reuseTranslations') !== 'false');
   const interactionMode = ref('reading');
@@ -65,6 +67,8 @@ export function createPreferenceState() {
     concurrency,
     pageConcurrency,
     automatic,
+    documentLanguageDetection,
+    jevApiToken,
     layoutVisible,
     reuseTranslations,
     interactionMode,

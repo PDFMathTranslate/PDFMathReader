@@ -40,6 +40,8 @@ const DEFAULT_PREFERENCES = {
   concurrency: 2,
   pageConcurrency: 2,
   automatic: true,
+  documentLanguageDetection: false,
+  jevApiToken: '',
   layoutVisible: false,
   defaultPageCropEnabled: false,
   defaultPageCropX: 0,
@@ -85,6 +87,8 @@ test('partial saves keep every current setting and unknown key', async () => {
         concurrency: 11,
         pageConcurrency: 8,
         automatic: false,
+        documentLanguageDetection: true,
+        jevApiToken: 'custom-test-token',
         layoutVisible: true,
       },
       { futureSetting: { revision: 3 } },
@@ -95,6 +99,8 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ language: 'Esperanto' }));
     assert.throws(() => preferences.save({ documentOpenMode: 'invalid' }));
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
+    assert.throws(() => preferences.save({ documentLanguageDetection: 'true' }));
+    assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ optimizeParagraphGaps: 'true' }));
     assert.throws(() => preferences.save({ translationMode: 'invalid' }));
     assert.throws(() => preferences.save({ translationErrorDismissals: [null] }));

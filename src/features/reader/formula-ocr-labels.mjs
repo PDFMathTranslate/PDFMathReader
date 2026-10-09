@@ -15,7 +15,7 @@ const labels = {
     notReady: 'Formula OCR is not ready. Enable it in Settings first.',
   },
   'zh-CN': {
-    enabled: '启用公式 OCR',
+    enabled: '自动识别和复制公式',
     hint: '首次启用时，PDFMathReader 会下载本地 Pix2Text MFR1.5 模型（约 120 MB）。之后可离线识别，并在每次识别后释放模型。',
     download: '正在下载 Pix2Text MFR1.5…',
     ready: '已准备好离线识别',
@@ -28,7 +28,7 @@ const labels = {
     notReady: '公式 OCR 尚未准备好。请先在设置中启用。',
   },
   'zh-TW': {
-    enabled: '啟用公式 OCR',
+    enabled: '自動識別和複製公式',
     hint: '首次啟用時，PDFMathReader 會下載本機 Pix2Text MFR1.5 模型（約 120 MB）。之後可離線識別，並在每次識別後釋放模型。',
     download: '正在下載 Pix2Text MFR1.5…',
     ready: '已準備好離線識別',
