@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -8,6 +8,7 @@ import {
   compareVersions,
   releaseLink,
   RELEASE_API,
+  MAX_UPDATE_ERROR_DETAIL_LENGTH,
 } from '../../../electron/main/services/app-updates.mjs';
 const release = (version = 'v0.2.0') => ({
   tag_name: version,
@@ -153,9 +154,10 @@ test('turning off automatic updates suppresses a staged automatic install; manua
   assert.equal(applies, 1);
 });
 
-test('failed preparation remains retryable and never installs an unverified update', async () => {
+test('failed preparation remains retryable, keeps a bounded diagnostic, and never installs an unverified update', async () => {
   let attempts = 0,
     applies = 0;
+  const diagnostic = 'signature mismatch: ' + 'x'.repeat(MAX_UPDATE_ERROR_DETAIL_LENGTH * 2);
   const updates = await createAppUpdates({
     currentVersion: '0.1.0',
     automatic: false,
@@ -163,16 +165,50 @@ test('failed preparation remains retryable and never installs an unverified upda
     installer: {
       supported: true,
       prepare: async () => {
-        if (++attempts === 1) throw Error('signature mismatch');
+        if (++attempts === 1) throw Error(diagnostic);
       },
       installOnQuit: () => ++applies,
     },
   });
   assert.equal((await updates.check()).status, 'available');
-  assert.equal((await updates.install()).error, 'install');
+  const failed = await updates.install();
+  assert.equal(failed.error, 'install');
+  assert.equal(failed.errorDetail.length, MAX_UPDATE_ERROR_DETAIL_LENGTH);
+  assert.ok(failed.errorDetail.startsWith('signature mismatch: '));
   assert.equal(updates.installOnQuit(), false);
   assert.equal(applies, 0);
-  assert.equal((await updates.install()).status, 'ready');
+  const ready = await updates.install();
+  assert.equal(ready.status, 'ready');
+  assert.equal(ready.errorDetail, null);
+});
+
+test('restores a bounded persisted installer diagnostic for the About UI', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'reader-app-updates-result-')),
+    resultPath = join(folder, 'last-update-result.json');
+  try {
+    const diagnostic = 'codesign failed: ' + 'x'.repeat(MAX_UPDATE_ERROR_DETAIL_LENGTH * 2);
+    await writeFile(
+      resultPath,
+      JSON.stringify({
+        status: 'error',
+        code: 'UPDATE_INSTALL_FAILED',
+        message: diagnostic,
+        stack: diagnostic + '\n' + 'x'.repeat(MAX_UPDATE_ERROR_DETAIL_LENGTH * 4),
+      }),
+    );
+    const updates = await createAppUpdates({
+      currentVersion: '0.1.0',
+      installer: { supported: true, resultPath },
+    });
+    const state = updates.status();
+    assert.equal(state.status, 'error');
+    assert.equal(state.error, 'install');
+    assert.equal(state.errorDetail.length, MAX_UPDATE_ERROR_DETAIL_LENGTH);
+    assert.ok(state.errorDetail.startsWith('codesign failed: '));
+    updates.stop();
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
 });
 
 test('disabling automatic updates cancels an in-flight background download', async () => {

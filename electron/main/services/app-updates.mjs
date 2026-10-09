@@ -7,6 +7,23 @@ export const RELEASE_API =
   'https://api.github.com/repos/PDFMathTranslate/PDFMathReader/releases/latest';
 export const UPDATE_INTERVAL = 6 * 60 * 60 * 1000;
 export const UPDATE_STARTUP_DELAY = 30000;
+export const MAX_UPDATE_ERROR_DETAIL_LENGTH = 512;
+
+function errorDetail(error) {
+  const value =
+    typeof error === 'string'
+      ? error
+      : typeof error?.message === 'string' && error.message
+        ? error.message
+        : typeof error?.code === 'string'
+          ? error.code
+          : '';
+  const detail = value.trim();
+  if (!detail) return null;
+  return detail.length > MAX_UPDATE_ERROR_DETAIL_LENGTH
+    ? detail.slice(0, MAX_UPDATE_ERROR_DETAIL_LENGTH - 1) + '…'
+    : detail;
+}
 function versionParts(value) {
   const match =
     /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([\da-zA-Z.-]+))?(?:\+[\da-zA-Z.-]+)?$/.exec(
@@ -97,6 +114,7 @@ export async function createAppUpdates({
     automatic,
     checkedAt: null,
     error: null,
+    errorDetail: null,
     releaseUrl: null,
     downloadUrl: null,
     installSupported: Boolean(installer?.supported),
@@ -127,7 +145,13 @@ export async function createAppUpdates({
   if (installer?.resultPath)
     try {
       const result = JSON.parse(await readFile(installer.resultPath, 'utf8'));
-      if (result.status === 'error') state = { ...state, status: 'error', error: 'install' };
+      if (result.status === 'error')
+        state = {
+          ...state,
+          status: 'error',
+          error: 'install',
+          errorDetail: errorDetail(result),
+        };
     } catch {}
   function snapshot() {
     return { ...state };
@@ -166,7 +190,7 @@ export async function createAppUpdates({
     if (state.status === 'ready') return Promise.resolve(snapshot());
     installController = new AbortController();
     const signal = installController.signal;
-    publish({ status: 'downloading', error: null, progress: 0 });
+    publish({ status: 'downloading', error: null, errorDetail: null, progress: 0 });
     installPending = (async () => {
       try {
         await installer.prepare(
@@ -177,17 +201,19 @@ export async function createAppUpdates({
           },
           signal,
         );
-        if (!stopped && !signal.aborted) publish({ status: 'ready', error: null, progress: 1 });
+        if (!stopped && !signal.aborted)
+          publish({ status: 'ready', error: null, errorDetail: null, progress: 1 });
       } catch (error) {
         if (!stopped)
           publish(
             signal.aborted
-              ? { status: 'available', error: null, progress: null }
+              ? { status: 'available', error: null, errorDetail: null, progress: null }
               : {
                   status: 'error',
                   error: ['unsupported', 'UNSUPPORTED_UPDATE'].includes(error.code)
                     ? 'unsupported'
                     : 'install',
+                  errorDetail: errorDetail(error),
                   progress: null,
                 },
           );
@@ -208,7 +234,7 @@ export async function createAppUpdates({
     pending = (async () => {
       controller = new AbortController();
       const timeout = setTimer(() => controller.abort(), 15000);
-      publish({ status: 'checking', error: null });
+      publish({ status: 'checking', error: null, errorDetail: null });
       try {
         const response = await fetchImpl(RELEASE_API, {
           headers: {
@@ -239,7 +265,7 @@ export async function createAppUpdates({
           cached = release;
           etag = response.headers.get('etag');
         }
-        publish({ ...info, checkedAt: now(), error: null });
+        publish({ ...info, checkedAt: now(), error: null, errorDetail: null });
         await persist();
         clearTimer(timeout);
         if (state.automatic && state.status === 'available' && installer?.supported)
@@ -251,6 +277,7 @@ export async function createAppUpdates({
             error: ['rate-limit', 'invalid-release'].includes(error.message)
               ? error.message
               : 'network',
+            errorDetail: null,
           });
       } finally {
         clearTimer(timeout);

@@ -255,6 +255,7 @@ const initialState = {
   automatic: true,
   checkedAt: null,
   error: null,
+  errorDetail: null,
   releaseUrl: null,
   downloadUrl: null,
   progress: null,
@@ -304,6 +305,8 @@ function normalize(raw) {
     automatic: typeof value.automatic === 'boolean' ? value.automatic : true,
     checkedAt: Number.isFinite(value.checkedAt) ? value.checkedAt : null,
     error: errors.has(value.error) ? value.error : null,
+    errorDetail:
+      typeof value.errorDetail === 'string' && value.errorDetail.trim() ? value.errorDetail : null,
     releaseUrl: typeof value.releaseUrl === 'string' && value.releaseUrl ? value.releaseUrl : null,
     downloadUrl:
       typeof value.downloadUrl === 'string' && value.downloadUrl ? value.downloadUrl : null,
@@ -366,7 +369,12 @@ const progressPercent = computed(() =>
 const statusText = computed(() => {
   if (releaseError.value) return local('openError');
   if (!bridgeAvailable.value) return local('unavailable');
-  if (visibleError.value) return text(errorLabel(visibleError.value));
+  if (visibleError.value) {
+    const label = text(errorLabel(visibleError.value));
+    return visibleError.value === 'install' && state.value.errorDetail
+      ? `${label} ${state.value.errorDetail}`
+      : label;
+  }
   if (state.value.status === 'checking') return local('checking');
   if (state.value.status === 'downloading')
     return text('downloading', { progress: progressPercent.value });

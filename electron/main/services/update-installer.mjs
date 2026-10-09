@@ -25,6 +25,9 @@ const GITHUB_REPOSITORY = 'PDFMathReader';
  * ELECTRON_RUN_AS_NODE=1.
  */
 const UPDATE_HELPER_SOURCE = `
+// Electron patches fs even in RUN_AS_NODE mode. Copy app.asar as a physical
+// file, otherwise fs.cp treats the partly copied archive as a virtual directory.
+process.noAsar = true;
 import { spawnSync } from 'node:child_process';
 import { cp, lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
@@ -87,7 +90,7 @@ async function waitForParentExit(pid, timeout) {
 async function copyToSibling(source, target) {
   const temporary = target + '.updating-' + process.pid + '-' + Date.now();
   await rm(temporary, { recursive: true, force: true });
-  await cp(source, temporary, { recursive: true, dereference: false, preserveTimestamps: true });
+  await cp(source, temporary, { recursive: true, dereference: false, verbatimSymlinks: true, preserveTimestamps: true });
   return temporary;
 }
 

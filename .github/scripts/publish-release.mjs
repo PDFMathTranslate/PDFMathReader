@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { shouldRelease, parseVersion } from './release-version.mjs';
 import { previousRelease, releaseNotes } from './release-notes.mjs';
+import { verifyMacReleaseArchive } from './verify-macos-release.mjs';
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 const api = (path) => JSON.parse(gh('api', path));
 const repo = process.env.GH_REPO,
@@ -100,6 +101,7 @@ for (const target of targets) {
       path,
     ]);
   else execFileSync('tar', ['-tzf', path], { stdio: 'ignore' });
+  if (target.startsWith('darwin')) verifyMacReleaseArchive(path, version);
   assets.push(path);
 }
 // The release workflow serializes publication; recheck after artifact downloads.

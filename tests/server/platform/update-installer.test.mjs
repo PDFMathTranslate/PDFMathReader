@@ -2,8 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmod, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  readFile,
+  readlink,
+  readdir,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { mkdtemp } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createUpdateInstaller } from '../../../electron/main/services/update-installer.mjs';
@@ -326,6 +336,10 @@ test('detached helper waits for the parent, swaps the app, and records a durable
     await mkdir(join(installedBundle, 'Contents', 'MacOS'), { recursive: true });
     await writeFile(oldMarker, 'old');
     const tools = await fakeVerificationTools(root);
+    const electron = join(
+      process.cwd(),
+      'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron',
+    );
     const installer = createUpdateInstaller({
       app: appFixture(root),
       platform: 'darwin',
@@ -346,10 +360,12 @@ test('detached helper waits for the parent, swaps the app, and records a durable
           recursive: true,
         });
         await writeFile(join(destination, 'PDFMathReader.app', 'new.txt'), 'new');
+        await writeFile(join(destination, 'PDFMathReader.app', 'app.asar'), 'opaque archive bytes');
+        await symlink('new.txt', join(destination, 'PDFMathReader.app', 'relative-link'));
       },
       readBundleVersion: async () => '0.2.0',
       parentPid: parent.pid,
-      processExecPath: process.execPath,
+      processExecPath: existsSync(electron) ? electron : process.execPath,
       environment: {},
     });
     const ready = await installer.prepare(fixture.metadata);
@@ -363,6 +379,8 @@ test('detached helper waits for the parent, swaps the app, and records a durable
     assert.equal(result.status, 'installed');
     assert.equal(result.version, '0.2.0');
     assert.equal(await readFile(join(installedBundle, 'new.txt'), 'utf8'), 'new');
+    assert.equal(await readFile(join(installedBundle, 'app.asar'), 'utf8'), 'opaque archive bytes');
+    assert.equal(await readlink(join(installedBundle, 'relative-link')), 'new.txt');
     const siblings = await readdir(root);
     assert.ok(siblings.some((entry) => entry.startsWith('PDFMathReader.app.previous-')));
     assert.equal(await readFile(ready.resultPath, 'utf8'), JSON.stringify(result));

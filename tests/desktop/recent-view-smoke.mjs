@@ -44,6 +44,11 @@ export async function verifyRecentView(window, recents) {
     await wait(
       `getComputedStyle(document.querySelector('.recent-view-switch')).backdropFilter.includes('blur')`,
     );
+    assert.equal(
+      await run(`document.querySelectorAll('.recent-actions .reader-glass-layer').length`),
+      0,
+      'Recent controls use one rounded glass material without an SDK white substrate',
+    );
     await wait(`document.querySelector('.recent-document img')?.naturalWidth>0`);
     await writeFile(
       '/tmp/reader-recent-list.png',
