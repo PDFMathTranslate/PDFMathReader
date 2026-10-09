@@ -25,15 +25,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                        | Contributor                        |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-09 | [improve reading layout and translation behavior](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe)           | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [add liquid glass and translation refocus](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)                  | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [customize shortcuts and refine reader interactions](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1)        | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [add local formula OCR and copy in reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/2896ebf2fc75aaad25e3fec39709df3d0c5b54e4)            | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [discuss PDF selections with local AI apps](https://github.com/PDFMathTranslate/PDFMathReader/commit/ce47d2d1dd998892b784b235390cfc3316c6d30a)                 | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [continue reading PDFs in another application](https://github.com/PDFMathTranslate/PDFMathReader/commit/a5ed5e6baff7f6888e583e7379658afb33cf9bda)              | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [automatically install updates and organize cache settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/92d89ff9a465c11c579bc7c3de3f79f8c3acc3e0) | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                 | Contributor                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-09 | [restore translated pages before kernel startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)     | [@reycn](https://github.com/reycn) |
+| 2026-10-09 | [improve reading layout and translation behavior](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe)    | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [add liquid glass and translation refocus](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)           | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [customize shortcuts and refine reader interactions](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1) | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [add local formula OCR and copy in reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/2896ebf2fc75aaad25e3fec39709df3d0c5b54e4)     | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [discuss PDF selections with local AI apps](https://github.com/PDFMathTranslate/PDFMathReader/commit/ce47d2d1dd998892b784b235390cfc3316c6d30a)          | [@reycn](https://github.com/reycn) |
+| 2026-10-08 | [continue reading PDFs in another application](https://github.com/PDFMathTranslate/PDFMathReader/commit/a5ed5e6baff7f6888e583e7379658afb33cf9bda)       | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
