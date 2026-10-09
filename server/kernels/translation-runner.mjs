@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, mkdtemp, rm, readdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, mkdtemp, rm, readdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { translationAdvancedArgs } from './kernel-options.mjs';
@@ -72,6 +72,7 @@ export function createTranslationRunner({
     signal,
     translationService,
     serviceIdentity,
+    cacheSelection = translationService,
     localTranslation = false,
     glossary = [],
     advancedOptions = {},
@@ -103,6 +104,81 @@ export function createTranslationRunner({
     const lang = translationLanguageCode(language);
     if (!isTranslationLanguageSupported(id, language))
       throw Error('Unsupported language for this kernel');
+    const sourceHash =
+      documentHash && typeof documentHash.copy === 'function'
+        ? documentHash.copy()
+        : createHash('sha256').update(bytes);
+    const [scopeHash, scopeGeneration] = cacheScope.split(':');
+    const cacheDir = cacheScope
+      ? join(baseCacheDir, '..', 'documents', scopeHash, 'math', scopeGeneration)
+      : baseCacheDir;
+    const currentLayoutSchema =
+      id === 'pdf_math_fast'
+        ? ['zh', 'ja', 'ko'].includes(lang.toLowerCase().split('-')[0])
+          ? 6
+          : 4
+        : 3;
+    // This request index points to complete artifacts, so reopening does not
+    // need Python discovery, option introspection, or the service catalog.
+    // Only a digest is persisted; service values may contain credentials.
+    const requestKey = sourceHash
+      .copy()
+      .update(
+        JSON.stringify({
+          cacheIndex: 1,
+          layoutSchema: currentLayoutSchema,
+          id,
+          page,
+          language,
+          sourceLanguage: sourceLanguage || 'English',
+          glossary,
+          advancedOptions,
+          translationService: cacheSelection,
+          serviceIdentity,
+          localTranslation,
+          cacheScope,
+        }),
+      )
+      .digest('hex');
+    const requestPath = join(cacheDir, requestKey + '.page.json');
+    const rememberPage = async (artifactKey, translationModel) => {
+      const temporary = requestPath + '.' + crypto.randomUUID() + '.tmp';
+      try {
+        await mkdir(cacheDir, { recursive: true });
+        await writeFile(temporary, JSON.stringify({ key: artifactKey, model: translationModel }));
+        await rename(temporary, requestPath);
+      } finally {
+        await rm(temporary, { force: true }).catch(() => {});
+      }
+    };
+    if (reuseTranslations && !forceRetranslation) {
+      try {
+        const saved = JSON.parse(await readFile(requestPath, 'utf8'));
+        if (!/^[0-9a-f]{64}$/.test(saved.key) || typeof saved.model !== 'string')
+          throw Error('Invalid page cache index');
+        const [result, metadata] = await Promise.all([
+          readFile(join(cacheDir, saved.key + '.pdf')),
+          readFile(join(cacheDir, saved.key + '.layout.json'), 'utf8'),
+        ]);
+        if (
+          !result.subarray(0, 1024).includes(Buffer.from('%PDF')) ||
+          !Array.isArray(JSON.parse(metadata).paragraphs)
+        )
+          throw Error('Invalid cached page');
+        result.layoutKey = cacheScope ? `${scopeHash}-${scopeGeneration}-${saved.key}` : saved.key;
+        result.cached = true;
+        result.translationModel = saved.model;
+        step('cacheLookup');
+        emitTiming({
+          engine: id,
+          cached: true,
+          model: saved.model,
+          totalMs: performance.now() - started,
+          stages,
+        });
+        return result;
+      } catch {}
+    }
     const state = await getState(id);
     if (!state.available) throw Error(state.reason);
     const { overrides, args: advancedArgs } = await translationAdvancedArgs(
@@ -115,21 +191,7 @@ export function createTranslationRunner({
       : null;
     if (service) model = service.model;
     step('environmentAndOptions');
-    const sourceHash =
-      documentHash && typeof documentHash.copy === 'function'
-        ? documentHash.copy()
-        : createHash('sha256').update(bytes);
-    const [scopeHash, scopeGeneration] = cacheScope.split(':');
-    const cacheDir = cacheScope
-      ? join(baseCacheDir, '..', 'documents', scopeHash, 'math', scopeGeneration)
-      : baseCacheDir;
     const layoutKey = (key) => (cacheScope ? `${scopeHash}-${scopeGeneration}-${key}` : key);
-    const currentLayoutSchema =
-      id === 'pdf_math_fast'
-        ? ['zh', 'ja', 'ko'].includes(lang.toLowerCase().split('-')[0])
-          ? 6
-          : 4
-        : 3;
     const keyFor = (cacheModel, layoutSchema = currentLayoutSchema) =>
       sourceHash
         .copy()
@@ -172,6 +234,7 @@ export function createTranslationRunner({
     const cached = join(cacheDir, `${key}.pdf`);
     const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
     if (hit) {
+      await rememberPage(hit.key, hit.model).catch(() => {});
       const result = hit.result;
       result.layoutKey = layoutKey(hit.key);
       result.cached = true;
@@ -196,6 +259,7 @@ export function createTranslationRunner({
       const queuedHit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
       step('cacheRecheck');
       if (queuedHit) {
+        await rememberPage(queuedHit.key, queuedHit.model).catch(() => {});
         const result = queuedHit.result;
         result.layoutKey = layoutKey(queuedHit.key);
         result.cached = true;
@@ -416,6 +480,7 @@ export function createTranslationRunner({
         await writeFile(metaTemp, JSON.stringify(metadata));
         await (await import('node:fs/promises')).rename(metaTemp, metaPath);
         await cache.remember(model, key).catch(() => {});
+        await rememberPage(key, model).catch(() => {});
         result.layoutKey = layoutKey(key);
         result.cached = false;
         result.translationModel = model;

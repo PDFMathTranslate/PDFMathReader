@@ -123,6 +123,7 @@ export function registerKernelRoutes(
             engine,
             sourceLanguage,
             language,
+            { cacheOnly },
           );
         } catch (error) {
           return res.status(422).json({ error: error.message });
@@ -182,11 +183,13 @@ export function registerKernelRoutes(
             model: provider.model,
             proxy: { url: `${origin()}/kernel-proxy/v1`, token: proxyToken },
             signal: controller.signal,
+            cacheSelection: req.body?.translationService,
             translationService: provider.native ? provider.selection : undefined,
             serviceIdentity: provider.id === 'apple-local' ? { service: 'apple-local' } : undefined,
             localTranslation: provider.id === 'apple-local',
             glossary,
             advancedOptions,
+            cacheOnly,
             reuseTranslations,
             forceRetranslation,
             cacheScope,

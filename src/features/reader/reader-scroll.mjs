@@ -7,7 +7,6 @@ export function createReaderScroll({
   translationState,
   preferences,
   activity,
-  kernel,
   feedback,
   view,
   actions,
@@ -44,8 +43,7 @@ export function createReaderScroll({
     }
     translationState.lastTranslationScroll = { position: position || 0, time: now };
     const viewport = actions.readerViewport.viewportPages();
-    if (kernel.engineState.value?.available && !motion.pinching.value)
-      actions.translationQueue.schedulePages();
+    if (!motion.pinching.value) actions.translationQueue.schedulePages();
     actions.readerViewport.scheduleViewport(viewport);
     actions.readingPosition.scheduleReadingSave();
     showScrollbar(event);
@@ -73,7 +71,7 @@ export function createReaderScroll({
     if (!p) return;
     feedback.reading.value = t('reading.readingPage', { page: p.number });
     p.dwell++;
-    if (kernel.engineState.value?.available) actions.translationQueue.schedulePages();
+    actions.translationQueue.schedulePages();
   }
   return { showScrollbar, scrolling, settle };
 }

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { createTranslationRunner } from '../../../server/kernels/translation-runner.mjs';
 
 class Child extends EventEmitter {
@@ -27,6 +27,7 @@ async function fixture(t, finish, options = {}) {
     processes: {
       spawn: (command, args, options) => {
         child.spawnOptions = options;
+        child.spawnArgs = args;
         queueMicrotask(() => child.finish(child));
         return child;
       },
@@ -42,6 +43,7 @@ async function fixture(t, finish, options = {}) {
   });
   t.after(() => rm(root, { recursive: true, force: true }));
   return {
+    root,
     child,
     diagnostics,
     translate: (translateOptions = {}) =>
@@ -166,5 +168,67 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     assert.equal(env[prefix + 'OPENAI_MODEL'], 'native-model');
     assert.equal(env.OPENAI_BASE_URL, undefined);
     assert.equal(env.PDF2ZH_OPENAI_BASE_URL, undefined);
+  });
+}
+
+for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
+  test(`${id} reopened page uses disk cache without kernel discovery`, async (t) => {
+    const { PDFDocument } = await import('pdf-lib');
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = Buffer.from(await pdf.save());
+    let checks = 0;
+    const data = await fixture(
+      t,
+      async (child) => {
+        const dir = dirname(child.spawnArgs[2]);
+        await writeFile(join(dir, 'result.mono.pdf'), bytes);
+        await writeFile(join(dir, 'layout.json'), JSON.stringify({ paragraphs: [] }));
+        child.emit('close', 0, null);
+      },
+      {
+        getState: async () => {
+          checks++;
+          if (checks > 1) throw Error('Kernel discovery must not run');
+          return { available: true, version: 'test' };
+        },
+      },
+    );
+    const first = await data.translate({ id, bytes });
+    assert.equal(first.cached, false);
+    const runner = createTranslationRunner({
+      root: data.root,
+      baseCacheDir: join(data.root, 'cache'),
+      getState: async () => {
+        throw Error('Kernel is unavailable');
+      },
+    });
+    const request = {
+      id,
+      bytes,
+      page: 1,
+      language: 'English',
+      model: 'different-model',
+      cacheOnly: true,
+    };
+    const hit = await runner.translate(request);
+    assert.equal(hit.cached, true);
+    assert.equal(hit.layoutKey, first.layoutKey);
+    assert.equal(hit.translationModel, 'test-model');
+    assert.deepEqual(Buffer.from(hit), Buffer.from(first));
+    for (const change of [
+      { language: 'Chinese' },
+      { page: 2 },
+      { glossary: [{ source: 'a', target: 'b' }] },
+      { advancedOptions: { debug: true } },
+      { forceRetranslation: true },
+      { reuseTranslations: false },
+      { cacheScope: 'a'.repeat(64) + ':new-generation' },
+    ])
+      await assert.rejects(runner.translate({ ...request, ...change }), /Kernel is unavailable/);
+    const files = await readdir(join(data.root, 'cache'));
+    const layout = files.find((name) => name.endsWith('.layout.json'));
+    await writeFile(join(data.root, 'cache', layout), '{broken');
+    await assert.rejects(runner.translate(request), /Kernel is unavailable/);
   });
 }

@@ -51,7 +51,13 @@ export function createTranslationRuntime({
     };
   }
 
-  async function providerFor(selection, kernel, sourceLanguage, language) {
+  async function providerFor(
+    selection,
+    kernel,
+    sourceLanguage,
+    language,
+    { cacheOnly = false } = {},
+  ) {
     if (!selection || selection.id === 'auto')
       return {
         ...selectTranslationProvider(''),
@@ -78,7 +84,7 @@ export function createTranslationRuntime({
       };
     }
     if (kernel !== 'pdf_inspector') {
-      if (selection.id === 'openai') {
+      if (selection.id === 'openai' && !cacheOnly) {
         const catalog = await engines.services(kernel),
           service = catalog.services.find((service) => service.id === 'openai');
         const field = service?.fields.find(

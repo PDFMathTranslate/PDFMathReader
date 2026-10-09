@@ -6,8 +6,6 @@ export function createTranslationQueue({
   preferences,
   translationState,
   activity,
-  kernel,
-  feedback,
   provider,
   view,
   actions,
@@ -43,7 +41,7 @@ export function createTranslationQueue({
       translationState.pageRunning++;
       processPage(job.p).finally(() => {
         translationState.pageRunning--;
-        if (job.token === session.epoch && kernel.engineState.value?.available) schedulePages();
+        if (job.token === session.epoch) schedulePages();
         else pumpPages();
       });
     }
@@ -51,12 +49,6 @@ export function createTranslationQueue({
 
   async function processPage(p, manual = false) {
     if (!p || p.status === 'detecting') return;
-    if (!kernel.engineState.value?.available) {
-      feedback.error.value =
-        kernel.engineState.value?.reason || t('pageStatus.checkKernelAvailability');
-      actions.kernelSettings.reportKernelFailure(feedback.error.value);
-      return;
-    }
     const token = session.epoch;
     if (preferences.engine.value !== 'pdf_inspector')
       return actions.mathTranslation.mathPage(p, token, manual);
@@ -127,7 +119,7 @@ export function createTranslationQueue({
       translationState.running++;
       translate(job).finally(() => {
         translationState.running--;
-        if (job.token === session.epoch && kernel.engineState.value?.available) schedulePages();
+        if (job.token === session.epoch) schedulePages();
         else pump();
       });
     }

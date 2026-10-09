@@ -1,6 +1,55 @@
 import express from 'express';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { paragraphs } from '../documents/layout.mjs';
+
+const LAYOUT_CACHE_SCHEMA = 1;
+const DOCUMENT_HASH_PATTERN = /^[0-9a-f]{64}$/;
+const CACHE_GENERATION_PATTERN = /^[a-z0-9-]+$/i;
+
+async function persistentLayoutPath(entry, cacheManager, documentCache, page, height) {
+  if (
+    !entry?.documentHash ||
+    typeof cacheManager?.directory !== 'string' ||
+    typeof documentCache?.scope !== 'function'
+  )
+    return null;
+  const scope = await documentCache.scope(entry.documentHash);
+  if (typeof scope !== 'string') return null;
+  const separator = scope.indexOf(':');
+  if (separator <= 0) return null;
+  const scopeHash = scope.slice(0, separator),
+    generation = scope.slice(separator + 1);
+  if (!DOCUMENT_HASH_PATTERN.test(scopeHash) || !CACHE_GENERATION_PATTERN.test(generation))
+    return null;
+  const key = createHash('sha256')
+    .update(JSON.stringify({ page, height, schema: LAYOUT_CACHE_SCHEMA }))
+    .digest('hex');
+  return join(cacheManager.directory, 'documents', scopeHash, 'layout', generation, `${key}.json`);
+}
+
+async function readPersistentLayout(path) {
+  try {
+    const value = JSON.parse(await readFile(path, 'utf8'));
+    return value && !Array.isArray(value) && Array.isArray(value.paragraphs)
+      ? value.paragraphs
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function writePersistentLayout(path, value) {
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(temporary, JSON.stringify({ paragraphs: value }));
+    await rename(temporary, path);
+  } finally {
+    await rm(temporary, { force: true }).catch(() => {});
+  }
+}
 
 export function registerDocumentRoutes(
   app,
@@ -100,8 +149,16 @@ export function registerDocumentRoutes(
             height = Number(source.height);
           if (!Number.isInteger(page) || page < 1 || !Number.isFinite(height) || height <= 0)
             return res.status(400).json({ error: 'Invalid PDF or page' });
-          const items = await layoutExtraction.extractPage(legacy ? entry.bytes : entry, page);
-          res.json({ paragraphs: paragraphs(items, height), engine: 'pdf-inspector' });
+          const cachePath = legacy
+            ? null
+            : await persistentLayoutPath(entry, cacheManager, documentCache, page, height);
+          const cached = cachePath ? await readPersistentLayout(cachePath) : undefined;
+          if (cached !== undefined)
+            return res.json({ paragraphs: cached, engine: 'pdf-inspector' });
+          const items = await layoutExtraction.extractPage(legacy ? entry.bytes : entry, page),
+            result = paragraphs(items, height);
+          if (cachePath) await writePersistentLayout(cachePath, result).catch(() => {});
+          res.json({ paragraphs: result, engine: 'pdf-inspector' });
         } catch (e) {
           res.status(422).json({ error: e.message });
         } finally {
