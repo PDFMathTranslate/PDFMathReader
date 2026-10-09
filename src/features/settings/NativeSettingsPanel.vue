@@ -12,7 +12,7 @@ import {
   AppSecureField,
 } from '../../ui/controls.mjs';
 import DocumentDefaultsSettings from './DocumentDefaultsSettings.vue';
-import FormulaOcrSettings from './FormulaOcrSettings.vue';
+import ExperimentalSettings from './ExperimentalSettings.vue';
 import PerformanceResources from '../developer/PerformanceResources.vue';
 import GlossarySettings from './GlossarySettings.vue';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
@@ -189,17 +189,6 @@ const keyEntry = defineModel('keyEntry');
                 }}</AppPopUpButtonItem>
               </AppPopUpButton>
             </div>
-            <div class="setting-row" data-setting="optimize-paragraph-gaps">
-              <span id="optimize-paragraph-gaps-label">{{
-                t('settings.optimizeParagraphGaps')
-              }}</span>
-              <AppSwitch
-                v-model="optimizeParagraphGaps"
-                aria-labelledby="optimize-paragraph-gaps-label"
-                :aria-label="t('settings.optimizeParagraphGaps')"
-              />
-            </div>
-            <p class="muted">{{ t('settings.optimizeParagraphGapsDescription') }}</p>
             <div class="setting-row" data-setting="restore-documents">
               <span id="restore-documents-label">{{ t('settings.restoreDocuments') }}</span>
               <AppSwitch v-model="restoreDocuments" aria-labelledby="restore-documents-label" />
@@ -212,7 +201,6 @@ const keyEntry = defineModel('keyEntry');
                 :aria-label="t('settings.autoHideHeader')"
               />
             </div>
-            <FormulaOcrSettings />
           </div>
         </section>
         <section class="settings-section" aria-labelledby="settings-emphasis">
@@ -267,6 +255,12 @@ const keyEntry = defineModel('keyEntry');
       <template #shortcuts>
         <ShortcutSettings v-if="settingsSection === 'shortcuts'" />
       </template>
+      <template #experimental>
+        <ExperimentalSettings
+          v-model:interface-style="interfaceStyle"
+          v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
+        />
+      </template>
       <template #performance>
         <PerformanceResources
           v-if="settingsSection === 'performance'"
@@ -285,7 +279,6 @@ const keyEntry = defineModel('keyEntry');
         <AppearanceSettings
           :show-effects="false"
           v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
-          v-model:interface-style="interfaceStyle"
           v-model:appearance="appearanceChoice"
           v-model:accent-color="accentColor"
           v-model:reduce-motion="reduceMotion"

@@ -9,6 +9,9 @@ import re
 import sys
 from time import perf_counter
 
+# Set before native imports, including multiprocessing capture workers.
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 STARTED = perf_counter()
 from pathlib import Path
 import pymupdf
@@ -364,6 +367,89 @@ def main(capture_only=False):
 
         OnnxModel.predict = formula_predict
         step("imports")
+
+        # OCR pages bypass TranslateConverter.receive_layout entirely. Reuse
+        # upstream's paragraph reconstruction and typesetting, while tagging
+        # each translated string so the reader receives the same sidecar
+        # records as native-text pages.
+        import pdf2zh.ocr as ocr_module
+
+        original_ocr_paragraphs = ocr_module.ocr_paragraphs
+        original_translate_ocr_page = ocr_module.translate_ocr_page
+
+        def capture_ocr_page(page, detection, translator, font, thread, cancellation_event=None):
+            paragraphs = original_ocr_paragraphs(page, detection)
+            if not paragraphs:
+                return original_translate_ocr_page(
+                    page, detection, translator, font, thread, cancellation_event
+                )
+
+            translations = [None] * len(paragraphs)
+
+            class TaggedText(str):
+                def __new__(cls, value, index):
+                    result = super().__new__(cls, value)
+                    result.index = index
+                    return result
+
+            tagged = [
+                (bounds, TaggedText(text, index), size, words)
+                for index, (bounds, text, size, words) in enumerate(paragraphs)
+            ]
+
+            class CapturingTranslator:
+                def __init__(self, delegate):
+                    self.delegate = delegate
+
+                def translate(self, text, *args, **kwargs):
+                    output = self.delegate.translate(str(text), *args, **kwargs)
+                    translations[text.index] = output
+                    return output
+
+            # translate_ocr_page resolves ocr_paragraphs from its module
+            # globals. Return the captured list so OCR is reconstructed once.
+            ocr_module.ocr_paragraphs = lambda *_args, **_kwargs: tagged
+            try:
+                result = original_translate_ocr_page(
+                    page,
+                    detection,
+                    CapturingTranslator(translator),
+                    font,
+                    thread,
+                    cancellation_event,
+                )
+            finally:
+                ocr_module.ocr_paragraphs = original_ocr_paragraphs
+
+            for index, (bounds, text, size, _words) in enumerate(paragraphs):
+                text = str(text)
+                if not text.strip():
+                    continue
+                region = {
+                    "x": float(bounds.x0),
+                    "y": float(bounds.y0),
+                    "width": max(1, float(bounds.width)),
+                    "height": max(1, float(bounds.height)),
+                }
+                translation = str(translations[index] or "")
+                records.append(
+                    {
+                        "id": f"fast-ocr-{selected}-{len(records)}",
+                        "page": selected,
+                        "text": text,
+                        "translation": translation,
+                        "sourceBox": region,
+                        "translatedBox": dict(region),
+                        "fontSize": float(size or 12),
+                        "sourceInput": text,
+                        "translationOutput": translation,
+                        "layoutSource": "pdf2zh.ocr",
+                        "translatedWidth": "source-paragraph-width",
+                    }
+                )
+            return result
+
+        ocr_module.translate_ocr_page = capture_ocr_page
         original = TranslateConverter.receive_layout
 
         def capture(v):

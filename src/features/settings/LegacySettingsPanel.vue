@@ -11,7 +11,7 @@ import {
   AppSecureField,
 } from '../../ui/controls.mjs';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
-import FormulaOcrSettings from './FormulaOcrSettings.vue';
+import ExperimentalSettings from './ExperimentalSettings.vue';
 import AboutAcknowledgements from './AboutAcknowledgements.vue';
 import { defineAsyncComponent } from 'vue';
 const AdvancedSettings = defineAsyncComponent(() => import('./AdvancedSettings.vue'));
@@ -72,6 +72,8 @@ const automatic = defineModel('automatic');
 const layoutVisible = defineModel('layoutVisible');
 const documentOpenMode = defineModel('documentOpenMode');
 const interactionMode = defineModel('interactionMode');
+const interfaceStyle = defineModel('interfaceStyle');
+const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
 const restoreDocuments = defineModel('restoreDocuments');
@@ -397,7 +399,6 @@ const reducePadding = defineModel('reducePadding');
             :aria-label="t('settings.autoHideHeader')"
           />
         </div>
-        <FormulaOcrSettings />
       </section>
       <section class="settings-section">
         <div class="setting-row" data-setting="reduce-resource-usage">
@@ -418,6 +419,10 @@ const reducePadding = defineModel('reducePadding');
         v-model:reduce-transparency="reduceTransparency"
         v-model:reduce-padding="reducePadding"
         v-model:ui-language="uiLanguageChoice"
+      />
+      <ExperimentalSettings
+        v-model:interface-style="interfaceStyle"
+        v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
       />
       <section class="settings-section" aria-labelledby="settings-about">
         <h3 id="settings-about">{{ t('settings.about') }}</h3>

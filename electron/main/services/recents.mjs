@@ -1,6 +1,16 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname, basename } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+const contentHashPattern = /^[a-f0-9]{64}$/;
+async function fileHash(path) {
+  try {
+    return createHash('sha256')
+      .update(await readFile(path))
+      .digest('hex');
+  } catch {
+    return undefined;
+  }
+}
 const maxThumbnailLength = 200000;
 const maxUnpinnedRecents = 10;
 const pngDataURL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -191,6 +201,7 @@ export async function createRecents(path) {
             thumbnail = storedThumbnail(e.thumbnail),
             view = storedReadingView(e.view),
             translationStatus = storedTranslationStatus(e.translationStatus);
+          if (contentHashPattern.test(e.contentHash)) entry.contentHash = e.contentHash;
           if (thumbnail !== undefined) entry.thumbnail = thumbnail;
           if (view !== undefined) entry.view = view;
           if (translationStatus !== undefined) entry.translationStatus = translationStatus;
@@ -214,15 +225,33 @@ export async function createRecents(path) {
     list: () => entries.map(listedEntry),
     path: (id) => entries.find((e) => e.id === id)?.path,
     async remember(file, thumbnail) {
-      const current = entries.find((e) => e.path === file),
-        entry = { id: current?.id || randomUUID(), path: file, pinned: current?.pinned === true };
+      const contentHash = await fileHash(file);
+      // Backfill old path-only history while the original file is accessible.
+      if (contentHash)
+        for (const item of entries)
+          if (!item.contentHash) item.contentHash = await fileHash(item.path);
+      const samePath = entries.find((e) => e.path === file);
+      const sameContent = contentHash && entries.find((e) => e.contentHash === contentHash);
+      const current = sameContent || samePath;
+      const unchanged =
+        !samePath?.contentHash || !contentHash || samePath.contentHash === contentHash;
+      const cached = sameContent || (unchanged ? samePath : undefined);
+      const entry = {
+        id: current?.id || randomUUID(),
+        path: file,
+        pinned: current?.pinned === true,
+        ...(contentHash ? { contentHash } : {}),
+      };
       if (thumbnail === undefined) {
-        if (current?.thumbnail !== undefined) entry.thumbnail = current.thumbnail;
+        if (cached?.thumbnail !== undefined) entry.thumbnail = cached.thumbnail;
       } else entry.thumbnail = validateThumbnail(thumbnail);
-      if (current?.view !== undefined) entry.view = cloneReadingView(current.view);
-      if (current?.translationStatus !== undefined)
-        entry.translationStatus = cloneTranslationStatus(current.translationStatus);
-      entries = normalizeEntries([entry, ...entries.filter((e) => e.path !== file)]);
+      if (cached?.view !== undefined) entry.view = cloneReadingView(cached.view);
+      if (cached?.translationStatus !== undefined)
+        entry.translationStatus = cloneTranslationStatus(cached.translationStatus);
+      entries = normalizeEntries([
+        entry,
+        ...entries.filter((e) => e.path !== file && e.id !== entry.id),
+      ]);
       await persist();
       return this.list();
     },

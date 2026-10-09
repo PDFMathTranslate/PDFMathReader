@@ -39,6 +39,44 @@ export async function verifySettingsWorkspace(window) {
       `(()=>{const input=document.querySelector('.settings-workspace input[type="search"]');input.value=${JSON.stringify(text)};input.dispatchEvent(new Event('input',{bubbles:true}));})()`,
     );
   };
+  assert.equal(
+    await evaluate(
+      `document.querySelector('[data-settings-category="kernel"]').nextElementSibling.dataset.settingsCategory`,
+    ),
+    'experimental',
+  );
+  await category('experimental');
+  for (const selector of [
+    '[data-setting="interface-style"]',
+    '[data-setting="formula-ocr"]',
+    '[data-setting="optimize-paragraph-gaps"]',
+  ])
+    assert.equal(await visible(selector), true);
+  await evaluate(
+    `document.querySelector('[aria-labelledby="optimize-paragraph-gaps-label"]').click()`,
+  );
+  await wait(`(async()=> (await window.previewPreferences.load()).optimizeParagraphGaps===true)()`);
+  await category('general');
+  assert.equal(await visible('[data-setting="formula-ocr"]'), false);
+  assert.equal(await visible('[data-setting="optimize-paragraph-gaps"]'), false);
+  await category('appearance');
+  assert.equal(await visible('[data-setting="interface-style"]'), false);
+  await searchSettings('Liquid Glass');
+  await wait(`!!document.querySelector('[data-settings-result="experimental"]')`);
+  await evaluate(`document.querySelector('[data-settings-result="experimental"]').click()`);
+  await wait(`document.querySelector('.settings-workspace').dataset.section==='experimental'`);
+  await searchSettings('');
+  if (process.argv.includes('--experimental-settings-only')) {
+    await writeFile(
+      '/tmp/pdfmathreader-settings-experimental.png',
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    console.log(
+      'Experimental settings passed: menu order, control placement, persisted preference, search navigation.',
+    );
+    app.quit();
+    return;
+  }
   await searchSettings('Reduce motion');
   await wait(`!!document.querySelector('[data-settings-result="performance"]')`);
   await evaluate(`document.querySelector('[data-settings-result="performance"]').click()`);

@@ -64,10 +64,10 @@ async function harness(directory, extractPage) {
   };
 }
 
-async function upload(origin) {
+async function upload(origin, name = 'fixture.pdf') {
   const response = await fetch(origin + '/api/documents', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/pdf', 'X-Document-Name': 'fixture.pdf' },
+    headers: { 'Content-Type': 'application/pdf', 'X-Document-Name': encodeURIComponent(name) },
     body: PDF,
   });
   assert.equal(response.status, 201);
@@ -127,7 +127,7 @@ test('persists inspector layout and serves a reopened cache hit without extracti
     throw Error('layout extractor must not run for a persistent cache hit');
   });
   try {
-    const id = await upload(reopened.origin);
+    const id = await upload(reopened.origin, '/another/folder/renamed.pdf');
     const response = await layout(reopened.origin, id);
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).paragraphs, stored.paragraphs);

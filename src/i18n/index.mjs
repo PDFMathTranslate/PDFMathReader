@@ -1723,3 +1723,15 @@ for (const [locale, labels] of Object.entries(informationCategoryLabels))
     'emphasizeLogicalConnectives',
   ].entries())
     messages[locale].settings[key] = labels[index];
+
+const experimentalCategoryLabels = {
+  en: 'Experimental Features',
+  'zh-CN': '实验性功能',
+  'zh-TW': '實驗性功能',
+  ja: '実験的な機能',
+  ko: '실험적 기능',
+  fr: 'Fonctionnalités expérimentales',
+  es: 'Funciones experimentales',
+};
+for (const [locale, label] of Object.entries(experimentalCategoryLabels))
+  messages[locale].settings.experimentalCategory = label;

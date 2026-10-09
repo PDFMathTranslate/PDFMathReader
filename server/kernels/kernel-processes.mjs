@@ -290,6 +290,9 @@ export function createKernelProcesses({
       ensureOpen();
       const child = spawn(file, args, {
         ...options,
+        // Disable ORT telemetry before Python imports native libraries. Its
+        // upload thread can outlive the log manager during worker shutdown.
+        env: { ...(options.env || process.env), ORT_DISABLE_TELEMETRY: '1' },
         windowsHide: true,
         detached: process.platform !== 'win32',
       });
@@ -300,6 +303,9 @@ export function createKernelProcesses({
       ensureOpen();
       const task = execImpl(file, args, {
         ...options,
+        // Disable ORT telemetry before Python imports native libraries. Its
+        // upload thread can outlive the log manager during worker shutdown.
+        env: { ...(options.env || process.env), ORT_DISABLE_TELEMETRY: '1' },
         windowsHide: true,
         detached: process.platform !== 'win32',
       });

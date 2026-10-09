@@ -50,3 +50,38 @@ test('closing kernels terminates the worker and its descendants, and prevents ne
     await processes.close();
   }
 });
+
+test('parallel workers and metadata probes disable native telemetry before imports', async () => {
+  const processes = createKernelProcesses();
+  try {
+    const output = await Promise.all(
+      Array.from({ length: 6 }, async (_, index) => {
+        const child = processes.spawn(
+          process.execPath,
+          ['-e', 'console.log(process.env.ORT_DISABLE_TELEMETRY+":"+process.env.DOCUMENT_TEST_ID)'],
+          {
+            env: { ...process.env, ORT_DISABLE_TELEMETRY: '0', DOCUMENT_TEST_ID: String(index) },
+            stdio: ['ignore', 'pipe', 'pipe'],
+          },
+        );
+        let stdout = '';
+        child.stdout.on('data', (chunk) => (stdout += chunk));
+        const [code] = await once(child, 'close');
+        assert.equal(code, 0);
+        return stdout.trim();
+      }),
+    );
+    assert.deepEqual(
+      output,
+      Array.from({ length: 6 }, (_, index) => `1:${index}`),
+    );
+    const { stdout } = await processes.exec(
+      process.execPath,
+      ['-e', 'console.log(process.env.ORT_DISABLE_TELEMETRY)'],
+      { env: { ...process.env, ORT_DISABLE_TELEMETRY: '0' } },
+    );
+    assert.equal(stdout.trim(), '1');
+  } finally {
+    await processes.close();
+  }
+});

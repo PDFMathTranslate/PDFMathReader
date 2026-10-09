@@ -7,6 +7,11 @@ import json
 import sys
 
 
+# Standalone metadata probes also import the native layout dependencies.
+import os
+
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 SAFE_OPTIONS = {
     "pdf_math_fast": {
         "debug",

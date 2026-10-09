@@ -25,9 +25,10 @@ export const definitions = {
   pdf_math_fast: {
     label: 'PDF Math · Fast',
     package: 'pdf2zh',
-    spec: 'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@a799fc0ba3b863982f116e3a47a8534f1f5dc475',
-    updateSpec: 'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git',
-    gitSpec: 'pdf2zh @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@main',
+    ocrDependencies: ['pooch>=1.8,<2'],
+    spec: 'pdf2zh[ocr] @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@a799fc0ba3b863982f116e3a47a8534f1f5dc475',
+    updateSpec: 'pdf2zh[ocr] @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git',
+    gitSpec: 'pdf2zh[ocr] @ git+https://github.com/PDFMathTranslate/PDFMathTranslate.git@main',
   },
   pdf_math_precise: {
     label: 'PDF Math · Precise',
@@ -157,6 +158,16 @@ export async function prepareKernelAssets(
       process.platform === 'win32' ? 'junction' : 'dir',
     );
   }
+  // OCR language models must survive the isolated per-page job HOME.
+  const tessdata = join(assetHome, '.cache', 'pdf2zh', 'tessdata');
+  const destination = join(home, '.cache', 'pdf2zh');
+  await mkdir(tessdata, { recursive: true });
+  await mkdir(destination, { recursive: true });
+  await symlink(
+    resolve(tessdata),
+    join(destination, 'tessdata'),
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
 }
 
 export function kernelPythonPath(environment, platform = process.platform) {
@@ -263,14 +274,21 @@ export function createEngineRuntime({
         python(id),
         [
           '-c',
-          `import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id === 'pdf_math_fast' ? 'pdf2zh' : 'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}'))`,
+          `import importlib.metadata, importlib.util; assert importlib.util.find_spec('${id === 'pdf_math_fast' ? 'pdf2zh' : 'pdf2zh_next'}'); print(importlib.metadata.version('${definitions[id].package}')); ${id === 'pdf_math_fast' ? "print('ocr:yes' if importlib.util.find_spec('pooch') else 'ocr:no')" : ''}`,
         ],
         { timeout: 15000 },
         { kernel: id, name: 'python' },
       );
-      const version = stdout.trim();
+      const version = stdout.trim().split(/\r?\n/)[0];
       if (!/^\d+\.\d+/.test(version)) throw Error();
-      const state = { id, label: definitions[id].label, installed: true, available: true, version };
+      const state = {
+        id,
+        label: definitions[id].label,
+        installed: true,
+        available: true,
+        version,
+        ...(id === 'pdf_math_fast' ? { ocrAvailable: stdout.includes('ocr:yes') } : {}),
+      };
       knownStates.set(id, { state, at: performance.now() });
       return state;
     } catch {
@@ -293,7 +311,7 @@ export function createEngineRuntime({
     const task = (async () => {
       knownStates.delete(id);
       const state = await check(id);
-      if (state.available && reinstall !== true) {
+      if (state.available && reinstall !== true && state.ocrAvailable !== false) {
         await advanced(id, state);
         return state;
       }
@@ -318,11 +336,15 @@ export function createEngineRuntime({
             : []),
           '--python',
           python(id),
-          reinstall === true
-            ? source === 'git'
-              ? definitions[id].gitSpec
-              : definitions[id].updateSpec
-            : definitions[id].spec,
+          ...(state.available && state.ocrAvailable === false && reinstall !== true
+            ? definitions[id].ocrDependencies
+            : [
+                reinstall === true
+                  ? source === 'git'
+                    ? definitions[id].gitSpec
+                    : definitions[id].updateSpec
+                  : definitions[id].spec,
+              ]),
         ];
         await runExec(
           uv.path,

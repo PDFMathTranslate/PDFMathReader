@@ -36,6 +36,7 @@ const sections = computed(() => [
   { id: 'providers', label: labels.value[1], symbol: 'network' },
   { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'gearshape.fill' },
   { id: 'kernel', label: t('settings.advancedCategory'), symbol: 'cpu.fill' },
+  { id: 'experimental', label: t('settings.experimentalCategory'), symbol: 'gearshape.fill' },
   {
     id: 'performance',
     label:
@@ -75,7 +76,7 @@ function indexSubmenus() {
       const caption = target.matches('.provider-list-item')
         ? target.querySelector('.provider-list-name')
         : target.matches('.setting-row,.appearance-row')
-          ? target.querySelector(':scope > span,:scope > label')
+          ? target.querySelector(':scope > span,:scope > label,:scope > div > span')
           : target;
       const label = caption?.textContent?.replace(/\s+/g, ' ').trim();
       if (!label || seen.has(label)) continue;

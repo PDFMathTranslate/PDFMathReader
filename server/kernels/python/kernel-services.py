@@ -24,6 +24,11 @@ from collections.abc import Iterable
 from typing import Any, get_args, get_origin
 
 
+# Standalone metadata probes also import the native layout dependencies.
+import os
+
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 # These selections are owned by the Electron proxy rather than by either
 # upstream kernel.  SiliconFlowFree is the precise kernel's default service;
 # the proxy's automatic service covers that path as well.

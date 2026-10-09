@@ -613,6 +613,7 @@ const copyToastDetail = computed(() =>
       v-model:layout-visible="layoutVisible"
       v-model:document-open-mode="documentOpenMode"
       v-model:interaction-mode="interactionMode"
+      v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
       v-model:emphasize-topic-sentences="emphasizeTopicSentences"
       v-model:emphasize-information="emphasizeInformation"
       v-model:restore-documents="restoreDocuments"
