@@ -179,6 +179,9 @@ export function createTranslationRunner({
         return result;
       } catch {}
     }
+    // A cache miss is not kernel work. The actual translation request can still
+    // migrate legacy artifacts below, but this fast lookup must never probe Python.
+    if (cacheOnly) return null;
     const state = await getState(id);
     if (!state.available) throw Error(state.reason);
     const { overrides, args: advancedArgs } = await translationAdvancedArgs(
@@ -250,7 +253,6 @@ export function createTranslationRunner({
       return result;
     }
     step('cacheLookup');
-    if (cacheOnly) return null;
     return runWorker(async () => {
       if (signal?.aborted) throw Error('Cancelled');
       // Exclude scheduling delay from input preparation; the API reports queueMs.

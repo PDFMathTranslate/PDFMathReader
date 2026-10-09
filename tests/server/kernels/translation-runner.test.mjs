@@ -224,11 +224,41 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
       { forceRetranslation: true },
       { reuseTranslations: false },
       { cacheScope: 'a'.repeat(64) + ':new-generation' },
-    ])
-      await assert.rejects(runner.translate({ ...request, ...change }), /Kernel is unavailable/);
+    ]) {
+      assert.equal(await runner.translate({ ...request, ...change }), null);
+      await assert.rejects(
+        runner.translate({ ...request, ...change, cacheOnly: false }),
+        /Kernel is unavailable/,
+      );
+    }
     const files = await readdir(join(data.root, 'cache'));
     const layout = files.find((name) => name.endsWith('.layout.json'));
     await writeFile(join(data.root, 'cache', layout), '{broken');
-    await assert.rejects(runner.translate(request), /Kernel is unavailable/);
+    assert.equal(await runner.translate(request), null);
+    await assert.rejects(
+      runner.translate({ ...request, cacheOnly: false }),
+      /Kernel is unavailable/,
+    );
+  });
+}
+
+for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
+  test(`${id} cache-only miss never probes Python, services, options or workers`, async (t) => {
+    const unexpected = async () => {
+      throw Error('Unexpected kernel work during cache lookup');
+    };
+    const data = await fixture(t, () => assert.fail('Worker must not start'), {
+      getState: unexpected,
+      advanced: unexpected,
+      serviceCatalog: { get: unexpected },
+    });
+    const result = await data.translate({
+      id,
+      cacheOnly: true,
+      translationService: { id: 'openai', values: { model: 'test' } },
+      runWorker: unexpected,
+    });
+    assert.equal(result, null);
+    assert.deepEqual(await readdir(data.root), []);
   });
 }

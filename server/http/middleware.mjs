@@ -6,6 +6,7 @@ export function registerDiagnosticMiddleware(
     if (
       !developerDiagnostics.isEnabled() ||
       req.path.startsWith('/api/developer/') ||
+      req.path === '/api/cache/activity' ||
       !['/api/', '/kernel-proxy/'].some((prefix) => req.path.startsWith(prefix))
     )
       return next();

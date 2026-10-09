@@ -1,6 +1,10 @@
 import express from 'express';
 
 export function registerCacheRoutes(app, { cacheManager }) {
+  app.post('/api/cache/activity', (_req, res) => {
+    cacheManager.noteActivity();
+    res.sendStatus(204);
+  });
   app.get('/api/cache', async (_req, res) => {
     try {
       res.json(await cacheManager.stats());

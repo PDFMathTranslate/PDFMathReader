@@ -18,8 +18,36 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     stopAppearance,
     stopDocuments;
   let disposed = false;
+  let lastCacheActivity = -Infinity,
+    cacheActivityTimer;
+  const reportCacheActivity = () => {
+    if (disposed) return;
+    const elapsed = performance.now() - lastCacheActivity;
+    if (elapsed < 1000) {
+      cacheActivityTimer ??= setTimeout(() => {
+        cacheActivityTimer = null;
+        reportCacheActivity();
+      }, 1000 - elapsed);
+      return;
+    }
+    clearTimeout(cacheActivityTimer);
+    cacheActivityTimer = null;
+    lastCacheActivity = performance.now();
+    void bindings.api('/api/cache/activity', { method: 'POST' }).catch(() => {
+      if (disposed) return;
+      cacheActivityTimer ??= setTimeout(() => {
+        cacheActivityTimer = null;
+        reportCacheActivity();
+      }, 1000);
+    });
+  };
+  const activityEvents = ['wheel', 'scroll', 'pointerdown', 'pointermove', 'keydown', 'touchmove'];
   onMounted(async () => {
     stopRendererFrameMetrics = startRendererFrameMetrics();
+    for (const event of activityEvents)
+      document.addEventListener(event, reportCacheActivity, { capture: true, passive: true });
+    window.addEventListener('focus', reportCacheActivity);
+    reportCacheActivity();
     document.addEventListener('visibilitychange', bindings.visibility);
     // Issue independent IPC/config reads together. Apply preferences before
     // receiving documents so restored views and translation defaults stay valid.
@@ -166,6 +194,10 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
   });
   onBeforeUnmount(() => {
     disposed = true;
+    clearTimeout(cacheActivityTimer);
+    for (const event of activityEvents)
+      document.removeEventListener(event, reportCacheActivity, true);
+    window.removeEventListener('focus', reportCacheActivity);
     stopRendererFrameMetrics?.();
     clearTimeout(lifecycle.kernelIgnoreTimer);
     stopSettingsSection?.();

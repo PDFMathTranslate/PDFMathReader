@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 export const CACHE_LIMITS_MB = Object.freeze([512, 1024, 2048, 5120, 10240]);
 export const CACHE_BYTES_PER_MB = 1024 * 1024;
 const DEFAULT_SWEEP_INTERVAL_MS = 60_000;
+const DEFAULT_IDLE_DELAY_MS = 30_000;
 const DEFAULT_RECENT_WRITE_MS = 30_000;
 const LOCK_STALE_MS = 5 * 60_000;
 const LEASE_STALE_MS = 10 * 60_000;
@@ -66,12 +67,51 @@ function groupKey(file) {
   return `${dirname(file.path)}\0${artifactStem(basename(file.path))}`;
 }
 
+// Index pending atomic writes once; scanning all files for every artifact turns
+// startup maintenance into quadratic work when a large cache exceeds its limit.
+export function cacheEvictionCandidates(
+  files,
+  { now = Date.now(), recentWriteMs = DEFAULT_RECENT_WRITE_MS } = {},
+) {
+  const groups = new Map(),
+    temporaryGroups = new Set(),
+    temporaryTargets = new Set();
+  for (const file of files) {
+    const key = groupKey(file),
+      group = groups.get(key) || { files: [], bytes: 0, mtimeMs: file.mtimeMs };
+    group.files.push(file);
+    group.bytes += file.size;
+    group.mtimeMs = Math.min(group.mtimeMs, file.mtimeMs);
+    groups.set(key, group);
+    if (file.path.endsWith(TEMP_SUFFIX)) {
+      temporaryGroups.add(key);
+      const directory = dirname(file.path),
+        name = basename(file.path);
+      for (let index = name.indexOf('.'); index >= 0; index = name.indexOf('.', index + 1)) {
+        temporaryTargets.add(join(directory, name.slice(0, index)));
+      }
+    }
+  }
+  return [...groups.entries()]
+    .filter(
+      ([key, group]) =>
+        !temporaryGroups.has(key) &&
+        group.files.every(
+          (file) => now - file.mtimeMs >= recentWriteMs && !temporaryTargets.has(file.path),
+        ),
+    )
+    .map(([, group]) => group)
+    .sort((left, right) => left.mtimeMs - right.mtimeMs);
+}
+
 export function createCacheManager({
   directory,
   limitMB = null,
   isBusy = () => false,
   sweepIntervalMs = DEFAULT_SWEEP_INTERVAL_MS,
   recentWriteMs = DEFAULT_RECENT_WRITE_MS,
+  idleDelayMs = DEFAULT_IDLE_DELAY_MS,
+  now = () => Date.now(),
   documentCache = null,
   documentNames,
 } = {}) {
@@ -81,14 +121,20 @@ export function createCacheManager({
     throw Error('Invalid cache sweep interval.');
   if (!Number.isFinite(recentWriteMs) || recentWriteMs < 0)
     throw Error('Invalid recent cache write window.');
+  if (!Number.isFinite(idleDelayMs) || idleDelayMs < 0) throw Error('Invalid idle delay.');
   const root = resolve(directory),
     internal = join(root, INTERNAL_DIRECTORY),
-    lock = join(internal, LOCK_DIRECTORY);
+    lock = join(internal, LOCK_DIRECTORY),
+    activityPath = join(internal, '.activity');
   let currentLimitMB = validateCacheLimitMB(limitMB),
     started = false,
     closed = false,
     interval = null,
-    localActive = 0;
+    localActive = 0,
+    idleTimer = null,
+    lastActivityAt = now(),
+    maintenance = null,
+    cachedStats = { bytes: 0, documents: [] };
   const leases = new Map();
 
   async function ensureDirectories() {
@@ -98,7 +144,35 @@ export function createCacheManager({
       throw Error('Cache maintenance directory is not a safe directory.');
   }
 
-  async function collectFiles(directoryPath, files = []) {
+  function noteActivity() {
+    lastActivityAt = now();
+    // Reader windows have separate backends but share a cache. Broadcast their
+    // activity through one small marker so another backend cannot sweep it.
+    try {
+      mkdirSync(internal, { recursive: true });
+      writeFileSync(activityPath, '');
+    } catch {}
+    if (!started || closed || sweepIntervalMs === 0) return;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      idleTimer = null;
+      void sweep().catch(() => {});
+    }, idleDelayMs);
+    idleTimer.unref?.();
+  }
+
+  async function idle() {
+    if (now() - lastActivityAt < idleDelayMs || (await busy())) return false;
+    try {
+      const info = await lstat(activityPath);
+      if (Date.now() - info.mtimeMs < idleDelayMs) return false;
+    } catch (error) {
+      if (!isMissing(error)) return false;
+    }
+    return true;
+  }
+
+  async function collectFiles(directoryPath, files = [], shouldContinue) {
     let entries;
     try {
       entries = await readdir(directoryPath, { withFileTypes: true });
@@ -107,13 +181,14 @@ export function createCacheManager({
       throw error;
     }
     for (const entry of entries) {
+      if (shouldContinue && !shouldContinue()) return null;
       const path = join(directoryPath, entry.name);
       if (path === internal || inside(internal, path)) continue;
       // Never follow links from the cache tree. A link can point to engines,
       // runtime homes, preferences, or a source document outside cacheDir.
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
-        await collectFiles(path, files);
+        if ((await collectFiles(path, files, shouldContinue)) === null) return null;
         continue;
       }
       if (!entry.isFile()) continue;
@@ -130,9 +205,10 @@ export function createCacheManager({
     return files;
   }
 
-  async function snapshot() {
-    const files = await collectFiles(root),
-      bytes = files.reduce((total, file) => total + file.size, 0);
+  async function snapshot(shouldContinue) {
+    const files = await collectFiles(root, [], shouldContinue);
+    if (files === null) return null;
+    const bytes = files.reduce((total, file) => total + file.size, 0);
     return { files, bytes };
   }
 
@@ -213,6 +289,8 @@ export function createCacheManager({
   }
 
   function beginTask(label = 'cache-task') {
+    if (closed) throw Error('Cache manager is closed.');
+    noteActivity();
     localActive++;
     const lease = join(
       internal,
@@ -244,10 +322,7 @@ export function createCacheManager({
       try {
         unlinkSync(lease);
       } catch {}
-      if (localActive === 0 && !closed)
-        queueMicrotask(() => {
-          void sweep().catch(() => {});
-        });
+      if (localActive === 0 && !closed) noteActivity();
     };
   }
 
@@ -261,25 +336,7 @@ export function createCacheManager({
     }
   }
 
-  function tempProtected(group, allFiles) {
-    const key = groupKey(group.files[0]);
-    return (
-      allFiles.some((file) => file.path.endsWith(TEMP_SUFFIX) && groupKey(file) === key) ||
-      group.files.some((file) => {
-        const directoryPath = dirname(file.path),
-          prefix = basename(file.path) + '.';
-        return allFiles.some(
-          (candidate) =>
-            candidate.path !== file.path &&
-            dirname(candidate.path) === directoryPath &&
-            candidate.path.endsWith(TEMP_SUFFIX) &&
-            basename(candidate.path).startsWith(prefix),
-        );
-      })
-    );
-  }
-
-  async function removeGroup(group) {
+  async function removeGroup(group, canRemove = async () => true) {
     // Recheck every member before unlinking. Atomic writers may have replaced a
     // PDF or its layout metadata after the sweep snapshot was taken.
     for (const file of group.files) {
@@ -293,6 +350,7 @@ export function createCacheManager({
     }
     let removed = 0;
     for (const file of group.files) {
+      if (!(await canRemove())) break;
       try {
         await unlink(file.path);
         removed += file.size;
@@ -303,43 +361,53 @@ export function createCacheManager({
     return removed;
   }
 
-  async function sweep() {
-    if (closed) return { bytes: 0, limitMB: currentLimitMB, busy: false };
-    if (currentLimitMB === null || (await busy())) return stats();
-    const locked = await acquireLock();
-    if (!locked) return stats();
-    try {
-      if (await busy()) return stats();
-      const { files, bytes } = await snapshot(),
-        limitBytes = currentLimitMB * CACHE_BYTES_PER_MB;
-      if (bytes <= limitBytes) return stats();
-      const now = Date.now(),
-        groups = new Map();
-      for (const file of files) {
-        const key = groupKey(file),
-          group = groups.get(key) || { files: [], bytes: 0, mtimeMs: file.mtimeMs };
-        group.files.push(file);
-        group.bytes += file.size;
-        group.mtimeMs = Math.min(group.mtimeMs, file.mtimeMs);
-        groups.set(key, group);
+  function deferredStats() {
+    return { ...cachedStats, limitMB: currentLimitMB, busy: localActive > 0, deferred: true };
+  }
+
+  async function sweepIdle() {
+    if (closed || currentLimitMB === null || !(await idle())) return deferredStats();
+    const activityAt = lastActivityAt;
+    const uninterrupted = () => !closed && localActive === 0 && lastActivityAt === activityAt;
+    // Automatic maintenance is idle-only. Cancel read-only inventory at the next
+    // file when browsing resumes; never gate a foreground task on this traversal.
+    const inventory = await snapshot(uninterrupted);
+    if (!inventory || !(await idle())) return deferredStats();
+    const { files, bytes } = inventory;
+    const limitBytes = currentLimitMB === null ? Infinity : currentLimitMB * CACHE_BYTES_PER_MB;
+    let remaining = bytes;
+    const removedPaths = new Set();
+    if (bytes > limitBytes) {
+      const candidates = cacheEvictionCandidates(files, { recentWriteMs });
+      const locked = await acquireLock();
+      if (locked) {
+        try {
+          for (const group of candidates) {
+            if (remaining <= limitBytes || !uninterrupted() || !(await idle())) break;
+            const removed = await removeGroup(group, async () => uninterrupted() && (await idle()));
+            remaining -= removed;
+            if (removed === group.bytes)
+              for (const file of group.files) removedPaths.add(file.path);
+          }
+        } finally {
+          await releaseLock();
+        }
       }
-      const candidates = [...groups.values()]
-        .filter(
-          (group) =>
-            group.files.every((file) => now - file.mtimeMs >= recentWriteMs) &&
-            !tempProtected(group, files),
-        )
-        .sort((left, right) => left.mtimeMs - right.mtimeMs);
-      let remaining = bytes;
-      for (const group of candidates) {
-        if (remaining <= limitBytes) break;
-        if (await busy()) break;
-        remaining -= await removeGroup(group);
-      }
-      return stats();
-    } finally {
-      await releaseLock();
     }
+    // No second full traversal just to report a background cleanup result.
+    cachedStats = {
+      bytes: remaining,
+      documents: await documentStats(files.filter((file) => !removedPaths.has(file.path))),
+    };
+    return { ...cachedStats, limitMB: currentLimitMB, busy: await busy() };
+  }
+
+  function sweep() {
+    if (maintenance) return maintenance;
+    maintenance = sweepIdle().finally(() => {
+      maintenance = null;
+    });
+    return maintenance;
   }
 
   async function documentStats(files) {
@@ -363,11 +431,14 @@ export function createCacheManager({
 
   async function stats() {
     const snapshotResult = await snapshot();
-    return {
+    cachedStats = {
       bytes: snapshotResult.bytes,
+      documents: await documentStats(snapshotResult.files),
+    };
+    return {
+      ...cachedStats,
       limitMB: currentLimitMB,
       busy: await busy(),
-      documents: await documentStats(snapshotResult.files),
     };
   }
 
@@ -476,6 +547,7 @@ export function createCacheManager({
     if (started) return deferSweep ? undefined : stats();
     await ensureDirectories();
     started = true;
+    noteActivity();
     if (sweepIntervalMs > 0) {
       interval = setInterval(() => {
         void sweep().catch(() => {});
@@ -491,15 +563,12 @@ export function createCacheManager({
     if (closed) return;
     closed = true;
     if (interval) clearInterval(interval);
+    clearTimeout(idleTimer);
+    idleTimer = null;
     interval = null;
-    for (const [lease, { heartbeat }] of leases) {
-      clearInterval(heartbeat);
-      try {
-        unlinkSync(lease);
-      } catch {}
-    }
-    leases.clear();
-    localActive = 0;
+    // Active callbacks own their leases until release(), even during shutdown.
+    // Another reader backend must not evict their artifacts while they unwind.
+    await maintenance?.catch(() => {});
   }
 
   return {
@@ -513,6 +582,7 @@ export function createCacheManager({
     clearDocument,
     withMaintenance,
     beginTask,
+    noteActivity,
     runTask,
     get limitMB() {
       return currentLimitMB;

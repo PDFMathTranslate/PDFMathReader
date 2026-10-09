@@ -40,6 +40,22 @@ import { createLazyPort, createWritablePort } from './reader-ports.mjs';
 export function useReaderWindow() {
   const session = createDocumentSessionState();
   const { pages, title, loading, documentOpening, documentClosing, restoringView } = session;
+  window.previewTranslatedFilePages = async () => {
+    const epoch = session.epoch;
+    const documents = pages.value.map((page) => page.mathDocument);
+    if (!documents.length || documents.some((document) => !document)) return null;
+    const bytes = await Promise.all(
+      documents.map(async (document) => Array.from(await document.getData())),
+    );
+    return epoch === session.epoch ? bytes : null;
+  };
+  watch(
+    () => pages.value.length > 0 && pages.value.every((page) => !!page.mathDocument),
+    (ready) => {
+      void window.previewActions?.translatedFileReady?.(ready);
+    },
+    { immediate: true },
+  );
   const renderState = createRenderState();
   const {
     renderWindow,
