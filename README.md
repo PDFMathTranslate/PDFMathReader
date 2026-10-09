@@ -27,13 +27,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date       | Feature                                                                                                                                                 | Contributor                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-09 | [add Finder and AirDrop file actions on macOS](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073)       | [@reycn](https://github.com/reycn) |
 | 2026-10-09 | [add experimental Jev document language check](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031)       | [@reycn](https://github.com/reycn) |
 | 2026-10-09 | [restore translated pages before kernel startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)     | [@reycn](https://github.com/reycn) |
 | 2026-10-09 | [improve reading layout and translation behavior](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe)    | [@reycn](https://github.com/reycn) |
 | 2026-10-08 | [add liquid glass and translation refocus](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)           | [@reycn](https://github.com/reycn) |
 | 2026-10-08 | [customize shortcuts and refine reader interactions](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1) | [@reycn](https://github.com/reycn) |
 | 2026-10-08 | [add local formula OCR and copy in reading mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/2896ebf2fc75aaad25e3fec39709df3d0c5b54e4)     | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [discuss PDF selections with local AI apps](https://github.com/PDFMathTranslate/PDFMathReader/commit/ce47d2d1dd998892b784b235390cfc3316c6d30a)          | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
