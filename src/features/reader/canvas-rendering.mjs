@@ -330,7 +330,7 @@ export function createCanvasRendering({
         : session.pdf.getPage(p.number));
       if (token !== renderState.renderEpoch) return;
       let previous =
-        animate && p.mathDocument && p.visible
+        animate && p.mathDocument && renderState.visiblePages.has(p.number)
           ? snapshot(renderState.canvasEls.get(p.number))
           : null;
       try {

@@ -1,8 +1,18 @@
 <script setup>
+import { ref, watch } from 'vue';
 import { t } from '../../i18n/index.mjs';
 import SidebarNavigation from './SidebarNavigation.vue';
 import { AppButton } from '../../ui/controls.mjs';
 import ReaderPage from './ReaderPage.vue';
+const recentView = ref('gallery');
+try {
+  if (localStorage.getItem('reader-recent-view') === 'list') recentView.value = 'list';
+} catch {}
+watch(recentView, (value) => {
+  try {
+    localStorage.setItem('reader-recent-view', value);
+  } catch {}
+});
 defineProps([
   'bindWorkspace',
   'documentOpening',
@@ -258,9 +268,43 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           >
             <div class="recent-heading">
               <h2>{{ t('startup.recentDocuments') }}</h2>
-              <AppButton size="large" @click="clearRecent">{{ t('startup.clear') }}</AppButton>
+              <div class="recent-actions">
+                <AppButton class="recent-clear" @click="clearRecent">{{
+                  t('startup.clear')
+                }}</AppButton>
+                <div class="recent-view-switch" role="group" :aria-label="t('startup.viewMode')">
+                  <button
+                    type="button"
+                    :aria-label="t('startup.galleryView')"
+                    :title="t('startup.galleryView')"
+                    :aria-pressed="recentView === 'gallery'"
+                    @click="recentView = 'gallery'"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <rect x="3" y="3" width="5" height="5" rx="1" />
+                      <rect x="12" y="3" width="5" height="5" rx="1" />
+                      <rect x="3" y="12" width="5" height="5" rx="1" />
+                      <rect x="12" y="12" width="5" height="5" rx="1" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    :aria-label="t('startup.listView')"
+                    :title="t('startup.listView')"
+                    :aria-pressed="recentView === 'list'"
+                    @click="recentView = 'list'"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M7 5h10M7 10h10M7 15h10" />
+                      <circle cx="3" cy="5" r=".7" />
+                      <circle cx="3" cy="10" r=".7" />
+                      <circle cx="3" cy="15" r=".7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="recent-gallery">
+            <div class="recent-gallery" :class="{ 'recent-list': recentView === 'list' }">
               <button
                 v-for="document in recentDocuments"
                 :key="document.id"
@@ -293,6 +337,9 @@ const hoveredParagraph = defineModel('hoveredParagraph');
                   style="--symbol: url('/symbols/pin.fill.png')"
                   aria-hidden="true"
                 ></span>
+                <span v-if="recentView === 'list'" class="recent-document-name">{{
+                  document.name
+                }}</span>
               </button>
             </div>
           </section>

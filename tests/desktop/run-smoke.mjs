@@ -80,6 +80,8 @@ export async function runDesktopSmoke({
     await (await import('./file-menu-smoke.mjs')).verifyFileMenu(window, recents);
   else if (smoke === 'recent-menu')
     await (await import('./recent-menu-smoke.mjs')).verifyRecentMenu(window, recents);
+  else if (smoke === 'recent-view')
+    await (await import('./recent-view-smoke.mjs')).verifyRecentView(window, recents);
   else if (smoke === 'startup') await (await import('./startup-smoke.mjs')).verifyStartup(window);
   else if (smoke === 'session')
     await (await import('./session-smoke.mjs')).verifySession(window, windows, createWindow);
@@ -107,6 +109,8 @@ export async function runDesktopSmoke({
     await (await import('./advanced-smoke.mjs')).verifyAdvanced(window);
   else if (smoke === 'fluent') await (await import('./fluent-smoke.mjs')).verifyFluent(window);
   else if (smoke === 'search') await (await import('./search-smoke.mjs')).verifySearch(window);
+  else if (smoke === 'text-selection')
+    await (await import('./text-selection-smoke.mjs')).verifyTextSelection(window, recents);
   else if (smoke === 'multi-window')
     await (
       await import('./multi-window-smoke.mjs')

@@ -12,7 +12,8 @@ const source = (await readFile(sourceURL, 'utf8'))
   .replace("'vue'", JSON.stringify(import.meta.resolve('vue')))
   .replace(
     "import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';",
-    'const snapshot = () => null, revealPDF = async () => {};',
+    `const snapshot = (canvas) => canvas?.width ? { width: canvas.width, height: canvas.height } : null;
+    const revealPDF = async (options) => options.host.reveals.push(options);`,
   );
 const { createCanvasRendering } = await import(
   'data:text/javascript;base64,' + Buffer.from(source).toString('base64')
@@ -41,6 +42,16 @@ function fixture() {
   globalThis.devicePixelRatio = 2;
   globalThis.CustomEvent = class {};
   const state = {
+    pageEls: new Map(
+      [1, 2, 3].map((n) => [
+        n,
+        {
+          reveals: [],
+          getBoundingClientRect: () => ({ top: 0, bottom: 200, left: 0, right: 100 }),
+        },
+      ]),
+    ),
+    revealControllers: new Set(),
     canvasEls: new Map([1, 2, 3].map((n) => [n, canvas(n)])),
     thumbEls: new Map(),
     pageTasks: new Map(),
@@ -53,23 +64,27 @@ function fixture() {
     renderWindow: { value: new Set([1, 2, 3]) },
     renderMetrics: { pageFrames: 0, firstPageMs: null, openedAt: 0, peakResidentBytes: 0 },
   };
-  const pages = [1, 2, 3].map((number) => ({ number }));
+  const pages = [1, 2, 3].map((number) => ({ number, blocks: [] }));
   const pdfPages = pages.map(() => ({
     getViewport: ({ scale }) => ({ width: 100 * scale, height: 200 * scale }),
     render: () => ({ promise: Promise.resolve(), cancel() {} }),
   }));
   const pdf = { getPage: async (number) => pdfPages[number - 1] };
+  const view = {
+    zoom: { value: 1 },
+    active: { value: 1 },
+    pageCrop: { value: {} },
+    showTranslations: { value: false },
+    fitMode: { value: 'manual' },
+    reader: {
+      value: { getBoundingClientRect: () => ({ top: 0, bottom: 200, left: 0, right: 100 }) },
+    },
+  };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf },
     motion: { pinching: { value: false } },
-    view: {
-      zoom: { value: 1 },
-      active: { value: 1 },
-      pageCrop: { value: {} },
-      showTranslations: { value: false },
-      fitMode: { value: 'manual' },
-    },
+    view,
     activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
     actions: {
       readerViewport: { viewportPages: () => pages },
@@ -81,6 +96,8 @@ function fixture() {
     state,
     pdf,
     pdfPages,
+    pages,
+    view,
     renderer,
     restore() {
       globalThis.document = oldDocument;
@@ -89,6 +106,32 @@ function fixture() {
     },
   };
 }
+
+test('translation toggles refocus mounted visible pages in both directions, including warm frames', async () => {
+  const f = fixture();
+  const translated = {
+    getViewport: f.pdfPages[0].getViewport,
+    render: f.pdfPages[0].render,
+  };
+  f.pages[0].mathDocument = { getPage: async () => translated };
+  f.pages[1].mathDocument = { getPage: async () => translated };
+  f.state.visiblePages = new Set([1]);
+  try {
+    await f.renderer.renderPages();
+    for (const enabled of [true, false, true]) {
+      f.view.showTranslations.value = enabled;
+      await f.renderer.renderPages(true);
+      await new Promise((resolve) => setImmediate(resolve));
+      const reveals = f.state.pageEls.get(1).reveals;
+      assert.equal(reveals.at(-1).page, enabled ? translated : f.pdfPages[0]);
+      assert.equal(f.state.pageEls.get(2).reveals.length, 0);
+    }
+    assert.equal(f.state.pageEls.get(1).reveals.length, 3);
+    assert.equal(f.state.revealControllers.size, 0);
+  } finally {
+    f.restore();
+  }
+});
 
 test('a delayed visible page does not block painting its visible neighbours', async () => {
   const f = fixture(),

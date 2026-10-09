@@ -165,3 +165,9 @@
 .toolbar .zoom-popup {
   min-width: 70px;
 }
+
+.recent-actions .recent-clear.macvue-button {
+  height: 34px;
+  min-height: 34px;
+  border-radius: 10px;
+}

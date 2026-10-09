@@ -600,6 +600,26 @@
   color: transparent;
 }
 
+.reading-text-layer br::selection {
+  background: transparent;
+}
+
+.reading-text-layer > .endOfContent {
+  pointer-events: none;
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: text;
+  user-select: none;
+  font-size: 0;
+  transform: none;
+}
+
+.reading-text-layer.selecting > .endOfContent {
+  top: 0;
+}
+
 .reading-paragraphs {
   position: absolute;
   inset: 0;

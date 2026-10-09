@@ -8,6 +8,7 @@ import {
 } from '../translation/information-emphasis.mjs';
 import { topicSentenceRanges } from '../translation/topic-sentences.mjs';
 import { loadPDFRuntime } from './pdf-runtime.mjs';
+import { bindTextLayerSelection, preserveTextLayerSelection } from './text-layer-selection.mjs';
 const props = defineProps({
   document: Object,
   pageNumber: Number,
@@ -32,7 +33,9 @@ let layer,
   highlights,
   frameHost,
   appearanceObserver;
+let unbindSelection;
 const originals = new WeakMap();
+const emphasisKeys = new WeakMap();
 function drawEmphasis() {
   if (!host.value) return;
   overlay?.remove();
@@ -117,11 +120,17 @@ onMounted(() => {
 function emphasize() {
   if (!rendered || !host.value || !layer) return;
   const spans = layer.textDivs.filter((span) => host.value.contains(span));
+  const restoreSelection = preserveTextLayerSelection(spans);
   for (const span of spans) {
     if (!originals.has(span)) originals.set(span, span.textContent);
-    span.textContent = originals.get(span);
   }
   if (!props.emphasizeTopicSentences && !props.emphasizeInformation) {
+    for (const span of spans) {
+      if (!emphasisKeys.has(span)) continue;
+      span.textContent = originals.get(span);
+      emphasisKeys.delete(span);
+    }
+    restoreSelection();
     drawEmphasis();
     return;
   }
@@ -152,6 +161,11 @@ function emphasize() {
       emphasizeInformation: props.emphasizeInformation,
       ranges: informationRanges.filter((r) => r.index === index),
     });
+    const key = JSON.stringify(parts);
+    // Page/layout refreshes must preserve the text nodes holding the native
+    // selection when emphasis has not changed.
+    if (emphasisKeys.get(span) === key) continue;
+    emphasisKeys.set(span, key);
     span.replaceChildren(
       ...parts.map((part) => {
         let node = window.document.createTextNode(part.text);
@@ -171,6 +185,7 @@ function emphasize() {
       }),
     );
   }
+  restoreSelection();
   drawEmphasis();
 }
 watch(
@@ -189,6 +204,8 @@ watch(
   async () => {
     const id = ++generation;
     if (!props.active || !props.document) {
+      unbindSelection?.();
+      unbindSelection = null;
       layer?.cancel();
       layer = null;
       rendered = false;
@@ -219,6 +236,8 @@ watch(
       }
       boxKey = nextBoxKey;
       rendered = false;
+      unbindSelection?.();
+      unbindSelection = null;
       layer?.cancel();
       host.value.replaceChildren();
       layer = new runtime.TextLayer({
@@ -246,6 +265,7 @@ watch(
             span.remove();
         }
       }
+      unbindSelection = bindTextLayerSelection(host.value, () => rendering.textDivs);
       emphasize();
     } catch (e) {
       if (e.name !== 'AbortException' && e.name !== 'RenderingCancelledException')
@@ -256,6 +276,7 @@ watch(
 );
 onBeforeUnmount(() => {
   generation++;
+  unbindSelection?.();
   layer?.cancel();
   appearanceObserver?.disconnect();
   frameHost?.removeEventListener('pdf-frame-presented', drawEmphasis);
