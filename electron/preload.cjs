@@ -1,5 +1,26 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld(
+  'previewChatGPTSubscription',
+  Object.freeze({
+    status: () => ipcRenderer.invoke('chatgptSubscription:status'),
+    signIn: (value) => ipcRenderer.invoke('chatgptSubscription:signIn', value),
+    cancel: () => ipcRenderer.invoke('chatgptSubscription:cancel'),
+    select: (clientId) => ipcRenderer.invoke('chatgptSubscription:select', clientId),
+    signOut: (clientId) => ipcRenderer.invoke('chatgptSubscription:signOut', clientId),
+    models: () => ipcRenderer.invoke('chatgptSubscription:models'),
+    onSignedIn: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('chatgptSubscription:signedIn', listener);
+      return () => ipcRenderer.removeListener('chatgptSubscription:signedIn', listener);
+    },
+    onChanged: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('chatgptSubscription:changed', listener);
+      return () => ipcRenderer.removeListener('chatgptSubscription:changed', listener);
+    },
+  }),
+);
+contextBridge.exposeInMainWorld(
   'previewSystemLocale',
   process.argv
     .find((arg) => arg.startsWith('--preview-system-locale='))

@@ -16,7 +16,18 @@ import { createPreferenceState } from '../features/settings/preference-state.mjs
 import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
-import { ref, shallowRef, computed, watch, nextTick, markRaw, provide } from 'vue';
+import {
+  ref,
+  shallowRef,
+  computed,
+  watch,
+  nextTick,
+  markRaw,
+  provide,
+  onMounted,
+  onBeforeUnmount,
+} from 'vue';
+import { chatGPTSubscriptionLabel } from '../i18n/chatgpt-subscription-labels.mjs';
 import { useFormulaOcr } from '../features/reader/useFormulaOcr.mjs';
 
 import {
@@ -408,6 +419,14 @@ export function useReaderWindow() {
     noteTranslationService,
     copyHoveredParagraph,
   } = documentSurface;
+
+  let stopSubscriptionSignIn;
+  onMounted(() => {
+    stopSubscriptionSignIn = window.previewChatGPTSubscription?.onSignedIn?.(() => {
+      notifyCopy(chatGPTSubscriptionLabel('signInSuccess', uiLanguage.value), 6000);
+    });
+  });
+  onBeforeUnmount(() => stopSubscriptionSignIn?.());
 
   let translationCompletionPending = false;
   watch(pages, () => (translationCompletionPending = false), { flush: 'sync' });

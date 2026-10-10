@@ -1754,6 +1754,8 @@ const experimentalCategoryLabels = {
 for (const [locale, label] of Object.entries(experimentalCategoryLabels))
   messages[locale].settings.experimentalCategory = label;
 
+Object.assign(messages, europeanMessages, southAsiaPidginMessages, arabicMessages);
+
 const translatedPdfCompletionLabels = {
   en: 'Translated PDF is ready',
   'zh-CN': '翻译版 PDF 已完成',
@@ -1762,8 +1764,15 @@ const translatedPdfCompletionLabels = {
   ko: '번역된 PDF가 완성되었습니다',
   fr: 'Le PDF traduit est prêt',
   es: 'El PDF traducido está listo',
+  ar: 'اكتملت ترجمة ملف PDF',
+  arz: 'ترجمة ملف PDF خلصت',
+  hi: 'अनुवादित PDF तैयार है',
+  bn: 'অনুবাদ করা PDF প্রস্তুত',
+  ru: 'Переведённый PDF готов',
+  pt: 'O PDF traduzido está pronto',
+  ur: 'ترجمہ شدہ PDF تیار ہے',
+  de: 'Das übersetzte PDF ist fertig',
+  pcm: 'Translated PDF don ready',
 };
 for (const [locale, label] of Object.entries(translatedPdfCompletionLabels))
   messages[locale].translation.pdfCompleted = label;
-
-Object.assign(messages, europeanMessages, southAsiaPidginMessages, arabicMessages);

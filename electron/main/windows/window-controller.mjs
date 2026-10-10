@@ -430,6 +430,8 @@ export function createWindowController({
     target.webContents.setWindowOpenHandler(({ url }) => {
       if (
         url === 'https://siliconflow.cn/' ||
+        url === 'https://chatgpt.com/settings/usage' ||
+        url === 'https://developers.openai.com/siwc/token-sharing-open-source' ||
         url === 'https://github.com/PDFMathTranslate/PDFMathReader' ||
         dependencyProjects.some((project) => project.url === url)
       )

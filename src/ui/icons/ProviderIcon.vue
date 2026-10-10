@@ -17,7 +17,7 @@ const normalized = computed(() => sourceText.value.toLowerCase().replace(/[\s_]+
 const kind = computed(() => {
   const value = normalized.value;
   if (value.includes('azure')) return 'azure';
-  if (value.includes('openai')) return 'openai';
+  if (value.includes('openai') || value.includes('chatgpt')) return 'openai';
   if (value.includes('anthropic') || value.includes('claude')) return 'anthropic';
   if (value.includes('google') || value.includes('gemini')) return 'google';
   if (value.includes('deepseek')) return 'deepseek';

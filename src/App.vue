@@ -432,13 +432,6 @@ const copyToastDetail = computed(() =>
         ><div v-if="annotationToast" class="copy-toast" role="status">
           {{ annotationToast.text }}
         </div></Transition
-      ><Transition name="copy-toast"
-        ><div v-if="copyToast" class="copy-toast" role="status">
-          <span>{{ copyToastHeading }}</span>
-          <span v-if="copyToastDetail" class="copy-toast-detail" :title="copyToastDetail">{{
-            copyToastDetail
-          }}</span>
-        </div></Transition
       >
       <footer v-if="!desktopCredentials" class="statusbar">
         <span
@@ -485,6 +478,14 @@ const copyToastDetail = computed(() =>
       :popover-focus-out="popoverFocusOut"
       v-model:selected-paragraph="selectedParagraph"
     />
+    <Transition name="copy-toast"
+      ><div v-if="copyToast" class="copy-toast" role="status">
+        <span>{{ copyToastHeading }}</span>
+        <span v-if="copyToastDetail" class="copy-toast-detail" :title="copyToastDetail">{{
+          copyToastDetail
+        }}</span>
+      </div></Transition
+    >
     <NativeSettingsPanel
       :effective-translation-summary="effectiveTranslationSummary"
       :settings-window-mode="settingsWindowMode"

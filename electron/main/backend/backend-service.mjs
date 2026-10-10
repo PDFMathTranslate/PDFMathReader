@@ -21,6 +21,7 @@ export async function startBackendService(options = {}) {
     getApiKey: _getApiKey,
     keyStatus: _keyStatus,
     providerFetch: _providerFetch,
+    chatGPTSubscription,
     ...serverOptions
   } = options;
   const state = credentials || initialCredentials || {};
@@ -51,6 +52,7 @@ export async function startBackendService(options = {}) {
   let closing = false;
   let crashReported = false;
   let activeKey = initial.key;
+  const subscriptionRequests = new Map();
   let startupResolve, startupReject;
   let startupTimer;
   const startup = new Promise((resolve, reject) => {
@@ -78,6 +80,40 @@ export async function startBackendService(options = {}) {
     });
   child.on('message', (message) => {
     const value = messageData(message) || {};
+    if (value.type === 'subscription-cancel') {
+      subscriptionRequests.get(value.id)?.abort();
+      return;
+    }
+    if (value.type === 'subscription-request') {
+      const controller = new AbortController();
+      subscriptionRequests.set(value.id, controller);
+      void (async () => {
+        try {
+          if (!chatGPTSubscription) throw Error('ChatGPT Subscription is unavailable.');
+          const result =
+            value.action === 'status'
+              ? await chatGPTSubscription.status()
+              : value.action === 'complete'
+                ? await chatGPTSubscription.complete(value.body, controller.signal, {
+                    clientId: value.clientId,
+                  })
+                : (() => {
+                    throw Error('Unsupported subscription operation.');
+                  })();
+          if (!closing) child.postMessage({ type: 'subscription-result', id: value.id, result });
+        } catch (error) {
+          if (!closing)
+            child.postMessage({
+              type: 'subscription-result',
+              id: value.id,
+              error: error.message || 'ChatGPT Subscription request failed.',
+            });
+        } finally {
+          subscriptionRequests.delete(value.id);
+        }
+      })();
+      return;
+    }
     if (value.type === 'ready') {
       ready = true;
       clearTimeout(startupTimer);
@@ -126,6 +162,8 @@ export async function startBackendService(options = {}) {
   });
   let closePromise;
   child.on('exit', (code) => {
+    for (const controller of subscriptionRequests.values()) controller.abort();
+    subscriptionRequests.clear();
     clearTimeout(startupTimer);
     const error = Error(
       ready
@@ -148,7 +186,12 @@ export async function startBackendService(options = {}) {
   });
   child.once('spawn', () => {
     try {
-      child.postMessage({ type: 'start', options: serverOptions, credentials: initial });
+      child.postMessage({
+        type: 'start',
+        options: serverOptions,
+        credentials: initial,
+        subscriptionAvailable: !!chatGPTSubscription,
+      });
     } catch (error) {
       failStartup(error);
       child.kill();
@@ -165,6 +208,7 @@ export async function startBackendService(options = {}) {
   const close = () => {
     if (closePromise) return closePromise;
     closing = true;
+    for (const controller of subscriptionRequests.values()) controller.abort();
     closePromise = new Promise((resolve) => {
       let settled = false;
       const finish = () => {

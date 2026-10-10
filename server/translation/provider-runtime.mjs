@@ -17,6 +17,7 @@ export function createTranslationRuntime({
   engines,
   localTranslator,
   providerFetch = globalThis.fetch,
+  chatGPTSubscription,
   cacheDirectory,
   appVersion = 'development',
   getApiKey = () => process.env.OPENAI_API_KEY,
@@ -27,6 +28,10 @@ export function createTranslationRuntime({
   const providerClient = createTranslationProvider(providerFetch, { cacheDirectory });
   const providerClientComplete = providerClient.complete;
   providerClient.complete = (provider, body, signal, options = {}) => {
+    if (provider?.id === 'chatgpt-subscription')
+      return chatGPTSubscription
+        .complete({ ...body, model: provider.model }, signal, { clientId: provider.clientId })
+        .then((data) => Response.json(data));
     if (provider?.developerMock === true) return developerMockCompletion(body, provider);
     if (provider?.developerTest === true)
       return providerClientComplete(provider, body, signal, { ...options, cache: false });
@@ -43,6 +48,16 @@ export function createTranslationRuntime({
       services: [
         autoService,
         freeService,
+        ...(chatGPTSubscription
+          ? [
+              {
+                id: 'chatgpt-subscription',
+                label: 'ChatGPT Subscription',
+                available: (await chatGPTSubscription.status()).signedIn === true,
+                fields: [{ id: 'model', label: 'Model', type: 'string', required: true }],
+              },
+            ]
+          : []),
         ...catalog.services.filter((service) => service.id !== 'siliconflow-free'),
         ...((await localTranslator.available())
           ? [{ id: 'apple-local', label: 'Apple Translation (on device)', fields: [] }]
@@ -58,6 +73,21 @@ export function createTranslationRuntime({
     language,
     { cacheOnly = false } = {},
   ) {
+    if (selection?.id === 'chatgpt-subscription') {
+      if (!chatGPTSubscription) throw Error('ChatGPT Subscription requires the desktop app.');
+      const account = await chatGPTSubscription.status();
+      if (!account.signedIn) throw Error('Sign in with ChatGPT in provider settings.');
+      const model = selection.values?.model;
+      if (typeof model !== 'string' || !model.trim() || model.length > 512)
+        throw Error('Choose a ChatGPT Subscription model in provider settings.');
+      return {
+        id: 'chatgpt-subscription',
+        model,
+        kernel,
+        clientId: account.activeClientId,
+        identity: { service: 'chatgpt-subscription', clientId: account.activeClientId, model },
+      };
+    }
     if (!selection || selection.id === 'auto')
       return {
         ...selectTranslationProvider(''),

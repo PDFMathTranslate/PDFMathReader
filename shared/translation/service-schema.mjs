@@ -47,6 +47,7 @@ function normalizeService(service) {
     id: service.id,
     label: typeof service.label === 'string' && service.label ? service.label : service.id,
     fields,
+    ...(typeof service.available === 'boolean' ? { available: service.available } : {}),
     ...(typeof service.supportsPrompt === 'boolean'
       ? { supportsPrompt: service.supportsPrompt }
       : {}),

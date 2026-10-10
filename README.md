@@ -18,6 +18,7 @@ Read scientific documents in any language, with realtime translation, on any pla
 - **Realtime translation**: Detect layouts and translate as you read, without waiting for the entire document to finish.
 - **Interface languages**: 16 languages, ordered by English country name, with English as the default. Includes Arabic, Egyptian Arabic, Hindi, Bengali, Russian, Portuguese, Urdu, German, and Nigerian Pidgin.
 - **Translation options**: Choose translation engines, services, languages, and full-document or nearby-page translation.
+- **ChatGPT Subscription (experimental)**: In the desktop app, sign in through your default browser under Experimental Features or Providers. Select **ChatGPT Subscription** and an account-specific model in Providers to translate with Ultra Fast, Fast, or Precise. Uses the [official ChatGPT plan usage flow](https://developers.openai.com/siwc/token-sharing-open-source); account permissions and shared plan limits apply. Manage access in [ChatGPT Settings → Usage](https://chatgpt.com/settings/usage).
 - **Bilingual reading**: Click detected paragraphs to switch between original text and translation.
 - **Flexible navigation**: Read with thumbnails, zoom, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
 - **Multiple documents**: Open PDFs in independent windows and restore reading positions and display settings when reopening them.

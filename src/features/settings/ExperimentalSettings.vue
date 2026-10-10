@@ -3,8 +3,10 @@ import { computed, inject } from 'vue';
 import { platform } from '../../platform/runtime.mjs';
 import { AppSwitch } from '../../ui/controls.mjs';
 import { t, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
+import { chatGPTSubscriptionLabel } from '../../i18n/chatgpt-subscription-labels.mjs';
 import DocumentLanguageSettings from './DocumentLanguageSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
+import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 const languagePreferences = inject('documentLanguagePreferences');
 const interfaceStyle = defineModel('interfaceStyle', { default: 'default' });
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
@@ -47,6 +49,12 @@ const glassLabels = computed(
       </div>
       <DocumentLanguageSettings v-if="languagePreferences" />
       <FormulaOcrSettings />
+      <section
+        class="chatgpt-subscription-feature"
+        :aria-label="chatGPTSubscriptionLabel('title', currentUILanguage)"
+      >
+        <ChatGPTSubscriptionSettings account-only />
+      </section>
       <div class="setting-row" data-setting="optimize-paragraph-gaps">
         <span id="optimize-paragraph-gaps-label">{{ t('settings.optimizeParagraphGaps') }}</span>
         <AppSwitch
@@ -63,5 +71,8 @@ const glassLabels = computed(
 .settings-section-body {
   display: grid;
   gap: 10px;
+}
+.chatgpt-subscription-feature {
+  min-width: 0;
 }
 </style>

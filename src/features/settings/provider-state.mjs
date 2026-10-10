@@ -1,5 +1,5 @@
 import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import {
   translationLanguagesForKernel,
   translationLanguageLabel,
@@ -10,7 +10,10 @@ import { configuredMenuServices } from '../../../shared/commands/menu-options.mj
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { createTranslationServiceHistoryTracker } from '../../../shared/translation/provider-history.mjs';
 import { glossaryEntries } from '../../../shared/translation/glossary.mjs';
-import { loadTranslationServiceSchema } from '../translation/translation-services.mjs';
+import {
+  loadTranslationServiceSchema,
+  clearTranslationServiceSchemaCache,
+} from '../translation/translation-services.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 
 const parallelLevels = [1, 2, 4, 12];
@@ -168,6 +171,13 @@ export function createProviderState({ preferences, engine, configured }) {
     parallelTranslationsStep,
     translationServiceHistory,
     installObservers({ preferences, engineState, serviceProfileSnapshot, resetServiceHistory }) {
+      const unsubscribeSubscription = window.previewChatGPTSubscription?.onChanged(() => {
+        for (const kernel of ['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise'])
+          resetServiceHistory(kernel, 'chatgpt-subscription');
+        clearTranslationServiceSchemaCache();
+        translationServiceCatalogRevision.value++;
+      });
+      onBeforeUnmount(() => unsubscribeSubscription?.());
       if (!window.previewPreferences)
         try {
           translationServiceHistory.value = historyTracker.load(

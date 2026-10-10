@@ -2,6 +2,7 @@
 export function configuredMenuServices(schema, config = {}, credentials = {}) {
   return (schema?.services || [])
     .filter((service) => {
+      if (service.id === 'chatgpt-subscription' && service.available !== true) return false;
       if (service.id === 'auto' || service.id === 'apple-local') return true;
       const profile =
         config.profiles?.[service.id]?.values ||

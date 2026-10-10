@@ -1,5 +1,5 @@
 import { registerGlassMenuIPC } from './main/services/glass-menu.mjs';
-import { app, dialog, ipcMain, nativeTheme, safeStorage, systemPreferences } from 'electron';
+import { app, dialog, ipcMain, nativeTheme, safeStorage, shell, systemPreferences } from 'electron';
 import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
@@ -21,6 +21,7 @@ import { createDeveloperMonitor } from './main/services/developer-monitor.mjs';
 import { createQuickLinkStore } from './main/services/quick-links.mjs';
 import { createCredentials } from './main/services/credentials.mjs';
 import { createServiceCredentials } from './main/services/service-credentials.mjs';
+import { createChatGPTSubscription } from './main/services/chatgpt-subscription.mjs';
 import { createDocumentSession } from './main/services/document-session.mjs';
 import { createRecents } from './main/services/recents.mjs';
 import { createReaderPreferences } from './main/services/preferences.mjs';
@@ -118,6 +119,8 @@ else {
   let backend;
   let window;
   let credentials;
+  let chatGPTSubscription;
+  let subscriptionClosing;
   let serviceCredentialStore;
   let preferences;
   let recents;
@@ -290,6 +293,15 @@ else {
         createRecents(join(app.getPath('userData'), 'recent-documents.json')),
       ]);
       serviceCredentialStore = serviceCredentials;
+      chatGPTSubscription = await createChatGPTSubscription({
+        path: join(app.getPath('userData'), 'chatgpt-subscription.enc'),
+        safeStorage,
+        openExternal: (url) => shell.openExternal(url),
+        onChange: () => {
+          for (const target of windows.keys())
+            if (!target.isDestroyed()) target.webContents.send('chatgptSubscription:changed');
+        },
+      });
       preferences = readerPreferences;
       annotations = annotationStore;
       performanceReports.items = savedPerformanceReports;
@@ -330,6 +342,7 @@ else {
         smoke,
         diagnostics: !!smoke,
         credentials: { getKey: credentialStore.getKey, status: credentialStore.status },
+        chatGPTSubscription,
         onCrash: handleBackendFailure,
         ...([
           'kernels',
@@ -430,6 +443,29 @@ else {
         credentials,
         serviceCredentialStore,
       });
+      for (const action of ['status', 'signIn', 'cancel', 'select', 'signOut', 'models'])
+        handleMeasuredIPC(`chatgptSubscription:${action}`, async (event, value) => {
+          registry.trustedWindow(event);
+          if (
+            ['select', 'signOut'].includes(action) &&
+            (typeof value !== 'string' || value.length > 256)
+          )
+            throw Error('Invalid ChatGPT account.');
+          if (
+            action === 'signIn' &&
+            value !== undefined &&
+            (!value ||
+              typeof value !== 'object' ||
+              (value.clientId !== undefined &&
+                (typeof value.clientId !== 'string' || value.clientId.length > 256)))
+          )
+            throw Error('Invalid ChatGPT sign-in request.');
+          const result = await chatGPTSubscription[action](value);
+          if (action === 'signIn' && result?.signedIn)
+            for (const window of windows.keys())
+              if (!window.isDestroyed()) window.webContents.send('chatgptSubscription:signedIn');
+          return result;
+        });
       registerUpdatesIPC({
         handle: handleMeasuredIPC,
         trustedWindow: registry.trustedWindow,
@@ -584,6 +620,8 @@ else {
     });
   app.on('before-quit', (event) => {
     appUpdates?.stop();
+    subscriptionClosing ??= chatGPTSubscription?.close();
+    void subscriptionClosing?.catch(() => {});
     if (!backend || quitting) return;
     event.preventDefault();
     quitting = true;
@@ -596,6 +634,7 @@ else {
           .map((state) => state.backend.close())
           .concat([
             ...closingBackends,
+            subscriptionClosing,
             preferences?.flush(),
             serviceCredentialStore?.flush(),
             recents?.flush(),

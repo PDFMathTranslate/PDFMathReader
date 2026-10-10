@@ -185,7 +185,7 @@ export function registerKernelRoutes(
             signal: controller.signal,
             cacheSelection: req.body?.translationService,
             translationService: provider.native ? provider.selection : undefined,
-            serviceIdentity: provider.id === 'apple-local' ? { service: 'apple-local' } : undefined,
+            serviceIdentity: provider.identity,
             localTranslation: provider.id === 'apple-local',
             glossary,
             advancedOptions,

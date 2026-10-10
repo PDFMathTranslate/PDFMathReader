@@ -2,6 +2,30 @@ const parentPort = process.parentPort;
 let backend;
 let credentialKey = '';
 let credentialStatus = { configured: false, keySource: 'none' };
+const subscriptionPending = new Map();
+let subscriptionRequestId = 0;
+
+function subscriptionRequest(action, body, signal, options = {}) {
+  signal?.throwIfAborted();
+  const id = ++subscriptionRequestId;
+  return new Promise((resolve, reject) => {
+    const cancel = () => {
+      send({ type: 'subscription-cancel', id });
+      finish(Error('ChatGPT Subscription request cancelled.'));
+    };
+    const timer = setTimeout(cancel, 60000);
+    const finish = (error, result) => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
+      subscriptionPending.delete(id);
+      if (error) reject(error);
+      else resolve(result);
+    };
+    subscriptionPending.set(id, finish);
+    signal?.addEventListener('abort', cancel, { once: true });
+    send({ type: 'subscription-request', id, action, body, clientId: options.clientId });
+  });
+}
 
 function messageData(event) {
   return event && typeof event === 'object' && 'data' in event ? event.data : event;
@@ -77,6 +101,11 @@ async function start(message) {
   serverOptions.providerFetch = makeProviderFetch(smoke);
   serverOptions.getApiKey = () => credentialKey;
   serverOptions.keyStatus = () => ({ ...credentialStatus });
+  if (message.subscriptionAvailable)
+    serverOptions.chatGPTSubscription = {
+      status: () => subscriptionRequest('status'),
+      complete: (body, signal, options) => subscriptionRequest('complete', body, signal, options),
+    };
   if (smoke) serverOptions.diagnostics = true;
   if (serverOptions.diagnostics)
     serverOptions.kernelDiagnostic = (message) =>
@@ -118,6 +147,10 @@ if (parentPort) {
   let queue = Promise.resolve();
   parentPort.on('message', (event) => {
     const value = messageData(event) || {};
+    if (value.type === 'subscription-result') {
+      subscriptionPending.get(value.id)?.(value.error ? Error(value.error) : null, value.result);
+      return;
+    }
     queue = queue
       .then(() => handle(value))
       .catch((error) => {

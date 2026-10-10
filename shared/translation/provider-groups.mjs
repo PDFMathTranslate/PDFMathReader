@@ -44,6 +44,7 @@ function validValue(field, value) {
   return typeof value === 'string';
 }
 export function isProviderConfigured(service, config = {}, credentials = {}) {
+  if (service?.id === 'chatgpt-subscription' && service.available !== true) return false;
   const saved = config.profiles?.[service.id]?.values;
   const values = record(saved)
     ? saved

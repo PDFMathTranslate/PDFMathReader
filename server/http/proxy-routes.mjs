@@ -33,6 +33,7 @@ export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, 
       if (!job) return res.sendStatus(403);
       const provider = job.provider;
       const controller = new AbortController();
+      const signal = AbortSignal.any([controller.signal, job.controller.signal]);
       const timeout = setTimeout(() => controller.abort(), 60000);
       res.on('close', () => {
         if (!res.writableEnded) controller.abort();
@@ -42,10 +43,10 @@ export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, 
         await limiter.run(
           async () => {
             job.providerQueueMs += performance.now() - queuedAt;
-            if (controller.signal.aborted) throw Error('Cancelled');
+            if (signal.aborted) throw Error('Cancelled');
             const providerStarted = performance.now();
             job.providerCalls++;
-            const response = await providerClient.complete(provider, req.body, controller.signal, {
+            const response = await providerClient.complete(provider, req.body, signal, {
               cacheScope: job.cacheScope,
               cache: !job.forceRetranslation,
             });
@@ -107,12 +108,15 @@ export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, 
             } else res.status(response.status).json(data);
           },
           {
-            signal: controller.signal,
+            signal,
             meta: { kind: 'provider-request', kernel: provider.kernel },
           },
         );
-      } catch {
-        job.error ||= `Could not reach ${provider.id === 'openai' ? 'OpenAI' : 'SiliconFlow free service'} or the request timed out. Check network access and retry.`;
+      } catch (error) {
+        job.error ||=
+          provider.id === 'chatgpt-subscription'
+            ? error.message || 'ChatGPT Subscription request failed. Check provider settings.'
+            : `Could not reach ${provider.id === 'openai' ? 'OpenAI' : 'SiliconFlow free service'} or the request timed out. Check network access and retry.`;
         job.controller.abort();
         if (!res.destroyed) res.status(502).json({ error: { message: job.error } });
       } finally {

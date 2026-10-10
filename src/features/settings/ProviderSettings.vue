@@ -11,6 +11,7 @@ import {
 } from '../../ui/controls.mjs';
 const ProviderButton = platform === 'win32' ? AppButton : 'button';
 import ProviderIcon from '../../ui/icons/ProviderIcon.vue';
+import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 import {
   groupProviders,
   providerPortEndpoint,
@@ -18,6 +19,7 @@ import {
 } from '../../../shared/translation/provider-groups.mjs';
 import {
   cloneTranslationServices,
+  clearTranslationServiceSchemaCache,
   loadTranslationServiceSchema,
 } from '../translation/translation-services.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
@@ -241,6 +243,17 @@ function profileValuesFor(serviceId) {
 }
 const selectedProfileValues = computed(() => profileValuesFor(selectedProviderId.value));
 const activeProfileValues = computed(() => profileValuesFor(selectedId.value));
+const subscriptionModelField = computed(() =>
+  selectedProviderId.value === 'chatgpt-subscription'
+    ? selectedService.value?.fields?.find((field) => field.id === 'model') || null
+    : null,
+);
+const selectedFields = computed(() =>
+  (selectedService.value?.fields || []).filter(
+    (field) => !(selectedProviderId.value === 'chatgpt-subscription' && field.id === 'model'),
+  ),
+);
+const subscriptionModelValid = ref(false);
 const promptOption = computed(() => {
   if (selectedProviderId.value === 'apple-local' || selectedService.value?.supportsPrompt === false)
     return null;
@@ -257,6 +270,14 @@ const schemaKey = computed(
     `${props.engine}:${props.engineState?.version || ''}:${props.catalogRevision}:${retry.value}`,
 );
 const accountVisible = computed(() => selectedProviderId.value === 'openai');
+const subscriptionVisible = computed(() => selectedProviderId.value === 'chatgpt-subscription');
+const canUseSelectedService = computed(() => {
+  if (selectedProviderId.value !== 'chatgpt-subscription') return true;
+  const model = String(
+    subscriptionModelField.value ? fieldValue(subscriptionModelField.value) : '',
+  ).trim();
+  return selectedService.value?.available === true && !!model && subscriptionModelValid.value;
+});
 
 function serviceLabel(service) {
   const keys = {
@@ -370,6 +391,7 @@ function browseService(id) {
 }
 function useService(id = selectedProviderId.value) {
   if (!serviceById(id)) return;
+  if (id === 'chatgpt-subscription' && !canUseSelectedService.value) return;
   browseId.value = id;
   emitConfig(id, fieldValues(id), true);
 }
@@ -378,6 +400,16 @@ function updateField(field, value) {
   const values = { ...fieldValues(serviceId), [field.id]: value };
   if (value === '' && !field.required) delete values[field.id];
   emitConfig(serviceId, values, serviceId === selectedId.value);
+}
+function updateSubscriptionModel(value) {
+  if (subscriptionModelField.value) updateField(subscriptionModelField.value, value);
+}
+function updateSubscriptionModelValidity(value) {
+  subscriptionModelValid.value = Boolean(value);
+}
+function refreshSubscriptionSchema() {
+  clearTranslationServiceSchemaCache(props.engine, props.engineState?.version || '');
+  retry.value++;
 }
 function cloneCredentials(value) {
   const result = {};
@@ -523,9 +555,17 @@ watch(schemaKey, loadSchema, { immediate: true });
 watch(
   [selectedId, services],
   () => {
+    if (busy.value || !services.value.length) return;
     if (!serviceById(browseId.value)) browseId.value = serviceById(selectedId.value)?.id || '';
   },
   { flush: 'post' },
+);
+watch(
+  selectedProviderId,
+  (id) => {
+    if (id !== 'chatgpt-subscription') subscriptionModelValid.value = false;
+  },
+  { immediate: true },
 );
 watch(
   () => [
@@ -627,6 +667,15 @@ onBeforeUnmount(() => {
         <div v-if="accountVisible && $slots.account" class="provider-account">
           <slot name="account" />
         </div>
+        <ChatGPTSubscriptionSettings
+          v-if="subscriptionVisible"
+          :model-value="
+            String(subscriptionModelField ? (fieldValue(subscriptionModelField) ?? '') : '')
+          "
+          @update:model-value="updateSubscriptionModel"
+          @model-validity="updateSubscriptionModelValidity"
+          @auth-change="refreshSubscriptionSchema"
+        />
         <div v-if="selectedProviderId === 'siliconflow-free'" class="provider-free-thanks">
           <p>{{ freeThanks }}</p>
           <a href="https://siliconflow.cn/" target="_blank" rel="noopener noreferrer"
@@ -635,7 +684,7 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="selectedService" class="provider-fields">
           <div
-            v-for="field in selectedService.fields || []"
+            v-for="field in selectedFields"
             :key="field.id"
             class="provider-field"
             :data-service-field="field.id"
@@ -703,9 +752,13 @@ onBeforeUnmount(() => {
         v-if="selectedService && selectedProviderId !== selectedId"
         class="provider-detail-actions"
       >
-        <AppButton class="provider-use-button" variant="prominent" @click="useService()">{{
-          local('use')
-        }}</AppButton>
+        <AppButton
+          class="provider-use-button"
+          variant="prominent"
+          :disabled="!canUseSelectedService"
+          @click="useService()"
+          >{{ local('use') }}</AppButton
+        >
       </footer>
     </section>
   </div>
