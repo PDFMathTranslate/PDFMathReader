@@ -209,6 +209,8 @@ const messages = {
       language: 'Translation language',
       siliconflowFreeFallback:
         'No OpenAI API key configured. Using SiliconFlow free translation service.',
+      pdfIncomplete:
+        'Document translation is incomplete. The visible file is partially translated.',
     },
     parallel: {
       off: 'Off',
@@ -447,6 +449,7 @@ const messages = {
         '优先翻译可见页面，沿阅读方向提前翻译最多六页，并在后方保留两页，同时保持有限的翻译范围。',
       language: '翻译语言',
       siliconflowFreeFallback: '未配置 OpenAI 密钥。正在使用 SiliconFlow 免费翻译服务。',
+      pdfIncomplete: '文档翻译未完成，现在可见文件为部分文档',
     },
     parallel: {
       off: '关闭',

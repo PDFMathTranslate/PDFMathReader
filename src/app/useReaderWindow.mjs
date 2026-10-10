@@ -47,6 +47,10 @@ import { createImmersiveHeader } from '../features/reader/immersive-header.mjs';
 import { createPageEdits } from '../features/reader/page-edits.mjs';
 import { createReaderDocumentSurface } from '../features/reader/document-surface.mjs';
 import { createLazyPort, createWritablePort } from './reader-ports.mjs';
+import {
+  hasParagraphTranslation,
+  createParagraphPDFPages,
+} from '../features/translation/paragraph-pdf.mjs';
 
 export function useReaderWindow() {
   const session = createDocumentSessionState();
@@ -54,14 +58,22 @@ export function useReaderWindow() {
   window.previewTranslatedFilePages = async () => {
     const epoch = session.epoch;
     const documents = pages.value.map((page) => page.mathDocument);
-    if (!documents.some((document) => !!document)) return null;
+    const snapshot = pages.value.map((page) => ({
+      blocks: page.blocks.map((block) => ({ ...block })),
+    }));
+    if (!documents.some(Boolean) && !snapshot.some(hasParagraphTranslation)) return null;
+    const paragraphPages = await createParagraphPDFPages(session.pdf, snapshot);
     const bytes = await Promise.all(
-      documents.map(async (document) => (document ? Array.from(await document.getData()) : null)),
+      documents.map(async (document, index) =>
+        document ? Array.from(await document.getData()) : paragraphPages[index],
+      ),
     );
-    return epoch === session.epoch ? bytes : null;
+    if (epoch !== session.epoch) return null;
+    if (bytes.includes(null)) notifyCopy(t('translation.pdfIncomplete'), 5000);
+    return bytes;
   };
   watch(
-    () => pages.value.some((page) => !!page.mathDocument),
+    () => pages.value.some((page) => !!page.mathDocument || hasParagraphTranslation(page)),
     (ready) => {
       void window.previewActions?.translatedFileReady?.(ready);
     },
@@ -330,9 +342,7 @@ export function useReaderWindow() {
     showTranslations = ref(true);
   window.previewCurrentFileKind = () =>
     showTranslations.value &&
-    pages.value.some(
-      (page) => page.mathDocument || page.blocks?.some((block) => !!block.translation),
-    )
+    pages.value.some((page) => !!page.mathDocument || hasParagraphTranslation(page))
       ? 'translated'
       : 'original';
   const fullscreen = ref(false),
@@ -545,7 +555,6 @@ export function useReaderWindow() {
 
   window.previewSaveReadingView = async () => {
     await flushAnnotations();
-    await performanceRecorder.finish();
     await featureActions.saveReadingView();
   };
 

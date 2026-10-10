@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import { reactive, shallowRef, watch, nextTick } from 'vue';
+import { hasParagraphTranslation } from '../../src/features/translation/paragraph-pdf.mjs';
 
 const sourceURL = new URL(
   '../../electron/main/services/document-file-actions.mjs',
@@ -20,6 +21,65 @@ const source = (await readFile(sourceURL, 'utf8'))
 const { createDocumentFileActions } = await import(
   'data:text/javascript;base64,' + Buffer.from(source).toString('base64')
 );
+
+test('external reading selects a translated file only when an exportable PDF is visible', async () => {
+  const source = await readFile(
+    new URL('../../src/app/useReaderWindow.mjs', import.meta.url),
+    'utf8',
+  );
+  const expression = source.match(/window\.previewCurrentFileKind = \(\) =>([\s\S]*?);/)[1];
+  const pages = shallowRef([{ blocks: [{ translation: '译文' }] }]);
+  const showTranslations = shallowRef(true);
+  const kind = () =>
+    new Function('pages', 'showTranslations', 'hasParagraphTranslation', `return (${expression})`)(
+      pages,
+      showTranslations,
+      hasParagraphTranslation,
+    );
+  assert.equal(kind(), 'translated');
+  pages.value = [...pages.value, { mathDocument: {} }];
+  assert.equal(kind(), 'translated');
+  showTranslations.value = false;
+  assert.equal(kind(), 'original');
+  showTranslations.value = true;
+  pages.value = [];
+  assert.equal(kind(), 'original');
+});
+
+test('saving before external reading preserves the active document and flushes reading state', async () => {
+  const source = await readFile(
+    new URL('../../src/app/useReaderWindow.mjs', import.meta.url),
+    'utf8',
+  );
+  const body = source.match(
+    /window\.previewSaveReadingView = async \(\) => \{([\s\S]*?)\n {2}\};/,
+  )[1];
+  const calls = [];
+  let hasDocument = true;
+  const save = new Function(
+    'flushAnnotations',
+    'performanceRecorder',
+    'featureActions',
+    `return (async () => {${body}})()`,
+  );
+  await save(
+    async () => {
+      calls.push('annotations');
+    },
+    {
+      finish: async () => {
+        hasDocument = false;
+      },
+    },
+    {
+      saveReadingView: async () => {
+        calls.push('view');
+      },
+    },
+  );
+  assert.equal(hasDocument, true);
+  assert.deepEqual(calls, ['annotations', 'view']);
+});
 
 test('Windows reveals and shares a partially translated PDF with original pages preserved', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'translated-file-'));
@@ -79,16 +139,25 @@ test('file menu readiness follows the first translated page and resets when clea
   const pages = shallowRef([reactive({ mathDocument: null }), reactive({ mathDocument: null })]);
   const states = [];
   const stop = watch(
-    () => new Function('pages', `return ${expression}`)(pages),
+    () =>
+      new Function('pages', 'hasParagraphTranslation', `return ${expression}`)(
+        pages,
+        hasParagraphTranslation,
+      ),
     (ready) => states.push(ready),
     { immediate: true },
   );
   try {
+    pages.value[0].blocks = [reactive({ translation: '' })];
+    pages.value[0].blocks[0].translation = '超快译文';
+    await nextTick();
+    pages.value[0].blocks[0].translation = '';
+    await nextTick();
     pages.value[1].mathDocument = {};
     await nextTick();
     pages.value[1].mathDocument = null;
     await nextTick();
-    assert.deepEqual(states, [false, true, false]);
+    assert.deepEqual(states, [false, true, false, true, false]);
   } finally {
     stop();
   }

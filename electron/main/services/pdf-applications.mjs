@@ -1,7 +1,7 @@
 import { execFile, spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, win32 } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -36,6 +36,7 @@ function run(args) {
 
 const WINDOWS_REGISTRY_SCRIPT = String.raw`
 $ErrorActionPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $ids = [System.Collections.Generic.List[string]]::new()
 $hints = @{}
@@ -48,13 +49,36 @@ function Add-Id([object] $value, [object] $hint) {
   if (-not [string]::IsNullOrWhiteSpace([string]$hint)) { $hints[$id] = ([string]$hint).Trim() }
 }
 
+function Read-Properties([string] $path) {
+  $key = $null
+  try {
+    $parts = $path -split ':\\', 2
+    $hive = if ($parts[0] -eq 'HKCU') { [Microsoft.Win32.Registry]::CurrentUser } else { [Microsoft.Win32.Registry]::LocalMachine }
+    $key = $hive.OpenSubKey($parts[1])
+    if (-not $key) { return $null }
+    $values = @{}
+    foreach ($name in $key.GetValueNames()) {
+      $label = if ($name -eq '') { '(default)' } else { $name }
+      $values[$label] = $key.GetValue($name)
+    }
+    return [pscustomobject]$values
+  } finally {
+    if ($key) { $key.Dispose() }
+  }
+}
+
 function Read-Value([string] $path, [string] $name) {
   try {
-    $item = Get-ItemProperty -LiteralPath $path -ErrorAction Stop
+    $item = Read-Properties $path
     $property = $item.PSObject.Properties[$name]
     if ($property) { return [string]$property.Value }
   } catch {}
   return ''
+}
+
+Add-Id (Read-Value 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.pdf\UserChoice' 'ProgId') ''
+foreach ($path in @('HKCU:\Software\Classes\.pdf', 'HKLM:\Software\Classes\.pdf')) {
+  Add-Id (Read-Value $path '(default)') ''
 }
 
 $openWithPaths = @(
@@ -65,7 +89,7 @@ $openWithPaths = @(
 )
 foreach ($path in $openWithPaths) {
   try {
-    $item = Get-ItemProperty -LiteralPath $path -ErrorAction Stop
+    $item = Read-Properties $path
     foreach ($property in $item.PSObject.Properties) {
       if ($property.Name -notmatch '^PS') { Add-Id $property.Name '' }
     }
@@ -80,7 +104,7 @@ $registeredPaths = @(
 $capabilityRoots = @('HKCU:\Software', 'HKLM:\Software', 'HKLM:\Software\Wow6432Node')
 foreach ($path in $registeredPaths) {
   try {
-    $item = Get-ItemProperty -LiteralPath $path -ErrorAction Stop
+    $item = Read-Properties $path
     foreach ($property in $item.PSObject.Properties) {
       if ($property.Name -match '^PS') { continue }
       $relative = [string]$property.Value
@@ -88,9 +112,9 @@ foreach ($path in $registeredPaths) {
       $relative = $relative -replace '(?i)^SOFTWARE\\', ''
       foreach ($root in $capabilityRoots) {
         try {
-          $capability = Join-Path $root $relative
+          $capability = ($root + '\' + $relative)
           $name = Read-Value $capability 'ApplicationName'
-          $association = Get-ItemProperty -LiteralPath (Join-Path $capability 'FileAssociations') -ErrorAction Stop
+          $association = Read-Properties ($capability + '\FileAssociations')
           $pdf = $association.PSObject.Properties['.pdf']
           if ($pdf) { Add-Id $pdf.Value $name }
         } catch {}
@@ -103,8 +127,8 @@ $classRoots = @('HKCU:\Software\Classes', 'HKLM:\Software\Classes', 'HKLM:\Softw
 $result = foreach ($id in $ids) {
   foreach ($root in $classRoots) {
     try {
-      $classPath = Join-Path $root $id
-      $command = Read-Value (Join-Path $classPath 'shell\open\command') '(default)'
+      $classPath = ($root + '\' + $id)
+      $command = Read-Value ($classPath + '\shell\open\command') '(default)'
       if ([string]::IsNullOrWhiteSpace($command)) { continue }
       $name = Read-Value $classPath 'FriendlyAppName'
       if ([string]::IsNullOrWhiteSpace($name)) { $name = Read-Value $classPath '(default)' }
@@ -159,6 +183,7 @@ function ownApplication(app) {
   const executable = safeCall(() => app?.getPath?.('exe'));
   return {
     name: name.trim(),
+    executable,
     bundle: applicationBundlePath(executable),
   };
 }
@@ -171,11 +196,23 @@ function looksLikeReaderName(value, ownName) {
   if (!name) return false;
   const names = [ownName, 'PDFMathReader'].filter(Boolean).map((entry) => entry.toLowerCase());
   const lower = name.toLowerCase();
-  return names.some((entry) => lower === entry || lower.startsWith(`${entry} `));
+  return names.some(
+    (entry) =>
+      lower === entry || lower.startsWith(`${entry} `) || lower.startsWith(`${entry}-win32-`),
+  );
 }
 
 function isOwnApplication(candidate, identity) {
   if (identity.bundle && samePath(candidate.id, identity.bundle)) return true;
+  if (candidate.command) {
+    const executable = tokenizeWindowsCommand(candidate.command)[0];
+    if (
+      executable &&
+      (samePath(executable, identity.executable) ||
+        looksLikeReaderName(win32.basename(executable), identity.name))
+    )
+      return true;
+  }
   return [candidate.id, candidate.name, candidate.command, candidate.desktopFile].some((value) =>
     looksLikeReaderName(value, identity.name),
   );
@@ -324,14 +361,22 @@ function windowsArguments(command, path, environment) {
   const tokens = tokenizeWindowsCommand(expandWindowsVariables(command, environment));
   if (!tokens.length) return null;
   const executable = tokens.shift();
-  let hasFile = false;
-  const args = tokens.map((token) =>
-    token.replace(/%(?:1|L|l|f|F|u|U|\*)/g, () => {
-      hasFile = true;
-      return path;
-    }),
+  // Chromium's shell marker consumes the raw command-line tail, including
+  // quotes added by Node. Use its normal argv parser and an explicit file URL.
+  const singleArgument = tokens.some(
+    (token) => token === '--single-argument' || token.startsWith('--single-argument='),
   );
-  if (!hasFile) args.push(path);
+  const file = singleArgument ? pathToFileURL(path, { windows: true }).href : path;
+  let hasFile = false;
+  const args = tokens
+    .filter((token) => token !== '--single-argument')
+    .map((token) =>
+      token.replace(/^--single-argument=/, '').replace(/%(?:1|L|l|f|F|u|U|\*)/g, () => {
+        hasFile = true;
+        return file;
+      }),
+    );
+  if (!hasFile) args.push(file);
   return { executable, args };
 }
 
@@ -340,7 +385,7 @@ function spawnApplication(spawnImpl, executable, args) {
     detached: true,
     shell: false,
     stdio: 'ignore',
-    windowsHide: true,
+    windowsHide: false,
   });
   if (!child || typeof child.once !== 'function') {
     child?.unref?.();

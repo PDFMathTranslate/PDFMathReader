@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { createPDFApplicationService } from '../../../electron/main/services/pdf-applications.mjs';
 
@@ -178,6 +179,17 @@ test('Windows uses registered command metadata and launches without shell interp
             command: '"C:\\PDFMathReader.exe" "%1"',
           },
           {
+            id: 'pdf_auto_file',
+            name: 'pdf_auto_file',
+            command:
+              '"D:\\Project\\PDFMathReader\\release\\PDFMathReader-win32-x64\\PDFMathReader.exe" "%1"',
+          },
+          {
+            id: 'portable_reader',
+            name: 'PDF File',
+            command: '"D:\\Project\\PDFMathReader\\release\\PDFMathReader-win32-x64.exe" "%1"',
+          },
+          {
             id: 'AcroExch.Document.DC',
             name: 'Adobe Acrobat',
             command: '"%ProgramFiles%\\Adobe\\Acrobat.exe" "%1"',
@@ -198,4 +210,99 @@ test('Windows uses registered command metadata and launches without shell interp
   assert.equal(launched.command, 'C:\\Program Files\\Adobe\\Acrobat.exe');
   assert.deepEqual(launched.args, [path]);
   assert.equal(launched.options.shell, false);
+  assert.equal(launched.options.windowsHide, false);
 });
+
+test('Windows Chromium handlers receive encoded file URLs without shell-only argument markers', async () => {
+  for (const marker of ['--single-argument %1', '--single-argument="%1"']) {
+    let launched;
+    const service = createPDFApplicationService({
+      platform: 'win32',
+      execFileImpl: async () => ({
+        stdout: JSON.stringify([
+          {
+            id: 'ChromePDF',
+            name: 'Chrome',
+            command: `"C:\\Program Files\\Chrome\\chrome.exe" --profile-directory=Default ${marker}`,
+          },
+        ]),
+      }),
+      spawnImpl: (command, args, options) => {
+        launched = { command, args, options };
+        return { unref() {} };
+      },
+    });
+    const [choice] = await service.list('C:\\fixture.pdf');
+    for (const [path, url] of [
+      [
+        'C:\\Users\\Reader\\中文 notes #1 & 100%.pdf',
+        'file:///C:/Users/Reader/%E4%B8%AD%E6%96%87%20notes%20%231%20&%20100%25.pdf',
+      ],
+      ['\\\\server\\share\\research notes.pdf', 'file://server/share/research%20notes.pdf'],
+    ]) {
+      await service.open(choice, path);
+      assert.deepEqual(launched.args, ['--profile-directory=Default', url]);
+      assert.equal(launched.options.shell, false);
+      assert.equal(launched.options.windowsHide, false);
+    }
+  }
+});
+
+test(
+  'Windows registry discovery resolves default associations and registered capabilities',
+  {
+    skip: process.platform !== 'win32',
+  },
+  async () => {
+    const service = createPDFApplicationService({
+      platform: 'win32',
+      execFileImpl: async (command, args) => {
+        const script = Buffer.from(args.at(-1), 'base64').toString('utf16le');
+        // Exercise the real PowerShell discovery logic with read-only registry fixtures.
+        const fixture = script.replace(
+          /function Read-Properties\([\s\S]*?(?=function Read-Value)/,
+          String.raw`function Read-Properties([string] $path) {
+  switch ($path) {
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.pdf\UserChoice' {
+      return [pscustomobject]@{ ProgId = 'DefaultPDF' }
+    }
+    'HKLM:\Software\RegisteredApplications' {
+      return [pscustomobject]@{ Reader = 'SOFTWARE\Fixture\Capabilities' }
+    }
+    'HKLM:\Software\Fixture\Capabilities' {
+      return [pscustomobject]@{ ApplicationName = '阅读器' }
+    }
+    'HKLM:\Software\Fixture\Capabilities\FileAssociations' {
+      return [pscustomobject]@{ '.pdf' = 'RegisteredPDF' }
+    }
+    'HKLM:\Software\Classes\DefaultPDF\shell\open\command' {
+      return [pscustomobject]@{ '(default)' = '"C:\Default.exe" "%1"' }
+    }
+    'HKLM:\Software\Classes\RegisteredPDF\shell\open\command' {
+      return [pscustomobject]@{ '(default)' = '"C:\Reader.exe" "%1"' }
+    }
+  }
+  return $null
+}
+
+`,
+        );
+        return {
+          stdout: execFileSync(
+            command,
+            [...args.slice(0, -1), Buffer.from(fixture, 'utf16le').toString('base64')],
+            {
+              encoding: 'utf8',
+              timeout: 10000,
+              windowsHide: true,
+            },
+          ),
+        };
+      },
+    });
+    assert.deepEqual(await service.list('C:\\fixture.pdf'), [
+      { id: 'DefaultPDF', name: 'DefaultPDF' },
+      { id: 'RegisteredPDF', name: '阅读器' },
+    ]);
+  },
+);
