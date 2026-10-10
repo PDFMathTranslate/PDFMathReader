@@ -291,3 +291,19 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     assert.deepEqual(await readdir(data.root), []);
   });
 }
+
+test('kernel stdout progress reaches the per-request callback independently of diagnostic logs', async (t) => {
+  const progress = [];
+  const data = await fixture(t, (child) => {
+    child.stdout.write(
+      'PDFMATH_PROGRESS:{"stage":"Translate paragraphs","completed":2,"total":4,"percent":50}\n',
+    );
+    child.emit('close', 1, null);
+  });
+  await assert.rejects(
+    data.translate({ onProgress: (value) => progress.push(value) }),
+    /exit code 1/,
+  );
+  assert.equal(progress.length, 1);
+  assert.equal(progress[0].percent, 50);
+});

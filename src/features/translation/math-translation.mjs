@@ -14,6 +14,7 @@ export function createMathTranslation({
 }) {
   async function mathPage(p, token, manual = false) {
     feedback.error.value = '';
+    p.kernelProgress = null;
     p.translationActivity = 'cache';
     p.status = 'detecting';
     p.message = t('pageStatus.loadingTranslationPage');
@@ -22,6 +23,10 @@ export function createMathTranslation({
       translationState.controllers.add(controller);
       translationState.translationRequests.set(controller, { page: p.number, manual });
       let response;
+      let progressTimer,
+        polling = false,
+        pollingStopped = false;
+      const progressId = crypto.randomUUID();
       const historyRequest = provider.historyTracker.begin({
         kernel: preferences.engine.value,
         service: provider.currentTranslationService.value.id || 'auto',
@@ -43,6 +48,7 @@ export function createMathTranslation({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 cacheOnly,
+                ...(cacheOnly ? {} : { progressId }),
                 documentId: session.documentId,
                 sourceLanguage: preferences.sourceLanguage.value,
                 reuseTranslations: preferences.reuseTranslations.value,
@@ -58,6 +64,29 @@ export function createMathTranslation({
         if (token !== session.epoch) return;
         if (response.status === 204) {
           p.translationActivity = 'translating';
+          const poll = async () => {
+            if (polling || controller.signal.aborted || token !== session.epoch) return;
+            polling = true;
+            try {
+              const result = await fetch('/api/math-progress/' + progressId, {
+                signal: controller.signal,
+              });
+              if (result.ok && result.status !== 204) {
+                const progress = await result.json();
+                if (
+                  !pollingStopped &&
+                  !controller.signal.aborted &&
+                  token === session.epoch &&
+                  p.status === 'detecting'
+                )
+                  p.kernelProgress = progress;
+              }
+            } catch {
+            } finally {
+              polling = false;
+            }
+          };
+          progressTimer = setInterval(poll, 250);
           response = await request(false);
         }
         actions.rootActions.noteTranslationService(response);
@@ -89,6 +118,9 @@ export function createMathTranslation({
         );
         p.mathDocument = markRaw(await session.getDocument({ data }).promise);
       } finally {
+        pollingStopped = true;
+        clearInterval(progressTimer);
+        if (token === session.epoch) p.kernelProgress = null;
         translationState.controllers.delete(controller);
         translationState.translationRequests.delete(controller);
       }
@@ -122,6 +154,7 @@ export function createMathTranslation({
       p.blocks = [];
       p.cached = false;
       p.translationModel = '';
+      p.kernelProgress = null;
       p.status = 'idle';
       p.message = '';
     }

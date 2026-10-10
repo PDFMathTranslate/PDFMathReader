@@ -1,3 +1,4 @@
+import { createKernelProgressParser } from '../../shared/translation/kernel-progress.mjs';
 import { mkdir, readFile, writeFile, mkdtemp, rm, readdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -23,7 +24,7 @@ function finalStderrMessage(stderr) {
   const lines = String(stderr)
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter((line) => line && !line.startsWith('PDFMATH_PROGRESS:'));
   if (!lines.length) return '';
   const exception = [...lines]
     .reverse()
@@ -81,6 +82,7 @@ export function createTranslationRunner({
     forceRetranslation = false,
     cacheScope = '',
     onPageTiming,
+    onProgress,
     cacheOnly = false,
     runWorker = (fn) => fn(),
   }) {
@@ -409,7 +411,9 @@ export function createTranslationRunner({
           const secrets = [proxy?.token, ...(service?.secrets || [])];
           let stderrTail = '';
           let stdoutTail = '';
+          const consumeProgress = createKernelProgressParser(onProgress);
           const capture = (chunk, stream) => {
+            if (stream === 'stdout') consumeProgress(String(chunk));
             const text = String(chunk);
             const message = redactDiagnosticText(text, {
               secrets,

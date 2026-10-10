@@ -68,6 +68,13 @@ export function registerKernelRoutes(
     }
   });
 
+  app.get('/api/math-progress/:id', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const job = [...proxyJobs.values()].find((job) => job.progressId === req.params.id);
+    if (!job?.progress) return res.sendStatus(204);
+    res.json(job.progress);
+  });
+
   app.post(
     '/api/math-page',
     express.json({ limit: '100kb' }),
@@ -132,6 +139,12 @@ export function registerKernelRoutes(
         serviceHeader(res, provider);
         limiter.setMax(threads);
         pageLimiter.setMax(pageLimit);
+        const progressId = !Buffer.isBuffer(req.body) ? req.body?.progressId : undefined;
+        if (
+          progressId !== undefined &&
+          (typeof progressId !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(progressId))
+        )
+          return res.status(400).json({ error: 'Invalid progress request' });
         const controller = new AbortController();
         let queueMs = 0;
         const cacheScope = await documentCache.scope(
@@ -140,6 +153,8 @@ export function registerKernelRoutes(
         const debugCapture = advancedOptions?.debug === true ? recentDebugLogs.begin(engine) : null;
         const job = {
             id: `translation-${++nextRequestId.value}`,
+            progressId,
+            progress: null,
             state: 'running',
             kernel: engine,
             page,
@@ -161,6 +176,9 @@ export function registerKernelRoutes(
         });
         try {
           const bytes = await engines.translate({
+            onProgress: (progress) => {
+              job.progress = progress;
+            },
             runWorker: (fn) => {
               const waitingAt = performance.now();
               return pageLimiter.run(

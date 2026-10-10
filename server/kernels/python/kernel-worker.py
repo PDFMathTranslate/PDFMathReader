@@ -4,9 +4,11 @@ import inspect
 import ast
 import textwrap
 import json
+import math
 import os
 import re
 import sys
+import threading
 from time import perf_counter
 
 # Set before native imports, including multiprocessing capture workers.
@@ -15,6 +17,94 @@ os.environ["ORT_DISABLE_TELEMETRY"] = "1"
 STARTED = perf_counter()
 from pathlib import Path
 import pymupdf
+
+PROGRESS_PREFIX = "PDFMATH_PROGRESS:"
+MAX_PROGRESS_STAGE_LENGTH = 160
+_progress_output_broken = False
+
+
+def emit_kernel_progress(stage, completed, total, percent):
+    """Write one bounded progress record without affecting translation."""
+    global _progress_output_broken
+    if _progress_output_broken or not isinstance(stage, str):
+        return
+    stage = re.sub(r"[\r\n]+", " ", stage).strip()[:MAX_PROGRESS_STAGE_LENGTH]
+    if not stage:
+        return
+    values = (completed, total) if percent is None else (completed, total, percent)
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in values):
+        return
+    if any(not math.isfinite(float(value)) for value in values):
+        return
+    if (
+        total <= 0
+        or completed < 0
+        or completed > total
+        or (percent is not None and (percent < 0 or percent > 100))
+    ):
+        return
+    payload = {
+        "stage": stage,
+        "completed": completed,
+        "total": total,
+        "percent": percent,
+    }
+    try:
+        print(
+            PROGRESS_PREFIX + json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
+            flush=True,
+        )
+    except (BrokenPipeError, OSError):
+        # A closed parent stdout must not change the translation result.
+        _progress_output_broken = True
+
+
+def emit_fast_progress(progress):
+    """Forward Fast's stage-local tqdm callback state."""
+    completed = getattr(progress, "n", None)
+    total = getattr(progress, "total", None)
+    if not isinstance(completed, (int, float)) or not isinstance(total, (int, float)):
+        return
+    if total <= 0:
+        return
+    stage = getattr(progress, "desc", None) or "Translate pages"
+    if stage == "Translate pages":
+        emit_kernel_progress("Analyze page", completed, total, None)
+    else:
+        emit_kernel_progress(stage, completed, total, completed * 100 / total)
+
+
+def fast_progress_map(executor, worker, paragraphs):
+    """Count completed native paragraph tasks, including ordinary Fast mode."""
+    paragraphs = list(paragraphs)
+    total = len(paragraphs)
+    if not total:
+        return executor.map(worker, paragraphs)
+    completed = 0
+    lock = threading.Lock()
+    emit_kernel_progress("Translate paragraphs", 0, total, 0)
+
+    def counted(paragraph):
+        nonlocal completed
+        result = worker(paragraph)
+        with lock:
+            completed += 1
+            emit_kernel_progress("Translate paragraphs", completed, total, completed * 100 / total)
+        return result
+
+    return executor.map(counted, paragraphs)
+
+
+def emit_precise_progress(event):
+    """Forward BabelDOC's native overall progress and stage counters."""
+    if not isinstance(event, dict):
+        return
+    emit_kernel_progress(
+        event.get("stage"),
+        event.get("stage_current"),
+        event.get("stage_total"),
+        event.get("overall_progress"),
+    )
 
 
 def fast_paragraph_indent(text, x, x0, language):
@@ -336,6 +426,17 @@ def main(capture_only=False):
         def timed_stream(*positional, **kwargs):
             step("model_and_cli_setup")
             kwargs["perf"] = Timer()
+            callback = kwargs.get("callback")
+
+            def progress_callback(progress):
+                emit_fast_progress(progress)
+                if callback:
+                    callback(progress)
+
+            # pdf2zh.high_level.translate_patch invokes this callback after
+            # each native page, paragraph, or typesetting update. Keep the
+            # caller's callback and add the app-owned stdout record beside it.
+            kwargs["callback"] = progress_callback
 
             def mono_document(*args, **options):
                 doc = original_document(*args, **options)
@@ -355,7 +456,9 @@ def main(capture_only=False):
 
             high_level.Document = mono_document
             try:
-                return original_stream(*positional, **kwargs)
+                result = original_stream(*positional, **kwargs)
+                emit_kernel_progress("Finalize PDF", 0, 1, None)
+                return result
             finally:
                 high_level.Document = original_document
 
@@ -577,6 +680,20 @@ def main(capture_only=False):
 
             def visit_Call(self, node):
                 self.generic_visit(node)
+                if (
+                    isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "executor"
+                    and node.func.attr == "map"
+                    and len(node.args) == 2
+                    and isinstance(node.args[0], ast.Name)
+                    and node.args[0].id == "worker"
+                ):
+                    return ast.Call(
+                        func=ast.Name(id="_preview_progress_map", ctx=ast.Load()),
+                        args=[node.func.value, *node.args],
+                        keywords=node.keywords,
+                    )
                 if isinstance(node.func, ast.Name) and node.func.id == "vflag":
                     self.prose_count += 1
                     return ast.IfExp(
@@ -698,6 +815,7 @@ def main(capture_only=False):
         namespace = {
             **original.__globals__,
             "_preview_capture": capture,
+            "_preview_progress_map": fast_progress_map,
             "_preview_indent": fast_paragraph_indent,
             "_preview_wrap_advance": fast_typography_advance,
             "_preview_italic_prose": fast_italic_prose_characters,
@@ -815,6 +933,18 @@ def main(capture_only=False):
         Typesetting.typesetting_document = typeset
         if capture_only:
             return
+        import pdf2zh_next.high_level as precise_high_level
+
+        original_precise_stream = precise_high_level.do_translate_async_stream
+
+        async def progress_stream(*positional, **kwargs):
+            async for event in original_precise_stream(*positional, **kwargs):
+                emit_precise_progress(event)
+                yield event
+
+        # do_translate_file_async resolves do_translate_async_stream through
+        # the high_level module, so this wraps both its CLI and native paths.
+        precise_high_level.do_translate_async_stream = progress_stream
         os.environ["PREVIEW_CAPTURE_CONTEXT"] = json.dumps(
             [kind, sidecar, selected, input_path, args]
         )

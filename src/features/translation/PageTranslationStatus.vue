@@ -22,23 +22,33 @@ const detail = computed(
   () => props.page.blocks.find((b) => b.error)?.error || props.page.message || '',
 );
 const percent = computed(() =>
-  props.page.blocks.length
-    ? Math.round(
-        (props.page.blocks.filter((b) => b.translation).length / props.page.blocks.length) * 100,
-      )
-    : null,
-);
-const indeterminate = computed(() => props.page.status === 'detecting' || percent.value === null);
-const label = computed(() =>
-  props.page.status === 'queued'
-    ? t('pageStatus.queued')
-    : props.page.status === 'detecting'
-      ? t(
-          props.engine === 'pdf_inspector'
-            ? 'pageStatus.detectingLayout'
-            : 'pageStatus.loadingTranslationPage',
+  Number.isFinite(props.page.kernelProgress?.percent)
+    ? props.page.kernelProgress.percent
+    : props.page.blocks.length
+      ? Math.round(
+          (props.page.blocks.filter((b) => b.translation).length / props.page.blocks.length) * 100,
         )
-      : t('pageStatus.translatingPage'),
+      : null,
+);
+const indeterminate = computed(
+  () =>
+    (props.page.status === 'detecting' && !Number.isFinite(props.page.kernelProgress?.percent)) ||
+    percent.value === null,
+);
+const label = computed(() =>
+  props.page.kernelProgress
+    ? Number.isFinite(props.page.kernelProgress.percent)
+      ? `${props.page.kernelProgress.stage} · ${Math.round(props.page.kernelProgress.percent)}%`
+      : props.page.kernelProgress.stage
+    : props.page.status === 'queued'
+      ? t('pageStatus.queued')
+      : props.page.status === 'detecting'
+        ? t(
+            props.engine === 'pdf_inspector'
+              ? 'pageStatus.detectingLayout'
+              : 'pageStatus.loadingTranslationPage',
+          )
+        : t('pageStatus.translatingPage'),
 );
 </script>
 
