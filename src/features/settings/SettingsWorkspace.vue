@@ -43,9 +43,9 @@ const sections = computed(() => [
     symbol: 'character.book.closed.fill',
   },
   { id: 'providers', label: labels.value[1], symbol: 'network' },
-  { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'gearshape.fill' },
+  { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'keyboard' },
   { id: 'kernel', label: t('settings.advancedCategory'), symbol: 'cpu.fill' },
-  { id: 'experimental', label: t('settings.experimentalCategory'), symbol: 'gearshape.fill' },
+  { id: 'experimental', label: t('settings.experimentalCategory'), symbol: 'flask.fill' },
   {
     id: 'performance',
     label:
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
           @click="chooseResult(item)"
           @keydown="navKey($event, index)"
         >
-          <span class="category-icon" :data-category="item.id" aria-hidden="true"
+          <span class="category-icon" :data-category="item.section || item.id" aria-hidden="true"
             ><span
               class="system-icon"
               :style="{ '--symbol': `url('/symbols/${item.symbol}.png')` }"
@@ -459,6 +459,18 @@ section.settings.settings-workspace.native-settings-window[data-section] {
 .category-icon[data-category='providers'] {
   --icon-top: #00aaff;
   --icon-bottom: #007aff;
+}
+.category-icon[data-category='experimental'] {
+  --icon-top: #34c759;
+  --icon-bottom: #28a745;
+}
+.category-icon[data-category='shortcuts'] {
+  --icon-top: #ff9500;
+  --icon-bottom: #e88100;
+}
+.category-icon[data-category='performance'] {
+  --icon-top: #ff453a;
+  --icon-bottom: #e63229;
 }
 .category-icon[data-category='about'] {
   --icon-top: #8065ff;

@@ -1,4 +1,5 @@
 <script setup>
+import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import { dependencyProjects } from '../../../shared/dependency-projects.mjs';
 import KernelModeSwitcher from './KernelModeSwitcher.vue';
@@ -13,6 +14,7 @@ import {
 } from '../../ui/controls.mjs';
 import DocumentDefaultsSettings from './DocumentDefaultsSettings.vue';
 import ExperimentalSettings from './ExperimentalSettings.vue';
+import ReadingBehaviorSettings from './ReadingBehaviorSettings.vue';
 import PerformanceResources from '../developer/PerformanceResources.vue';
 import GlossarySettings from './GlossarySettings.vue';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
@@ -203,6 +205,10 @@ const keyEntry = defineModel('keyEntry');
             </div>
           </div>
         </section>
+        <ReadingBehaviorSettings
+          v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
+          v-model:reduce-padding="reducePadding"
+        />
         <section class="settings-section" aria-labelledby="settings-emphasis">
           <h3 id="settings-emphasis">{{ t('settings.emphasis') }}</h3>
           <div class="settings-section-body">
@@ -235,11 +241,17 @@ const keyEntry = defineModel('keyEntry');
                 class="setting-row"
                 :data-setting="setting.key"
               >
-                <span :id="setting.key + '-label'">{{ t('settings.' + setting.key) }}</span>
+                <div>
+                  <span :id="setting.key + '-label'">{{ t('settings.' + setting.key) }}</span>
+                  <p :id="setting.key + '-examples'" class="muted information-examples">
+                    {{ informationExamples(setting.key, uiLanguage) }}
+                  </p>
+                </div>
                 <AppSwitch
                   v-model="setting.value.value"
                   :disabled="!emphasizeInformation"
                   :aria-labelledby="setting.key + '-label'"
+                  :aria-describedby="setting.key + '-examples'"
                 />
               </div>
             </div>
@@ -256,39 +268,35 @@ const keyEntry = defineModel('keyEntry');
         <ShortcutSettings v-if="settingsSection === 'shortcuts'" />
       </template>
       <template #experimental>
-        <ExperimentalSettings
-          v-model:interface-style="interfaceStyle"
-          v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
-        />
+        <ExperimentalSettings />
       </template>
       <template #performance>
+        <AppearanceSettings
+          v-model:interface-style="interfaceStyle"
+          effects-only
+          v-model:reduce-motion="reduceMotion"
+          v-model:reduce-transparency="reduceTransparency"
+          :ui-language="uiLanguage"
+        />
         <PerformanceResources
           v-if="settingsSection === 'performance'"
           v-model:reduce-resource-usage="reduceResourceUsage"
           v-model:reduce-background-frame-rate="reduceBackgroundFrameRate"
         />
-        <AppearanceSettings
-          effects-only
-          v-model:reduce-motion="reduceMotion"
-          v-model:reduce-transparency="reduceTransparency"
-          v-model:reduce-padding="reducePadding"
-          :ui-language="uiLanguage"
-        />
       </template>
       <template #appearance>
         <AppearanceSettings
+          v-model:interface-style="interfaceStyle"
           :show-effects="false"
           v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
           v-model:appearance="appearanceChoice"
           v-model:accent-color="accentColor"
           v-model:reduce-motion="reduceMotion"
           v-model:reduce-transparency="reduceTransparency"
-          v-model:reduce-padding="reducePadding"
           v-model:ui-language="uiLanguageChoice"
         />
       </template>
       <template #translation>
-        <GlossarySettings v-model="glossaries" />
         <section class="settings-section" aria-labelledby="settings-translation-language">
           <h3 id="settings-translation-language">{{ t('settings.languageSection') }}</h3>
           <div class="settings-section-body">
@@ -414,6 +422,7 @@ const keyEntry = defineModel('keyEntry');
             </div>
           </div>
         </section>
+        <GlossarySettings v-model="glossaries" />
       </template>
       <template #providers>
         <ProviderSettings
@@ -582,3 +591,10 @@ const keyEntry = defineModel('keyEntry');
     </SettingsWorkspace>
   </Transition>
 </template>
+
+<style scoped>
+.information-examples {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+</style>

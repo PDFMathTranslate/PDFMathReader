@@ -46,25 +46,28 @@ export async function verifySettingsWorkspace(window) {
     'experimental',
   );
   await category('experimental');
-  for (const selector of [
-    '[data-setting="interface-style"]',
-    '[data-setting="formula-ocr"]',
-    '[data-setting="optimize-paragraph-gaps"]',
-  ])
-    assert.equal(await visible(selector), true);
+  assert.equal(await visible('[data-setting="formula-ocr"]'), true);
+  assert.equal(await visible('[data-setting="interface-style"]'), false);
+  assert.equal(await visible('[data-setting="optimize-paragraph-gaps"]'), false);
+  await category('general');
+  assert.equal(await visible('[data-setting="optimize-paragraph-gaps"]'), true);
+  assert.equal(await visible('[data-setting="reduce-padding"]'), true);
+  assert.equal(
+    await evaluate(
+      `document.querySelector('[aria-labelledby="settings-interaction"]').nextElementSibling.getAttribute('aria-labelledby')`,
+    ),
+    'settings-reading-behavior',
+  );
   await evaluate(
     `document.querySelector('[aria-labelledby="optimize-paragraph-gaps-label"]').click()`,
   );
   await wait(`(async()=> (await window.previewPreferences.load()).optimizeParagraphGaps===true)()`);
-  await category('general');
-  assert.equal(await visible('[data-setting="formula-ocr"]'), false);
-  assert.equal(await visible('[data-setting="optimize-paragraph-gaps"]'), false);
   await category('appearance');
-  assert.equal(await visible('[data-setting="interface-style"]'), false);
+  assert.equal(await visible('.interface-section [data-setting="interface-style"]'), true);
   await searchSettings('Liquid Glass');
-  await wait(`!!document.querySelector('[data-settings-result="experimental"]')`);
-  await evaluate(`document.querySelector('[data-settings-result="experimental"]').click()`);
-  await wait(`document.querySelector('.settings-workspace').dataset.section==='experimental'`);
+  await wait(`!!document.querySelector('[data-settings-result="appearance"]')`);
+  await evaluate(`document.querySelector('[data-settings-result="appearance"]').click()`);
+  await wait(`document.querySelector('.settings-workspace').dataset.section==='appearance'`);
   await searchSettings('');
   if (process.argv.includes('--experimental-settings-only')) {
     await writeFile(

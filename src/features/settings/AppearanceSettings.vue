@@ -1,5 +1,7 @@
 <script setup>
 import { computed, watch } from 'vue';
+import InterfaceStyleSettings from './InterfaceStyleSettings.vue';
+const interfaceStyle = defineModel('interfaceStyle', { default: 'default' });
 import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
 import { AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
 import { t, setUILanguage, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
@@ -11,7 +13,6 @@ const props = defineProps({
   accentColor: String,
   reduceMotion: Boolean,
   reduceTransparency: Boolean,
-  reducePadding: Boolean,
   uiLanguage: { type: String, default: 'en' },
 });
 const emit = defineEmits([
@@ -20,7 +21,6 @@ const emit = defineEmits([
   'update:accentColor',
   'update:reduceMotion',
   'update:reduceTransparency',
-  'update:reducePadding',
   'update:uiLanguage',
 ]);
 const kernelShortcutLabel = computed(
@@ -159,6 +159,7 @@ function changeUILanguage(code) {
           ></AppPopUpButton
         >
       </div>
+      <InterfaceStyleSettings v-model="interfaceStyle" />
       <div class="appearance-row" data-setting="kernel-toolbar-shortcut">
         <span id="kernel-toolbar-shortcut-label">{{ kernelShortcutLabel }}</span>
         <AppSwitch
@@ -192,14 +193,6 @@ function changeUILanguage(code) {
               :model-value="reduceTransparency"
               aria-labelledby="reduce-transparency-label"
               @update:model-value="emit('update:reduceTransparency', $event)"
-            />
-          </div>
-          <div class="setting-row">
-            <span id="reduce-padding-label">{{ t('appearance.reducePadding') }}</span
-            ><AppSwitch
-              :model-value="reducePadding"
-              aria-labelledby="reduce-padding-label"
-              @update:model-value="emit('update:reducePadding', $event)"
             />
           </div>
         </div>

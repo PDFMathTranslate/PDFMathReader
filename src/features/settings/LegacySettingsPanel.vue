@@ -1,4 +1,5 @@
 <script setup>
+import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import {
   AppButton,
@@ -12,6 +13,7 @@ import {
 } from '../../ui/controls.mjs';
 import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
 import ExperimentalSettings from './ExperimentalSettings.vue';
+import ReadingBehaviorSettings from './ReadingBehaviorSettings.vue';
 import AboutAcknowledgements from './AboutAcknowledgements.vue';
 import { defineAsyncComponent } from 'vue';
 const AdvancedSettings = defineAsyncComponent(() => import('./AdvancedSettings.vue'));
@@ -379,11 +381,17 @@ const reducePadding = defineModel('reducePadding');
             class="setting-row"
             :data-setting="setting.key"
           >
-            <span :id="setting.key + '-label'">{{ t('settings.' + setting.key) }}</span>
+            <div>
+              <span :id="setting.key + '-label'">{{ t('settings.' + setting.key) }}</span>
+              <p :id="setting.key + '-examples'" class="muted information-examples">
+                {{ informationExamples(setting.key, uiLanguage) }}
+              </p>
+            </div>
             <AppSwitch
               v-model="setting.value.value"
               :disabled="!emphasizeInformation"
               :aria-labelledby="setting.key + '-label'"
+              :aria-describedby="setting.key + '-examples'"
             />
           </div>
         </div>
@@ -400,6 +408,10 @@ const reducePadding = defineModel('reducePadding');
           />
         </div>
       </section>
+      <ReadingBehaviorSettings
+        v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
+        v-model:reduce-padding="reducePadding"
+      />
       <section class="settings-section">
         <div class="setting-row" data-setting="reduce-resource-usage">
           <span id="reduce-resource-usage-label">{{ t('settings.reduceResourceUsage') }}</span
@@ -412,18 +424,15 @@ const reducePadding = defineModel('reducePadding');
         <p class="muted">{{ t('settings.reduceResourceUsageHint') }}</p>
       </section>
       <AppearanceSettings
+        v-model:interface-style="interfaceStyle"
         v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"
         v-model:appearance="appearanceChoice"
         v-model:accent-color="accentColor"
         v-model:reduce-motion="reduceMotion"
         v-model:reduce-transparency="reduceTransparency"
-        v-model:reduce-padding="reducePadding"
         v-model:ui-language="uiLanguageChoice"
       />
-      <ExperimentalSettings
-        v-model:interface-style="interfaceStyle"
-        v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
-      />
+      <ExperimentalSettings />
       <section class="settings-section" aria-labelledby="settings-about">
         <h3 id="settings-about">{{ t('settings.about') }}</h3>
         <a
@@ -443,3 +452,10 @@ const reducePadding = defineModel('reducePadding');
       </section></section
   ></Transition>
 </template>
+
+<style scoped>
+.information-examples {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+</style>

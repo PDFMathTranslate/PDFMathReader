@@ -8,7 +8,7 @@ for name in [
     "gearshape", "gearshape.fill", "circle.lefthalf.filled", "character.book.closed",
     "character.book.closed.fill", "network", "cpu.fill", "gauge.with.dots.needle.67percent",
     "info.circle.fill", "doc.badge.plus", "xmark", "doc.text", "checkmark.circle", "trash",
-    "pin.fill",
+    "pin.fill", "keyboard", "flask.fill",
     "arrow.left.and.right", "arrow.up.and.down", "chevron.up", "chevron.down", "text.bubble",
 ] {
     guard

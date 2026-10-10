@@ -13,7 +13,13 @@ const recording = ref(null),
 const labels = computed(() => shortcutLabels(uiLanguage.value));
 const groups = computed(() => {
   const entries = snapshot.value.catalog || [];
-  return [...new Set(entries.map((entry) => entry.group))].map((id) => ({
+  const order = [...new Set(entries.map((entry) => entry.group))];
+  const translation = order.indexOf('Translation');
+  if (translation >= 0) {
+    order.splice(translation, 1);
+    order.splice(1, 0, 'Translation');
+  }
+  return order.map((id) => ({
     id,
     label:
       id === 'navigation'
@@ -136,16 +142,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="shortcut-settings">
-    <p class="muted">{{ bridge ? labels.hint : labels.desktop }}</p>
     <p v-if="error" role="alert" class="shortcut-error">{{ error }}</p>
-    <div v-if="bridge" class="shortcut-global-actions">
-      <AppButton :disabled="busy" @click="change(undefined, undefined, true)">{{
-        labels.resetAll
-      }}</AppButton>
-      <AppButton v-if="recording" :disabled="busy" @click="stopRecording">{{
-        labels.cancel
-      }}</AppButton>
-    </div>
     <section v-for="group in groups" :key="group.id" class="settings-section">
       <h3>{{ group.label }}</h3>
       <div class="settings-section-body">
@@ -182,6 +179,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+    <div v-if="bridge" class="shortcut-global-actions">
+      <AppButton :disabled="busy" @click="change(undefined, undefined, true)">{{
+        labels.resetAll
+      }}</AppButton>
+      <AppButton v-if="recording" :disabled="busy" @click="stopRecording">{{
+        labels.cancel
+      }}</AppButton>
+    </div>
   </div>
 </template>
 
@@ -195,7 +200,7 @@ onBeforeUnmount(() => {
 }
 .shortcut-global-actions {
   justify-content: flex-end;
-  margin: 16px 0 24px;
+  margin: 24px 0 0;
 }
 .shortcut-row {
   display: flex;
