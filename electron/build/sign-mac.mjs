@@ -23,13 +23,17 @@ export async function signMacApplication(bundle, root = process.cwd()) {
     throw Error(
       'A valid, consistent macOS signing identity is required. Set PDF_READER_SIGN_IDENTITY to its certificate hash. Ad-hoc signing is disabled for production packages.',
     );
-  const hapticHelper = resolve(bundle, 'Contents/Resources/haptic-feedback');
-  if (existsSync(hapticHelper))
-    execFileSync(
-      '/usr/bin/codesign',
-      ['--force', '--sign', identity, '--timestamp=none', hapticHelper],
-      { stdio: 'inherit' },
-    );
+  for (const name of ['haptic-feedback', 'pdf-handoff']) {
+    const helper = resolve(bundle, 'Contents/Resources', name);
+    if (existsSync(helper))
+      execFileSync(
+        '/usr/bin/codesign',
+        ['--force', '--sign', identity, '--timestamp=none', helper],
+        {
+          stdio: 'inherit',
+        },
+      );
+  }
   execFileSync(
     '/usr/bin/codesign',
     ['--force', '--deep', '--sign', identity, '--timestamp=none', bundle],

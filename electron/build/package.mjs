@@ -28,10 +28,21 @@ if (
   throw Error('Unsupported Electron platform/architecture/version combination.');
 const phase = process.argv.find((arg) => arg.startsWith('--stage='))?.slice(8) || 'bundle';
 const hapticBinary = resolve(root, '.cache/haptic-feedback'),
+  pdfHandoffBinary = resolve(root, '.cache/pdf-handoff'),
   localTranslationBinary = resolve(root, '.cache/local-translation');
 await mkdir(resolve(root, '.cache'), { recursive: true });
 if (platform === 'darwin') {
   const moduleCache = resolve(root, '.cache/swift-modules');
+  execFileSync('/usr/bin/swiftc', [
+    '-O',
+    '-target',
+    `${arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macosx13.0`,
+    '-module-cache-path',
+    moduleCache,
+    resolve(root, 'electron/platform/macos/pdf-handoff.swift'),
+    '-o',
+    pdfHandoffBinary,
+  ]);
   execFileSync('/usr/bin/swiftc', [
     '-O',
     '-module-cache-path',
@@ -76,7 +87,7 @@ const paths = await packager({
     resolve(root, 'server/kernels/python/kernel-worker.py'),
     resolve(root, 'server/kernels/python/kernel-options.py'),
     resolve(root, 'server/kernels/python/kernel-services.py'),
-    ...(platform === 'darwin' ? [localTranslationBinary, hapticBinary] : []),
+    ...(platform === 'darwin' ? [localTranslationBinary, hapticBinary, pdfHandoffBinary] : []),
   ],
   extendInfo: test
     ? {}

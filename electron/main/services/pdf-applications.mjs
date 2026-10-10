@@ -4,6 +4,8 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { existsSync } from 'node:fs';
+import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 
 const execFileAsync = promisify(execFile);
 const MAX_COMMAND_OUTPUT = 4 * 1024 * 1024;
@@ -363,6 +365,7 @@ export function createPDFApplicationService({
   readFileImpl = readFile,
   environment = process.env,
   linuxApplicationDirectories,
+  macOSHelperPath,
 } = {}) {
   const identity = ownApplication(app);
   const known = new Map();
@@ -377,12 +380,15 @@ export function createPDFApplicationService({
   }
 
   function remember(entries) {
-    known.clear();
+    // Menus cache choices per document. A query in another window must not
+    // invalidate a previously discovered application that is still in a menu.
     const result = [];
+    const seen = new Set();
     for (const entry of entries) {
       if (!entry?.id || !entry?.name || isOwnApplication(entry, identity)) continue;
       const key = candidateKey(entry.id, platform);
-      if (known.has(key)) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
       known.set(key, entry);
       result.push({ id: entry.id, name: entry.name });
     }
@@ -489,7 +495,22 @@ export function createPDFApplicationService({
       throw error;
     }
     if (platform === 'darwin') {
-      await run('/usr/bin/open', ['-a', entry.id, pdfPath]);
+      const helper =
+        macOSHelperPath ||
+        (app?.isPackaged
+          ? join(process.resourcesPath, 'pdf-handoff')
+          : applicationPath('.cache', 'pdf-handoff'));
+      const args = [entry.id, pdfPath, String(process.pid)];
+      // The native helper waits for Launch Services and foreground activation.
+      // `open` can return before either finishes, causing premature handoff.
+      if (macOSHelperPath || app?.isPackaged || existsSync(helper)) await run(helper, args);
+      else
+        await run('/usr/bin/swift', [
+          '-module-cache-path',
+          applicationPath('.cache', 'swift-modules'),
+          applicationPath('electron', 'platform', 'macos', 'pdf-handoff.swift'),
+          ...args,
+        ]);
       return true;
     }
     if (platform === 'linux') {
