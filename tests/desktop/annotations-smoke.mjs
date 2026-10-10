@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { writeFile } from 'node:fs/promises';
 export async function verifyAnnotations(window, recents) {
+  const glass = process.argv.includes('--smoke-test=annotation-glass');
   const run = async (code) => {
       try {
         return await window.webContents.executeJavaScript(code);
@@ -86,7 +87,9 @@ export async function verifyAnnotations(window, recents) {
     }
   }
   await wait('window.previewReady');
-  await run(`window.previewPreferences.save({interactionMode:'reading',automatic:false})`);
+  await run(
+    `window.previewPreferences.save({interactionMode:'reading',automatic:false,interfaceStyle:${JSON.stringify(glass ? 'liquid-glass' : 'default')}})`,
+  );
   await new Promise((resolve) => {
     window.webContents.once('did-finish-load', resolve);
     window.webContents.reload();
@@ -155,6 +158,44 @@ export async function verifyAnnotations(window, recents) {
   );
   await run(`document.querySelector('.annotation-highlight').click()`);
   await wait(`!!document.querySelector('.annotation-toolbar')`);
+  if (glass) {
+    window.show();
+    window.focus();
+    window.webContents.focus();
+    await wait(`document.documentElement.dataset.liquidGlass==='ready'`);
+    async function capture(name) {
+      await pause(350);
+      const rect = await run(`(()=>{
+        const r=document.querySelector('.annotation-toolbar').getBoundingClientRect();
+        return {x:Math.max(0,Math.floor(r.x)-20),y:Math.max(0,Math.floor(r.y)-20),
+          width:Math.ceil(r.width)+40,height:Math.ceil(r.height)+40};
+      })()`);
+      await writeFile(
+        `/tmp/pdfreader-annotation-glass-${name}.png`,
+        (await window.webContents.capturePage(rect)).toPNG(),
+      );
+    }
+    await run(`document.documentElement.dataset.appearance='light'`);
+    await capture('palette');
+    await run(`document.querySelector('[aria-label="添加批注"]').click()`);
+    await wait(`!!document.querySelector('.annotation-editor textarea')`);
+    await run(`(()=>{const t=document.querySelector('.annotation-editor textarea');
+      t.value='气死毛咕噜 😅';t.dispatchEvent(new Event('input',{bubbles:true}));
+      document.querySelector('.annotation-editor').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));return true;})()`);
+    await wait(`!document.querySelector('.annotation-editor')`);
+    await run(`document.querySelector('.annotation-highlight').click()`);
+    await wait(
+      `document.querySelector('.annotation-toolbar-comment')?.textContent.includes('气死毛咕噜')`,
+    );
+    await capture('comment-light');
+    await run(`document.documentElement.dataset.appearance='dark'`);
+    await capture('comment-dark');
+    console.log(
+      'Liquid Glass palette and saved highlight comment opened; light/dark captures saved.',
+    );
+    app.exit(0);
+    return;
+  }
   await run(`document.querySelector('[aria-label="荧光黄"]').click()`);
   await wait(`!!document.querySelector('.annotation-highlight')`);
   await wait(`document.querySelector('.copy-toast')?.textContent.includes('自动保存')`);

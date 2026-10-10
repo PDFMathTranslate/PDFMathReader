@@ -137,7 +137,7 @@ export async function runDesktopSmoke({
   else if (smoke === 'kernel-choice')
     await (await import('./kernel-choice-smoke.mjs')).verifyKernelChoice(window);
   else if (smoke === 'kernels') await (await import('./kernel-smoke.mjs')).verifyKernelUI(window);
-  else if (['annotations', 'annotation-shortcuts'].includes(smoke))
+  else if (['annotations', 'annotation-shortcuts', 'annotation-glass'].includes(smoke))
     await (await import('./annotations-smoke.mjs')).verifyAnnotations(window, recents);
   else if (smoke === 'file-open') await checks.verifySystemOpen(window);
   else await checks.verify(window, backend, token, smoke, credentials);

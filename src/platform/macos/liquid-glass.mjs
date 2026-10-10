@@ -6,8 +6,10 @@ import { platform } from '../runtime.mjs';
 // refraction scene there can retain stale scroll pixels and duplicate its rim.
 // Recent-document actions also use the CSS glass material: layering SDK regular
 // surfaces beneath their rounded controls exposes a white rectangular substrate.
+// The annotation palette changes from a capsule to a rounded comment panel.
+// Its CSS glass material owns that outline; an SDK capsule adds a second rim.
 const hosts =
-  '.app[data-platform="darwin"] .toolbar > .icon-button, .app[data-platform="darwin"] .toolbar-actions > .icon-button, .app[data-platform="darwin"] .toolbar-kernel, .app[data-platform="darwin"] .floating-zoom, .app[data-platform="darwin"] .page-navigator, .annotation-ui.annotation-toolbar[data-platform="darwin"], .annotation-ui.annotation-menu[data-platform="darwin"], .app[data-platform="darwin"] .paragraph-detail, .app[data-platform="darwin"] .page-translation-toast, .app[data-platform="darwin"] .error-banner, .app[data-platform="darwin"] .annotation-note, .app[data-platform="darwin"] .copy-toast, .app[data-platform="darwin"] .kernel-error-popover, .reader-glass-menu[data-platform="darwin"]';
+  '.app[data-platform="darwin"] .toolbar > .icon-button, .app[data-platform="darwin"] .toolbar-actions > .icon-button, .app[data-platform="darwin"] .toolbar-kernel, .app[data-platform="darwin"] .floating-zoom, .app[data-platform="darwin"] .page-navigator, .annotation-ui.annotation-menu[data-platform="darwin"], .app[data-platform="darwin"] .paragraph-detail, .app[data-platform="darwin"] .page-translation-toast, .app[data-platform="darwin"] .error-banner, .app[data-platform="darwin"] .annotation-note, .app[data-platform="darwin"] .copy-toast, .app[data-platform="darwin"] .kernel-error-popover, .reader-glass-menu[data-platform="darwin"]';
 
 export function installLiquidGlass() {
   if (platform !== 'darwin') return () => {};
