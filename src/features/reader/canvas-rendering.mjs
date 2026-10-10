@@ -1,6 +1,7 @@
 import { renderPixelRatio, scrollPixelRatio, renderFrame } from './render-resolution.mjs';
 import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';
 import { nextTick } from 'vue';
+import { animateParagraphGaps } from './paragraph-gap-motion.mjs';
 
 export function createCanvasRendering({
   renderState,
@@ -13,6 +14,8 @@ export function createCanvasRendering({
 }) {
   function releaseCanvas(canvas) {
     if (!canvas) return;
+    canvas.paragraphGapCleanup?.();
+    canvas.paragraphGapState = null;
     renderState.pageTasks.get(canvas)?.cancel();
     renderState.pageTasks.delete(canvas);
     renderState.canvasCache.delete(canvas);
@@ -93,6 +96,17 @@ export function createCanvasRendering({
         releaseCanvas(other);
       }
     }
+    canvas.paragraphGapCleanup?.();
+    const number = Number(canvas.closest('.page')?.dataset.page);
+    const source = number && session.pages.value[number - 1];
+    const displayed = source && actions.rootActions.displayedPage(source);
+    const gapState = displayed && {
+      source,
+      cuts: displayed.paragraphCompaction,
+      height: source.height,
+      scale,
+    };
+    const previousGap = canvas.paragraphGapState;
     if (canvas.width !== frame.width) canvas.width = frame.width;
     if (canvas.height !== frame.height) canvas.height = frame.height;
     const context = canvas.getContext('2d');
@@ -120,6 +134,9 @@ export function createCanvasRendering({
     }
     const cropKey = geometry.x + ':' + geometry.y + ':' + geometry.width + ':' + geometry.height;
     renderState.canvasCache.set(canvas, { page, scale, dpr, geometry, cropKey });
+    canvas.paragraphGapState = gapState;
+    if (gapState && previousGap?.source === source)
+      animateParagraphGaps(canvas, previousGap, gapState, scale, geometry);
     canvas.dispatchEvent(new CustomEvent('pdf-frame-presented', { bubbles: true }));
     renderState.renderMetrics.peakResidentBytes = Math.max(
       renderState.renderMetrics.peakResidentBytes,

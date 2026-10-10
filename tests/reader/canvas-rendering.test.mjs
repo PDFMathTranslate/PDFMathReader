@@ -9,6 +9,10 @@ const source = (await readFile(sourceURL, 'utf8'))
     "'./render-resolution.mjs'",
     JSON.stringify(new URL('./render-resolution.mjs', sourceURL).href),
   )
+  .replace(
+    "import { animateParagraphGaps } from './paragraph-gap-motion.mjs';",
+    'const animateParagraphGaps = () => {};',
+  )
   .replace("'vue'", JSON.stringify(import.meta.resolve('vue')))
   .replace(
     "import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';",
@@ -82,7 +86,7 @@ function fixture() {
   };
   const renderer = createCanvasRendering({
     renderState: state,
-    session: { pdf },
+    session: { pdf, pages: { value: pages } },
     motion: { pinching: { value: false } },
     view,
     activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
