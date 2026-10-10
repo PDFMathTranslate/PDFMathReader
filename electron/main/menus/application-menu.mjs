@@ -317,7 +317,7 @@ export function createApplicationMenu({
             enabled: !!documentPath(focusedWindow()),
             submenu: externalApplicationItems(),
           },
-          ...(['darwin', 'win32'].includes(platform)
+          ...(['darwin', 'win32', 'linux'].includes(platform)
             ? [
                 { type: 'separator' },
                 ...['reveal', platform === 'darwin' ? 'airdrop' : 'share'].flatMap((action) =>

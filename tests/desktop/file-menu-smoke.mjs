@@ -68,7 +68,7 @@ export async function verifyExternalApplicationTargeting(platform = 'darwin') {
   await new Promise((resolve) => setImmediate(resolve));
   const submenu = controller.getApplicationMenu().getMenuItemById('file-other-app');
   assert.equal(submenu.label, '在其他应用中继续阅读');
-  if (platform === 'win32') {
+  if (['win32', 'linux'].includes(platform)) {
     const nativeMenu = controller.getApplicationMenu();
     assert.equal(
       nativeMenu.getMenuItemById('file-reveal-original').label,
@@ -117,6 +117,7 @@ export async function verifyFileMenu(window, recents) {
   try {
     await verifyExternalApplicationTargeting();
     await verifyExternalApplicationTargeting('win32');
+    await verifyExternalApplicationTargeting('linux');
     const translatedPages = [];
     for (const width of [200, 300]) {
       const pdf = await PDFDocument.create();

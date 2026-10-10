@@ -93,3 +93,37 @@ test('file menu readiness follows the first translated page and resets when clea
     stop();
   }
 });
+
+test('Linux sharing selects the exported file in the system file manager', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'linux-file-share-'));
+  try {
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = await pdf.save();
+    const original = join(directory, "中文 ' $value original.pdf");
+    await writeFile(original, bytes);
+    const state = { unkeyedAnnotationSource: { path: original } };
+    const target = {
+      isDestroyed: () => false,
+      webContents: { executeJavaScript: async () => [Array.from(bytes)] },
+    };
+    const revealed = [];
+    const actions = createDocumentFileActions({
+      app: { getPath: () => directory },
+      platform: 'linux',
+      registry: { stateFor: () => state },
+      documentPath: () => original,
+      validateSystemPDF: async () => {},
+      reveal: async (path) => revealed.push(path),
+      shareWindows: () => assert.fail('Linux must use its system file manager'),
+    });
+    await actions.perform(target, 'original', 'share');
+    assert.equal(revealed[0], original);
+    await actions.perform(target, 'translated', 'share');
+    assert.notEqual(revealed[1], original);
+    assert.equal((await PDFDocument.load(await readFile(revealed[1]))).getPageCount(), 1);
+    await assert.rejects(actions.perform(target, 'original', 'airdrop'), /Unsupported/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

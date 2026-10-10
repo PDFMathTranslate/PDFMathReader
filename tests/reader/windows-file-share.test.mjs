@@ -13,6 +13,7 @@ test('Windows share passes a PDF safely and propagates native outcomes after ope
     spawn: (...args) => {
       calls.push(args);
       const child = new EventEmitter();
+      child.stdin = new PassThrough();
       child.stdout = new PassThrough();
       child.stderr = new PassThrough();
       child.exitCode = null;
@@ -34,6 +35,12 @@ test('Windows share passes a PDF safely and propagates native outcomes after ope
         'utf8',
       )
     )
+      .replace(
+        "'./windows-send-to-script.mjs'",
+        JSON.stringify(
+          new URL('../../electron/main/services/windows-send-to-script.mjs', import.meta.url).href,
+        ),
+      )
       .replace(
         "import { spawn } from 'node:child_process';",
         'const { spawn } = globalThis.windowsShareTestFixture;',
@@ -63,6 +70,10 @@ test('Windows share passes a PDF safely and propagates native outcomes after ope
     assert.equal(calls[0][2].env.PDFMATHREADER_SHARE_PATH, file);
     assert.equal(calls[0][2].env.PDFMATHREADER_SHARE_HWND, String(0x123456789n));
     assert.ok(!calls[0][1].some((argument) => argument.includes(file)));
+    const script = child.stdin.read().toString();
+    assert.ok(script.includes('TrackPopupMenuEx'));
+    assert.ok(script.includes('context.InvokeCommand'));
+    assert.ok(!script.includes('DataTransferManager'));
     child.stdout.write('READY\n');
     child.stderr.write('ERROR\tDataRequested\tAttachment failed');
     child.emit('close', 1, null);

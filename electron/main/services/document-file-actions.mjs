@@ -105,7 +105,7 @@ export function createDocumentFileActions({
     return path;
   }
   async function perform(target, kind, action) {
-    if (!['darwin', 'win32'].includes(platform) || !target || target.isDestroyed()) return;
+    if (!['darwin', 'win32', 'linux'].includes(platform) || !target || target.isDestroyed()) return;
     if (!['original', 'translated'].includes(kind)) throw Error('Invalid file kind.');
     if (action !== 'reveal' && action !== (platform === 'darwin' ? 'airdrop' : 'share'))
       throw Error('Unsupported file action.');
@@ -117,7 +117,7 @@ export function createDocumentFileActions({
       registry.stateFor(target)?.unkeyedAnnotationSource !== source
     )
       return;
-    if (action === 'reveal') reveal(path);
+    if (action === 'reveal' || (action === 'share' && platform === 'linux')) await reveal(path);
     else if (action === 'share') await shareWindows(target, path);
     else if (action === 'airdrop')
       await runAirDrop('/usr/bin/osascript', ['-l', 'JavaScript', '-e', airDropScript, path], {
