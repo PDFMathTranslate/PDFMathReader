@@ -77,12 +77,15 @@ test('status and recognition never download models; an explicit failed download 
 test('recognition resolves only after the worker closes and excludes overlapping workers', async (t) => {
   const child = new Child();
   const service = await fixture(t, { spawnImpl: () => child }, true);
-  const recognition = service.recognize(Buffer.from('png'));
+  let payload = '';
+  child.stdin.on('data', (chunk) => (payload += chunk));
+  const recognition = service.recognize(Buffer.from('png'), { preferGpu: true });
   let resolved = false;
   recognition.then(() => {
     resolved = true;
   });
   await started(service);
+  assert.equal(JSON.parse(payload).preferGpu, true);
   assert.equal(resolved, false);
   await assert.rejects(service.recognize(Buffer.from('png')), { code: 'FORMULA_OCR_BUSY' });
   child.finish();

@@ -1,7 +1,7 @@
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { formulaOcrLabel } from './formula-ocr-labels.mjs';
 
-export function useFormulaOcr({ enabled, request, notify, save }) {
+export function useFormulaOcr({ enabled, preferGpu, request, notify, save }) {
   const status = ref({ ready: false }),
     busy = ref(false),
     error = ref('');
@@ -50,7 +50,10 @@ export function useFormulaOcr({ enabled, request, notify, save }) {
     const current = await refresh({ signal });
     if (!enabled.value || !current.ready) throw Error(formulaOcrLabel('notReady'));
     signal?.throwIfAborted();
-    const result = await request('/api/formula-ocr/recognize', {
+    const url = preferGpu?.value
+      ? '/api/formula-ocr/recognize?prefer_gpu=true'
+      : '/api/formula-ocr/recognize';
+    const result = await request(url, {
       method: 'POST',
       headers: { 'Content-Type': 'image/png' },
       body: image,

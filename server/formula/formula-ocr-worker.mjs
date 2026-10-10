@@ -1,6 +1,7 @@
 import { inflateSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { createFormulaOcrSessions } from './formula-ocr-sessions.mjs';
 
 const IMAGE_SIZE = 384;
 const MAX_NEW_TOKENS = 1024;
@@ -368,7 +369,7 @@ function findInput(session, candidates) {
   );
 }
 
-async function recognize({ modelDir, imageBuffer }) {
+async function recognize({ modelDir, imageBuffer, preferGpu }) {
   let ort;
   try {
     ort = await import('onnxruntime-node');
@@ -379,12 +380,7 @@ async function recognize({ modelDir, imageBuffer }) {
     );
   }
   const tokenizer = JSON.parse(await readFile(join(modelDir, 'tokenizer.json'), 'utf8'));
-  const encoder = await ort.InferenceSession.create(join(modelDir, 'encoder_model.onnx'), {
-    executionProviders: ['cpu'],
-  });
-  const decoder = await ort.InferenceSession.create(join(modelDir, 'decoder_model.onnx'), {
-    executionProviders: ['cpu'],
-  });
+  const { encoder, decoder } = await createFormulaOcrSessions(ort, modelDir, { preferGpu });
   try {
     const pixelValues = new ort.Tensor('float32', imageToTensor(imageBuffer), [
       1,
@@ -461,6 +457,7 @@ async function main() {
   const result = await recognize({
     modelDir: request.modelDir,
     imageBuffer: Buffer.from(request.imageBase64, 'base64'),
+    preferGpu: request.preferGpu === true,
   });
   process.stdout.write(JSON.stringify(result));
 }

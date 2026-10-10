@@ -5,6 +5,7 @@ import { registerFormulaOcrRoutes } from '../../server/http/formula-ocr-routes.m
 
 test('formula routes require explicit download and accept only image requests', async () => {
   const calls = [];
+  const gpuRequests = [];
   const app = express();
   registerFormulaOcrRoutes(app, {
     service: {
@@ -12,8 +13,9 @@ test('formula routes require explicit download and accept only image requests', 
       download: async () => {
         calls.push('download');
       },
-      recognize: async (buffer) => {
+      recognize: async (buffer, options) => {
         calls.push(buffer.toString());
+        gpuRequests.push(options.preferGpu);
         return '  x^2  ';
       },
     },
@@ -48,6 +50,14 @@ test('formula routes require explicit download and accept only image requests', 
       { latex: 'x^2' },
     );
     assert.deepEqual(calls, ['download', 'png']);
+    for (const value of ['true', 'false', '1']) {
+      await fetch(url + '/recognize?prefer_gpu=' + value, {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/png' },
+        body: 'png',
+      });
+    }
+    assert.deepEqual(gpuRequests, [false, true, false, false]);
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));

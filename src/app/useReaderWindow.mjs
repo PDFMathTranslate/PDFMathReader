@@ -453,6 +453,7 @@ export function useReaderWindow() {
     'formulaOcr',
     useFormulaOcr({
       enabled: preferences.formulaOcrEnabled,
+      preferGpu: computed(() => kernelAdvancedOptions.value[engine.value]?.prefer_gpu === true),
       request: featureActions.api,
       notify: notifyCopy,
       save: () => featureActions.saveView(),

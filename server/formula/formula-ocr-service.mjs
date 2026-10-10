@@ -240,6 +240,7 @@ function recognizeInChild({
   workerPath,
   modelDir,
   imageBuffer,
+  preferGpu,
   signal,
   activeChildren,
 }) {
@@ -341,8 +342,11 @@ function recognizeInChild({
     });
     try {
       child.stdin.end(
-        JSON.stringify({ modelDir, imageBase64: Buffer.from(imageBuffer).toString('base64') }) +
-          '\n',
+        JSON.stringify({
+          modelDir,
+          imageBase64: Buffer.from(imageBuffer).toString('base64'),
+          preferGpu,
+        }) + '\n',
       );
     } catch (error) {
       killChild(child);
@@ -488,7 +492,7 @@ export function createFormulaOcrService({
     return await status();
   }
 
-  async function recognize(imageBuffer, { signal } = {}) {
+  async function recognize(imageBuffer, { signal, preferGpu = false } = {}) {
     ensureOpen();
     if (activeRecognition)
       throw serviceError(
@@ -517,6 +521,7 @@ export function createFormulaOcrService({
         workerPath,
         modelDir,
         imageBuffer,
+        preferGpu: preferGpu === true,
         signal,
         activeChildren,
       });

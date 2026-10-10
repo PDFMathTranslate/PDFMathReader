@@ -28,7 +28,10 @@ export function registerFormulaOcrRoutes(app, { service }) {
       };
       res.once('close', disconnected);
       try {
-        const result = await service.recognize(req.body, { signal: controller.signal });
+        const result = await service.recognize(req.body, {
+          signal: controller.signal,
+          preferGpu: req.query.prefer_gpu === 'true',
+        });
         res.json(typeof result === 'string' ? { latex: result.trim() } : result);
       } catch (error) {
         if (!res.destroyed) res.status(503).json({ error: error.message });
