@@ -409,6 +409,27 @@ export function useReaderWindow() {
     copyHoveredParagraph,
   } = documentSurface;
 
+  let translationCompletionPending = false;
+  watch(pages, () => (translationCompletionPending = false), { flush: 'sync' });
+  watch(
+    () => ({
+      translating: pages.value.some(
+        (page) => page.status === 'detecting' && page.translationActivity === 'translating',
+      ),
+      complete:
+        pages.value.length > 0 &&
+        pages.value.every((page) => page.status === 'ready' && page.mathDocument),
+    }),
+    ({ translating, complete }) => {
+      if (translating) translationCompletionPending = true;
+      if (complete && translationCompletionPending) {
+        translationCompletionPending = false;
+        notifyCopy(t('translation.pdfCompleted'), 5000);
+      }
+    },
+    { flush: 'sync' },
+  );
+
   provide(
     'formulaOcr',
     useFormulaOcr({

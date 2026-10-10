@@ -15,7 +15,7 @@ const MAX_ANNOTATIONS = 10000;
 const MAX_TEXT_LENGTH = 100000;
 const MAX_RECT_COUNT = 256;
 const MAX_COORDINATE = 1000000;
-const MAX_PDF_BYTES = 50 * 1024 * 1024;
+const MAX_PDF_BYTES = 200 * 1024 * 1024;
 const MANAGED_PREFIX = 'PDFMathReader:';
 const HEX_COLOR = /^#[\da-f]{6}(?:[\da-f]{2})?$/i;
 
@@ -151,7 +151,7 @@ function asBytes(value) {
   if (value === undefined || value === null) return undefined;
   if (!(value instanceof Uint8Array) && !Buffer.isBuffer(value))
     invalid('Invalid annotation PDF bytes.');
-  if (value.byteLength > MAX_PDF_BYTES) invalid('Annotation PDF exceeds the 50 MiB limit.');
+  if (value.byteLength > MAX_PDF_BYTES) invalid('Annotation PDF exceeds the 200 MiB limit.');
   return Buffer.from(value);
 }
 

@@ -36,7 +36,7 @@ export function registerDocumentIPC({
     } catch {
       state.documentIdentity = null;
       state.performance.hasDocument = false;
-      return { error: 'Could not open this PDF. Check file access and the 50 MB limit.' };
+      return { error: 'Could not open this PDF. Check file access and the 200 MB limit.' };
     }
   });
   handle('documents:editPages', async (event, value) => {

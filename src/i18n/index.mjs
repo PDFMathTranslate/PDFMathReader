@@ -116,7 +116,7 @@ const messages = {
       saveDocumentPreview: 'Could not save the document preview.',
       searchDocument: 'Search could not read this document.',
       testDocumentsDisabled: 'TEST APP: personal documents are disabled.',
-      PDFTooLarge: 'Choose a PDF smaller than 50 MB.',
+      PDFTooLarge: 'Choose a PDF smaller than 200 MB.',
       requestFailed: 'Request failed',
     },
     copy: {
@@ -356,7 +356,7 @@ const messages = {
       saveDocumentPreview: '无法保存文档预览。',
       searchDocument: '无法读取此文档进行搜索。',
       testDocumentsDisabled: '测试应用：个人文档已禁用。',
-      PDFTooLarge: '请选择小于 50 MB 的 PDF。',
+      PDFTooLarge: '请选择小于 200 MB 的 PDF。',
       requestFailed: '请求失败',
     },
     copy: {
@@ -595,7 +595,7 @@ const messages = {
       saveDocumentPreview: '文書のプレビューを保存できませんでした。',
       searchDocument: 'この文書を検索できませんでした。',
       testDocumentsDisabled: 'テストアプリ：個人文書は無効です。',
-      PDFTooLarge: '50 MB 未満の PDF を選択してください。',
+      PDFTooLarge: '200 MB 未満の PDF を選択してください。',
       requestFailed: 'リクエストに失敗しました',
     },
     copy: {
@@ -1753,5 +1753,17 @@ const experimentalCategoryLabels = {
 };
 for (const [locale, label] of Object.entries(experimentalCategoryLabels))
   messages[locale].settings.experimentalCategory = label;
+
+const translatedPdfCompletionLabels = {
+  en: 'Translated PDF is ready',
+  'zh-CN': '翻译版 PDF 已完成',
+  'zh-TW': '翻譯版 PDF 已完成',
+  ja: '翻訳版 PDF が完成しました',
+  ko: '번역된 PDF가 완성되었습니다',
+  fr: 'Le PDF traduit est prêt',
+  es: 'El PDF traducido está listo',
+};
+for (const [locale, label] of Object.entries(translatedPdfCompletionLabels))
+  messages[locale].translation.pdfCompleted = label;
 
 Object.assign(messages, europeanMessages, southAsiaPidginMessages, arabicMessages);

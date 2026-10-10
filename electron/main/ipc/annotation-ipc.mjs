@@ -17,7 +17,7 @@ export function registerAnnotationIPC({
   const aiDiscussion = createAIDiscussionService({ runFile, clipboard });
   handle('previewAnnotations:prepare', async (event, value) => {
     const target = trustedWindow(event);
-    if (!(value instanceof Uint8Array) || value.byteLength > 50 * 1024 * 1024)
+    if (!(value instanceof Uint8Array) || value.byteLength > 200 * 1024 * 1024)
       throw Error('Invalid annotation PDF bytes.');
     const imported = await importPDFAnnotations(value, { prepare: true });
     registry.stateFor(target).unkeyedAnnotationSource = {
@@ -124,7 +124,7 @@ export function registerAnnotationIPC({
   });
   handle('previewAnnotations:clean', async (event, value) => {
     trustedWindow(event);
-    if (!(value instanceof Uint8Array) || value.byteLength > 50 * 1024 * 1024)
+    if (!(value instanceof Uint8Array) || value.byteLength > 200 * 1024 * 1024)
       throw Error('Invalid annotation PDF bytes.');
     return new Uint8Array(await stripManagedAnnotations(value));
   });

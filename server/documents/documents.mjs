@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 export const MAX_DOCUMENTS = 2;
-export const MAX_DOCUMENT_BYTES = 50 * 1024 * 1024;
-export const MAX_TOTAL_DOCUMENT_BYTES = 100 * 1024 * 1024;
+export const MAX_DOCUMENT_BYTES = 200 * 1024 * 1024;
+export const MAX_TOTAL_DOCUMENT_BYTES = 400 * 1024 * 1024;
 
 const PDF_MAGIC = Buffer.from('%PDF');
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -48,7 +48,7 @@ export function createDocumentStore({
     if (!bytes.length || !isPDFBytes(bytes))
       throw new DocumentStoreError('The document is not a readable PDF.', 'INVALID_PDF', 400);
     if (bytes.length > maxDocumentBytes)
-      throw new DocumentStoreError('Choose a PDF smaller than 50 MiB.', 'DOCUMENT_TOO_LARGE', 413);
+      throw new DocumentStoreError('Choose a PDF smaller than 200 MiB.', 'DOCUMENT_TOO_LARGE', 413);
     if (documents.size >= maxDocuments || activeBytes + bytes.length > maxBytes)
       throw new DocumentStoreError(
         'Document storage is full. Close an open document before registering another.',

@@ -111,7 +111,7 @@ const german = {
     saveDocumentPreview: 'Dokumentvorschau konnte nicht gespeichert werden.',
     searchDocument: 'Dokument konnte für die Suche nicht gelesen werden.',
     testDocumentsDisabled: 'TEST-APP: Persönliche Dokumente sind deaktiviert.',
-    PDFTooLarge: 'Wählen Sie ein PDF unter 50 MB.',
+    PDFTooLarge: 'Wählen Sie ein PDF unter 200 MB.',
     requestFailed: 'Anfrage fehlgeschlagen',
   },
   copy: {
@@ -619,7 +619,7 @@ const portuguese = {
     saveDocumentPreview: 'Não foi possível guardar a pré-visualização do documento.',
     searchDocument: 'Não foi possível ler este documento para pesquisar.',
     testDocumentsDisabled: 'APLICAÇÃO DE TESTE: os documentos pessoais estão desativados.',
-    PDFTooLarge: 'Escolha um PDF com menos de 50 MB.',
+    PDFTooLarge: 'Escolha um PDF com menos de 200 MB.',
     requestFailed: 'Pedido falhou',
   },
   copy: {

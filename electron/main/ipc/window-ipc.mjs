@@ -117,7 +117,7 @@ export function registerWindowIPC({
         !value ||
         typeof value.name !== 'string' ||
         !(value.bytes instanceof Uint8Array) ||
-        value.bytes.byteLength > 50 * 1024 * 1024
+        value.bytes.byteLength > 200 * 1024 * 1024
       )
         throw Error('Invalid PDF.');
       await openDocumentWindow({ name: value.name, bytes: value.bytes }, target);

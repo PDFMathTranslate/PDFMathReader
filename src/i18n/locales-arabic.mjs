@@ -110,7 +110,7 @@ export const expandedMessages = {
       saveDocumentPreview: 'تعذّر حفظ معاينة المستند.',
       searchDocument: 'تعذّرت قراءة هذا المستند للبحث فيه.',
       testDocumentsDisabled: 'تطبيق الاختبار: المستندات الشخصية معطّلة.',
-      PDFTooLarge: 'اختر ملف PDF أصغر من 50 MB.',
+      PDFTooLarge: 'اختر ملف PDF أصغر من 200 MB.',
       requestFailed: 'فشل الطلب',
     },
     copy: {
@@ -607,7 +607,7 @@ export const expandedMessages = {
       saveDocumentPreview: 'مش قادرين نحفظ معاينة المستند.',
       searchDocument: 'مش قادرين نقرا المستند ده عشان ندوّر فيه.',
       testDocumentsDisabled: 'تطبيق الاختبار: المستندات الشخصية متقفّلة.',
-      PDFTooLarge: 'اختار PDF أصغر من 50 MB.',
+      PDFTooLarge: 'اختار PDF أصغر من 200 MB.',
       requestFailed: 'الطلب فشل',
     },
     copy: {
@@ -1105,7 +1105,7 @@ export const expandedMessages = {
       saveDocumentPreview: 'دستاویز کا پیش منظر محفوظ نہیں کیا جا سکا۔',
       searchDocument: 'تلاش کے لیے یہ دستاویز پڑھی نہیں جا سکی۔',
       testDocumentsDisabled: 'ٹیسٹ ایپ: ذاتی دستاویزات غیر فعال ہیں۔',
-      PDFTooLarge: '50 MB سے چھوٹی PDF منتخب کریں۔',
+      PDFTooLarge: '200 MB سے چھوٹی PDF منتخب کریں۔',
       requestFailed: 'درخواست ناکام ہو گئی',
     },
     copy: {

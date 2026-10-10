@@ -94,7 +94,7 @@ export const extraMessages = {
       saveDocumentPreview: '無法儲存文件預覽。',
       searchDocument: '無法讀取此文件以進行搜尋。',
       testDocumentsDisabled: '測試應用程式：個人文件已停用。',
-      PDFTooLarge: '請選擇小於 50 MB 的 PDF。',
+      PDFTooLarge: '請選擇小於 200 MB 的 PDF。',
       requestFailed: '請求失敗',
     },
     copy: {
@@ -337,7 +337,7 @@ export const extraMessages = {
       saveDocumentPreview: 'Impossible d’enregistrer l’aperçu du document.',
       searchDocument: 'Impossible de lire ce document pour effectuer la recherche.',
       testDocumentsDisabled: 'APPLICATION DE TEST : les documents personnels sont désactivés.',
-      PDFTooLarge: 'Choisissez un PDF de moins de 50 Mo.',
+      PDFTooLarge: 'Choisissez un PDF de moins de 200 Mo.',
       requestFailed: 'Échec de la requête',
     },
     copy: {
@@ -583,7 +583,7 @@ export const extraMessages = {
       saveDocumentPreview: 'No se pudo guardar la vista previa del documento.',
       searchDocument: 'No se pudo leer este documento para buscar.',
       testDocumentsDisabled: 'APLICACIÓN DE PRUEBA: los documentos personales están desactivados.',
-      PDFTooLarge: 'Elige un PDF de menos de 50 MB.',
+      PDFTooLarge: 'Elige un PDF de menos de 200 MB.',
       requestFailed: 'Error en la solicitud',
     },
     copy: {
@@ -830,7 +830,7 @@ export const extraMessages = {
       saveDocumentPreview: '문서 미리보기를 저장할 수 없습니다.',
       searchDocument: '검색을 위해 이 문서를 읽을 수 없습니다.',
       testDocumentsDisabled: '테스트 앱: 개인 문서가 비활성화되었습니다.',
-      PDFTooLarge: '50 MB보다 작은 PDF를 선택하세요.',
+      PDFTooLarge: '200 MB보다 작은 PDF를 선택하세요.',
       requestFailed: '요청에 실패했습니다',
     },
     copy: {

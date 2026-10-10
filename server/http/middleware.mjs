@@ -89,7 +89,7 @@ export function registerErrorMiddleware(app) {
   app.use((error, _req, res, next) => {
     if (res.headersSent) return next(error);
     if (error?.type === 'entity.too.large' || error?.status === 413)
-      return res.status(413).json({ error: 'PDF exceeds the 50 MiB limit.' });
+      return res.status(413).json({ error: 'PDF exceeds the 200 MiB limit.' });
     if (error?.status === 400) return res.status(400).json({ error: 'Invalid request body.' });
     return next(error);
   });

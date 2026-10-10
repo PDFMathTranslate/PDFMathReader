@@ -84,7 +84,7 @@ export function createDocumentImport({
       feedback.error.value = t('error.testDocumentsDisabled');
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
+    if (file.size > 200 * 1024 * 1024) {
       feedback.error.value = t('error.PDFTooLarge');
       return;
     }
