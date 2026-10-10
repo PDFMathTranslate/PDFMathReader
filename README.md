@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                              | Contributor                        |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-10 | [notify PDF completion and allow 200 MB files](https://github.com/PDFMathTranslate/PDFMathReader/commit/c49c7c05644b4184845d5cd4e4b588fb6c127689)    | [@reycn](https://github.com/reycn) |
-| 2026-10-10 | [add native Windows PDF file actions](https://github.com/PDFMathTranslate/PDFMathReader/commit/807bc9fadd702c9a6ebb4f95f52839cf7d893226)             | [@reycn](https://github.com/reycn) |
-| 2026-10-10 | [add nine interface languages](https://github.com/PDFMathTranslate/PDFMathReader/commit/041a09d7d9bb1035715bcc2adbb74e6fae8b391e)                    | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [add Finder and AirDrop file actions on macOS](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073)    | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [add experimental Jev document language check](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031)    | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [restore translated pages before kernel startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)  | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [improve reading layout and translation behavior](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe) | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                         | Contributor                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-10 | [add experimental ChatGPT Subscription translation provider](https://github.com/PDFMathTranslate/PDFMathReader/commit/7d1f24ee0dc8c304e83bfdd29b46c1d6053a0173) | [@reycn](https://github.com/reycn) |
+| 2026-10-10 | [notify PDF completion and allow 200 MB files](https://github.com/PDFMathTranslate/PDFMathReader/commit/c49c7c05644b4184845d5cd4e4b588fb6c127689)               | [@reycn](https://github.com/reycn) |
+| 2026-10-10 | [add native Windows PDF file actions](https://github.com/PDFMathTranslate/PDFMathReader/commit/807bc9fadd702c9a6ebb4f95f52839cf7d893226)                        | [@reycn](https://github.com/reycn) |
+| 2026-10-10 | [add nine interface languages](https://github.com/PDFMathTranslate/PDFMathReader/commit/041a09d7d9bb1035715bcc2adbb74e6fae8b391e)                               | [@reycn](https://github.com/reycn) |
+| 2026-10-09 | [add Finder and AirDrop file actions on macOS](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073)               | [@reycn](https://github.com/reycn) |
+| 2026-10-09 | [add experimental Jev document language check](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031)               | [@reycn](https://github.com/reycn) |
+| 2026-10-09 | [restore translated pages before kernel startup](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)             | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
