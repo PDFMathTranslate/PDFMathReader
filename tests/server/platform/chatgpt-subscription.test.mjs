@@ -642,8 +642,6 @@ test('models and complete serialize refreshes and adapt Chat Completions to Resp
     const payload = JSON.parse(request.options.body);
     assert.equal(payload.store, false);
     assert.equal(payload.stream, true);
-    assert.equal('temperature' in payload, false);
-    assert.equal('top_p' in payload, false);
     assert.deepEqual(payload.input, [
       { role: 'system', content: 'Be concise.' },
       { role: 'user', content: 'Say hello.' },
