@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",
-    "@glass-sdk/liquid-glass": "0.0.1",
+    "@glass-sdk/liquid-glass": "0.0.2",
     "@thednp/dommatrix": "3.1.2",
     "express": "^5.1.0",
     "onnxruntime-node": "1.22.0",
