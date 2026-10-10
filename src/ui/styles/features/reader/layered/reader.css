@@ -3,6 +3,8 @@
 
 .reader {
   position: relative;
+  /* Keep page overlays, including translation progress, below the titlebar. */
+  z-index: 0;
   min-width: 0;
   min-height: 0;
   overflow: auto;

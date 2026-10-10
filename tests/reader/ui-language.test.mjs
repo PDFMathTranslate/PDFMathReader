@@ -26,15 +26,33 @@ function leaves(value, prefix = '') {
   });
 }
 const placeholders = (value) => (value.match(/\{[A-Za-z0-9_]+\}/g) || []).sort();
-test('language choices use English country order and default to English', () => {
+test('language choices use English language name order and default to English', () => {
   assert.equal(uiLanguageChoice.value, 'en');
   assert.equal(resolveUILanguage(), 'en');
   assert.equal(new Set(SUPPORTED_UI_LANGUAGES).size, 16);
-  const countries = UI_LANGUAGE_OPTIONS.map(({ country }) => country);
+  const names = UI_LANGUAGE_OPTIONS.map(({ englishName }) => englishName);
   assert.deepEqual(
-    countries,
-    [...countries].sort((a, b) => a.localeCompare(b, 'en')),
+    names,
+    [...names].sort((a, b) => a.localeCompare(b, 'en')),
   );
+  assert.deepEqual(SUPPORTED_UI_LANGUAGES, [
+    'ar',
+    'bn',
+    'zh-CN',
+    'zh-TW',
+    'arz',
+    'en',
+    'fr',
+    'de',
+    'hi',
+    'ja',
+    'ko',
+    'pcm',
+    'pt',
+    'ru',
+    'es',
+    'ur',
+  ]);
   assert.equal(resolveUILanguage('system', 'ar_EG'), 'arz');
   assert.equal(resolveUILanguage('system', 'pt-BR'), 'pt');
   assert.equal(resolveUILanguage('system', 'zh-Hant-HK'), 'zh-TW');
