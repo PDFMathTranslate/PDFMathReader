@@ -1,3 +1,5 @@
+import { CHATGPT_INFERENCE_TIMEOUT_MS } from '../../../shared/translation/timeouts.mjs';
+
 const parentPort = process.parentPort;
 let backend;
 let credentialKey = '';
@@ -13,7 +15,10 @@ function subscriptionRequest(action, body, signal, options = {}) {
       send({ type: 'subscription-cancel', id });
       finish(Error('ChatGPT Subscription request cancelled.'));
     };
-    const timer = setTimeout(cancel, 60000);
+    const timer = setTimeout(
+      cancel,
+      action === 'complete' ? CHATGPT_INFERENCE_TIMEOUT_MS + 10000 : 60000,
+    );
     const finish = (error, result) => {
       clearTimeout(timer);
       signal?.removeEventListener('abort', cancel);

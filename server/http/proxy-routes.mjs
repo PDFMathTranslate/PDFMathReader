@@ -1,5 +1,6 @@
 import express from 'express';
 import { kernelTranslationSpacing } from '../../shared/translation/spacing.mjs';
+import { CHATGPT_INFERENCE_TIMEOUT_MS } from '../../shared/translation/timeouts.mjs';
 
 export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, providerClient }) {
   app.post('/kernel-proxy/v1/translate', express.json({ limit: '1mb' }), async (req, res) => {
@@ -34,7 +35,10 @@ export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, 
       const provider = job.provider;
       const controller = new AbortController();
       const signal = AbortSignal.any([controller.signal, job.controller.signal]);
-      const timeout = setTimeout(() => controller.abort(), 60000);
+      const timeout = setTimeout(
+        () => controller.abort(),
+        provider.id === 'chatgpt-subscription' ? CHATGPT_INFERENCE_TIMEOUT_MS + 10000 : 60000,
+      );
       res.on('close', () => {
         if (!res.writableEnded) controller.abort();
       });

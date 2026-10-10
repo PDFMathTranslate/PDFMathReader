@@ -3,6 +3,7 @@ import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } fr
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { replaceFile } from '../../../runtime/node/atomic-file.mjs';
+import { CHATGPT_INFERENCE_TIMEOUT_MS } from '../../../shared/translation/timeouts.mjs';
 
 const ISSUER = 'https://auth.openai.com';
 const DISCOVERY_URL = `${ISSUER}/.well-known/openid-configuration`;
@@ -779,6 +780,7 @@ export async function createChatGPTSubscription({
   agentName = DEFAULT_AGENT_NAME,
   authTimeoutMs = DEFAULT_AUTH_TIMEOUT,
   fetchTimeoutMs = DEFAULT_NETWORK_TIMEOUT,
+  inferenceTimeoutMs = CHATGPT_INFERENCE_TIMEOUT_MS,
   refreshSkewMs = REFRESH_SKEW,
   serverFactory = (handler) => createServer(handler),
   onChange,
@@ -1614,7 +1616,7 @@ export async function createChatGPTSubscription({
             body: JSON.stringify(payload),
             signal: requestSignal,
           },
-          fetchTimeoutMs,
+          inferenceTimeoutMs,
         ),
       );
       if (controller.signal.aborted) throw publicError('ABORTED', PUBLIC_ERRORS.interrupted);
@@ -1671,6 +1673,7 @@ export async function createChatGPTSubscription({
       if (error?.code === 'REFRESH' || error?.code === 'EXPIRED') throw error;
       if (error?.code === 'USAGE_LIMIT' || error?.code === 'USAGE_UNAVAILABLE') throw error;
       if (error?.code === 'REQUEST') throw error;
+      if (error?.code === 'NETWORK_TIMEOUT') throw error;
       if (isAbortError(error, controller.signal))
         throw publicError('ABORTED', PUBLIC_ERRORS.interrupted);
       throw publicError('INFERENCE', PUBLIC_ERRORS.inference);

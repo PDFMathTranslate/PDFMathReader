@@ -595,6 +595,50 @@ test('retries dynamic invalid_grant with the issued client ID without persisting
   }
 });
 
+test('inference can outlast the short authentication network deadline', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'chatgpt-subscription-long-inference-'));
+  const state = fixture({
+    responseHandler: () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            setTimeout(() => {
+              controller.enqueue(
+                new TextEncoder().encode(
+                  'event: response.completed\ndata: {"type":"response.completed","response":{"output":[{"content":[{"type":"output_text","text":"translated"}]}]}}\n\n',
+                ),
+              );
+              controller.close();
+            }, 100);
+          },
+        }),
+        { headers: { 'content-type': 'text/event-stream' } },
+      ),
+  });
+  let service;
+  try {
+    service = await createChatGPTSubscription({
+      path: join(directory, 'chatgpt.enc'),
+      safeStorage: safeStorageFixture(),
+      openExternal: state.openExternal,
+      fetcher: state.fetcher,
+      platform: 'darwin',
+      serverFactory: state.serverFactory,
+      fetchTimeoutMs: 40,
+      inferenceTimeoutMs: 1000,
+    });
+    await signInFixture(service, state, 'oaiapp_long_inference');
+    const result = await service.complete({
+      model: 'visible-model',
+      messages: [{ role: 'user', content: 'translate' }],
+    });
+    assert.equal(result.choices[0].message.content, 'translated');
+  } finally {
+    await service?.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('models and complete serialize refreshes and adapt Chat Completions to Responses SSE', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'chatgpt-subscription-refresh-'));
   const state = fixture({ authExpiresIn: 0 });
