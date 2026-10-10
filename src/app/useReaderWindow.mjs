@@ -54,14 +54,14 @@ export function useReaderWindow() {
   window.previewTranslatedFilePages = async () => {
     const epoch = session.epoch;
     const documents = pages.value.map((page) => page.mathDocument);
-    if (!documents.length || documents.some((document) => !document)) return null;
+    if (!documents.some((document) => !!document)) return null;
     const bytes = await Promise.all(
-      documents.map(async (document) => Array.from(await document.getData())),
+      documents.map(async (document) => (document ? Array.from(await document.getData()) : null)),
     );
     return epoch === session.epoch ? bytes : null;
   };
   watch(
-    () => pages.value.length > 0 && pages.value.every((page) => !!page.mathDocument),
+    () => pages.value.some((page) => !!page.mathDocument),
     (ready) => {
       void window.previewActions?.translatedFileReady?.(ready);
     },

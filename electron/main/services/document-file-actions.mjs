@@ -2,7 +2,7 @@ import { shell } from 'electron';
 import { shareWindowsFile } from './windows-file-share.mjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { access, mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { PDFDocument } from 'pdf-lib';
@@ -68,10 +68,20 @@ export function createDocumentFileActions({
         'window.previewTranslatedFilePages?.()',
       );
       if (!current()) return;
-      if (!Array.isArray(pages) || !pages.length)
-        throw Error('Translate every page before viewing or sharing the translated PDF.');
+      if (!Array.isArray(pages) || !pages.some((page) => Array.isArray(page) && page.length))
+        throw Error('Translate at least one page before viewing or sharing the translated PDF.');
       const pdf = await PDFDocument.create();
-      for (const bytes of pages) {
+      const originalPDF = pages.includes(null)
+        ? await PDFDocument.load(await readFile(original))
+        : null;
+      if (originalPDF && originalPDF.getPageCount() !== pages.length)
+        throw Error('The original PDF page count has changed. Reopen the document and try again.');
+      for (const [index, bytes] of pages.entries()) {
+        if (bytes === null) {
+          const [page] = await pdf.copyPages(originalPDF, [index]);
+          pdf.addPage(page);
+          continue;
+        }
         const pagePDF = await PDFDocument.load(Uint8Array.from(bytes));
         for (const page of await pdf.copyPages(pagePDF, pagePDF.getPageIndices()))
           pdf.addPage(page);

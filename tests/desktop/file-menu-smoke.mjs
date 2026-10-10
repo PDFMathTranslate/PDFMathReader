@@ -169,7 +169,7 @@ export async function verifyFileMenu(window, recents) {
     fileTarget.webContents.executeJavaScript = async () => null;
     await assert.rejects(
       fileActions.perform(fileTarget, 'translated', 'reveal'),
-      /Translate every page/,
+      /Translate at least one page/,
     );
     await wait('window.previewReady===true');
     assert.ok(
