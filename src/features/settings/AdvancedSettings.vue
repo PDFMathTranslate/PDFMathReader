@@ -11,6 +11,7 @@ import {
 import { t, advancedOptionText, advancedChoiceText } from '../../i18n/index.mjs';
 import DeveloperOptions from '../developer/DeveloperOptions.vue';
 import RecentDebugLogs from '../developer/RecentDebugLogs.vue';
+import { GPU_INFERENCE_OPTION } from '../../../shared/gpu-inference.mjs';
 
 const SUPPORTED_ENGINES = ['pdf_math_fast', 'pdf_math_precise'];
 const INVALID = Symbol('invalid-advanced-value');
@@ -124,7 +125,7 @@ function emitValues(nextValues) {
 function update(option, value) {
   const nextValue = normalize(option, value);
   if (nextValue === INVALID) return;
-  const next = sanitize(values.value);
+  const next = option.id === 'prefer_gpu' ? { ...values.value } : sanitize(values.value);
   if (nextValue === '' || sameValue(nextValue, option.default, option.type)) delete next[option.id];
   else next[option.id] = nextValue;
   emitValues(next);
@@ -170,7 +171,7 @@ watch(
   async () => {
     const token = ++generation;
     requestController?.abort();
-    options.value = [];
+    options.value = eligible.value && expanded.value ? [{ ...GPU_INFERENCE_OPTION }] : [];
     message.value = '';
     busy.value = false;
     if (!eligible.value || !expanded.value || props.installing) return;
@@ -201,7 +202,7 @@ watch(
           });
       } while (result.pending && token === generation && !controller.signal.aborted);
       if (token === generation) {
-        options.value = normalizeSchema(result.options);
+        options.value = normalizeSchema([GPU_INFERENCE_OPTION, ...result.options]);
         if (!result.reason) {
           const normalized = sanitize(values.value);
           if (!sameMap(values.value, normalized)) emitValues(normalized);

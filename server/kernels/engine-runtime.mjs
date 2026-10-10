@@ -229,6 +229,7 @@ export function createEngineRuntime({
   onKernelEvent,
   findUvImpl = findUv,
   execImpl = exec,
+  platform = process.platform,
 }) {
   const processes = createKernelProcesses({ execImpl, onEvent: onKernelEvent });
   const runExec = processes.exec;
@@ -243,6 +244,72 @@ export function createEngineRuntime({
     advancedFailures = new Map();
   const envPath = (id) => join(root, id);
   const python = (id) => kernelPythonPath(envPath(id));
+  const gpuEnvironments = new Map();
+  async function ensureGpu(id) {
+    if (gpuEnvironments.has(id)) return gpuEnvironments.get(id);
+    const task = (async () => {
+      if (installing.has(id)) await installing.get(id);
+      const provider = platform === 'win32' ? 'DmlExecutionProvider' : 'CoreMLExecutionProvider';
+      const probe = async () => {
+        const { stdout } = await runExec(
+          python(id),
+          [
+            '-c',
+            `import onnxruntime as ort; print('${provider}' in ort.get_available_providers())`,
+          ],
+          { timeout: 15000 },
+          { kernel: id, name: 'python' },
+        );
+        return stdout.trim() === 'True';
+      };
+      if (await probe().catch(() => false)) return;
+      uv = await detectUv();
+      if (!uv.available) throw Error(uv.message);
+      const options = {
+        env: { ...process.env, UV_CACHE_DIR: join(root, 'uv-cache') },
+        timeout: 600000,
+        maxBuffer: 2 * 1024 * 1024,
+      };
+      if (platform === 'win32')
+        await runExec(
+          uv.path,
+          [
+            'pip',
+            'uninstall',
+            '--python',
+            python(id),
+            'onnxruntime',
+            'onnxruntime-gpu',
+            'onnxruntime-directml',
+          ],
+          options,
+          { kernel: id, name: 'uv' },
+        );
+      await runExec(
+        uv.path,
+        [
+          'pip',
+          'install',
+          '--upgrade',
+          '--reinstall',
+          '--python',
+          python(id),
+          platform === 'win32' ? 'onnxruntime-directml' : 'onnxruntime',
+        ],
+        options,
+        { kernel: id, name: 'uv' },
+      );
+      if (!(await probe()))
+        throw Error('The installed ONNX runtime does not support GPU inference on this platform.');
+    })();
+    gpuEnvironments.set(id, task);
+    try {
+      await task;
+    } catch (error) {
+      gpuEnvironments.delete(id);
+      throw error;
+    }
+  }
   const metadataPath = (id) => join(root, '.advanced-options', id + '.json');
   const serviceCatalog = createKernelServiceCatalog({
     root,
@@ -310,6 +377,7 @@ export function createEngineRuntime({
     if (installing.has(id)) return installing.get(id);
     const task = (async () => {
       knownStates.delete(id);
+      gpuEnvironments.delete(id);
       const state = await check(id);
       if (state.available && reinstall !== true && state.ocrAvailable !== false) {
         await advanced(id, state);
@@ -376,6 +444,12 @@ export function createEngineRuntime({
     } finally {
       installing.delete(id);
     }
+  }
+
+  async function installWithGpu(id, options = {}) {
+    const state = await install(id, options);
+    if (options.preferGpu === true && state.available) await ensureGpu(id);
+    return state;
   }
 
   async function cachedAdvanced(id, state) {
@@ -520,6 +594,7 @@ export function createEngineRuntime({
         : check(id);
     },
     advanced,
+    ensureGpu,
     serviceCatalog,
     prepareKernelAssets,
     pythonResourcePath,
@@ -595,7 +670,7 @@ export function createEngineRuntime({
       return uvInstallation;
     },
     check,
-    install,
+    install: installWithGpu,
     advanced,
     services: serviceCatalog.get,
     translate: translationRunner.translate,

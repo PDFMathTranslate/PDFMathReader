@@ -52,6 +52,7 @@ export function createTranslationRunner({
   python,
   getState,
   advanced,
+  ensureGpu = async () => {},
   serviceCatalog,
   prepareKernelAssets,
   pythonResourcePath,
@@ -255,6 +256,7 @@ export function createTranslationRunner({
     step('cacheLookup');
     return runWorker(async () => {
       if (signal?.aborted) throw Error('Cancelled');
+      if (overrides.prefer_gpu === true) await ensureGpu(id);
       // Exclude scheduling delay from input preparation; the API reports queueMs.
       checkpoint = performance.now();
       // Another queued request for the same page may have filled the cache.
@@ -357,6 +359,14 @@ export function createTranslationRunner({
                 ...advancedArgs,
               ];
         if (forceRetranslation && !args.includes('--ignore-cache')) args.push('--ignore-cache');
+        if (overrides.prefer_gpu === true && id === 'pdf_math_fast') {
+          const backendIndex = args.findIndex(
+            (arg) => arg === '--backend' || arg.startsWith('--backend='),
+          );
+          if (backendIndex >= 0)
+            args.splice(backendIndex, args[backendIndex] === '--backend' ? 2 : 1);
+          args.push('--backend=auto');
+        }
         if (sourceLanguage) args.push('--lang-in', translationLanguageCode(sourceLanguage));
         if (
           localTranslation &&

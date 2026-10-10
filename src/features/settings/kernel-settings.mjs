@@ -140,7 +140,11 @@ export function createKernelSettings({
       const state = await actions.backendRequests.api('/api/engines/' + id + '/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reinstall: reinstall === true, source }),
+        body: JSON.stringify({
+          reinstall: reinstall === true,
+          source,
+          preferGpu: preferences.kernelAdvancedOptions?.value?.[id]?.prefer_gpu === true,
+        }),
       });
       clearTranslationServiceSchemaCache(id, state?.version);
       provider.translationServiceCatalogRevision.value++;

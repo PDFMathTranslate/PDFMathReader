@@ -1,6 +1,9 @@
+import { GPU_INFERENCE_OPTION } from '../../shared/gpu-inference.mjs';
+
 const SAFE_OPTION_IDS = Object.freeze({
   pdf_math_fast: Object.freeze([
     'debug',
+    'prefer_gpu',
     'vfont',
     'vchar',
     'lang_in',
@@ -14,6 +17,7 @@ const SAFE_OPTION_IDS = Object.freeze({
   ]),
   pdf_math_precise: Object.freeze([
     'min_text_length',
+    'prefer_gpu',
     'custom_system_prompt',
     'no_auto_extract_glossary',
     'primary_font_family',
@@ -80,7 +84,7 @@ function normalizeSchema(id, options) {
   const allowed = SAFE_OPTION_SETS[id];
   if (!allowed) return [];
   const seen = new Set();
-  return (Array.isArray(options) ? options : [])
+  return [GPU_INFERENCE_OPTION, ...(Array.isArray(options) ? options : [])]
     .filter((option) => {
       if (
         !option ||

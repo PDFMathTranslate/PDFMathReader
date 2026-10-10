@@ -60,6 +60,35 @@ async function fixture(t, finish, options = {}) {
   };
 }
 
+for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
+  test(`${id} GPU request prepares its environment before spawning with GPU arguments`, async (t) => {
+    let prepared = false;
+    const data = await fixture(
+      t,
+      (child) => {
+        assert.equal(prepared, true);
+        child.emit('close', 1, null);
+      },
+      {
+        ensureGpu: async (engine) => {
+          assert.equal(engine, id);
+          prepared = true;
+        },
+        advanced: async () => ({ options: [] }),
+      },
+    );
+    await assert.rejects(
+      data.translate({ id, advancedOptions: { prefer_gpu: true } }),
+      /exit code 1/,
+    );
+    assert.ok(data.child.spawnArgs.includes('--prefer-gpu'));
+    if (id === 'pdf_math_fast') {
+      assert.ok(data.child.spawnArgs.includes('--backend=auto'));
+      assert.equal(data.child.spawnArgs.includes('cpu'), false);
+    }
+  });
+}
+
 test('translation failure uses the final exception and redacts secrets', async (t) => {
   const fixtureData = await fixture(t, (child) => {
     child.stderr.write('Traceback (most recent call last):\n');

@@ -214,6 +214,36 @@ def install_glossary(kind, entries):
         BaseTranslator.llm_translate = wrap(BaseTranslator.llm_translate, structured=True)
 
 
+def configure_gpu_inference():
+    import onnxruntime as ort
+
+    available = ort.get_available_providers()
+    preferred = [
+        name
+        for name in ("DmlExecutionProvider", "CoreMLExecutionProvider", "CUDAExecutionProvider")
+        if name in available
+    ]
+    providers = [*preferred, "CPUExecutionProvider"]
+    original = ort.InferenceSession.__init__
+
+    def initialize(
+        self, path_or_bytes, sess_options=None, providers=None, provider_options=None, **kwargs
+    ):
+        selected = [*preferred, "CPUExecutionProvider"]
+        if sess_options is None:
+            sess_options = ort.SessionOptions()
+        if "DmlExecutionProvider" in selected:
+            sess_options.enable_mem_pattern = False
+            sess_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        # CoreML compiled nodes cannot be serialized as an optimized ONNX graph.
+        if "CoreMLExecutionProvider" in selected:
+            sess_options.optimized_model_filepath = ""
+        return original(self, path_or_bytes, sess_options, selected, None, **kwargs)
+
+    ort.InferenceSession.__init__ = initialize
+    print("GPU inference providers: " + ", ".join(providers), file=sys.stderr)
+
+
 def main(capture_only=False):
     if capture_only:
         kind, sidecar, selected, input_path, args = json.loads(
@@ -221,6 +251,11 @@ def main(capture_only=False):
         )
     else:
         kind, sidecar, selected, input_path, *args = sys.argv[1:]
+    if "--prefer-gpu" in args:
+        os.environ["PDFMATHREADER_PREFER_GPU"] = "1"
+        args = [arg for arg in args if arg != "--prefer-gpu"]
+    if os.environ.get("PDFMATHREADER_PREFER_GPU") == "1":
+        configure_gpu_inference()
     selected = int(selected)
     glossary_path = os.environ.get("PDFMATHREADER_GLOSSARY_PATH")
     if glossary_path:

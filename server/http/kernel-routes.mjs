@@ -60,6 +60,7 @@ export function registerKernelRoutes(
         await engines.install(req.params.id, {
           reinstall: req.body?.reinstall === true,
           source: req.body?.source === 'git' ? 'git' : 'release',
+          preferGpu: req.body?.preferGpu === true,
         }),
       );
     } catch (e) {

@@ -1376,6 +1376,10 @@ export function t(key, params = {}) {
 
 // Keep upstream text for options added after this localization snapshot.
 export function advancedOptionText(option, field) {
+  if (option.id === 'prefer_gpu' && ['zh-CN', 'zh-TW'].includes(uiLanguage.value))
+    return field === 'label'
+      ? '优先 GPU 推理'
+      : '自动准备 GPU 依赖：Windows 使用 DirectML，macOS 使用 CoreML；不可用时回退到 CPU。';
   const key = `advanced.options.${option.id}.${field}`;
   return typeof lookup('en', key) === 'string' ? t(key) : option[field];
 }

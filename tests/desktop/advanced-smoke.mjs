@@ -56,7 +56,7 @@ export async function verifyAdvanced(window) {
     'collapsed advanced does not load parser metadata',
   );
   await evaluate(`document.querySelector('.advanced-settings summary').click()`);
-  await wait(`document.querySelectorAll('.advanced-option').length===9`);
+  await wait(`document.querySelectorAll('.advanced-option').length===10`);
   assert.equal(
     await evaluate(`!!document.querySelector('[data-advanced-option="lang_in"]')`),
     false,
