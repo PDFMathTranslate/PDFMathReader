@@ -1,4 +1,5 @@
 <script setup>
+import PromptFilePicker from './PromptFilePicker.vue';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import {
   AppButton,
@@ -12,6 +13,7 @@ import {
 const ProviderButton = platform === 'win32' ? AppButton : 'button';
 import ProviderIcon from '../../ui/icons/ProviderIcon.vue';
 import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
+import { useProviderModels } from './useProviderModels.mjs';
 import {
   groupProviders,
   providerPortEndpoint,
@@ -254,6 +256,34 @@ const selectedFields = computed(() =>
   ),
 );
 const subscriptionModelValid = ref(false);
+const providerModels = useProviderModels({
+  service: selectedService,
+  fieldValue,
+  engine: computed(() => props.engine),
+  providerId: selectedProviderId,
+  sharedKey: computed(() => props.sharedOpenAIConfigured),
+});
+const modelLabels = computed(
+  () =>
+    ({
+      'zh-CN': ['获取模型', '正在获取…', '选择接口模型'],
+      'zh-TW': ['取得模型', '正在取得…', '選擇介面模型'],
+      ja: ['モデルを取得', '取得中…', 'モデルを選択'],
+      ko: ['모델 가져오기', '가져오는 중…', '모델 선택'],
+      fr: ['Obtenir les modèles', 'Chargement…', 'Choisir un modèle'],
+      es: ['Obtener modelos', 'Cargando…', 'Elegir modelo'],
+      de: ['Modelle abrufen', 'Laden…', 'Modell auswählen'],
+      pt: ['Obter modelos', 'A carregar…', 'Escolher modelo'],
+      ru: ['Получить модели', 'Загрузка…', 'Выбрать модель'],
+      ar: ['جلب النماذج', 'جارٍ التحميل…', 'اختيار نموذج'],
+      arz: ['جيب النماذج', 'بيحمّل…', 'اختار نموذج'],
+      hi: ['मॉडल प्राप्त करें', 'लोड हो रहा है…', 'मॉडल चुनें'],
+      bn: ['মডেল আনুন', 'লোড হচ্ছে…', 'মডেল নির্বাচন করুন'],
+      ur: ['ماڈلز حاصل کریں', 'لوڈ ہو رہا ہے…', 'ماڈل منتخب کریں'],
+      pcm: ['Get models', 'E dey load…', 'Choose model'],
+    })[uiLanguage.value] || ['Fetch models', 'Loading…', 'Choose a model'],
+);
+
 const promptOption = computed(() => {
   if (selectedProviderId.value === 'apple-local' || selectedService.value?.supportsPrompt === false)
     return null;
@@ -734,10 +764,38 @@ onBeforeUnmount(() => {
               :aria-labelledby="'provider-field-' + field.id"
               @update:model-value="updateField(field, $event)"
             />
+            <div
+              v-if="field.id === providerModels.fields.value?.model.id"
+              class="provider-model-discovery"
+            >
+              <AppButton
+                :disabled="!providerModels.available.value || providerModels.loading.value"
+                @click="providerModels.refresh"
+              >
+                {{ modelLabels[providerModels.loading.value ? 1 : 0] }}
+              </AppButton>
+              <AppPopUpButton
+                v-if="providerModels.models.value.length"
+                :model-value="String(fieldValue(field) ?? '')"
+                teleport-to="body"
+                :aria-label="modelLabels[2]"
+                @update:model-value="updateField(field, $event)"
+              >
+                <AppPopUpButtonItem
+                  v-for="model in providerModels.models.value"
+                  :key="model"
+                  :value="model"
+                  >{{ model }}</AppPopUpButtonItem
+                >
+              </AppPopUpButton>
+              <p v-if="providerModels.error.value" class="muted" role="status">
+                {{ providerModels.error.value }}
+              </p>
+            </div>
           </div>
           <div v-if="promptOption" class="provider-field prompt-option">
             <label :id="'provider-field-' + promptOption.id">{{ promptOption.label }}</label>
-            <AppTextField
+            <PromptFilePicker
               :model-value="promptValue"
               :aria-labelledby="'provider-field-' + promptOption.id"
               @update:model-value="updatePrompt"
@@ -1087,5 +1145,17 @@ fluent-button.provider-list-item::part(content) {
   .provider-list-item {
     transition: none;
   }
+}
+</style>
+
+<style scoped>
+.provider-model-discovery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.provider-model-discovery > p {
+  flex-basis: 100%;
 }
 </style>

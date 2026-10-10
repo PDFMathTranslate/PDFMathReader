@@ -335,3 +335,10 @@ contextBridge.exposeInMainWorld(
     },
   }),
 );
+
+contextBridge.exposeInMainWorld(
+  'previewPromptFile',
+  Object.freeze({
+    choose: () => ipcRenderer.invoke('preferences:choosePromptFile'),
+  }),
+);

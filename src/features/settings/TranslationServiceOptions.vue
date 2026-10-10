@@ -1,4 +1,5 @@
 <script setup>
+import PromptFilePicker from './PromptFilePicker.vue';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import {
   AppButton,
@@ -340,7 +341,7 @@ onBeforeUnmount(() => {
     </div>
     <div v-if="promptOption" class="translation-service-option prompt-option">
       <label :id="'service-' + promptOption.id">{{ promptOption.label }}</label>
-      <AppTextField
+      <PromptFilePicker
         :model-value="promptValue"
         :aria-labelledby="'service-' + promptOption.id"
         @update:model-value="updatePrompt"

@@ -1,4 +1,4 @@
-import { nativeTheme, shell } from 'electron';
+import { nativeTheme, shell, dialog } from 'electron';
 import { mkdir } from 'node:fs/promises';
 import {
   shortcutCatalog,
@@ -98,6 +98,17 @@ export function registerPreferencesIPC({
     rebuildMenu();
     return snapshot;
   };
+  handle('preferences:choosePromptFile', async (event) => {
+    const target = trustedWindow(event);
+    const result = await dialog.showOpenDialog(target, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Text files', extensions: ['txt', 'md', 'text', 'prompt'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+    });
+    return result.canceled ? null : result.filePaths[0] || null;
+  });
   handle('shortcuts:load', (event) => {
     trustedWindow(event);
     return shortcutSnapshot();

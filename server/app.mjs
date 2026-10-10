@@ -42,6 +42,7 @@ import { registerDocumentRoutes } from './http/document-routes.mjs';
 import { registerKernelRoutes } from './http/kernel-routes.mjs';
 import { registerTranslationRoutes } from './http/translation-routes.mjs';
 import { registerFormulaOcrRoutes } from './http/formula-ocr-routes.mjs';
+import { registerProviderModelRoutes } from './http/provider-model-routes.mjs';
 import { createFormulaOcrService } from './formula/formula-ocr-service.mjs';
 
 export async function startServer({
@@ -194,6 +195,7 @@ export async function startServer({
   });
   registerAccessMiddleware(app, { token, origin: () => origin, development });
   registerPerformanceMiddleware(app, performanceTracker);
+  registerProviderModelRoutes(app, { providerFetch, getApiKey });
 
   registerFormulaOcrRoutes(app, { service: formulaOcr });
   registerProviderPortRoute(app, isProviderPortOpen);
