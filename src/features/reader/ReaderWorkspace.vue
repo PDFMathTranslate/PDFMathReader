@@ -208,7 +208,7 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           @keydown="resizeSidebarKey"
         ></div></aside
     ></Transition>
-    <div class="reader-viewport">
+    <div class="reader-viewport" style="direction: ltr">
       <main
         :ref="bindReader"
         class="reader"

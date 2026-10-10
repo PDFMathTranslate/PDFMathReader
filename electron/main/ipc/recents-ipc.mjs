@@ -135,7 +135,7 @@ export function registerRecentsIPC({
         if (typeof id !== 'string' || !id || typeof path !== 'string' || !path)
           throw Error('Document no longer in history.');
         const locale = resolveUILanguage(
-          preferences?.load?.().uiLanguage || 'system',
+          preferences?.load?.().uiLanguage || 'en',
           app.getPreferredSystemLanguages()[0] || app.getLocale(),
         );
         const labels = {

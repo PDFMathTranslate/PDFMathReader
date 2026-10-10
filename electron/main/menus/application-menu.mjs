@@ -458,7 +458,7 @@ export function createApplicationMenu({
       ...(platform === 'win32' ? [] : [{ id: 'window-menu', role: 'windowMenu' }]),
     ];
     const locale = resolveUILanguage(
-      preferences?.load?.().uiLanguage || 'system',
+      preferences?.load?.().uiLanguage || 'en',
       app.getPreferredSystemLanguages()[0] || app.getLocale(),
     );
     app.setAboutPanelOptions?.(aboutPanelOptions(app.getVersion?.() || '', locale));

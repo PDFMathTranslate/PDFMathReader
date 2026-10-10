@@ -16,6 +16,15 @@ const navigation = ref(),
   submenus = shallowRef([]);
 const normalize = (value) => value.normalize('NFKC').toLocaleLowerCase().trim();
 const words = {
+  ar: ['عام', 'خدمات الترجمة', 'البحث في الإعدادات', 'الإعدادات السابقة'],
+  arz: ['عام', 'خدمات الترجمة', 'دوّر في الإعدادات', 'الإعدادات القديمة'],
+  hi: ['सामान्य', 'अनुवाद सेवाएँ', 'सेटिंग खोजें', 'पुरानी सेटिंग'],
+  bn: ['সাধারণ', 'অনুবাদ সেবা', 'সেটিংস খুঁজুন', 'আগের সেটিংস'],
+  ru: ['Общие', 'Сервисы перевода', 'Поиск настроек', 'Прежние настройки'],
+  pt: ['Geral', 'Serviços de tradução', 'Pesquisar definições', 'Definições anteriores'],
+  ur: ['عمومی', 'ترجمے کی خدمات', 'ترتیبات تلاش کریں', 'پچھلی ترتیبات'],
+  de: ['Allgemein', 'Übersetzungsdienste', 'Einstellungen suchen', 'Frühere Einstellungen'],
+  pcm: ['General', 'Translation services', 'Find settings', 'Old settings'],
   en: ['General', 'Providers', 'Search', 'Previous settings'],
   'zh-CN': ['通用', '翻译服务', '搜索设置', '旧版设置'],
   'zh-TW': ['一般', '翻譯服務', '搜尋設定', '舊版設定'],
@@ -42,6 +51,16 @@ const sections = computed(() => [
     label:
       {
         en: 'Performance',
+        ar: 'الأداء',
+        arz: 'الأداء',
+        hi: 'प्रदर्शन',
+        bn: 'কর্মক্ষমতা',
+        ru: 'Производительность',
+        pt: 'Desempenho',
+        ur: 'کارکردگی',
+        de: 'Leistung',
+        pcm: 'How e dey perform',
+
         'zh-CN': '性能',
         'zh-TW': '效能',
         ja: 'パフォーマンス',

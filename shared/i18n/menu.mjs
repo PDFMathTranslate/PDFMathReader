@@ -1,3 +1,12 @@
+import {
+  MENU_EXTRA_ABOUT_LABELS,
+  MENU_EXTRA_GO_TO_LABELS,
+  MENU_EXTRA_MESSAGES,
+  MENU_EXTRA_PAGE_BOUNDARY_LABELS,
+  MENU_EXTRA_PAGE_EDIT_LABELS,
+  MENU_EXTRA_QUIT_LABELS,
+} from './menu-extra.mjs';
+
 const menuMessages = {
   en: {
     'Search in Document': 'Search in Document',
@@ -469,6 +478,7 @@ const menuMessages = {
     'Select All': '모두 선택',
   },
 };
+Object.assign(menuMessages, MENU_EXTRA_MESSAGES);
 
 const supportedLocales = new Set(Object.keys(menuMessages));
 const properName = /^PDFMathReader(?: Tests)?$/;
@@ -483,6 +493,7 @@ const goToLabel = {
   es: (percent) => `Ir al ${percent}%`,
   ja: (percent) => `${percent}%へ移動`,
   ko: (percent) => `${percent}%로 이동`,
+  ...MENU_EXTRA_GO_TO_LABELS,
 };
 const aboutLabel = {
   en: (name) => `About ${name}`,
@@ -492,6 +503,7 @@ const aboutLabel = {
   es: (name) => `Acerca de ${name}`,
   ja: (name) => `${name} について`,
   ko: (name) => `${name} 정보`,
+  ...MENU_EXTRA_ABOUT_LABELS,
 };
 const quitLabel = {
   en: (name) => `Quit ${name}`,
@@ -501,6 +513,7 @@ const quitLabel = {
   es: (name) => `Salir de ${name}`,
   ja: (name) => `${name}を終了`,
   ko: (name) => `${name} 종료`,
+  ...MENU_EXTRA_QUIT_LABELS,
 };
 
 const pageEditLabels = {
@@ -541,6 +554,7 @@ const pageEditLabels = {
     '페이지 높이 맞추기',
     '페이지 변경 저장됨',
   ],
+  ...MENU_EXTRA_PAGE_EDIT_LABELS,
 };
 for (const [locale, values] of Object.entries(pageEditLabels))
   Object.assign(
@@ -560,6 +574,7 @@ const pageBoundaryLabels = {
   ko: ['첫 페이지', '마지막 페이지'],
   fr: ['Première page', 'Dernière page'],
   es: ['Primera página', 'Última página'],
+  ...MENU_EXTRA_PAGE_BOUNDARY_LABELS,
 };
 for (const [locale, labels] of Object.entries(pageBoundaryLabels))
   Object.assign(menuMessages[locale], { 'First Page': labels[0], 'Last Page': labels[1] });

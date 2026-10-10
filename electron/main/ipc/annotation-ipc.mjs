@@ -76,7 +76,7 @@ export function registerAnnotationIPC({
                 menuLabel(
                   'Search in Document',
                   resolveUILanguage(
-                    registry.stateFor(target)?.preferences?.uiLanguage || 'system',
+                    registry.stateFor(target)?.preferences?.uiLanguage || 'en',
                     app.getPreferredSystemLanguages()[0] || app.getLocale(),
                   ),
                 ),

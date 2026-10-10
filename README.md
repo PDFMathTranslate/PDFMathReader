@@ -16,6 +16,7 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 - **Layout preservation**: Preserve formulas, tables, and key information while keeping translated pages close to the original layout.
 - **Realtime translation**: Detect layouts and translate as you read, without waiting for the entire document to finish.
+- **Interface languages**: 16 languages, ordered by English country name, with English as the default. Includes Arabic, Egyptian Arabic, Hindi, Bengali, Russian, Portuguese, Urdu, German, and Nigerian Pidgin.
 - **Translation options**: Choose translation engines, services, languages, and full-document or nearby-page translation.
 - **Bilingual reading**: Click detected paragraphs to switch between original text and translation.
 - **Flexible navigation**: Read with thumbnails, zoom, vertical or horizontal scrolling, and one-, two-, or four-page layouts.

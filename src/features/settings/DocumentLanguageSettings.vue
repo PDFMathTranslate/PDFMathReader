@@ -6,6 +6,60 @@ const preferences = inject('documentLanguagePreferences');
 const labels = computed(
   () =>
     ({
+      bn: [
+        'নথির ভাষা যাচাই (পরীক্ষামূলক)',
+        'Jev ব্যবহার করে নথির ভাষা নির্ণয় করুন; লক্ষ্য ভাষার সঙ্গে মিললে স্বয়ংক্রিয় অনুবাদ বাদ যাবে, তবে হাতে অনুবাদ করা যাবে। প্রথম ৩টি পৃষ্ঠার প্রতিটি থেকে শুধু প্রথম ১০০টি অক্ষর পাঠানো হয়; ব্যর্থতা বা অনিশ্চয়তার ক্ষেত্রে স্বয়ংক্রিয় অনুবাদ চলবে।',
+        'কাস্টম Jev API Token',
+        'কাস্টম Token আগে ব্যবহার করা হবে; ফাঁকা রাখলে স্থানীয় TYPESAFE_API_KEY পরিবেশ ভেরিয়েবল ব্যবহার হবে।',
+      ],
+      arz: [
+        'فحص لغة المستند (تجريبي)',
+        'استخدم Jev لتخطي الترجمة التلقائية عندما تطابق لغة المستند اللغة الهدف. تظل الترجمة اليدوية متاحة. يُرسل أول 100 حرف فقط من كل صفحة من أول 3 صفحات. عند الفشل أو عدم اليقين، تستمر الترجمة التلقائية.',
+        'رمز API مخصص لـ Jev',
+        'تُعطى الأولوية للرمز المخصص. اتركه فارغًا لاستخدام متغير البيئة المحلي TYPESAFE_API_KEY.',
+      ],
+      de: [
+        'Dokumentsprache prüfen (experimentell)',
+        'Verwende Jev, um die automatische Übersetzung zu überspringen, wenn das Dokument der Zielsprache entspricht. Eine manuelle Übersetzung bleibt möglich. Nur die ersten 100 Zeichen der ersten 3 Seiten werden gesendet. Bei Fehlern oder Unsicherheit wird die automatische Übersetzung fortgesetzt.',
+        'Benutzerdefiniertes Jev-API-Token',
+        'Das benutzerdefinierte Token hat Vorrang. Leer lassen, um die lokale Umgebungsvariable TYPESAFE_API_KEY zu verwenden.',
+      ],
+      hi: [
+        'दस्तावेज़ की भाषा जाँचें (प्रायोगिक)',
+        'जब दस्तावेज़ लक्ष्य भाषा से मेल खाए, तो स्वचालित अनुवाद छोड़ने के लिए Jev का उपयोग करें। मैन्युअल अनुवाद उपलब्ध रहेगा। पहली 3 पृष्ठों में से प्रत्येक के केवल पहले 100 वर्ण भेजे जाते हैं। विफलता या अनिश्चितता पर स्वचालित अनुवाद जारी रहता है।',
+        'कस्टम Jev API Token',
+        'कस्टम Token को प्राथमिकता दी जाती है। खाली छोड़ने पर स्थानीय TYPESAFE_API_KEY पर्यावरण चर इस्तेमाल होता है।',
+      ],
+      pcm: [
+        'Check document language (we still dey test am)',
+        'Use Jev make e skip automatic translation when document language match target language. You fit still translate am by hand. Na first 100 characters from each of first 3 pages dem dey send. If e fail or e no sure, automatic translation go continue.',
+        'Custom Jev API Token',
+        'Custom Token get priority. Leave am empty make e use local TYPESAFE_API_KEY environment variable.',
+      ],
+      ur: [
+        'دستاویز کی زبان کی جانچ (تجرباتی)',
+        'جب دستاویز ہدف زبان سے مطابقت رکھے تو خودکار ترجمہ چھوڑنے کے لیے Jev استعمال کریں۔ دستی ترجمہ دستیاب رہے گا۔ پہلے 3 صفحات میں سے ہر صفحے کے صرف پہلے 100 حروف بھیجے جاتے ہیں۔ ناکامی یا غیر یقینی کی صورت میں خودکار ترجمہ جاری رہتا ہے۔',
+        'حسب ضرورت Jev API Token',
+        'حسب ضرورت Token کو ترجیح حاصل ہے۔ خالی چھوڑنے پر مقامی TYPESAFE_API_KEY ماحول کا متغیر استعمال ہوگا۔',
+      ],
+      pt: [
+        'Verificação do idioma do documento (experimental)',
+        'Use o Jev para ignorar a tradução automática quando o idioma do documento corresponder ao idioma de destino. A tradução manual continua disponível. Apenas os primeiros 100 caracteres de cada uma das 3 primeiras páginas são enviados. Em caso de falha ou incerteza, a tradução automática continua.',
+        'Token de API Jev personalizado',
+        'O Token personalizado tem prioridade. Deixe em branco para usar a variável de ambiente local TYPESAFE_API_KEY.',
+      ],
+      ru: [
+        'Проверка языка документа (экспериментально)',
+        'Используйте Jev, чтобы пропустить автоматический перевод, если язык документа совпадает с целевым языком. Ручной перевод остаётся доступным. Отправляются только первые 100 символов каждой из первых 3 страниц. При ошибке или неопределённости автоматический перевод продолжается.',
+        'Пользовательский токен API Jev',
+        'Пользовательский токен имеет приоритет. Оставьте поле пустым, чтобы использовать локальную переменную окружения TYPESAFE_API_KEY.',
+      ],
+      ar: [
+        'فحص لغة المستند (تجريبي)',
+        'استخدم Jev لتخطي الترجمة التلقائية عندما تطابق لغة المستند اللغة الهدف. تظل الترجمة اليدوية متاحة. يُرسل أول 100 حرف فقط من كل صفحة من أول 3 صفحات. عند الفشل أو عدم اليقين، تستمر الترجمة التلقائية.',
+        'رمز API مخصص لـ Jev',
+        'تُعطى الأولوية للرمز المخصص. اتركه فارغًا لاستخدام متغير البيئة المحلي TYPESAFE_API_KEY.',
+      ],
       'zh-CN': [
         '文档语言判断（实验性）',
         '通过 Jev 判断文档语言；与目标语言一致时跳过自动翻译，仍可手动翻译。仅发送前三页每页前 100 个字符；失败或不确定时继续自动翻译。',

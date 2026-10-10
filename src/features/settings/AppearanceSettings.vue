@@ -1,5 +1,6 @@
 <script setup>
 import { computed, watch } from 'vue';
+import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
 import { AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
 import { t, setUILanguage, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
 const props = defineProps({
@@ -11,7 +12,7 @@ const props = defineProps({
   reduceMotion: Boolean,
   reduceTransparency: Boolean,
   reducePadding: Boolean,
-  uiLanguage: { type: String, default: 'system' },
+  uiLanguage: { type: String, default: 'en' },
 });
 const emit = defineEmits([
   'update:showKernelToolbarShortcut',
@@ -26,6 +27,16 @@ const kernelShortcutLabel = computed(
   () =>
     ({
       en: 'Show kernel switching shortcut in toolbar',
+      ar: 'إظهار اختصار تبديل المحرك في شريط الأدوات',
+      arz: 'اعرض اختصار تغيير المحرك في شريط الأدوات',
+      hi: 'टूलबार में इंजन बदलने का शॉर्टकट दिखाएँ',
+      bn: 'টুলবারে ইঞ্জিন বদলানোর শর্টকাট দেখান',
+      ru: 'Показывать переключение движка на панели инструментов',
+      pt: 'Mostrar atalho para mudar de motor na barra de ferramentas',
+      ur: 'ٹول بار میں انجن بدلنے کا شارٹ کٹ دکھائیں',
+      de: 'Kurzbefehl zum Wechseln der Engine in der Symbolleiste anzeigen',
+      pcm: 'Show shortcut to change engine for toolbar',
+
       'zh-CN': '在工具栏显示内核切换快捷方式',
       'zh-TW': '在工具列顯示核心切換快捷方式',
       ja: 'ツールバーにカーネル切り替えショートカットを表示',
@@ -51,16 +62,10 @@ const colors = [
   ['#8e8e93', 'appearance.gray'],
   ['#3d647a', 'appearance.slateBlue'],
 ];
-const uiLanguages = [
-  ['system', 'appearance.systemLanguage'],
-  ['en', 'appearance.english'],
-  ['zh-CN', 'appearance.simplifiedChinese'],
-  ['zh-TW', 'appearance.traditionalChinese'],
-  ['fr', 'appearance.french'],
-  ['es', 'appearance.spanish'],
-  ['ja', 'appearance.japanese'],
-  ['ko', 'appearance.korean'],
-];
+const uiLanguages = computed(() => [
+  { value: 'system', label: t('appearance.systemLanguage') },
+  ...UI_LANGUAGE_OPTIONS,
+]);
 watch(
   () => props.uiLanguage,
   (code) => setUILanguage(code),
@@ -146,9 +151,12 @@ function changeUILanguage(code) {
           :model-value="uiLanguage"
           :aria-label="t('appearance.language')"
           @update:model-value="changeUILanguage"
-          ><AppPopUpButtonItem v-for="[value, label] in uiLanguages" :key="value" :value="value">{{
-            t(label)
-          }}</AppPopUpButtonItem></AppPopUpButton
+          ><AppPopUpButtonItem
+            v-for="{ value, label } in uiLanguages"
+            :key="value"
+            :value="value"
+            >{{ label }}</AppPopUpButtonItem
+          ></AppPopUpButton
         >
       </div>
       <div class="appearance-row" data-setting="kernel-toolbar-shortcut">

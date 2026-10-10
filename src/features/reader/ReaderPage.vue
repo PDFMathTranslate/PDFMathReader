@@ -275,6 +275,7 @@ function fit(el, b) {
 <template>
   <div
     class="page-wrap"
+    dir="ltr"
     :class="{ cropped: crop.x || crop.y }"
     :style="{
       left: frame.x + 'px',

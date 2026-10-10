@@ -1,3 +1,4 @@
+import { SUPPORTED_UI_LANGUAGES } from '../../../shared/i18n/ui-language.mjs';
 import { cloneGlossaries, validGlossaries } from '../../../shared/translation/glossary.mjs';
 import { validShortcutOverrides } from '../../../shared/commands/shortcuts.mjs';
 import {
@@ -63,7 +64,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   kernelAdvancedOptions: {},
   showKernelToolbarShortcut: false,
   autoHideHeader: true,
-  uiLanguage: 'system',
+  uiLanguage: 'en',
 });
 const KNOWN_KEYS = Object.freeze(Object.keys(DEFAULT_PREFERENCES));
 const OPTIONAL_KEYS = Object.freeze([
@@ -277,7 +278,7 @@ const VALIDATORS = {
   kernelAdvancedOptions: isValidKernelAdvancedOptions,
   showKernelToolbarShortcut: (value) => typeof value === 'boolean',
   autoHideHeader: (value) => typeof value === 'boolean',
-  uiLanguage: (value) => ['system', 'en', 'zh-CN', 'zh-TW', 'fr', 'es', 'ja', 'ko'].includes(value),
+  uiLanguage: (value) => ['system', ...SUPPORTED_UI_LANGUAGES].includes(value),
   translationServiceHistory: isValidTranslationServiceHistory,
   translationServices: isValidTranslationServices,
 };

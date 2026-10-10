@@ -11,6 +11,15 @@ const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const glassLabels = computed(
   () =>
     ({
+      ar: ['Liquid Glass', 'افتراضي', 'قد يستهلك المزيد من الموارد'],
+      arz: ['Liquid Glass', 'الافتراضي', 'ممكن يستخدم موارد أكتر'],
+      hi: ['Liquid Glass', 'डिफ़ॉल्ट', 'अधिक संसाधन इस्तेमाल हो सकते हैं'],
+      bn: ['Liquid Glass', 'ডিফল্ট', 'বেশি সংস্থান ব্যবহার করতে পারে'],
+      ru: ['Liquid Glass', 'По умолчанию', 'Может потреблять больше ресурсов'],
+      pt: ['Liquid Glass', 'Predefinido', 'Pode consumir mais recursos'],
+      ur: ['Liquid Glass', 'طے شدہ', 'زیادہ وسائل استعمال ہو سکتے ہیں'],
+      de: ['Liquid Glass', 'Standard', 'Kann mehr Ressourcen verbrauchen'],
+      pcm: ['Liquid Glass', 'Default', 'E fit use more resources'],
       'zh-CN': ['液态玻璃界面', '默认', '可能消耗更多性能'],
       'zh-TW': ['液態玻璃介面', '預設', '可能消耗更多效能'],
       ja: ['Liquid Glass', 'デフォルト', 'パフォーマンスへの負荷が増える場合があります'],

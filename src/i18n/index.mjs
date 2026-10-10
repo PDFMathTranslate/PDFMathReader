@@ -1,13 +1,20 @@
 import { ref } from 'vue';
 import { extraMessages } from './locales-extra.mjs';
 import { advancedMessages } from './advanced-locales.mjs';
+import { expandedMessages as europeanMessages } from './locales-europe.mjs';
+import { expandedMessages as arabicMessages } from './locales-arabic.mjs';
+import { expandedMessages as southAsiaPidginMessages } from './locales-south-asia-pidgin.mjs';
 
-import { SUPPORTED_UI_LANGUAGES, resolveUILanguage } from '../../shared/i18n/ui-language.mjs';
+import {
+  SUPPORTED_UI_LANGUAGES,
+  resolveUILanguage,
+  uiLanguageDirection,
+} from '../../shared/i18n/ui-language.mjs';
 export { SUPPORTED_UI_LANGUAGES };
 const rendererSystemLocale = () =>
   globalThis.previewSystemLocale || globalThis.navigator?.language || 'en';
-export const uiLanguageChoice = ref('system');
-export const uiLanguage = ref(resolveUILanguage('system', rendererSystemLocale()));
+export const uiLanguageChoice = ref('en');
+export const uiLanguage = ref(resolveUILanguage('en', rendererSystemLocale()));
 
 const messages = {
   en: {
@@ -1342,11 +1349,13 @@ function supportedLanguage(code) {
 }
 
 export function setUILanguage(code) {
-  uiLanguageChoice.value =
-    code === 'system' || SUPPORTED_UI_LANGUAGES.includes(code) ? code : 'system';
+  uiLanguageChoice.value = code === 'system' || SUPPORTED_UI_LANGUAGES.includes(code) ? code : 'en';
   uiLanguage.value = resolveUILanguage(uiLanguageChoice.value, rendererSystemLocale());
   const documentElement = globalThis.document?.documentElement;
-  if (documentElement) documentElement.lang = uiLanguage.value;
+  if (documentElement) {
+    documentElement.lang = uiLanguage.value;
+    documentElement.dir = uiLanguageDirection(uiLanguage.value);
+  }
   return uiLanguageChoice.value;
 }
 
@@ -1744,3 +1753,5 @@ const experimentalCategoryLabels = {
 };
 for (const [locale, label] of Object.entries(experimentalCategoryLabels))
   messages[locale].settings.experimentalCategory = label;
+
+Object.assign(messages, europeanMessages, southAsiaPidginMessages, arabicMessages);

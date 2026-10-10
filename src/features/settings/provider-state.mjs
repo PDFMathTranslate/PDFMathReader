@@ -1,3 +1,4 @@
+import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
 import { computed, ref, watch } from 'vue';
 import {
   translationLanguagesForKernel,
@@ -123,15 +124,9 @@ export function createProviderState({ preferences, engine, configured }) {
     uiLanguage: {
       selected: uiLanguageChoice.value,
       options: [
-        ['system', 'systemLanguage'],
-        ['en', 'english'],
-        ['zh-CN', 'simplifiedChinese'],
-        ['zh-TW', 'traditionalChinese'],
-        ['ja', 'japanese'],
-        ['ko', 'korean'],
-        ['fr', 'french'],
-        ['es', 'spanish'],
-      ].map(([value, key]) => ({ value, label: t('appearance.' + key) })),
+        { value: 'system', label: t('appearance.systemLanguage') },
+        ...UI_LANGUAGE_OPTIONS.map(({ value, label }) => ({ value, label })),
+      ],
     },
   }));
   const parallelLabels = computed(() => [

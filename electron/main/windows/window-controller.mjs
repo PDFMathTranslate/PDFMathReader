@@ -363,7 +363,7 @@ export function createWindowController({
           label: menuLabel(
             'Search in Document',
             resolveUILanguage(
-              registry.stateFor(target)?.preferences?.uiLanguage || 'system',
+              registry.stateFor(target)?.preferences?.uiLanguage || 'en',
               application.getPreferredSystemLanguages()[0] || application.getLocale(),
             ),
           ),

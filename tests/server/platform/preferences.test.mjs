@@ -50,7 +50,7 @@ const DEFAULT_PREFERENCES = {
   kernelAdvancedOptions: {},
   showKernelToolbarShortcut: false,
   autoHideHeader: true,
-  uiLanguage: 'system',
+  uiLanguage: 'en',
 };
 
 const withPreferences = (overrides = {}, unknown = {}) => ({

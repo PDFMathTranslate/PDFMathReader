@@ -106,6 +106,83 @@ const localLabels = {
     details: 'Detalles del proveedor',
     noDetails: 'Selecciona un proveedor para ver sus ajustes.',
   },
+  de: {
+    active: 'Aktiv',
+    use: 'Anbieter verwenden',
+    browseHint:
+      'Gespeichertes Profil wird bearbeitet. Verwenden Sie diesen Anbieter, um ihn zu aktivieren.',
+    empty: 'Für diesen Kernel sind keine Anbieter verfügbar.',
+    details: 'Anbieterdetails',
+    noDetails: 'Wählen Sie einen Anbieter aus, um seine Einstellungen anzuzeigen.',
+  },
+  pt: {
+    active: 'Ativo',
+    use: 'Utilizar fornecedor',
+    browseHint: 'A editar um perfil guardado. Utilize este fornecedor para o tornar ativo.',
+    empty: 'Não existem fornecedores disponíveis para este kernel.',
+    details: 'Detalhes do fornecedor',
+    noDetails: 'Selecione um fornecedor para ver as suas definições.',
+  },
+  ru: {
+    active: 'Активен',
+    use: 'Использовать сервис',
+    browseHint:
+      'Редактируется сохранённый профиль. Используйте этот сервис, чтобы сделать его активным.',
+    empty: 'Для этого ядра нет доступных сервисов.',
+    details: 'Сведения о сервисе',
+    noDetails: 'Выберите сервис, чтобы просмотреть его настройки.',
+  },
+  ar: {
+    active: 'نشط',
+    use: 'استخدام المزوّد',
+    browseHint: 'جارٍ تعديل ملف تعريف محفوظ. استخدم هذا المزوّد لجعله نشطًا.',
+    empty: 'لا توجد مزوّدات متاحة لهذه النواة.',
+    details: 'تفاصيل المزوّد',
+    noDetails: 'اختر مزوّدًا لعرض إعداداته.',
+  },
+  arz: {
+    active: 'شغّال',
+    use: 'استخدم المزوّد ده',
+    browseHint: 'إنت بتعدّل إعداد محفوظ. استخدم المزوّد ده عشان تخليه نشط.',
+    empty: 'مفيش مزوّدات متاحة للنواة دي.',
+    details: 'تفاصيل المزوّد',
+    noDetails: 'اختار مزوّد عشان تشوف إعداداته.',
+  },
+  hi: {
+    active: 'सक्रिय',
+    use: 'प्रदाता का उपयोग करें',
+    browseHint:
+      'सहेजी गई प्रोफ़ाइल संपादित की जा रही है। इसे सक्रिय करने के लिए इस प्रदाता का उपयोग करें।',
+    empty: 'इस कर्नेल के लिए कोई प्रदाता उपलब्ध नहीं है।',
+    details: 'प्रदाता का विवरण',
+    noDetails: 'सेटिंग देखने के लिए कोई प्रदाता चुनें।',
+  },
+  bn: {
+    active: 'সক্রিয়',
+    use: 'প্রোভাইডার ব্যবহার করুন',
+    browseHint:
+      'সংরক্ষিত প্রোফাইল সম্পাদনা করা হচ্ছে। এটিকে সক্রিয় করতে এই প্রোভাইডার ব্যবহার করুন।',
+    empty: 'এই কার্নেলের জন্য কোনো প্রোভাইডার উপলভ্য নেই।',
+    details: 'প্রোভাইডারের বিবরণ',
+    noDetails: 'সেটিংস দেখতে একটি প্রোভাইডার নির্বাচন করুন।',
+  },
+  ur: {
+    active: 'فعال',
+    use: 'فراہم کنندہ استعمال کریں',
+    browseHint:
+      'محفوظ پروفائل میں ترمیم کی جا رہی ہے۔ اسے فعال کرنے کے لیے یہ فراہم کنندہ استعمال کریں۔',
+    empty: 'اس کرنل کے لیے کوئی فراہم کنندہ دستیاب نہیں۔',
+    details: 'فراہم کنندہ کی تفصیلات',
+    noDetails: 'ترتیبات دیکھنے کے لیے فراہم کنندہ منتخب کریں۔',
+  },
+  pcm: {
+    active: 'E dey active',
+    use: 'Use provider',
+    browseHint: 'You dey edit saved profile. Use dis provider make e active.',
+    empty: 'No provider dey for dis kernel.',
+    details: 'Provider details',
+    noDetails: 'Pick provider to see e settings.',
+  },
 };
 function local(key) {
   return localLabels[uiLanguage.value]?.[key] || localLabels.en[key];
@@ -203,6 +280,15 @@ const noConfigurationText = computed(
       ko: '이 서비스는 설정 없이 바로 사용할 수 있습니다.',
       fr: 'Ce service peut être utilisé sans configuration.',
       es: 'Este servicio se puede usar sin configuración.',
+      de: 'Dieser Dienst ist ohne Konfiguration einsatzbereit.',
+      pt: 'Este serviço está pronto a utilizar sem configuração.',
+      ru: 'Этот сервис готов к использованию без настройки.',
+      ar: 'يمكن استخدام هذه الخدمة مباشرةً من دون إعداد.',
+      arz: 'الخدمة دي جاهزة للاستخدام من غير إعداد.',
+      hi: 'यह सेवा बिना कॉन्फ़िगरेशन के उपयोग के लिए तैयार है।',
+      bn: 'এই সেবাটি কোনো কনফিগারেশন ছাড়াই ব্যবহারের জন্য প্রস্তুত।',
+      ur: 'یہ سروس بغیر کسی ترتیب کے استعمال کے لیے تیار ہے۔',
+      pcm: 'You fit use dis service straight away, no setup needed.',
     })[uiLanguage.value] || 'This service is ready to use without configuration.',
 );
 const freeThanks = computed(
@@ -215,6 +301,15 @@ const freeThanks = computed(
       ko: '무료 번역 서비스를 제공하는 SiliconFlow에 감사드립니다. API 키가 필요하지 않습니다.',
       fr: 'Merci à SiliconFlow pour ce service de traduction gratuit. Aucune clé API requise.',
       es: 'Gracias a SiliconFlow por este servicio de traducción gratuito. No requiere clave API.',
+      de: 'Danke an SiliconFlow für die Bereitstellung dieses kostenlosen Übersetzungsdienstes. Es ist kein API-Schlüssel erforderlich.',
+      pt: 'Obrigado à SiliconFlow por disponibilizar este serviço de tradução gratuito. Não é necessária uma chave API.',
+      ru: 'Спасибо SiliconFlow за предоставление бесплатного сервиса перевода. Ключ API не требуется.',
+      ar: 'شكرًا لـ SiliconFlow على توفير خدمة الترجمة المجانية هذه. لا تحتاج إلى مفتاح API.',
+      arz: 'SiliconFlow متشكرين ليها عشان موفّرة خدمة الترجمة المجانية دي. مش محتاج مفتاح API.',
+      hi: 'यह मुफ़्त अनुवाद सेवा उपलब्ध कराने के लिए SiliconFlow का धन्यवाद। API कुंजी की आवश्यकता नहीं है।',
+      bn: 'এই বিনামূল্যের অনুবাদ পরিষেবা দেওয়ার জন্য SiliconFlow-কে ধন্যবাদ। কোনো API কী প্রয়োজন নেই।',
+      ur: 'یہ مفت ترجمہ سروس فراہم کرنے پر SiliconFlow کا شکریہ۔ API کلید کی ضرورت نہیں ہے۔',
+      pcm: 'Big thanks to SiliconFlow for this free translation service. You no need API key.',
     })[uiLanguage.value] ||
     'Thank you to SiliconFlow for providing this free translation service. No API key is required.',
 );
