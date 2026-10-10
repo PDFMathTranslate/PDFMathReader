@@ -533,7 +533,8 @@
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  max-height: min(420px, 45vh);
+  /* Reserve space for startup controls and chrome; use the remaining height. */
+  max-height: max(148px, calc(100dvh - var(--toolbar-height) - var(--statusbar-height) - 340px));
   overflow: auto;
   scroll-snap-type: none;
 }

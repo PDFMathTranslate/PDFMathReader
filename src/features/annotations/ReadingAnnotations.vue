@@ -855,10 +855,10 @@ watch(
           <button
             v-if="selection?.id"
             class="annotation-delete"
-            :aria-label="deleteArmed ? '双击删除高亮' : '删除高亮'"
-            :title="deleteArmed ? '双击删除高亮' : '单击确认，双击删除高亮'"
-            @click="armToolbarDelete"
-            @dblclick.prevent.stop="deleteFromToolbar"
+            :class="{ 'annotation-delete-armed': deleteArmed }"
+            :aria-label="deleteArmed ? '确认删除高亮' : '删除高亮'"
+            :title="deleteArmed ? '单击删除高亮' : '单击确认删除高亮'"
+            @click="deleteArmed ? deleteFromToolbar() : armToolbarDelete()"
           >
             <svg
               class="annotation-comment-icon"
@@ -1417,6 +1417,13 @@ watch(
 .annotation-toolbar[data-platform='darwin'] button[aria-pressed='true'] {
   background: var(--annotation-hover);
   box-shadow: inset 0 0 0 0.5px var(--annotation-divider);
+}
+.annotation-ui.annotation-toolbar button.annotation-delete-armed {
+  background: #d92d20;
+  color: #fff;
+}
+.annotation-ui.annotation-toolbar button.annotation-delete-armed:hover {
+  background: #b42318;
 }
 .annotation-toolbar[data-platform='darwin'] .annotation-separator {
   width: 1px;
