@@ -1,4 +1,4 @@
-[English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md)
+[English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md) · [हिन्दी](doc/README.hi.md) · [Français](doc/README.fr.md) · [Español](doc/README.es.md) · [বাংলা](doc/README.bn.md)
 
 # <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader
 
@@ -76,6 +76,7 @@ Read scientific documents in any language, with realtime translation, on any pla
   </tbody>
 </table>
   *Due to the limited devices for testing, the compatibility checks on Windows and Linux are done periodically.*
+
 ## Development
 
 <details>
@@ -165,9 +166,37 @@ In browser development, Express and Vite run in a standalone Node.js process. Na
 
 </details>
 
+## Paper
+
+The kernel of this work has been accepted by the [_Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: System Demonstrations_](https://aclanthology.org/2025.emnlp-demos.71/) (EMNLP 2025).
+
+Citation:
+
+```
+@inproceedings{ouyang-etal-2025-pdfmathtranslate,
+	    title = "{PDFM}ath{T}ranslate: Scientific Document Translation Preserving Layouts",
+	    author = "Ouyang, Rongxin  and
+	      Chu, Chang  and
+	      Xin, Zhikuang  and
+	      Ma, Xiangyao",
+	    editor = {Habernal, Ivan  and
+	      Schulam, Peter  and
+	      Tiedemann, J{\"o}rg},
+	    booktitle = "Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: System Demonstrations",
+	    month = nov,
+	    year = "2025",
+	    address = "Suzhou, China",
+	    publisher = "Association for Computational Linguistics",
+	    url = "https://aclanthology.org/2025.emnlp-demos.71/",
+	    pages = "918--924",
+	    ISBN = "979-8-89176-334-0",
+	    abstract = "Language barriers in scientific documents hinder the diffusion and development of science and technologies. However, prior efforts in translating such documents largely overlooked the information in layouts. To bridge the gap, we introduce PDFMathTranslate, the world{'}s first open-source software for translating scientific documents while preserving layouts. Leveraging the most recent advances in large language models and precise layout detection, we contribute to the community with key improvements in precision, flexibility, and efficiency. The work is open-sourced at https://github.com/byaidu/pdfmathtranslate with more than 222k downloads."
+	}
+```
+
 ## License
 
-PDFMathReader is licensed under the GNU Affero General Public License, version 3. See [LICENSE](LICENSE) for the full text. PDFMathTranslate and PDFMathTranslate-next are also AGPL-3.0 projects. Their runtime installations retain upstream license files; other dependencies retain their respective licenses.
+PDFMathReader is licensed under the GNU Affero General Public License, version 3. See [LICENSE](LICENSE) for the full text. Dependencies retain their respective licenses.
 
 ## Acknowledgements
 
