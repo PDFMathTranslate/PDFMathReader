@@ -1,7 +1,7 @@
 import { shell } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { PDFDocument } from 'pdf-lib';
@@ -49,8 +49,8 @@ export function createDocumentFileActions({
   reveal = (path) => shell.showItemInFolder(path),
   runAirDrop = run,
 }) {
-  async function perform(target, kind, action) {
-    if (platform !== 'darwin' || !target || target.isDestroyed()) return;
+  async function resolvePath(target, kind) {
+    if (!target || target.isDestroyed()) return;
     const source = registry.stateFor(target)?.unkeyedAnnotationSource;
     const original = documentPath(target);
     if (!original) return;
@@ -83,14 +83,30 @@ export function createDocumentFileActions({
       );
       await mkdir(directory, { recursive: true });
       path = join(directory, basename(original, '.pdf') + '-translated.pdf');
-      await writeFile(path, bytes);
+      try {
+        await access(path);
+      } catch {
+        await writeFile(path, bytes);
+      }
     }
     if (!current()) return;
+    return path;
+  }
+  async function perform(target, kind, action) {
+    if (platform !== 'darwin' || !target || target.isDestroyed()) return;
+    const source = registry.stateFor(target)?.unkeyedAnnotationSource;
+    const path = await resolvePath(target, kind);
+    if (
+      !path ||
+      target.isDestroyed() ||
+      registry.stateFor(target)?.unkeyedAnnotationSource !== source
+    )
+      return;
     if (action === 'reveal') reveal(path);
     else if (action === 'airdrop')
       await runAirDrop('/usr/bin/osascript', ['-l', 'JavaScript', '-e', airDropScript, path], {
         timeout: 10 * 60 * 1000,
       });
   }
-  return { perform };
+  return { perform, resolvePath };
 }

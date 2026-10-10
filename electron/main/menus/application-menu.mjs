@@ -25,14 +25,17 @@ export function createApplicationMenu({
   serializeApplicationMenu,
   menuPathItems,
   pdfApplications = createPDFApplicationService({ platform, app }),
+  fileActions: suppliedFileActions,
 }) {
-  const fileActions = createDocumentFileActions({
-    app,
-    platform,
-    registry,
-    documentPath: (target) => documentPath(target),
-    validateSystemPDF,
-  });
+  const fileActions =
+    suppliedFileActions ||
+    createDocumentFileActions({
+      app,
+      platform,
+      registry,
+      documentPath: (target) => documentPath(target),
+      validateSystemPDF,
+    });
   let applicationMenu = null;
   let menuActions = new Map();
   const applicationCache = new Map();
@@ -86,8 +89,16 @@ export function createApplicationMenu({
           if (!stillCurrent()) return;
           await receiver.webContents.executeJavaScript('window.previewSaveReadingView?.()');
           if (!stillCurrent()) return;
-          await pdfApplications.open(choice, currentPath);
-          if (stillCurrent()) receiver.webContents.send('reader:action', 'close-document');
+          const kind = await receiver.webContents.executeJavaScript(
+            'window.previewCurrentFileKind?.()',
+          );
+          if (!stillCurrent()) return;
+          const path = await fileActions.resolvePath(
+            receiver,
+            kind === 'translated' ? 'translated' : 'original',
+          );
+          if (!path || !stillCurrent()) return;
+          await pdfApplications.open(choice, path);
         } catch (error) {
           dialog.showErrorBox('PDFMathReader', error.message);
         }

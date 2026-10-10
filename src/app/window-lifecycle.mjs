@@ -217,6 +217,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     void bindings.saveReadingView();
     clearTimeout(bindings.session.readingSaveTimer);
     delete window.previewSaveReadingView;
+    delete window.previewCurrentFileKind;
     bindings.invalidateRecentPreviews();
     stopFullscreen?.();
     stopMaximized?.();

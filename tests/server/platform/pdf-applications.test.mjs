@@ -6,7 +6,6 @@ test('macOS lists handlers, excludes PDFMathReader, and hands off with separated
   const calls = [];
   const service = createPDFApplicationService({
     platform: 'darwin',
-    macOSHelperPath: '/tmp/pdf-handoff',
     app: {
       getName: () => 'PDFMathReader',
       getPath: () => '/Applications/PDFMathReader.app/Contents/MacOS/PDFMathReader',
@@ -36,8 +35,8 @@ test('macOS lists handlers, excludes PDFMathReader, and hands off with separated
   assert.equal(calls[0].options.timeout, 10000);
 
   assert.equal(await service.open(candidates[0], path), true);
-  assert.deepEqual(calls[1].args, ['/System/Applications/Preview.app', path, String(process.pid)]);
-  assert.equal(calls[1].command, '/tmp/pdf-handoff');
+  assert.deepEqual(calls[1].args, ['-a', '/System/Applications/Preview.app', path]);
+  assert.equal(calls[1].command, '/usr/bin/open');
 });
 
 test('macOS keeps candidates from an earlier document discovery usable after a later discovery', async () => {
@@ -46,7 +45,6 @@ test('macOS keeps candidates from an earlier document discovery usable after a l
   const secondPath = '/tmp/second report [new] ?.pdf';
   const service = createPDFApplicationService({
     platform: 'darwin',
-    macOSHelperPath: '/tmp/pdf-handoff',
     app: {
       getName: () => 'PDFMathReader',
       getPath: () => '/Applications/PDFMathReader.app/Contents/MacOS/PDFMathReader',
@@ -75,20 +73,19 @@ test('macOS keeps candidates from an earlier document discovery usable after a l
   assert.equal(await service.open(firstCandidates[0], secondPath), true);
   assert.equal(await service.open(secondCandidates[0], secondPath), true);
   assert.deepEqual(
-    calls.filter(({ command }) => command === '/tmp/pdf-handoff').map(({ args }) => args),
+    calls.filter(({ command }) => command === '/usr/bin/open').map(({ args }) => args),
     [
-      ['/Applications/Preview.app', secondPath, String(process.pid)],
-      ['/Applications/Skim.app', secondPath, String(process.pid)],
+      ['-a', '/Applications/Preview.app', secondPath],
+      ['-a', '/Applications/Skim.app', secondPath],
     ],
   );
 });
 
-test('macOS rejects an unknown candidate without invoking the handoff helper', async () => {
+test('macOS rejects an unknown candidate without invoking system open', async () => {
   const calls = [];
   const path = '/tmp/known.pdf';
   const service = createPDFApplicationService({
     platform: 'darwin',
-    macOSHelperPath: '/tmp/pdf-handoff',
     app: {
       getName: () => 'PDFMathReader',
       getPath: () => '/Applications/PDFMathReader.app/Contents/MacOS/PDFMathReader',
@@ -107,16 +104,15 @@ test('macOS rejects an unknown candidate without invoking the handoff helper', a
     (error) => error?.code === 'UNKNOWN_PDF_APPLICATION',
   );
   assert.equal(
-    calls.some(({ command }) => command === '/tmp/pdf-handoff'),
+    calls.some(({ command }) => command === '/usr/bin/open'),
     false,
   );
 });
 
-test('macOS preserves native handoff helper failures', async () => {
-  const failure = Error('native handoff failed');
+test('macOS preserves system open launch failures', async () => {
+  const failure = Error('system open failed');
   const service = createPDFApplicationService({
     platform: 'darwin',
-    macOSHelperPath: '/tmp/pdf-handoff',
     app: {
       getName: () => 'PDFMathReader',
       getPath: () => '/Applications/PDFMathReader.app/Contents/MacOS/PDFMathReader',
@@ -124,6 +120,7 @@ test('macOS preserves native handoff helper failures', async () => {
     execFileImpl: async (command) => {
       if (command === '/usr/bin/osascript')
         return { stdout: JSON.stringify([{ id: '/Applications/Preview.app', name: 'Preview' }]) };
+      assert.equal(command, '/usr/bin/open');
       throw failure;
     },
   });

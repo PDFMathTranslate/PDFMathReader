@@ -12,10 +12,15 @@ import { serializeApplicationMenu, menuPathItems } from '../../shared/commands/m
 export async function verifyExternalApplicationTargeting() {
   const opened = [];
   const actions = [];
-  let onOpen;
+  let onResolve;
+  let kind = 'original';
   const target = {
     isDestroyed: () => false,
-    webContents: { executeJavaScript: async () => {}, send: (...args) => actions.push(args) },
+    webContents: {
+      executeJavaScript: async (code) =>
+        code.includes('previewCurrentFileKind') ? kind : undefined,
+      send: (...args) => actions.push(args),
+    },
   };
   const state = {
     preferences: {},
@@ -40,7 +45,14 @@ export async function verifyExternalApplicationTargeting() {
       list: async () => [{ id: 'preview', name: 'Preview' }],
       open: async (choice, path) => {
         opened.push([choice.id, path]);
-        await onOpen?.();
+      },
+    },
+    fileActions: {
+      resolvePath: async (_target, selectedKind) => {
+        await onResolve?.();
+        return selectedKind === 'translated'
+          ? '/cached-translated.pdf'
+          : state.unkeyedAnnotationSource.path;
       },
     },
     validateSystemPDF: async () => {},
@@ -58,20 +70,22 @@ export async function verifyExternalApplicationTargeting() {
   const choice = submenu.submenu.items[0];
   assert.equal(choice.label, 'Preview');
   state.unkeyedAnnotationSource.path = '/second.pdf';
-  choice.click(undefined, target);
+  await choice.click(undefined, target);
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(opened, [['preview', '/second.pdf']]);
-  assert.deepEqual(actions, [['reader:action', 'close-document']]);
-  actions.length = 0;
-  onOpen = () => {
+  assert.deepEqual(actions, [], 'Opening in another app preserves the reader document');
+  kind = 'translated';
+  await choice.click(undefined, target);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(opened.at(-1), ['preview', '/cached-translated.pdf']);
+  onResolve = () => {
     state.unkeyedAnnotationSource = { path: '/replacement.pdf', reliable: true };
   };
-  choice.click(undefined, target);
+  await choice.click(undefined, target);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(actions.length, 0, 'Do not close a replacement document during handoff');
+  assert.equal(opened.length, 2, 'Do not open a replacement document during path resolution');
   state.performance.hasDocument = false;
-  choice.click(undefined, target);
-  await new Promise((resolve) => setImmediate(resolve));
+  await choice.click(undefined, target);
   assert.equal(opened.length, 2);
 }
 

@@ -317,6 +317,13 @@ export function useReaderWindow() {
     model = ref(''),
     reading = ref(t('reading.ready')),
     showTranslations = ref(true);
+  window.previewCurrentFileKind = () =>
+    showTranslations.value &&
+    pages.value.some(
+      (page) => page.mathDocument || page.blocks?.some((block) => !!block.translation),
+    )
+      ? 'translated'
+      : 'original';
   const fullscreen = ref(false),
     maximized = ref(false);
 
