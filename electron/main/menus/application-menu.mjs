@@ -118,7 +118,7 @@ export function createApplicationMenu({
       const enabled =
         !!documentPath(target) &&
         (kind === 'original' || registry.stateFor(target)?.translatedFileReady === true);
-      for (const action of ['reveal', 'airdrop']) {
+      for (const action of ['reveal', 'airdrop', 'share']) {
         const entry = currentMenu?.getMenuItemById(`file-${action}-${kind}`);
         if (entry) entry.enabled = enabled;
       }
@@ -317,16 +317,16 @@ export function createApplicationMenu({
             enabled: !!documentPath(focusedWindow()),
             submenu: externalApplicationItems(),
           },
-          ...(platform === 'darwin'
+          ...(['darwin', 'win32'].includes(platform)
             ? [
                 { type: 'separator' },
-                ...['reveal', 'airdrop'].flatMap((action) =>
+                ...['reveal', platform === 'darwin' ? 'airdrop' : 'share'].flatMap((action) =>
                   ['original', 'translated'].map((kind) => ({
                     id: `file-${action}-${kind}`,
                     label:
                       action === 'reveal'
-                        ? `View ${kind === 'original' ? 'Original' : 'Translated'} File in Finder`
-                        : `AirDrop ${kind === 'original' ? 'Original' : 'Translated'} File`,
+                        ? `View ${kind === 'original' ? 'Original' : 'Translated'} File in ${platform === 'darwin' ? 'Finder' : 'File Explorer'}`
+                        : `${platform === 'darwin' ? 'AirDrop' : 'Share'} ${kind === 'original' ? 'Original' : 'Translated'} File`,
                     enabled: false,
                     click: async (_item, target) => {
                       try {

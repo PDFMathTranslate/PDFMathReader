@@ -9,7 +9,7 @@ import { createDocumentFileActions } from '../../electron/main/services/document
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 import { serializeApplicationMenu, menuPathItems } from '../../shared/commands/menu.mjs';
 
-export async function verifyExternalApplicationTargeting() {
+export async function verifyExternalApplicationTargeting(platform = 'darwin') {
   const opened = [];
   const actions = [];
   let onResolve;
@@ -29,7 +29,7 @@ export async function verifyExternalApplicationTargeting() {
   };
   const controller = createApplicationMenu({
     app,
-    platform: 'darwin',
+    platform,
     Menu: {
       buildFromTemplate: (template) => Menu.buildFromTemplate(template),
       setApplicationMenu: () => {},
@@ -56,6 +56,7 @@ export async function verifyExternalApplicationTargeting() {
       },
     },
     validateSystemPDF: async () => {},
+    hideNativeMenuBar: () => {},
     resolveUILanguage: () => 'zh-CN',
     menuLabel,
     commandAccelerator: () => undefined,
@@ -67,6 +68,18 @@ export async function verifyExternalApplicationTargeting() {
   await new Promise((resolve) => setImmediate(resolve));
   const submenu = controller.getApplicationMenu().getMenuItemById('file-other-app');
   assert.equal(submenu.label, '在其他应用中继续阅读');
+  if (platform === 'win32') {
+    const nativeMenu = controller.getApplicationMenu();
+    assert.equal(
+      nativeMenu.getMenuItemById('file-reveal-original').label,
+      '在资源管理器中显示原始文件',
+    );
+    assert.equal(nativeMenu.getMenuItemById('file-share-original').label, '分享原始文件');
+    assert.ok(!nativeMenu.getMenuItemById('file-airdrop-original'));
+    controller.updateMenu(target);
+    assert.equal(nativeMenu.getMenuItemById('file-share-original').enabled, true);
+    assert.equal(nativeMenu.getMenuItemById('file-share-translated').enabled, false);
+  }
   const choice = submenu.submenu.items[0];
   assert.equal(choice.label, 'Preview');
   state.unkeyedAnnotationSource.path = '/second.pdf';
@@ -103,6 +116,7 @@ export async function verifyFileMenu(window, recents) {
   const dir = await mkdtemp(join(tmpdir(), 'file-menu-'));
   try {
     await verifyExternalApplicationTargeting();
+    await verifyExternalApplicationTargeting('win32');
     const translatedPages = [];
     for (const width of [200, 300]) {
       const pdf = await PDFDocument.create();
@@ -137,6 +151,21 @@ export async function verifyFileMenu(window, recents) {
     await fileActions.perform(fileTarget, 'translated', 'airdrop');
     assert.equal(shared[0][0], '/usr/bin/osascript');
     assert.equal(shared[0][1].at(-1), revealed[1]);
+    const windowsActions = createDocumentFileActions({
+      app: { getPath: () => dir },
+      platform: 'win32',
+      registry: { stateFor: () => fileState },
+      documentPath: () => source.path,
+      validateSystemPDF: async () => {},
+      reveal: (path) => revealed.push(path),
+      shareWindows: async (target, path) => shared.push([target, path]),
+    });
+    await windowsActions.perform(fileTarget, 'original', 'reveal');
+    assert.equal(revealed.at(-1), source.path);
+    await windowsActions.perform(fileTarget, 'translated', 'share');
+    assert.equal(shared.at(-1)[0], fileTarget);
+    assert.equal(shared.at(-1)[1], revealed[1]);
+    await assert.rejects(windowsActions.perform(fileTarget, 'original', 'airdrop'), /Unsupported/);
     fileTarget.webContents.executeJavaScript = async () => null;
     await assert.rejects(
       fileActions.perform(fileTarget, 'translated', 'reveal'),
@@ -152,10 +181,10 @@ export async function verifyFileMenu(window, recents) {
     const externalIndex = file().items.findIndex((item) => item.id === 'file-other-app');
     const closeIndex = file().items.findIndex((item) => item.id === 'file-close-document');
     assert.ok(closeIndex > externalIndex);
-    for (const action of ['reveal', 'airdrop']) {
+    for (const action of ['reveal', process.platform === 'win32' ? 'share' : 'airdrop']) {
       for (const kind of ['original', 'translated']) {
         const entry = menu().getMenuItemById(`file-${action}-${kind}`);
-        if (process.platform === 'darwin') assert.equal(entry.enabled, false);
+        if (['darwin', 'win32'].includes(process.platform)) assert.equal(entry.enabled, false);
         else assert.ok(!entry);
       }
     }
@@ -182,13 +211,14 @@ export async function verifyFileMenu(window, recents) {
       'window.previewRenderDiagnostics?.().totalPages===1 && !window.previewRenderDiagnostics().opening',
     );
     assert.equal(menu().getMenuItemById('file-other-app').enabled, true);
-    if (process.platform === 'darwin') {
+    if (['darwin', 'win32'].includes(process.platform)) {
+      const shareAction = process.platform === 'darwin' ? 'airdrop' : 'share';
       assert.equal(menu().getMenuItemById('file-reveal-original').enabled, true);
-      assert.equal(menu().getMenuItemById('file-airdrop-original').enabled, true);
+      assert.equal(menu().getMenuItemById(`file-${shareAction}-original`).enabled, true);
       assert.equal(menu().getMenuItemById('file-reveal-translated').enabled, false);
       await evaluate('window.previewActions.translatedFileReady(true)');
       assert.equal(menu().getMenuItemById('file-reveal-translated').enabled, true);
-      assert.equal(menu().getMenuItemById('file-airdrop-translated').enabled, true);
+      assert.equal(menu().getMenuItemById(`file-${shareAction}-translated`).enabled, true);
       await evaluate('window.previewActions.translatedFileReady(false)');
     }
     // Wait for asynchronous OS discovery, without opening another application.

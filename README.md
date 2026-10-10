@@ -23,6 +23,7 @@ Read scientific documents in any language, with realtime translation, on any pla
 - **Multiple documents**: Open PDFs in independent windows and restore reading positions and display settings when reopening them.
 - **Reading links**: Save bidirectional links between search results and their reading origins for easy reference.
 - **Highlights and comments**: Highlight key passages and add comments to record your reading notes.
+- **File actions**: Reveal original or fully translated PDFs in Finder and send them with AirDrop on macOS; reveal them in File Explorer and open the native Windows sharing panel on Windows.
 
 ## Recent updates
 

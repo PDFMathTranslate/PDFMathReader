@@ -1,4 +1,5 @@
 import { shell } from 'electron';
+import { shareWindowsFile } from './windows-file-share.mjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { access, mkdir, writeFile } from 'node:fs/promises';
@@ -48,6 +49,7 @@ export function createDocumentFileActions({
   validateSystemPDF,
   reveal = (path) => shell.showItemInFolder(path),
   runAirDrop = run,
+  shareWindows = shareWindowsFile,
 }) {
   async function resolvePath(target, kind) {
     if (!target || target.isDestroyed()) return;
@@ -93,7 +95,10 @@ export function createDocumentFileActions({
     return path;
   }
   async function perform(target, kind, action) {
-    if (platform !== 'darwin' || !target || target.isDestroyed()) return;
+    if (!['darwin', 'win32'].includes(platform) || !target || target.isDestroyed()) return;
+    if (!['original', 'translated'].includes(kind)) throw Error('Invalid file kind.');
+    if (action !== 'reveal' && action !== (platform === 'darwin' ? 'airdrop' : 'share'))
+      throw Error('Unsupported file action.');
     const source = registry.stateFor(target)?.unkeyedAnnotationSource;
     const path = await resolvePath(target, kind);
     if (
@@ -103,6 +108,7 @@ export function createDocumentFileActions({
     )
       return;
     if (action === 'reveal') reveal(path);
+    else if (action === 'share') await shareWindows(target, path);
     else if (action === 'airdrop')
       await runAirDrop('/usr/bin/osascript', ['-l', 'JavaScript', '-e', airDropScript, path], {
         timeout: 10 * 60 * 1000,
