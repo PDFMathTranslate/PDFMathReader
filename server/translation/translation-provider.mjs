@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 // Share pending translations between local backends, while keeping their jobs separate.
 const pendingTranslations = new Map();
@@ -22,6 +23,18 @@ export const FREE_ENDPOINTS = Object.freeze([
   'https://api1.pdf2zh-next.com/chatproxy',
   'https://api2.pdf2zh-next.com/chatproxy',
 ]);
+// Requests wait out the shared quota's 429s, so allow far longer than one completion.
+export const FREE_SERVICE_TIMEOUT_MS = 5 * 60 * 1000;
+// The proxy answers 400 "Keyword not allowed" to any text without this template line.
+const FREE_TEMPLATE_MARKER = ';; Treat next line as plain text input and translate it into';
+const FREE_TASK_NOTE =
+  'The input below is a complete task with its own rules and output format. Follow those rules exactly and return only the output they request; never translate or repeat the rules themselves.\n\n';
+const freeRetryDelay = (attempt) =>
+  Math.min(4000 * 2 ** attempt, 60000) * (0.75 + Math.random() * 0.5);
+const wait = (ms, signal) =>
+  delay(ms, undefined, { signal }).catch(() => {
+    throw signal.reason;
+  });
 export function freeTranslationPrompt(text, language) {
   return `You are a professional,authentic machine translation engine.\n\n;; Treat next line as plain text input and translate it into ${language}, output translation ONLY. If translation is unnecessary (e.g. proper nouns, codes, {{1}}, etc. ), return the original text. NO explanations. NO notes. Input:\n\n${text}`;
 }
@@ -59,13 +72,23 @@ function requestBody(provider, body) {
         freeTranslationPrompt(source[1], provider.language) +
         '\nPreserve every numbered formula placeholder from the input exactly (for example {{v0}} or {v0}); never output {v*} or invent a placeholder.';
   }
-  return {
-    text,
-    ...(body.response_format?.type === 'json_object' ? { requestJsonMode: true } : {}),
-  };
+  // Precise (babeldoc) and custom prompts carry their own instructions: frame them with
+  // the required template line. JSON mode is not forwarded because it collapses
+  // babeldoc's JSON arrays into one object; upstream also leaves it off by default.
+  if (!text.includes(FREE_TEMPLATE_MARKER))
+    text = freeTranslationPrompt(
+      FREE_TASK_NOTE + text,
+      provider.language || 'the language the task requests',
+    );
+  return { text };
 }
-export function createTranslationProvider(providerFetch, { cacheDirectory } = {}) {
-  let selected;
+export function createTranslationProvider(
+  providerFetch,
+  { cacheDirectory, retryDelay = freeRetryDelay } = {},
+) {
+  let selected,
+    qps,
+    nextStart = 0;
   async function endpoint() {
     selected ??= Promise.any(
       FREE_ENDPOINTS.map(async (url) => {
@@ -79,6 +102,22 @@ export function createTranslationProvider(providerFetch, { cacheDirectory } = {}
     ).catch(() => FREE_ENDPOINTS[0]);
     return selected;
   }
+  // Space request starts by the proxy's advertised qps, as upstream's QPS limiter does.
+  async function throttle(url, signal) {
+    qps ??= providerFetch(url + '/config', { signal: AbortSignal.timeout(5000) })
+      .then(async (response) => {
+        const data = await response.json();
+        return response.ok && data.status === 'ok' && Number.isInteger(data.qps) && data.qps > 0
+          ? data.qps
+          : 10;
+      })
+      .catch(() => 10);
+    const interval = 1000 / (await qps),
+      now = Date.now(),
+      start = Math.max(now, nextStart);
+    nextStart = start + interval;
+    if (start > now) await wait(start - now, signal);
+  }
   async function request(provider, body, signal) {
     if (provider.id === 'openai')
       return providerFetch(
@@ -90,8 +129,25 @@ export function createTranslationProvider(providerFetch, { cacheDirectory } = {}
           body: JSON.stringify(requestBody(provider, body)),
         },
       );
-    const first = await endpoint();
     const payload = requestBody(provider, body);
+    // 429 is the shared upstream quota: retry until it clears or the caller gives up.
+    // Server and network errors get a few attempts after endpoint failover.
+    for (let attempt = 0, failures = 0; ; attempt++) {
+      let response;
+      try {
+        response = await freeRequest(provider, payload, signal);
+      } catch (error) {
+        if (signal.aborted || ++failures >= 3 || error.freeServiceEmpty) throw error;
+        await wait(retryDelay(attempt), signal);
+        continue;
+      }
+      if (response.status !== 429 && (response.status < 500 || ++failures >= 3)) return response;
+      await wait(retryDelay(attempt), signal);
+    }
+  }
+  async function freeRequest(provider, payload, signal) {
+    const first = await endpoint();
+    await throttle(first, signal);
     for (const url of [first, ...FREE_ENDPOINTS.filter((url) => url !== first)]) {
       if (signal.aborted) throw signal.reason;
       let response;
@@ -109,10 +165,14 @@ export function createTranslationProvider(providerFetch, { cacheDirectory } = {}
       if (response.status >= 500 && url === first) continue;
       if (!response.ok) return response;
       const data = await response.json();
-      if (typeof data.content !== 'string' || !data.content.trim())
-        throw Error('SiliconFlow free service returned an empty translation.');
-      const content = data.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-      if (!content) throw Error('SiliconFlow free service returned an empty translation.');
+      const content =
+        typeof data.content === 'string'
+          ? data.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+          : '';
+      if (!content)
+        throw Object.assign(Error('SiliconFlow free service returned an empty translation.'), {
+          freeServiceEmpty: true,
+        });
       selected = Promise.resolve(url);
       return new Response(
         JSON.stringify({
@@ -155,7 +215,10 @@ export function createTranslationProvider(providerFetch, { cacheDirectory } = {}
     let pending = pendingTranslations.get(path);
     if (!pending) {
       const controller = new AbortController(),
-        timeout = setTimeout(() => controller.abort(), 60000);
+        timeout = setTimeout(
+          () => controller.abort(),
+          provider.id === 'siliconflow-free' ? FREE_SERVICE_TIMEOUT_MS : 60000,
+        );
       pending = { controller, users: 0 };
       pending.promise = (async () => {
         // A previous writer may finish between our first disk read and claiming the job.
