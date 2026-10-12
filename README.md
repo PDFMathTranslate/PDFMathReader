@@ -145,7 +145,7 @@ Translation text is cached across documents and app restarts. Identical requests
 | Fast       | PDFMathTranslate      | Translated PDF pages with formula preservation      |
 | Precise    | PDFMathTranslate-next | Translated PDF pages with more detailed typesetting |
 
-Experimental: Precise can instead translate through a remote [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) server over HTTP (Settings → Experimental). PDFMathReader implements that server's HTTP protocol as a client; the server is not bundled and is optional. The remote kernel is used only when the server's `/health` check passes, otherwise the local Precise kernel runs. No API key is sent; the server uses its own translation service. Remote pages have no reading text layer, and glossaries and native services always use the local kernel.
+Experimental: Precise can instead translate through a remote [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) server over HTTP (Settings → Experimental). PDFMathReader implements that server's HTTP protocol as a client; the server is not bundled and is optional. The remote kernel is used only when the server's `/health` check passes, otherwise the local Precise kernel runs. No API key is sent; the server uses its own translation service. Remote pages have no reading text layer, and the selected translation service and glossaries are not used for remotely translated pages.
 
 PDF rendering and layout analysis stay local. Translation sends document text to OpenAI and may incur API charges. Fast and Precise run in separate app-managed Python environments installed with `uv`, and access OpenAI through the backend proxy. API keys remain outside the renderer.
 

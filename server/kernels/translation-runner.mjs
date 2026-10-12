@@ -208,12 +208,10 @@ export function createTranslationRunner({
         } catch {}
       }
     }
-    // Experimental remote Precise kernel. It cannot receive glossaries, native
-    // services or on-device translation, so those requests stay local.
-    const remoteUrl =
-      id === 'pdf_math_precise' && !translationService && !localTranslation && !glossary.length
-        ? normalizeRemoteKernelUrl(remoteKernel?.url)
-        : '';
+    // Experimental remote Precise kernel. When enabled it takes precedence over
+    // the selected service and glossary: the server cannot receive either, so
+    // it translates with its own service and no glossary.
+    const remoteUrl = id === 'pdf_math_precise' ? normalizeRemoteKernelUrl(remoteKernel?.url) : '';
     const remoteService =
       typeof remoteKernel?.service === 'string' ? remoteKernel.service.trim() : '';
     // Remote artifacts live under their own key, so they stay readable offline.
@@ -269,6 +267,10 @@ export function createTranslationRunner({
       if (!health.ok)
         onDiagnostic?.(`Remote kernel unavailable (${health.reason}); using the local kernel.`);
       else {
+        if (translationService || localTranslation || glossary.length)
+          onDiagnostic?.(
+            'Remote kernel in use: the selected translation service and glossary are not sent to it.',
+          );
         try {
           const remoteResult = await runWorker(async () => {
             if (signal?.aborted) throw Error('Cancelled');

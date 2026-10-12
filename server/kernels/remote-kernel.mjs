@@ -7,6 +7,9 @@ import { randomUUID } from 'node:crypto';
 const HEALTH_TIMEOUT_MS = 3000;
 const HEALTH_TTL_MS = 15 * 1000;
 const POLL_INTERVAL_MS = 1000;
+const SUBMIT_TIMEOUT_MS = 60 * 1000;
+const DOWNLOAD_TIMEOUT_MS = 2 * 60 * 1000;
+const MAX_POLL_FAILURES = 5;
 const JOB_TIMEOUT_MS = 15 * 60 * 1000;
 const MAX_RESPONSE_BYTES = 200 * 1024 * 1024;
 
@@ -59,6 +62,8 @@ export function createRemoteKernel({
   healthTimeoutMs = HEALTH_TIMEOUT_MS,
   pollIntervalMs = POLL_INTERVAL_MS,
   jobTimeoutMs = JOB_TIMEOUT_MS,
+  submitTimeoutMs = SUBMIT_TIMEOUT_MS,
+  pollTimeoutMs = 10_000,
   loadPdfLib = () => import('pdf-lib'),
   now = () => Date.now(),
 } = {}) {
@@ -120,26 +125,31 @@ export function createRemoteKernel({
     return Buffer.from(await one.save());
   }
 
+  // `reached` is false only when no status endpoint answered at all; a 404 on
+  // /api/tasks (newer servers) is normal as long as /api/history responds.
   async function findRecord(base, id, signal) {
+    let reached = false;
     for (const [path, key] of [
       ['/api/tasks', 'tasks'],
       ['/api/history', 'history'],
     ]) {
       try {
-        const list = (await getJson(base + path, signal, 10_000))?.[key];
+        const list = (await getJson(base + path, signal, pollTimeoutMs))?.[key];
+        reached = true;
         const match = Array.isArray(list) ? list.find((entry) => taskId(entry) === id) : null;
-        if (match) return match;
+        if (match) return { record: match, reached };
       } catch {
         if (signal?.aborted) throw Error('Cancelled');
       }
     }
-    return null;
+    return { record: null, reached };
   }
 
   async function download(base, name, signal) {
+    const timeout = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
     const response = await request(`${base}/translatedFile/${encodeURIComponent(name)}`, {
       cache: 'no-store',
-      signal,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
     if (!response.ok) throw Error(`Remote download failed: HTTP ${response.status}`);
     const length = Number(response.headers?.get?.('content-length') || 0);
@@ -182,12 +192,14 @@ export function createRemoteKernel({
       ...(service ? { service, next_service: service } : {}),
     };
     const deadline = now() + jobTimeoutMs;
+    // An accepted job answers immediately, so a server that stays silent is stuck.
+    const submitTimeout = AbortSignal.timeout(submitTimeoutMs);
     const response = await request(`${base}/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-PDF2zh-Protocol': 'accepted' },
       body: JSON.stringify(body),
       cache: 'no-store',
-      signal,
+      signal: signal ? AbortSignal.any([signal, submitTimeout]) : submitTimeout,
     });
     let payload;
     try {
@@ -201,9 +213,12 @@ export function createRemoteKernel({
     if (!files) {
       const id = taskId(payload);
       if (payload?.status !== 'accepted' || !id) throw Error('Remote server sent no task id');
+      let failures = 0;
       while (!files) {
         if (now() > deadline) throw Error('Remote translation timed out');
-        const record = await findRecord(base, id, signal);
+        const { record, reached } = await findRecord(base, id, signal);
+        failures = reached ? 0 : failures + 1;
+        if (failures >= MAX_POLL_FAILURES) throw Error('Remote server stopped responding');
         if (record) {
           const status = String(record.status || '');
           if (['失败', 'failed'].includes(status))

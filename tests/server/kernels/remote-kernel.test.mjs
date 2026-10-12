@@ -20,7 +20,10 @@ async function pdf(pages = 2) {
 }
 
 // Speaks the zotero-pdf2zh protocol and "translates" by echoing the upload.
-async function fakeServer(t, { health = { status: 'ok', version: '2.4.3' }, fail = false } = {}) {
+async function fakeServer(
+  t,
+  { health = { status: 'ok', version: '2.4.3' }, fail = false, stall = '' } = {},
+) {
   const files = new Map();
   const history = [];
   const requests = [];
@@ -31,6 +34,7 @@ async function fakeServer(t, { health = { status: 'ok', version: '2.4.3' }, fail
       res.end(JSON.stringify(body));
     };
     if (req.url === '/health') return send(200, health);
+    if (stall === 'poll' && req.url.startsWith('/api/')) return;
     if (req.url === '/api/tasks') return send(200, { status: 'success', tasks: [] });
     if (req.url === '/api/history') return send(200, { status: 'success', history });
     if (req.url.startsWith('/translatedFile/')) {
@@ -40,6 +44,7 @@ async function fakeServer(t, { health = { status: 'ok', version: '2.4.3' }, fail
       return res.end(files.get(name));
     }
     if (req.url === '/translate' && req.method === 'POST') {
+      if (stall === 'submit') return;
       const chunks = [];
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => {
@@ -127,6 +132,24 @@ test('translatePage rejects when the remote task fails', async (t) => {
   await assert.rejects(
     kernel.translatePage({ url: server.url, bytes: await pdf(1), page: 1, language: 'zh-CN' }),
     /boom/,
+  );
+});
+
+test('translatePage gives up on a server that never accepts the job', async (t) => {
+  const server = await fakeServer(t, { stall: 'submit' });
+  const kernel = createRemoteKernel({ submitTimeoutMs: 100 });
+  await assert.rejects(
+    kernel.translatePage({ url: server.url, bytes: await pdf(1), page: 1, language: 'zh' }),
+    /timed out|aborted/i,
+  );
+});
+
+test('translatePage gives up when the server stops answering status polls', async (t) => {
+  const server = await fakeServer(t, { stall: 'poll' });
+  const kernel = createRemoteKernel({ pollIntervalMs: 5, pollTimeoutMs: 50 });
+  await assert.rejects(
+    kernel.translatePage({ url: server.url, bytes: await pdf(1), page: 1, language: 'zh' }),
+    /stopped responding/,
   );
 });
 
@@ -237,14 +260,23 @@ test('runner falls back to local when the remote job fails', async (t) => {
   assert.match(data.diagnostics.join('\n'), /Remote kernel failed/);
 });
 
-test('runner keeps glossary, Fast kernel and cache-only misses off the remote server', async (t) => {
+test('runner prefers the remote kernel over a selected service and glossary', async (t) => {
+  const server = await fakeServer(t);
+  const data = await runnerFixture(t);
+  const result = await data.translate({
+    remoteKernel: { url: server.url },
+    glossary: [{ source: 'a', target: 'b' }],
+    translationService: { id: 'custom-1', values: {} },
+  });
+  assert.equal(result.translationModel, 'pdf2zh-remote');
+  assert.equal(data.spawned.length, 0);
+  assert.match(data.diagnostics.join('\n'), /glossary are not sent/);
+});
+
+test('runner keeps the Fast kernel and cache-only misses off the remote server', async (t) => {
   const server = await fakeServer(t);
   const data = await runnerFixture(t);
   const remoteKernel = { url: server.url };
-  await assert.rejects(
-    data.translate({ remoteKernel, glossary: [{ source: 'a', target: 'b' }] }),
-    /Kernel translation failed/,
-  );
   await assert.rejects(
     data.translate({ remoteKernel, id: 'pdf_math_fast', language: 'English' }),
     /Kernel translation failed/,
