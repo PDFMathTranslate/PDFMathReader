@@ -1,5 +1,9 @@
 import { SUPPORTED_UI_LANGUAGES } from '../../../shared/i18n/ui-language.mjs';
 import { cloneGlossaries, validGlossaries } from '../../../shared/translation/glossary.mjs';
+import {
+  cloneCustomServices,
+  isValidCustomServices,
+} from '../../../shared/translation/custom-services.mjs';
 import { validShortcutOverrides } from '../../../shared/commands/shortcuts.mjs';
 import { isValidTranslationFont } from '../../../shared/reader/translation-font.mjs';
 import {
@@ -66,6 +70,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   defaultPageCropY: 0,
   autoAlignDocumentWidth: false,
   kernelAdvancedOptions: {},
+  customTranslationServices: [],
   showKernelToolbarShortcut: false,
   autoHideHeader: true,
   uiLanguage: 'en',
@@ -220,6 +225,7 @@ function clonePreferences(value) {
   const clone = {
     ...value,
     kernelAdvancedOptions: cloneKernelAdvancedOptions(value?.kernelAdvancedOptions),
+    customTranslationServices: cloneCustomServices(value?.customTranslationServices),
   };
   if (Object.hasOwn(value || {}, 'shortcutBindings'))
     clone.shortcutBindings = { ...value.shortcutBindings };
@@ -288,6 +294,7 @@ const VALIDATORS = {
   uiLanguage: (value) => ['system', ...SUPPORTED_UI_LANGUAGES].includes(value),
   translationServiceHistory: isValidTranslationServiceHistory,
   translationServices: isValidTranslationServices,
+  customTranslationServices: isValidCustomServices,
 };
 const VALIDATION_MESSAGES = {
   documentOpenMode: 'Invalid document opening mode',
@@ -327,6 +334,7 @@ const VALIDATION_MESSAGES = {
   translationServiceHistory: 'Invalid translation service history',
   uiLanguage: 'Invalid UI language preference',
   translationServices: 'Invalid translation service preferences',
+  customTranslationServices: 'Invalid OpenAI-compatible service preferences',
 };
 
 function copyUnknown(value) {
@@ -352,7 +360,9 @@ function upgrade(value) {
             ? cloneTranslationServices(value[key])
             : key === 'translationServiceHistory'
               ? cloneTranslationServiceHistory(value[key])
-              : value[key];
+              : key === 'customTranslationServices'
+                ? cloneCustomServices(value[key])
+                : value[key];
   if (!VALIDATORS.sourceLanguage(value.sourceLanguage)) {
     const entry = Object.entries(LANGUAGE_CODES).find(
       ([, code]) => code === value.kernelAdvancedOptions?.pdf_math_fast?.lang_in,

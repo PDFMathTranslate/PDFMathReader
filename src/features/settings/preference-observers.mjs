@@ -72,9 +72,15 @@ export function installReaderPreferenceObservers({ bindings }) {
     ],
     () => bindings.saveView(),
   );
-  watch([bindings.kernelAdvancedOptions, bindings.translationServices], () => bindings.saveView(), {
-    deep: true,
-  });
+  watch(
+    [
+      bindings.kernelAdvancedOptions,
+      bindings.translationServices,
+      bindings.preferences.customTranslationServices,
+    ],
+    () => bindings.saveView(),
+    { deep: true },
+  );
   watch(
     () => JSON.stringify(bindings.currentTranslationService.value),
     () => {

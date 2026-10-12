@@ -47,6 +47,7 @@ export function createPreferenceState() {
   const engine = ref(localStorage.getItem('engine') || 'pdf_inspector');
   const kernelAdvancedOptions = ref({ pdf_math_fast: {}, pdf_math_precise: {} });
   const translationServices = ref({});
+  const customTranslationServices = ref([]);
   const translationServiceHistory = ref({});
   const glossaries = ref(loadGlossaries());
   const interfaceStyle = ref('default');
@@ -100,6 +101,7 @@ export function createPreferenceState() {
     engine,
     kernelAdvancedOptions,
     translationServices,
+    customTranslationServices,
     translationServiceHistory,
     glossaries,
     interfaceStyle,

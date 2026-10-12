@@ -1,6 +1,6 @@
 <script setup>
 import PromptFilePicker from './PromptFilePicker.vue';
-import { computed, ref, watch, onBeforeUnmount } from 'vue';
+import { computed, inject, ref, watch, onBeforeUnmount } from 'vue';
 import {
   AppButton,
   AppPopUpButton,
@@ -24,6 +24,18 @@ import {
   clearTranslationServiceSchemaCache,
   loadTranslationServiceSchema,
 } from '../translation/translation-services.mjs';
+import {
+  CUSTOM_CREDENTIAL_BUCKET,
+  MAX_CUSTOM_SERVICES,
+  MAX_CUSTOM_SERVICE_NAME,
+  cloneCustomServices,
+  createCustomServiceId,
+  customBackendFor,
+  customServiceDescriptors,
+  isCustomServiceId,
+  withCustomCredentials,
+  withCustomProfiles,
+} from '../../../shared/translation/custom-services.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
 
 const props = defineProps({
@@ -59,6 +71,10 @@ const localLabels = {
     empty: 'No providers are available for this kernel.',
     details: 'Provider details',
     noDetails: 'Select a provider to view its settings.',
+    addCustom: 'Add OpenAI-compatible service',
+    customDefault: 'OpenAI-compatible service',
+    customName: 'Name',
+    deleteCustom: 'Delete service',
   },
   'zh-CN': {
     active: '当前使用',
@@ -67,6 +83,10 @@ const localLabels = {
     empty: '此内核没有可用的提供商。',
     details: '提供商详情',
     noDetails: '选择提供商以查看设置。',
+    addCustom: '添加 OpenAI 兼容服务',
+    customDefault: 'OpenAI 兼容服务',
+    customName: '名称',
+    deleteCustom: '删除服务',
   },
   'zh-TW': {
     active: '目前使用',
@@ -75,6 +95,10 @@ const localLabels = {
     empty: '此核心沒有可用的提供者。',
     details: '提供者詳細資料',
     noDetails: '選擇提供者以檢視設定。',
+    addCustom: '新增 OpenAI 相容服務',
+    customDefault: 'OpenAI 相容服務',
+    customName: '名稱',
+    deleteCustom: '刪除服務',
   },
   ja: {
     active: '使用中',
@@ -83,6 +107,10 @@ const localLabels = {
     empty: 'このカーネルで利用できるプロバイダーはありません。',
     details: 'プロバイダーの詳細',
     noDetails: 'プロバイダーを選択すると設定を表示します。',
+    addCustom: 'OpenAI 互換サービスを追加',
+    customDefault: 'OpenAI 互換サービス',
+    customName: '名前',
+    deleteCustom: 'サービスを削除',
   },
   ko: {
     active: '사용 중',
@@ -91,6 +119,10 @@ const localLabels = {
     empty: '이 커널에서 사용할 수 있는 제공업체가 없습니다.',
     details: '제공업체 세부사항',
     noDetails: '제공업체를 선택하면 설정이 표시됩니다.',
+    addCustom: 'OpenAI 호환 서비스 추가',
+    customDefault: 'OpenAI 호환 서비스',
+    customName: '이름',
+    deleteCustom: '서비스 삭제',
   },
   fr: {
     active: 'Actif',
@@ -100,6 +132,10 @@ const localLabels = {
     empty: 'Aucun fournisseur disponible pour ce noyau.',
     details: 'Détails du fournisseur',
     noDetails: 'Sélectionnez un fournisseur pour afficher ses réglages.',
+    addCustom: 'Ajouter un service compatible OpenAI',
+    customDefault: 'Service compatible OpenAI',
+    customName: 'Nom',
+    deleteCustom: 'Supprimer le service',
   },
   es: {
     active: 'Activo',
@@ -109,6 +145,10 @@ const localLabels = {
     empty: 'No hay proveedores disponibles para este núcleo.',
     details: 'Detalles del proveedor',
     noDetails: 'Selecciona un proveedor para ver sus ajustes.',
+    addCustom: 'Añadir servicio compatible con OpenAI',
+    customDefault: 'Servicio compatible con OpenAI',
+    customName: 'Nombre',
+    deleteCustom: 'Eliminar servicio',
   },
   de: {
     active: 'Aktiv',
@@ -118,6 +158,10 @@ const localLabels = {
     empty: 'Für diesen Kernel sind keine Anbieter verfügbar.',
     details: 'Anbieterdetails',
     noDetails: 'Wählen Sie einen Anbieter aus, um seine Einstellungen anzuzeigen.',
+    addCustom: 'OpenAI-kompatiblen Dienst hinzufügen',
+    customDefault: 'OpenAI-kompatibler Dienst',
+    customName: 'Name',
+    deleteCustom: 'Dienst löschen',
   },
   pt: {
     active: 'Ativo',
@@ -126,6 +170,10 @@ const localLabels = {
     empty: 'Não existem fornecedores disponíveis para este kernel.',
     details: 'Detalhes do fornecedor',
     noDetails: 'Selecione um fornecedor para ver as suas definições.',
+    addCustom: 'Adicionar serviço compatível com OpenAI',
+    customDefault: 'Serviço compatível com OpenAI',
+    customName: 'Nome',
+    deleteCustom: 'Eliminar serviço',
   },
   ru: {
     active: 'Активен',
@@ -135,6 +183,10 @@ const localLabels = {
     empty: 'Для этого ядра нет доступных сервисов.',
     details: 'Сведения о сервисе',
     noDetails: 'Выберите сервис, чтобы просмотреть его настройки.',
+    addCustom: 'Добавить OpenAI-совместимый сервис',
+    customDefault: 'OpenAI-совместимый сервис',
+    customName: 'Название',
+    deleteCustom: 'Удалить сервис',
   },
   ar: {
     active: 'نشط',
@@ -143,6 +195,10 @@ const localLabels = {
     empty: 'لا توجد مزوّدات متاحة لهذه النواة.',
     details: 'تفاصيل المزوّد',
     noDetails: 'اختر مزوّدًا لعرض إعداداته.',
+    addCustom: 'إضافة خدمة متوافقة مع OpenAI',
+    customDefault: 'خدمة متوافقة مع OpenAI',
+    customName: 'الاسم',
+    deleteCustom: 'حذف الخدمة',
   },
   arz: {
     active: 'شغّال',
@@ -151,6 +207,10 @@ const localLabels = {
     empty: 'مفيش مزوّدات متاحة للنواة دي.',
     details: 'تفاصيل المزوّد',
     noDetails: 'اختار مزوّد عشان تشوف إعداداته.',
+    addCustom: 'ضيف خدمة متوافقة مع OpenAI',
+    customDefault: 'خدمة متوافقة مع OpenAI',
+    customName: 'الاسم',
+    deleteCustom: 'امسح الخدمة',
   },
   hi: {
     active: 'सक्रिय',
@@ -160,6 +220,10 @@ const localLabels = {
     empty: 'इस कर्नेल के लिए कोई प्रदाता उपलब्ध नहीं है।',
     details: 'प्रदाता का विवरण',
     noDetails: 'सेटिंग देखने के लिए कोई प्रदाता चुनें।',
+    addCustom: 'OpenAI-संगत सेवा जोड़ें',
+    customDefault: 'OpenAI-संगत सेवा',
+    customName: 'नाम',
+    deleteCustom: 'सेवा हटाएँ',
   },
   bn: {
     active: 'সক্রিয়',
@@ -169,6 +233,10 @@ const localLabels = {
     empty: 'এই কার্নেলের জন্য কোনো প্রোভাইডার উপলভ্য নেই।',
     details: 'প্রোভাইডারের বিবরণ',
     noDetails: 'সেটিংস দেখতে একটি প্রোভাইডার নির্বাচন করুন।',
+    addCustom: 'OpenAI-সামঞ্জস্যপূর্ণ সেবা যোগ করুন',
+    customDefault: 'OpenAI-সামঞ্জস্যপূর্ণ সেবা',
+    customName: 'নাম',
+    deleteCustom: 'সেবা মুছুন',
   },
   ur: {
     active: 'فعال',
@@ -178,6 +246,10 @@ const localLabels = {
     empty: 'اس کرنل کے لیے کوئی فراہم کنندہ دستیاب نہیں۔',
     details: 'فراہم کنندہ کی تفصیلات',
     noDetails: 'ترتیبات دیکھنے کے لیے فراہم کنندہ منتخب کریں۔',
+    addCustom: 'OpenAI سے مطابقت رکھنے والی سروس شامل کریں',
+    customDefault: 'OpenAI سے مطابقت رکھنے والی سروس',
+    customName: 'نام',
+    deleteCustom: 'سروس حذف کریں',
   },
   pcm: {
     active: 'E dey active',
@@ -186,19 +258,38 @@ const localLabels = {
     empty: 'No provider dey for dis kernel.',
     details: 'Provider details',
     noDetails: 'Pick provider to see e settings.',
+    addCustom: 'Add OpenAI-compatible service',
+    customDefault: 'OpenAI-compatible service',
+    customName: 'Name',
+    deleteCustom: 'Delete service',
   },
 };
 function local(key) {
   return localLabels[uiLanguage.value]?.[key] || localLabels.en[key];
 }
 
-const config = computed(() => {
+// App-wide OpenAI-compatible services are projected into this kernel's catalog,
+// profiles and credentials, so grouping, fields and requests treat them uniformly.
+const readerPreferences = inject('documentLanguagePreferences', null);
+const customServices = computed(() =>
+  cloneCustomServices(readerPreferences?.customTranslationServices?.value),
+);
+const rawConfig = computed(() => {
   const value = props.modelValue?.[props.engine];
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 });
-const services = computed(() =>
+const config = computed(() => withCustomProfiles(rawConfig.value, customServices.value));
+const credentials = computed(() => withCustomCredentials(props.credentials, props.engine));
+const schemaServices = computed(() =>
   Array.isArray(schema.value?.services) ? schema.value.services : [],
 );
+const customSupported = computed(
+  () => !!customBackendFor(props.engine, schemaServices.value) && !!readerPreferences,
+);
+const services = computed(() => [
+  ...schemaServices.value,
+  ...customServiceDescriptors(props.engine, schemaServices.value, customServices.value),
+]);
 const providerPorts = ref({});
 const providerGroups = computed(() =>
   groupProviders(
@@ -206,7 +297,7 @@ const providerGroups = computed(() =>
     config.value,
     withSharedOpenAIKey(
       services.value,
-      props.credentials?.[props.engine] || {},
+      credentials.value?.[props.engine] || {},
       props.sharedOpenAIConfigured,
     ),
     props.history?.[props.engine] || {},
@@ -316,6 +407,10 @@ function serviceLabel(service) {
     'apple-local': 'settings.translationServiceAppleLocal',
     'siliconflow-free': 'settings.translationServiceSiliconFlowFree',
   };
+  if (service.custom)
+    return (
+      customServices.value.find((entry) => entry.id === service.id)?.name || local('customDefault')
+    );
   return keys[service.id] ? t(keys[service.id]) : service.label;
 }
 const noConfigurationNeeded = computed(
@@ -377,7 +472,7 @@ function fieldLabel(field) {
   return field.required ? `${field.label} *` : field.label;
 }
 function fieldValue(field, serviceId = selectedProviderId.value) {
-  if (field.secret) return props.credentials?.[props.engine]?.[serviceId]?.[field.id] || '';
+  if (field.secret) return credentials.value?.[props.engine]?.[serviceId]?.[field.id] || '';
   const values = profileValuesFor(serviceId);
   if (Object.prototype.hasOwnProperty.call(values, field.id)) return values[field.id];
   return field.default === undefined ? '' : field.default;
@@ -403,6 +498,16 @@ function nonSecretValues(service, raw) {
 function emitConfig(serviceId, rawValues = {}, activate = true) {
   const next = cloneTranslationServices(props.modelValue);
   const current = next[props.engine] || {};
+  if (isCustomServiceId(serviceId)) {
+    // Custom values live in the app-wide list; the kernel only records the choice.
+    if (activate || typeof current.id !== 'string')
+      next[props.engine] = { ...current, id: serviceId, values: {} };
+    else return emitRequest(selectedId.value, fieldValues(selectedId.value));
+    emit('update:modelValue', next);
+    if (activate) emitRequest(serviceId, rawValues);
+    else emitRequest(selectedId.value, fieldValues(selectedId.value));
+    return;
+  }
   const values = nonSecretValues(serviceById(serviceId), rawValues);
   const nextProfiles = { ...(current.profiles || {}) };
   nextProfiles[serviceId] = { values };
@@ -425,8 +530,68 @@ function useService(id = selectedProviderId.value) {
   browseId.value = id;
   emitConfig(id, fieldValues(id), true);
 }
+function updateCustomService(id, patch) {
+  if (!readerPreferences) return;
+  readerPreferences.customTranslationServices.value = customServices.value.map((entry) =>
+    entry.id === id ? { ...entry, ...patch } : entry,
+  );
+}
+function updateCustomName(value) {
+  const name = String(value || '')
+    .replace(/[\r\n\0]/g, ' ')
+    .slice(0, MAX_CUSTOM_SERVICE_NAME);
+  updateCustomService(selectedProviderId.value, { name });
+}
+function addCustomService() {
+  if (!customSupported.value || customServices.value.length >= MAX_CUSTOM_SERVICES) return;
+  const id = createCustomServiceId(),
+    names = new Set(customServices.value.map((entry) => entry.name)),
+    base = local('customDefault');
+  let index = 2,
+    name = base;
+  while (names.has(name)) name = `${base} ${index++}`;
+  readerPreferences.customTranslationServices.value = [
+    ...customServices.value,
+    { id, name, base_url: '', model: '' },
+  ];
+  browseId.value = id;
+}
+function deleteCustomService(id = selectedProviderId.value) {
+  if (!readerPreferences || !isCustomServiceId(id)) return;
+  readerPreferences.customTranslationServices.value = customServices.value.filter(
+    (entry) => entry.id !== id,
+  );
+  const next = cloneCredentials(props.credentials);
+  if (next[CUSTOM_CREDENTIAL_BUCKET]) {
+    delete next[CUSTOM_CREDENTIAL_BUCKET][id];
+    if (!Object.keys(next[CUSTOM_CREDENTIAL_BUCKET]).length) delete next[CUSTOM_CREDENTIAL_BUCKET];
+    emit('update:credentials', next);
+  }
+  const clear = globalThis.window?.previewServiceCredentials?.clear;
+  if (typeof clear === 'function')
+    credentialWrites = credentialWrites
+      .catch(() => {})
+      .then(() => clear({ engine: CUSTOM_CREDENTIAL_BUCKET, service: id }))
+      .catch(() => {});
+  // Kernels still pointing at the deleted service fall back to automatic.
+  const services = cloneTranslationServices(props.modelValue);
+  let changed = false;
+  for (const [engine, value] of Object.entries(services))
+    if (value?.id === id) {
+      services[engine] = { ...value, id: 'auto', values: {} };
+      changed = true;
+    }
+  if (changed) emit('update:modelValue', services);
+  browseId.value = '';
+}
 function updateField(field, value) {
   const serviceId = selectedProviderId.value;
+  if (isCustomServiceId(serviceId)) {
+    updateCustomService(serviceId, { [field.id]: String(value ?? '').replace(/[\r\n\0]/g, '') });
+    if (serviceId === selectedId.value)
+      emitRequest(serviceId, { ...fieldValues(serviceId), [field.id]: value });
+    return;
+  }
   const values = { ...fieldValues(serviceId), [field.id]: value };
   if (value === '' && !field.required) delete values[field.id];
   emitConfig(serviceId, values, serviceId === selectedId.value);
@@ -456,19 +621,23 @@ function cloneCredentials(value) {
 function updateSecret(field, value) {
   const serviceId = selectedProviderId.value;
   const next = cloneCredentials(props.credentials);
-  const engineValues = (next[props.engine] ??= {});
+  const bucket = isCustomServiceId(serviceId) ? CUSTOM_CREDENTIAL_BUCKET : props.engine;
+  const engineValues = (next[bucket] ??= {});
   const serviceValues = (engineValues[serviceId] ??= {});
   if (value) serviceValues[field.id] = String(value);
   else delete serviceValues[field.id];
   if (!Object.keys(serviceValues).length) delete engineValues[serviceId];
-  if (!Object.keys(engineValues).length) delete next[props.engine];
+  if (!Object.keys(engineValues).length) delete next[bucket];
   emit('update:credentials', next);
-  persistCredentials(serviceId, next[props.engine]?.[serviceId] || {});
-  emitRequest(selectedId.value, fieldValues(selectedId.value), next);
+  persistCredentials(serviceId, next[bucket]?.[serviceId] || {}, bucket);
+  emitRequest(
+    selectedId.value,
+    fieldValues(selectedId.value),
+    withCustomCredentials(next, props.engine),
+  );
 }
-function persistCredentials(service, values) {
-  const save = globalThis.window?.previewServiceCredentials?.save,
-    engine = props.engine;
+function persistCredentials(service, values, engine = props.engine) {
+  const save = globalThis.window?.previewServiceCredentials?.save;
   if (typeof save !== 'function') return;
   credentialWrites = credentialWrites
     .catch(() => {})
@@ -480,10 +649,10 @@ function persistCredentials(service, values) {
 function requestValues(
   serviceId = selectedId.value,
   raw = fieldValues(serviceId),
-  credentials = props.credentials,
+  secretsSource = credentials.value,
 ) {
   const service = serviceById(serviceId),
-    secrets = credentials?.[props.engine]?.[serviceId] || {},
+    secrets = secretsSource?.[props.engine]?.[serviceId] || {},
     values = {};
   for (const field of service?.fields || []) {
     if (field.secret) {
@@ -498,12 +667,12 @@ function requestValues(
 function emitRequest(
   serviceId = selectedId.value,
   rawValues = fieldValues(serviceId),
-  credentials = props.credentials,
+  secretsSource = credentials.value,
 ) {
   const service = serviceById(serviceId),
-    values = requestValues(serviceId, rawValues, credentials);
+    values = requestValues(serviceId, rawValues, secretsSource);
   if (!service) {
-    const secrets = credentials?.[props.engine]?.[serviceId] || {};
+    const secrets = secretsSource?.[props.engine]?.[serviceId] || {};
     emit('update:request', {
       engine: props.engine,
       id: serviceId,
@@ -600,7 +769,7 @@ watch(
 watch(
   () => [
     selectedId.value,
-    JSON.stringify(props.credentials?.[props.engine] || {}),
+    JSON.stringify(credentials.value?.[props.engine] || {}),
     JSON.stringify(activeProfileValues.value),
   ],
   () => emitRequest(),
@@ -679,6 +848,14 @@ onBeforeUnmount(() => {
       <p v-if="!services.length && !busy" class="muted provider-empty" role="status">
         {{ local('empty') }}
       </p>
+      <AppButton
+        v-if="customSupported"
+        class="provider-add-custom"
+        size="small"
+        :disabled="customServices.length >= MAX_CUSTOM_SERVICES"
+        @click="addCustomService"
+        >+ {{ local('addCustom') }}</AppButton
+      >
     </aside>
     <section class="provider-detail" :aria-label="local('details')">
       <div class="provider-detail-content" @scroll.passive="revealScrollbar">
@@ -713,6 +890,26 @@ onBeforeUnmount(() => {
           >
         </div>
         <div v-if="selectedService" class="provider-fields">
+          <div
+            v-if="selectedService.custom"
+            class="provider-field provider-custom-name"
+            data-service-field="name"
+          >
+            <label id="provider-field-custom-name">{{ local('customName') }}</label>
+            <div class="provider-custom-name-row">
+              <AppTextField
+                :model-value="
+                  customServices.find((entry) => entry.id === selectedService.id)?.name || ''
+                "
+                :maxlength="MAX_CUSTOM_SERVICE_NAME"
+                aria-labelledby="provider-field-custom-name"
+                @update:model-value="updateCustomName"
+              />
+              <AppButton class="provider-delete-custom" @click="deleteCustomService()">{{
+                local('deleteCustom')
+              }}</AppButton>
+            </div>
+          </div>
           <div
             v-for="field in selectedFields"
             :key="field.id"
@@ -1157,5 +1354,22 @@ fluent-button.provider-list-item::part(content) {
 }
 .provider-model-discovery > p {
   flex-basis: 100%;
+}
+.provider-add-custom {
+  justify-self: stretch;
+}
+.provider-custom-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.provider-custom-name-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.provider-delete-custom {
+  flex: none;
+  color: var(--danger, #c93434);
 }
 </style>

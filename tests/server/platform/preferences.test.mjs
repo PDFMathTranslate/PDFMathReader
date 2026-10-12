@@ -51,6 +51,7 @@ const DEFAULT_PREFERENCES = {
   defaultPageCropY: 0,
   autoAlignDocumentWidth: false,
   kernelAdvancedOptions: {},
+  customTranslationServices: [],
   showKernelToolbarShortcut: false,
   autoHideHeader: true,
   uiLanguage: 'en',
@@ -95,6 +96,14 @@ test('partial saves keep every current setting and unknown key', async () => {
         layoutVisible: true,
         ultraFastSerif: true,
         ultraFastFont: 'Songti SC',
+        customTranslationServices: [
+          {
+            id: 'custom-0a1b2c3d4e5f',
+            name: 'Local LLM',
+            base_url: 'http://127.0.0.1:1234/v1',
+            model: 'qwen',
+          },
+        ],
       },
       { futureSetting: { revision: 3 } },
     );
@@ -112,6 +121,17 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ ultraFastSerif: 'true' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'Evil"; color: red' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'x'.repeat(101) }));
+    assert.throws(() =>
+      preferences.save({ customTranslationServices: [{ id: 'openai', name: 'x' }] }),
+    );
+    assert.throws(() =>
+      preferences.save({
+        customTranslationServices: [
+          { id: 'custom-0a1b2c3d4e5f', name: 'A' },
+          { id: 'custom-0a1b2c3d4e5f', name: 'B' },
+        ],
+      }),
+    );
     assert.deepEqual(preferences.load(), beforeInvalid);
     assert.deepEqual((await createReaderPreferences(path)).load(), beforeInvalid);
     await preferences.save({ fit: 'width', zoom: 1 });

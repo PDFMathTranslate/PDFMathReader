@@ -10,9 +10,10 @@ export function useProviderModels({ service, fieldValue, engine, providerId, sha
     const model = list.find((f) => /(?:^|_)model$/i.test(f.id));
     const key = list.find((f) => f.secret && /api_key|^key$/i.test(f.id));
     const base = list.find((f) => !f.secret && /base_url|api_base|endpoint/i.test(f.id));
-    const compatible = /openai|silicon|deepseek|modelscope|model.?scope|moonshot|zhipu/i.test(
-      service.value?.id || '',
-    );
+    const compatible =
+      /^custom-|openai|silicon|deepseek|modelscope|model.?scope|moonshot|zhipu/i.test(
+        service.value?.id || '',
+      );
     return compatible && model && key ? { model, key, base } : null;
   });
   const request = computed(() => {

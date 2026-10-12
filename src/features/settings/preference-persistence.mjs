@@ -2,6 +2,7 @@ import { formatPercentValue } from '../../ui/inputs/scrub-input.mjs';
 import { cloneGlossaries } from '../../../shared/translation/glossary.mjs';
 import { uiLanguageChoice, t, setUILanguage } from '../../i18n/index.mjs';
 import { cloneTranslationServices } from '../translation/translation-services.mjs';
+import { cloneCustomServices } from '../../../shared/translation/custom-services.mjs';
 import { nextTick } from 'vue';
 
 export function createPreferencePersistence({ preferences, session, view, provider, feedback }) {
@@ -98,6 +99,10 @@ export function createPreferencePersistence({ preferences, session, view, provid
       );
     if (saved.translationServices !== undefined)
       preferences.translationServices.value = cloneTranslationServices(saved.translationServices);
+    if (saved.customTranslationServices !== undefined)
+      preferences.customTranslationServices.value = cloneCustomServices(
+        saved.customTranslationServices,
+      );
     if (saved.translationServiceHistory !== undefined) {
       preferences.translationServiceHistory.value = provider.historyTracker.load(
         saved.translationServiceHistory,
@@ -153,6 +158,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         layoutVisible: preferences.layoutVisible.value,
         kernelAdvancedOptions: cloneKernelAdvancedOptions(preferences.kernelAdvancedOptions.value),
         translationServices: cloneTranslationServices(preferences.translationServices.value),
+        customTranslationServices: cloneCustomServices(preferences.customTranslationServices.value),
         interfaceStyle: preferences.interfaceStyle.value,
         appearance: preferences.appearanceChoice.value,
         accentColor: preferences.accentColor.value,

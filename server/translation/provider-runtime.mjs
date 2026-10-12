@@ -1,4 +1,5 @@
 import { LANGUAGE_CODES, translationLanguageCode } from '../../shared/translation/languages.mjs';
+import { resolveCustomSelection } from '../../shared/translation/custom-services.mjs';
 import { selectTranslationProvider, createTranslationProvider } from './translation-provider.mjs';
 
 const autoService = { id: 'auto', label: 'Automatic (SiliconFlow free)', fields: [] };
@@ -73,6 +74,8 @@ export function createTranslationRuntime({
     language,
     { cacheOnly = false } = {},
   ) {
+    // User-defined services run on the kernel's own OpenAI-compatible backend.
+    selection = resolveCustomSelection(kernel, selection);
     if (selection?.id === 'chatgpt-subscription') {
       if (!chatGPTSubscription) throw Error('ChatGPT Subscription requires the desktop app.');
       const account = await chatGPTSubscription.status();

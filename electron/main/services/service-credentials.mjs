@@ -6,7 +6,8 @@ import { randomUUID } from 'node:crypto';
 const SERVICE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const FIELD_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const MAX_VALUE_LENGTH = 16384;
-const ENGINES = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']);
+// `custom` holds keys for user-defined OpenAI-compatible services shared by all kernels.
+const ENGINES = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise', 'custom']);
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

@@ -46,6 +46,7 @@ const SETTINGS_PREFERENCES = [
   'kernelAdvancedOptions',
   'translationServices',
   'translationServiceHistory',
+  'customTranslationServices',
 ];
 const APPEARANCE_PREFERENCES = [
   'interfaceStyle',
@@ -182,9 +183,12 @@ export function registerPreferencesIPC({
         updateAppearance();
       if (
         SETTINGS_PREFERENCES.some((key) =>
-          ['kernelAdvancedOptions', 'translationServices', 'translationServiceHistory'].includes(
-            key,
-          )
+          [
+            'kernelAdvancedOptions',
+            'translationServices',
+            'translationServiceHistory',
+            'customTranslationServices',
+          ].includes(key)
             ? JSON.stringify(previous[key]) !== JSON.stringify(next[key])
             : previous[key] !== next[key],
         )
