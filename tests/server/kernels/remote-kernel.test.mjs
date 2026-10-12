@@ -22,7 +22,7 @@ async function pdf(pages = 2) {
 // Speaks the zotero-pdf2zh protocol and "translates" by echoing the upload.
 async function fakeServer(
   t,
-  { health = { status: 'ok', version: '2.4.3' }, fail = false, stall = '' } = {},
+  { health = { status: 'ok', version: '2.4.3' }, fail = false, stall = '', running = [] } = {},
 ) {
   const files = new Map();
   const history = [];
@@ -35,7 +35,22 @@ async function fakeServer(
     };
     if (req.url === '/health') return send(200, health);
     if (stall === 'poll' && req.url.startsWith('/api/')) return;
-    if (req.url === '/api/tasks') return send(200, { status: 'success', tasks: [] });
+    if (req.url === '/api/tasks') {
+      const [progress] = running.splice(0, 1);
+      const tasks =
+        progress === undefined
+          ? []
+          : [
+              {
+                taskId: `task-${history.length}`,
+                finished: false,
+                status: 'running',
+                progress,
+                message: 'translate 0/100',
+              },
+            ];
+      return send(200, { status: 'success', tasks });
+    }
     if (req.url === '/api/history') return send(200, { status: 'success', history });
     if (req.url.startsWith('/translatedFile/')) {
       const name = decodeURIComponent(req.url.slice('/translatedFile/'.length));
@@ -283,4 +298,29 @@ test('runner keeps the Fast kernel and cache-only misses off the remote server',
   );
   assert.equal(await data.translate({ remoteKernel, cacheOnly: true }), null);
   assert.equal(server.requests.length, 0);
+});
+
+test('a remote job stuck at 0% reports indeterminate progress, then real percentages', async (t) => {
+  const server = await fakeServer(t, { running: [0, 0, 40] });
+  const kernel = createRemoteKernel({ pollIntervalMs: 10 });
+  const events = [];
+  await kernel.translatePage({
+    url: server.url,
+    bytes: await pdf(),
+    page: 1,
+    language: 'zh',
+    onProgress: (progress) => events.push(progress),
+  });
+  assert.equal(events[0].percent, null);
+  assert.ok(events.length >= 3);
+  assert.deepEqual(
+    events.map((event) => event.percent),
+    [null, null, null, 40].slice(0, events.length),
+  );
+  assert.deepEqual(events.at(-1), {
+    stage: 'translate 0/100',
+    completed: 40,
+    total: 100,
+    percent: 40,
+  });
 });

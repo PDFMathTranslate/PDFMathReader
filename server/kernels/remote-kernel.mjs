@@ -42,6 +42,20 @@ function sleep(ms, signal) {
   });
 }
 
+// The server reports 0% until its progress parser sees a counter, which can be
+// the whole job for a one-page upload. An empty bar looks like no progress at
+// all, so a zero is sent as indeterminate and the bar animates like a local
+// kernel stage that has no counter yet.
+function remoteProgress(stage, value) {
+  const percent = Math.min(100, Math.max(0, Number(value) || 0));
+  return {
+    stage: String(stage || 'Remote translation').slice(0, 200),
+    completed: percent,
+    total: 100,
+    percent: percent > 0 ? percent : null,
+  };
+}
+
 function taskId(record) {
   return String(record?.taskId ?? record?.task_id ?? '');
 }
@@ -192,6 +206,7 @@ export function createRemoteKernel({
       ...(service ? { service, next_service: service } : {}),
     };
     const deadline = now() + jobTimeoutMs;
+    onProgress?.(remoteProgress('Remote translation', 0));
     // An accepted job answers immediately, so a server that stays silent is stuck.
     const submitTimeout = AbortSignal.timeout(submitTimeoutMs);
     const response = await request(`${base}/translate`, {
@@ -225,15 +240,8 @@ export function createRemoteKernel({
             throw Error(`Remote translation failed: ${record.error || record.message || status}`);
           const list = record.result?.fileList ?? record.fileList;
           if (Array.isArray(list) && list.length && record.finished === true) files = list;
-          else if (record.finished !== true && Number.isFinite(Number(record.progress))) {
-            const percent = Math.min(100, Math.max(0, Number(record.progress)));
-            onProgress?.({
-              stage: String(record.message || 'Remote translation').slice(0, 200),
-              completed: percent,
-              total: 100,
-              percent,
-            });
-          }
+          else if (record.finished !== true)
+            onProgress?.(remoteProgress(record.message, record.progress));
         }
         if (!files) await sleep(pollIntervalMs, signal);
       }
