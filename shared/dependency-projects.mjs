@@ -1,7 +1,8 @@
-// Repository links from installed package metadata and kernel definitions.
+// Repository links for dependencies and kernel integrations.
 export const dependencyProjects = [
   ['PDFMathTranslate (Legacy)', 'https://github.com/PDFMathTranslate/PDFMathTranslate'],
   ['PDFMathTranslate Next', 'https://github.com/PDFMathTranslate-next/PDFMathTranslate-next'],
+  ['zotero-pdf2zh', 'https://github.com/guaguastandup/zotero-pdf2zh.git'],
   ['BabelDOC', 'https://github.com/funstory-ai/BabelDOC'],
   ['PDF Inspector', 'https://github.com/firecrawl/pdf-inspector'],
   ['PDF.js', 'https://github.com/mozilla/pdf.js'],
