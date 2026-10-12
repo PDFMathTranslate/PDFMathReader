@@ -281,6 +281,58 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
 }
 
 for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
+  test(`${id} reuse serves another service's compatible translation`, async (t) => {
+    const { PDFDocument } = await import('pdf-lib');
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = Buffer.from(await pdf.save());
+    let spawned = 0;
+    const data = await fixture(t, async (child) => {
+      spawned++;
+      const dir = dirname(child.spawnArgs[2]);
+      await writeFile(join(dir, 'result.mono.pdf'), bytes);
+      await writeFile(join(dir, 'layout.json'), JSON.stringify({ paragraphs: [] }));
+      child.emit('close', 0, null);
+    });
+    const serviceA = { serviceIdentity: 'service-a', cacheSelection: { id: 'a' } };
+    const serviceB = { serviceIdentity: 'service-b', cacheSelection: { id: 'b' } };
+    const first = await data.translate({ id, bytes, ...serviceA });
+    assert.equal(first.cached, false);
+    const unavailable = createTranslationRunner({
+      root: data.root,
+      baseCacheDir: join(data.root, 'cache'),
+      getState: async () => {
+        throw Error('Kernel is unavailable');
+      },
+    });
+    const request = { id, bytes, page: 1, language: 'English', cacheOnly: true, ...serviceB };
+    const hit = await unavailable.translate({
+      ...request,
+      model: 'other-model',
+      reuseTranslations: true,
+    });
+    assert.equal(hit.layoutKey, first.layoutKey);
+    assert.equal(hit.translationModel, 'test-model');
+    // A reused index entry never satisfies strict mode, even for the same model name.
+    assert.equal(
+      await unavailable.translate({ ...request, model: 'test-model', reuseTranslations: false }),
+      null,
+    );
+    // Without request indexes, the kernel lookup still finds the compatible artifact.
+    const cacheDir = join(data.root, 'cache');
+    for (const name of await readdir(cacheDir))
+      if (name.endsWith('.page.json')) await rm(join(cacheDir, name));
+    const migrated = await data.translate({ id, bytes, ...serviceB, reuseTranslations: true });
+    assert.equal(migrated.cached, true);
+    assert.equal(migrated.layoutKey, first.layoutKey);
+    assert.equal(spawned, 1);
+    const fresh = await data.translate({ id, bytes, ...serviceB, reuseTranslations: false });
+    assert.equal(fresh.cached, false);
+    assert.equal(spawned, 2);
+  });
+}
+
+for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
   test(`${id} cache-only miss never probes Python, services, options or workers`, async (t) => {
     const unexpected = async () => {
       throw Error('Unexpected kernel work during cache lookup');

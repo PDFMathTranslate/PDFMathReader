@@ -77,7 +77,8 @@ export function installReaderPreferenceObservers({ bindings }) {
     () => JSON.stringify(bindings.currentTranslationService.value),
     () => {
       if (bindings.preferences.loadingPreferences || bindings.settingsWindowMode) return;
-      bindings.resetTranslations();
+      if (bindings.reuseTranslations.value) bindings.cancelTranslations();
+      else bindings.resetTranslations();
       bindings.settle();
     },
   );

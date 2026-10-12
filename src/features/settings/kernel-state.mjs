@@ -87,6 +87,7 @@ export function createKernelState({ pages, engine }) {
       revealHeader,
       saveView,
       resetTranslations,
+      cancelTranslations,
       settle,
       checkEngine,
       currentKernelAdvancedOptions,
@@ -154,7 +155,9 @@ export function createKernelState({ pages, engine }) {
         () => JSON.stringify(currentTranslationService.value),
         (next, previous) => {
           if (!previous || next === previous || preferences.loadingPreferences) return;
-          resetTranslations(true);
+          // Keep finished pages; compatible server caches serve the remaining ones.
+          if (preferences.reuseTranslations?.value) cancelTranslations();
+          else resetTranslations(true);
           settle();
         },
       );

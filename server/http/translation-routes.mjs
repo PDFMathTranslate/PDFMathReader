@@ -88,7 +88,7 @@ export function registerTranslationRoutes(
       const paragraphCacheDir = cacheScope
         ? join(cacheDir, 'documents', scopeHash, 'paragraphs', scopeGeneration)
         : cacheDir;
-      const keyFor = (cacheModel) =>
+      const keyFor = (cacheModel, serviceBound = true) =>
         createHash('sha256')
           .update(
             JSON.stringify({
@@ -96,7 +96,11 @@ export function registerTranslationRoutes(
               language,
               ...(sourceLanguage && sourceLanguage !== 'English' ? { sourceLanguage } : {}),
               model: cacheModel,
-              ...(provider.identity ? { service: provider.identity } : {}),
+              ...(!serviceBound
+                ? { compatible: 1 }
+                : provider.identity
+                  ? { service: provider.identity }
+                  : {}),
               prompt: 1,
               ...(glossary.length ? { glossary } : {}),
               ...(cacheScope ? { cacheScope } : {}),
@@ -108,6 +112,7 @@ export function registerTranslationRoutes(
       const cache = createTranslationCache({
         directory: paragraphCacheDir,
         keyFor,
+        compatibleKey: keyFor(undefined, false),
         readResult: async (cachedKey) => {
           const result = JSON.parse(
             await readFile(join(paragraphCacheDir, `${cachedKey}.json`), 'utf8'),

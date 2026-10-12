@@ -124,65 +124,85 @@ export function createTranslationRunner({
     // This request index points to complete artifacts, so reopening does not
     // need Python discovery, option introspection, or the service catalog.
     // Only a digest is persisted; service values may contain credentials.
-    const requestKey = sourceHash
-      .copy()
-      .update(
-        JSON.stringify({
-          cacheIndex: 1,
-          layoutSchema: currentLayoutSchema,
-          id,
-          page,
-          language,
-          sourceLanguage: sourceLanguage || 'English',
-          glossary,
-          advancedOptions,
-          translationService: cacheSelection,
-          serviceIdentity,
-          localTranslation,
-          cacheScope,
-        }),
-      )
-      .digest('hex');
-    const requestPath = join(cacheDir, requestKey + '.page.json');
-    const rememberPage = async (artifactKey, translationModel) => {
-      const temporary = requestPath + '.' + crypto.randomUUID() + '.tmp';
+    const requestDigest = (serviceBound) =>
+      sourceHash
+        .copy()
+        .update(
+          JSON.stringify({
+            cacheIndex: 1,
+            layoutSchema: currentLayoutSchema,
+            id,
+            page,
+            language,
+            sourceLanguage: sourceLanguage || 'English',
+            glossary,
+            advancedOptions,
+            ...(serviceBound
+              ? { translationService: cacheSelection, serviceIdentity, localTranslation }
+              : { compatible: 1 }),
+            cacheScope,
+          }),
+        )
+        .digest('hex');
+    const requestPath = join(cacheDir, requestDigest(true) + '.page.json');
+    // The compatible index omits the service, so any service can reuse it.
+    const compatibleRequestPath = join(cacheDir, requestDigest(false) + '.page.json');
+    const writeIndex = async (path, value) => {
+      const temporary = path + '.' + crypto.randomUUID() + '.tmp';
       try {
         await mkdir(cacheDir, { recursive: true });
-        await writeFile(temporary, JSON.stringify({ key: artifactKey, model: translationModel }));
-        await rename(temporary, requestPath);
+        await writeFile(temporary, JSON.stringify(value));
+        await rename(temporary, path);
       } finally {
         await rm(temporary, { force: true }).catch(() => {});
       }
     };
+    const rememberPage = async (artifactKey, translationModel, reused = false) => {
+      await writeIndex(requestPath, { key: artifactKey, model: translationModel, reused });
+      await writeIndex(compatibleRequestPath, { key: artifactKey, model: translationModel });
+    };
     if (!forceRetranslation) {
-      try {
-        const saved = JSON.parse(await readFile(requestPath, 'utf8'));
-        if (!/^[0-9a-f]{64}$/.test(saved.key) || typeof saved.model !== 'string')
-          throw Error('Invalid page cache index');
-        // Without reuse, only the requested model's own artifact qualifies.
-        if (!reuseTranslations && saved.model !== model) throw Error('Different cached model');
-        const [result, metadata] = await Promise.all([
-          readFile(join(cacheDir, saved.key + '.pdf')),
-          readFile(join(cacheDir, saved.key + '.layout.json'), 'utf8'),
-        ]);
-        if (
-          !result.subarray(0, 1024).includes(Buffer.from('%PDF')) ||
-          !Array.isArray(JSON.parse(metadata).paragraphs)
-        )
-          throw Error('Invalid cached page');
-        result.layoutKey = cacheScope ? `${scopeHash}-${scopeGeneration}-${saved.key}` : saved.key;
-        result.cached = true;
-        result.translationModel = saved.model;
-        step('cacheLookup');
-        emitTiming({
-          engine: id,
-          cached: true,
-          model: saved.model,
-          totalMs: performance.now() - started,
-          stages,
-        });
-        return result;
-      } catch {}
+      for (const indexPath of reuseTranslations
+        ? [requestPath, compatibleRequestPath]
+        : [requestPath]) {
+        try {
+          const saved = JSON.parse(await readFile(indexPath, 'utf8'));
+          if (!/^[0-9a-f]{64}$/.test(saved.key) || typeof saved.model !== 'string')
+            throw Error('Invalid page cache index');
+          // Without reuse, only the requested model's own artifact qualifies.
+          if (!reuseTranslations && (saved.model !== model || saved.reused))
+            throw Error('Different cached model');
+          const [result, metadata] = await Promise.all([
+            readFile(join(cacheDir, saved.key + '.pdf')),
+            readFile(join(cacheDir, saved.key + '.layout.json'), 'utf8'),
+          ]);
+          if (
+            !result.subarray(0, 1024).includes(Buffer.from('%PDF')) ||
+            !Array.isArray(JSON.parse(metadata).paragraphs)
+          )
+            throw Error('Invalid cached page');
+          if (indexPath === compatibleRequestPath)
+            await writeIndex(requestPath, {
+              key: saved.key,
+              model: saved.model,
+              reused: true,
+            }).catch(() => {});
+          result.layoutKey = cacheScope
+            ? `${scopeHash}-${scopeGeneration}-${saved.key}`
+            : saved.key;
+          result.cached = true;
+          result.translationModel = saved.model;
+          step('cacheLookup');
+          emitTiming({
+            engine: id,
+            cached: true,
+            model: saved.model,
+            totalMs: performance.now() - started,
+            stages,
+          });
+          return result;
+        } catch {}
+      }
     }
     // A cache miss is not kernel work. The actual translation request can still
     // migrate legacy artifacts below, but this fast lookup must never probe Python.
@@ -200,7 +220,7 @@ export function createTranslationRunner({
     if (service) model = service.model;
     step('environmentAndOptions');
     const layoutKey = (key) => (cacheScope ? `${scopeHash}-${scopeGeneration}-${key}` : key);
-    const keyFor = (cacheModel, layoutSchema = currentLayoutSchema) =>
+    const keyFor = (cacheModel, layoutSchema = currentLayoutSchema, serviceBound = true) =>
       sourceHash
         .copy()
         .update(
@@ -211,9 +231,11 @@ export function createTranslationRunner({
             language,
             ...(sourceLanguage && sourceLanguage !== 'English' ? { sourceLanguage } : {}),
             model: cacheModel,
-            ...(service || serviceIdentity
-              ? { service: service?.cacheIdentity || serviceIdentity }
-              : {}),
+            ...(!serviceBound
+              ? { compatible: 1 }
+              : service || serviceIdentity
+                ? { service: service?.cacheIdentity || serviceIdentity }
+                : {}),
             prompt: 2,
             ...(glossary.length ? { glossary } : {}),
             ...(cacheScope ? { cacheScope } : {}),
@@ -226,6 +248,7 @@ export function createTranslationRunner({
     const cache = createTranslationCache({
       directory: cacheDir,
       keyFor,
+      compatibleKey: keyFor(undefined, currentLayoutSchema, false),
       fallbackKeyFors:
         currentLayoutSchema >= 5
           ? []
@@ -242,7 +265,7 @@ export function createTranslationRunner({
     const cached = join(cacheDir, `${key}.pdf`);
     const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
     if (hit) {
-      await rememberPage(hit.key, hit.model).catch(() => {});
+      await rememberPage(hit.key, hit.model, hit.reused).catch(() => {});
       const result = hit.result;
       result.layoutKey = layoutKey(hit.key);
       result.cached = true;
@@ -267,7 +290,7 @@ export function createTranslationRunner({
       const queuedHit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
       step('cacheRecheck');
       if (queuedHit) {
-        await rememberPage(queuedHit.key, queuedHit.model).catch(() => {});
+        await rememberPage(queuedHit.key, queuedHit.model, queuedHit.reused).catch(() => {});
         const result = queuedHit.result;
         result.layoutKey = layoutKey(queuedHit.key);
         result.cached = true;
