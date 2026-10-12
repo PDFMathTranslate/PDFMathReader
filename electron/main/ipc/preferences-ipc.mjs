@@ -36,6 +36,7 @@ const SETTINGS_PREFERENCES = [
   'topicSentenceDetection',
   'watermarkRemovalEnabled',
   'paragraphContinuationDetection',
+  'recentMagicZoomEnabled',
   'jevApiToken',
   'remoteKernelEnabled',
   'remoteKernelUrl',

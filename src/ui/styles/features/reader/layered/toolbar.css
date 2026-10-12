@@ -390,6 +390,35 @@
   border-color: var(--accent);
 }
 
+/* Experimental magic zoom: the gallery reserves headroom above the covers so scaled
+   items are not clipped by its scroll container, without moving anything else. */
+.recent-gallery.recent-magic {
+  position: relative;
+  padding: 92px 40px 14px;
+  margin-top: -88px;
+}
+
+.recent-heading {
+  position: relative;
+  z-index: 1;
+}
+
+.recent-magic .recent-document {
+  transform-origin: 50% 100%;
+  transform: translateX(var(--magic-shift, 0px)) scale(var(--magic-scale, 1));
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* While the pointer is tracking, follow it with no easing lag. */
+.recent-magic.is-magnifying .recent-document {
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
 .recent-document .recent-pin {
   position: absolute;
   top: 10px;

@@ -1,10 +1,17 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { t } from '../../i18n/index.mjs';
 import SidebarNavigation from './SidebarNavigation.vue';
 import { AppButton } from '../../ui/controls.mjs';
 import ReaderPage from './ReaderPage.vue';
+import { useRecentMagicZoom } from '../library/useRecentMagicZoom.mjs';
 const recentView = ref('gallery');
+const preferences = inject('documentLanguagePreferences', null);
+const recentGallery = ref(null);
+const magicZoomReady = computed(
+  () => !!preferences?.recentMagicZoomEnabled.value && recentView.value === 'gallery',
+);
+const magicZoom = useRecentMagicZoom(recentGallery, magicZoomReady);
 try {
   if (localStorage.getItem('reader-recent-view') === 'list') recentView.value = 'list';
 } catch {}
@@ -304,7 +311,18 @@ const hoveredParagraph = defineModel('hoveredParagraph');
                 </div>
               </div>
             </div>
-            <div class="recent-gallery" :class="{ 'recent-list': recentView === 'list' }">
+            <div
+              ref="recentGallery"
+              class="recent-gallery"
+              :class="{
+                'recent-list': recentView === 'list',
+                'recent-magic': magicZoomReady,
+                'is-magnifying': magicZoom.magnifying.value,
+              }"
+              @pointermove="magicZoom.move"
+              @pointerleave="magicZoom.leave"
+              @scroll.passive="magicZoom.scroll"
+            >
               <button
                 v-for="document in recentDocuments"
                 :key="document.id"

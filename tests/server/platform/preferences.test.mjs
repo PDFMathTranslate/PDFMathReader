@@ -47,6 +47,7 @@ const DEFAULT_PREFERENCES = {
   topicSentenceDetection: false,
   watermarkRemovalEnabled: false,
   paragraphContinuationDetection: false,
+  recentMagicZoomEnabled: false,
   jevApiToken: '',
   remoteKernelEnabled: false,
   remoteKernelUrl: '',
@@ -103,6 +104,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         watermarkRemovalEnabled: true,
         paragraphContinuationDetection: true,
         jevApiToken: 'custom-test-token',
+        recentMagicZoomEnabled: true,
         remoteKernelEnabled: true,
         remoteKernelUrl: 'http://127.0.0.1:8890',
         remoteKernelService: 'siliconflowfree',
@@ -132,6 +134,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));
+    assert.throws(() => preferences.save({ recentMagicZoomEnabled: 'true' }));
     assert.throws(() => preferences.save({ remoteKernelUrl: 123 }));
     assert.throws(() => preferences.save({ remoteKernelService: 'x'.repeat(101) }));
     assert.throws(() => preferences.save({ optimizeParagraphGaps: 'true' }));

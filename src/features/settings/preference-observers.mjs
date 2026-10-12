@@ -60,6 +60,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.topicSentenceDetection,
       bindings.preferences.watermarkRemovalEnabled,
       bindings.preferences.paragraphContinuationDetection,
+      bindings.preferences.recentMagicZoomEnabled,
       bindings.preferences.jevApiToken,
       bindings.preferences.remoteKernelEnabled,
       bindings.preferences.remoteKernelUrl,

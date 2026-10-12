@@ -34,6 +34,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.watermarkRemovalEnabled.value = saved.watermarkRemovalEnabled;
     if (typeof saved.paragraphContinuationDetection === 'boolean')
       preferences.paragraphContinuationDetection.value = saved.paragraphContinuationDetection;
+    if (typeof saved.recentMagicZoomEnabled === 'boolean')
+      preferences.recentMagicZoomEnabled.value = saved.recentMagicZoomEnabled;
     if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
     if (typeof saved.remoteKernelEnabled === 'boolean')
       preferences.remoteKernelEnabled.value = saved.remoteKernelEnabled;
@@ -171,6 +173,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
         jevApiToken: preferences.jevApiToken.value,
         remoteKernelEnabled: preferences.remoteKernelEnabled.value,
+        recentMagicZoomEnabled: preferences.recentMagicZoomEnabled.value,
         remoteKernelUrl: preferences.remoteKernelUrl.value,
         remoteKernelService: preferences.remoteKernelService.value,
         layoutVisible: preferences.layoutVisible.value,
