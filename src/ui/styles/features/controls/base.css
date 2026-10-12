@@ -114,6 +114,19 @@
   max-width: 190px;
 }
 
+/* Let long pop-up menus scroll: the menu must be a flex column so the viewport is bounded by the available height. */
+.macvue-pop-up-button-menu {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.macvue-pop-up-button-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
 .empty > .primary {
   display: inline-flex;
   gap: 8px;
