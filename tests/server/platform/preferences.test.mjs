@@ -45,6 +45,7 @@ const DEFAULT_PREFERENCES = {
   automatic: true,
   documentLanguageDetection: false,
   topicSentenceDetection: false,
+  watermarkRemovalEnabled: false,
   paragraphContinuationDetection: false,
   jevApiToken: '',
   remoteKernelEnabled: false,
@@ -99,6 +100,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         automatic: false,
         documentLanguageDetection: true,
         topicSentenceDetection: true,
+        watermarkRemovalEnabled: true,
         paragraphContinuationDetection: true,
         jevApiToken: 'custom-test-token',
         remoteKernelEnabled: true,
@@ -126,6 +128,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
     assert.throws(() => preferences.save({ documentLanguageDetection: 'true' }));
     assert.throws(() => preferences.save({ topicSentenceDetection: 'true' }));
+    assert.throws(() => preferences.save({ watermarkRemovalEnabled: 'true' }));
     assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));

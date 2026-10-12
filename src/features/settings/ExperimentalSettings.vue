@@ -9,6 +9,7 @@ import ParagraphContinuationSettings from './ParagraphContinuationSettings.vue';
 import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import EpubSettings from './EpubSettings.vue';
+import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
 import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 defineProps({ titled: { type: Boolean, default: false } });
 const languagePreferences = inject('documentLanguagePreferences');
@@ -23,6 +24,7 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
       <div class="settings-section-body">
         <EpubSettings />
         <FormulaOcrSettings />
+        <WatermarkRemovalSettings v-if="languagePreferences" />
         <TopicSentenceSettings v-if="languagePreferences" />
       </div>
     </section>

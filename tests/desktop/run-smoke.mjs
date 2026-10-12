@@ -76,6 +76,8 @@ export async function runDesktopSmoke({
     await (await import('./sidebar-smoke.mjs')).verifySidebar(window, recents);
   else if (smoke === 'advanced-cache')
     await (await import('./advanced-cache-smoke.mjs')).verifyAdvancedCache(window);
+  else if (smoke === 'watermark')
+    await (await import('./watermark-smoke.mjs')).verifyWatermarkRemoval(window, recents);
   else if (smoke === 'large-open')
     await (await import('./large-open-smoke.mjs')).verifyLargeOpen(window, recents);
   else if (smoke === 'scanned-sidebar')

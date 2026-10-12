@@ -6,6 +6,8 @@ import { createReaderFit } from '../features/reader/reader-fit.mjs';
 import { createReaderZoom } from '../features/reader/reader-zoom.mjs';
 import { createReaderPinch } from '../features/reader/reader-pinch.mjs';
 import { createCanvasRendering } from '../features/reader/canvas-rendering.mjs';
+import { createWatermarkRemoval } from '../features/reader/watermark-removal.mjs';
+import { loadPDFRuntime } from '../features/reader/pdf-runtime.mjs';
 import { createReaderViewport } from '../features/reader/reader-viewport.mjs';
 import { createThumbnails } from '../features/reader/reader-thumbnails.mjs';
 import { createReaderPreview } from '../features/reader/reader-preview.mjs';
@@ -126,11 +128,22 @@ export function createReaderFeatures({
     }),
     view,
   });
+  const watermarkRemoval = createWatermarkRemoval({
+    session,
+    preferences,
+    loadRuntime: loadPDFRuntime,
+    // Frames drawn with the old setting are no longer right.
+    onToggle: () => {
+      canvasRendering.resetBitmaps();
+      void canvasRendering.renderPages(false, true);
+    },
+  });
   const canvasRendering = createCanvasRendering({
     renderState,
     session,
     motion,
     preferences,
+    watermarkRemoval,
     actions: createLazyPort({
       rootActions: () => rootActions,
       readerViewport: () => readerViewport,

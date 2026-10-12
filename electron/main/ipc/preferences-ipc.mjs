@@ -34,6 +34,7 @@ const SETTINGS_PREFERENCES = [
   'automatic',
   'documentLanguageDetection',
   'topicSentenceDetection',
+  'watermarkRemovalEnabled',
   'paragraphContinuationDetection',
   'jevApiToken',
   'remoteKernelEnabled',

@@ -11,6 +11,7 @@ export function createCanvasRendering({
   view,
   activity,
   actions,
+  watermarkRemoval,
 }) {
   function releaseCanvas(canvas) {
     if (!canvas) return;
@@ -133,7 +134,14 @@ export function createCanvasRendering({
       canvas.style.height = frame.height / dpr + 'px';
     }
     const cropKey = geometry.x + ':' + geometry.y + ':' + geometry.width + ':' + geometry.height;
-    renderState.canvasCache.set(canvas, { page, scale, dpr, geometry, cropKey });
+    renderState.canvasCache.set(canvas, {
+      page,
+      scale,
+      dpr,
+      geometry,
+      cropKey,
+      filter: frame.pdfFilter || '',
+    });
     canvas.paragraphGapState = gapState;
     if (gapState && previousGap?.source === source)
       animateParagraphGaps(canvas, previousGap, gapState, scale, geometry);
@@ -148,6 +156,9 @@ export function createCanvasRendering({
   }
 
   async function draw(page, canvas, scale, preview = false) {
+    // Pages with a watermark to hide are drawn, and cached, apart from the plain page.
+    const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null,
+      filter = removal?.key || '';
     if (!activity.foreground.value || !canvas || !canvas.isConnected) return false;
     const number = Number(canvas.closest('.page')?.dataset.page);
     if (number && !renderState.renderWindow.value.has(number)) return false;
@@ -168,7 +179,8 @@ export function createCanvasRendering({
       cached?.page === page &&
       cached.scale === scale &&
       cached.dpr >= dpr &&
-      cached.cropKey === cropKey
+      cached.cropKey === cropKey &&
+      cached.filter === filter
     ) {
       if (current) {
         renderState.pageTasks.delete(canvas);
@@ -180,7 +192,8 @@ export function createCanvasRendering({
       current?.previewPage === page &&
       current.previewScale === scale &&
       current.previewDpr >= dpr &&
-      current.previewCrop === cropKey
+      current.previewCrop === cropKey &&
+      current.previewFilter === filter
     )
       return current.previewResult;
     if (current) {
@@ -188,7 +201,7 @@ export function createCanvasRendering({
       current.cancel();
     }
     if (!renderState.bitmapIds.has(page)) renderState.bitmapIds.set(page, ++renderState.bitmapId);
-    const key = renderState.bitmapIds.get(page) + ':' + scale + ':' + dpr + ':' + cropKey,
+    const key = renderState.bitmapIds.get(page) + ':' + scale + ':' + dpr + ':' + cropKey + filter,
       reusable = renderState.bitmapFrames.get(key);
     if (reusable) {
       renderState.renderMetrics.cacheHits++;
@@ -199,7 +212,7 @@ export function createCanvasRendering({
     if (number && renderState.visiblePages.has(number) && !canvas.width) {
       const previewDpr = scrollPixelRatio(geometry.width, geometry.height, devicePixelRatio);
       const fallback = renderState.bitmapFrames.get(
-        renderState.bitmapIds.get(page) + ':' + scale + ':' + previewDpr + ':' + cropKey,
+        renderState.bitmapIds.get(page) + ':' + scale + ':' + previewDpr + ':' + cropKey + filter,
       );
       if (fallback) presentFrame(canvas, fallback, page, scale, previewDpr);
     }
@@ -208,16 +221,19 @@ export function createCanvasRendering({
     frame.width = Math.ceil(geometry.width * dpr);
     frame.height = Math.ceil(geometry.height * dpr);
     frame.pdfFrame = geometry;
+    frame.pdfFilter = filter;
     const task = page.render({
       canvasContext: frame.getContext('2d'),
       viewport,
       transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
+      ...removal?.render,
     });
     Object.assign(task, {
       previewPage: page,
       previewScale: scale,
       previewDpr: dpr,
       previewCrop: cropKey,
+      previewFilter: filter,
     });
     renderState.pageTasks.set(canvas, task);
     task.onContinue = (continuation) => {

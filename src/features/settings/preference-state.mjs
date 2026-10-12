@@ -9,6 +9,7 @@ export function createPreferenceState() {
   const automatic = ref(true);
   const documentLanguageDetection = ref(false);
   const topicSentenceDetection = ref(false);
+  const watermarkRemovalEnabled = ref(false);
   const paragraphContinuationDetection = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
@@ -78,6 +79,7 @@ export function createPreferenceState() {
     automatic,
     documentLanguageDetection,
     topicSentenceDetection,
+    watermarkRemovalEnabled,
     paragraphContinuationDetection,
     jevApiToken,
     remoteKernelEnabled,
