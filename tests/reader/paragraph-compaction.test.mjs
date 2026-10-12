@@ -4,6 +4,7 @@ import {
   compactBands,
   mapCompactY,
   mapCompactRect,
+  trailingCut,
 } from '../../src/features/reader/paragraph-compaction.mjs';
 
 test('large empty bands shrink to 1.5 line heights, normal leading remains', () => {
@@ -82,4 +83,16 @@ test('paragraph gap uses measured baseline leading rather than glyph height', as
     ),
     16,
   );
+});
+
+test('space freed by a shorter last translation is trimmed to one line of slack', () => {
+  const source = Array(200).fill(false),
+    translated = Array(200).fill(false);
+  source.fill(true, 20, 180);
+  translated.fill(true, 20, 120);
+  assert.deepEqual(trailingCut(source, translated, 1, 12), { start: 132, end: 180 });
+  assert.equal(trailingCut(source, source, 1, 12), null);
+  assert.equal(trailingCut(source, Array(200).fill(false), 1, 12), null);
+  translated.fill(true, 120, 170);
+  assert.equal(trailingCut(source, translated, 1, 12), null);
 });

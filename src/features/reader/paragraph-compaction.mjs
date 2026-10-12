@@ -18,6 +18,16 @@ export function compactBands(occupied, rowScale, pageHeight, lineHeight) {
   }
   return cuts.filter((c) => c.start >= 0 && c.end <= pageHeight && c.end > c.start);
 }
+// Space freed at the page bottom when the last translations are shorter than
+// their source; keep one line of slack and the source's own bottom margin.
+export function trailingCut(source, occupied, rowScale, lineHeight) {
+  const sourceLast = source.findLastIndex(Boolean),
+    last = occupied.findLastIndex(Boolean);
+  if (last < 0 || sourceLast <= last) return null;
+  const start = (last + 1) / rowScale + lineHeight,
+    end = (sourceLast + 1) / rowScale;
+  return end > start + 2 ? { start, end } : null;
+}
 export function mapCompactY(y, cuts, inverse = false) {
   let removed = 0;
   for (const cut of cuts) {
@@ -128,12 +138,34 @@ export async function compactPDF(document, number, getDocument, blocks) {
   try {
     await page.render({ canvasContext: raster.getContext('2d'), viewport: view }).promise;
     const context = raster.getContext('2d', { willReadFrequently: true });
+    const occupiedRows = () => {
+      const pixels = context.getImageData(0, 0, raster.width, raster.height).data;
+      const rows = Array(raster.height).fill(false);
+      for (let y = 0; y < raster.height; y++)
+        for (let x = 0; x < raster.width; x++) {
+          const i = (y * raster.width + x) * 4;
+          if (pixels[i + 3] > 32 && Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) < 238) {
+            rows[y] = true;
+            break;
+          }
+        }
+      return rows;
+    };
+    const source = occupiedRows();
     // Inspector translations live in DOM overlays. Compose their occupied area
     // into the analysis image so hidden source lines do not reserve whitespace.
     for (const b of blocks.filter((b) => !b.math && b.translation)) {
-      context.fillStyle = 'white';
-      context.fillRect(b.x * scale, b.y * scale, b.width * scale, b.height * scale);
       const font = b.fontSize || 12;
+      // Match the overlay's white cover (minimum height plus cover padding);
+      // otherwise descenders just below the box split gaps into short pieces.
+      const pad = Math.max(3, font * 0.28);
+      context.fillStyle = 'white';
+      context.fillRect(
+        (b.x - pad) * scale,
+        (b.y - pad) * scale,
+        (b.width + 2 * pad) * scale,
+        (Math.max(b.height, font * 1.1) + 2 * pad) * scale,
+      );
       context.font = `${b.bold ? '600 ' : ''}${font * scale}px serif`;
       let lines = 1,
         width = 0;
@@ -158,20 +190,13 @@ export async function compactPDF(document, number, getDocument, blocks) {
         Math.min(b.height, lines * font * 1.2) * scale,
       );
     }
-    const pixels = context.getImageData(0, 0, raster.width, raster.height).data;
-    const occupied = Array(raster.height).fill(false);
-    for (let y = 0; y < raster.height; y++)
-      for (let x = 0; x < raster.width; x++) {
-        const i = (y * raster.width + x) * 4;
-        if (pixels[i + 3] > 32 && Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) < 238) {
-          occupied[y] = true;
-          break;
-        }
-      }
+    const occupied = occupiedRows();
     const content = await page.getTextContent();
     const lineHeight = typicalLineHeight(content.items);
     if (!lineHeight) return null;
     const cuts = compactBands(occupied, scale, viewport.height, lineHeight);
+    const trailing = trailingCut(source, occupied, scale, lineHeight);
+    if (trailing && trailing.end <= viewport.height) cuts.push(trailing);
     if (!cuts.length) return null;
     const {
       PDFDocument,
