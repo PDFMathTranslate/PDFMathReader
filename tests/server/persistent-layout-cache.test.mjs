@@ -82,13 +82,13 @@ async function layout(origin, documentId, height = 792) {
   });
 }
 
-async function cachePath(directory, height = 792) {
+async function cachePath(directory, height = 792, schema = 2) {
   const documentHash = createHash('sha256').update(PDF).digest('hex');
   const generation = (
     await readFile(join(directory, 'documents', `${documentHash}.generation`), 'utf8')
   ).trim();
   const key = createHash('sha256')
-    .update(JSON.stringify({ page: 1, height, schema: 1 }))
+    .update(JSON.stringify({ page: 1, height, schema }))
     .digest('hex');
   return join(directory, 'documents', documentHash, 'layout', generation, `${key}.json`);
 }
@@ -197,6 +197,35 @@ test('legacy byte layout requests remain unscoped and do not create persistent e
       (await readdir(join(directory, 'documents')).catch(() => [])).filter(Boolean),
       [],
     );
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('old column layout caches are bypassed without deleting document data', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'persistent-layout-cache-'));
+  let calls = 0;
+  const server = await harness(directory, async () => {
+    calls++;
+    return ITEMS;
+  });
+  try {
+    const id = await upload(server.origin);
+    const oldPath = await cachePath(directory, 792, 1);
+    const old = { paragraphs: [{ text: 'Incorrect old full-width paragraph' }] };
+    await mkdir(join(oldPath, '..'), { recursive: true });
+    await writeFile(oldPath, JSON.stringify(old));
+    const fresh = await layout(server.origin, id);
+    assert.equal(fresh.status, 200);
+    assert.deepEqual(
+      (await fresh.json()).paragraphs.map(({ text }) => text),
+      ['Persistent layout fixture'],
+    );
+    assert.equal(calls, 1);
+    assert.deepEqual(JSON.parse(await readFile(oldPath, 'utf8')), old);
+    assert.equal((await layout(server.origin, id)).status, 200);
+    assert.equal(calls, 1);
   } finally {
     await server.close();
     await rm(directory, { recursive: true, force: true });

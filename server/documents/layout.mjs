@@ -13,11 +13,13 @@ export function paragraphs(items, height) {
     .sort((a, b) => a.top - b.top || a.x - b.x);
   const lines = [];
   for (const r of runs) {
+    // A 1.8-em gap bridges narrow column gutters. Keep inline citations
+    // attached, but stop a body line before the neighboring column.
     const line = lines.find(
       (l) =>
         Math.abs(l.top - r.top) < Math.min(l.fontSize, r.fontSize) * 0.4 &&
         r.x >= l.x - 2 &&
-        r.x - l.right < Math.max(12, r.fontSize * 1.8),
+        r.x - l.right < Math.max(12, r.fontSize * 1.2),
     );
     if (line) {
       line.text += ' ' + r.text;

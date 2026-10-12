@@ -72,6 +72,35 @@ test('reading order follows columns and retains spanning headings as barriers', 
   );
 });
 
+test('small author notes cannot interrupt a body paragraph continued in the next column', async () => {
+  const left = block(1, 'Main body discussion '.repeat(10), 40, 470),
+    right = block(2, 'continues in the next column.', 320, 440),
+    author = { ...block(3, 'Author contact', 40, 680), fontSize: 10.2 },
+    email = { ...block(4, 'Contact address', 65, 715), fontSize: 10.2 },
+    p = page(1, [right, author, left, email]);
+  assert.deepEqual(
+    orderedParagraphBlocks(p).map((b) => b.id),
+    [1, 2],
+  );
+  const calls = [];
+  const f = fixture([p], async (_path, options) => {
+    calls.push(JSON.parse(options.body));
+    return { combine: true, status: 'classified' };
+  });
+  try {
+    const group = await f.service.groupFor(p, left);
+    assert.deepEqual(
+      group.members.map((m) => m.block.id),
+      [1, 2],
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].after, right.text);
+    assert.equal(p.blocks.length, 4, 'author notes remain available to the reader');
+  } finally {
+    f.service.invalidate();
+  }
+});
+
 test('rejects mathematical regions, captions, lists and mismatched type', () => {
   const a = block(1, 'The main idea continues'),
     p = page(1, []);

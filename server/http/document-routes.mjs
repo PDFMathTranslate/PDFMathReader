@@ -4,7 +4,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { paragraphs } from '../documents/layout.mjs';
 
-const LAYOUT_CACHE_SCHEMA = 1;
+const LAYOUT_CACHE_SCHEMA = 2;
 const DOCUMENT_HASH_PATTERN = /^[0-9a-f]{64}$/;
 const CACHE_GENERATION_PATTERN = /^[a-z0-9-]+$/i;
 

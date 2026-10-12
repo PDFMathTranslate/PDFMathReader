@@ -49,7 +49,7 @@ export function orderedParagraphBlocks(page) {
     return (
       block.y >= page.height * 0.035 &&
       block.y + block.height <= page.height * 0.97 &&
-      block.fontSize >= size * 0.85
+      block.fontSize >= size * 0.9
     );
   });
   const spanning = blocks
