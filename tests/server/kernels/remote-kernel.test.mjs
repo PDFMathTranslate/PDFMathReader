@@ -36,9 +36,10 @@ async function fakeServer(
     if (req.url === '/health') return send(200, health);
     if (stall === 'poll' && req.url.startsWith('/api/')) return;
     if (req.url === '/api/tasks') {
-      const [progress] = running.splice(0, 1);
+      const [entry] = running.splice(0, 1);
+      const [progress, message = 'translate 0/100'] = [].concat(entry ?? []);
       const tasks =
-        progress === undefined
+        entry === undefined
           ? []
           : [
               {
@@ -46,7 +47,7 @@ async function fakeServer(
                 finished: false,
                 status: 'running',
                 progress,
-                message: 'translate 0/100',
+                message,
               },
             ];
       return send(200, { status: 'success', tasks });
@@ -300,8 +301,15 @@ test('runner keeps the Fast kernel and cache-only misses off the remote server',
   assert.equal(server.requests.length, 0);
 });
 
-test('a remote job stuck at 0% reports indeterminate progress, then real percentages', async (t) => {
-  const server = await fakeServer(t, { running: [0, 0, 40] });
+test('remote progress is estimated from status text while the server reports 0%', async (t) => {
+  const server = await fakeServer(t, {
+    running: [
+      [0, '正在初始化...'],
+      [0, 'Parse PDF and Create Intermediate Representation'],
+      [0, 'Typesetting'],
+      [0, 'Typesetting'],
+    ],
+  });
   const kernel = createRemoteKernel({ pollIntervalMs: 10 });
   const events = [];
   await kernel.translatePage({
@@ -311,16 +319,35 @@ test('a remote job stuck at 0% reports indeterminate progress, then real percent
     language: 'zh',
     onProgress: (progress) => events.push(progress),
   });
-  assert.equal(events[0].percent, null);
-  assert.ok(events.length >= 3);
+  const percents = events.map((event) => event.percent);
+  assert.ok(percents.length >= 4);
+  assert.ok(percents[0] > 0);
   assert.deepEqual(
-    events.map((event) => event.percent),
-    [null, null, null, 40].slice(0, events.length),
+    percents,
+    [...percents].sort((a, b) => a - b),
   );
-  assert.deepEqual(events.at(-1), {
-    stage: 'translate 0/100',
-    completed: 40,
-    total: 100,
-    percent: 40,
+  assert.ok(percents.at(-2) >= 80);
+  assert.ok(percents.every((percent) => percent < 100));
+  assert.equal(events.at(-1).stage, 'Typesetting');
+});
+
+test('a counter in the status text and a server percentage both advance the estimate', async (t) => {
+  const server = await fakeServer(t, {
+    running: [
+      [0, 'translate 5/10'],
+      [70, 'translate 0/100'],
+    ],
   });
+  const kernel = createRemoteKernel({ pollIntervalMs: 10 });
+  const events = [];
+  await kernel.translatePage({
+    url: server.url,
+    bytes: await pdf(),
+    page: 1,
+    language: 'zh',
+    onProgress: (progress) => events.push(progress),
+  });
+  const percents = events.map((event) => event.percent);
+  assert.ok(percents[1] >= 52.5);
+  assert.ok(percents.at(-1) >= 70);
 });

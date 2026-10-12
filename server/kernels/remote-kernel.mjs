@@ -42,17 +42,56 @@ function sleep(ms, signal) {
   });
 }
 
-// The server reports 0% until its progress parser sees a counter, which can be
-// the whole job for a one-page upload. An empty bar looks like no progress at
-// all, so a zero is sent as indeterminate and the bar animates like a local
-// kernel stage that has no counter yet.
-function remoteProgress(stage, value) {
-  const percent = Math.min(100, Math.max(0, Number(value) || 0));
+// Percent reached when a BabelDOC stage starts, matched against the status text
+// the server reports. Only a rough guide: the server reports 0% until its
+// progress parser sees a counter, which can be the whole job for a one-page
+// upload, so the text is the better signal.
+const STAGE_FLOORS = [
+  [/初始化|initializ/i, 3],
+  [/parse pdf|intermediate representation/i, 8],
+  [/scanned/i, 12],
+  [/layout/i, 18],
+  [/parse paragraphs/i, 25],
+  [/formulas|styles/i, 30],
+  [/term/i, 35],
+  [/translate paragraphs/i, 40],
+  [/typeset/i, 80],
+  [/font/i, 88],
+  [/drawing/i, 92],
+  [/save/i, 95],
+];
+const ESTIMATE_CEILING = 90;
+const ESTIMATE_CREEP = 0.03;
+
+// Estimates a monotonic percent from status text changes, with a slow creep
+// between changes so a long stage still visibly advances. It never reaches 100:
+// that is left to the finished job.
+function createProgressEstimator() {
+  let percent = 0;
+  return (message, reported) => {
+    const text = String(message || '');
+    const counter = /\btranslate\s+(\d+)\/(\d+)/i.exec(text);
+    const floor =
+      counter && Number(counter[1]) > 0 && Number(counter[2]) > 0
+        ? 15 + (75 * Math.min(Number(counter[1]), Number(counter[2]))) / Number(counter[2])
+        : (STAGE_FLOORS.find(([pattern]) => pattern.test(text))?.[1] ?? 0);
+    const server = Math.min(99, Math.max(0, Number(reported) || 0));
+    percent = Math.max(
+      percent,
+      floor,
+      server,
+      percent + (ESTIMATE_CEILING - percent) * ESTIMATE_CREEP,
+    );
+    return Math.min(99, percent);
+  };
+}
+
+function remoteProgress(stage, percent) {
   return {
     stage: String(stage || 'Remote translation').slice(0, 200),
     completed: percent,
     total: 100,
-    percent: percent > 0 ? percent : null,
+    percent,
   };
 }
 
@@ -206,7 +245,8 @@ export function createRemoteKernel({
       ...(service ? { service, next_service: service } : {}),
     };
     const deadline = now() + jobTimeoutMs;
-    onProgress?.(remoteProgress('Remote translation', 0));
+    const estimate = createProgressEstimator();
+    onProgress?.(remoteProgress('Remote translation', estimate('', 0)));
     // An accepted job answers immediately, so a server that stays silent is stuck.
     const submitTimeout = AbortSignal.timeout(submitTimeoutMs);
     const response = await request(`${base}/translate`, {
@@ -241,7 +281,7 @@ export function createRemoteKernel({
           const list = record.result?.fileList ?? record.fileList;
           if (Array.isArray(list) && list.length && record.finished === true) files = list;
           else if (record.finished !== true)
-            onProgress?.(remoteProgress(record.message, record.progress));
+            onProgress?.(remoteProgress(record.message, estimate(record.message, record.progress)));
         }
         if (!files) await sleep(pollIntervalMs, signal);
       }
