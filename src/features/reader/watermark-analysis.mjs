@@ -1,14 +1,14 @@
 // Rule-based watermark detection on a pdf.js operator list. A watermark is text or an
 // image that is abnormally large for its page and also looks decorative: rotated off the
 // page axes, translucent, pale, or repeated at the same place on many pages. Size alone
-// is never enough, so titles and full-page scans stay.
+// is never enough, so titles and opaque full-page scans stay.
 
 export const WATERMARK_RULES = Object.freeze({
   // Text at least this many times the body size, and at least minTextSize points.
   textRatio: 2.5,
   minTextSize: 24,
   // Images covering this share of the page. Near full-page images are backgrounds or
-  // scans and are never removed.
+  // scans and are removed only when translucent.
   minImageCoverage: 0.08,
   maxImageCoverage: 0.85,
   translucent: 0.75,
@@ -267,10 +267,12 @@ export function watermarkTraits(item, page, model, rules = WATERMARK_RULES) {
   if (item.alpha <= rules.translucent) traits.push('translucent');
   if (item.kind === 'text' && item.shade !== null && item.shade >= rules.pale) traits.push('pale');
   if (model.repeated.has(itemSignature(item))) traits.push('repeated');
-  if (item.kind === 'image')
-    return item.coverage >= rules.minImageCoverage && item.coverage < rules.maxImageCoverage
-      ? traits
-      : [];
+  if (item.kind === 'image') {
+    if (item.coverage < rules.minImageCoverage) return [];
+    // An opaque image that fills the page is a scan or a background. One laid over the page
+    // see-through (a tiled stamp is often far larger than the page) can only be a watermark.
+    return item.coverage < rules.maxImageCoverage || traits.includes('translucent') ? traits : [];
+  }
   if (item.size >= Math.max(rules.minTextSize, body * rules.textRatio)) return traits;
   // Translucent diagonal text is a stamp even at a modest size.
   return traits.includes('diagonal') && traits.includes('translucent') && item.size >= body * 1.5

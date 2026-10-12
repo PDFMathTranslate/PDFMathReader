@@ -178,3 +178,38 @@ test('the text of removed watermarks is matched, and ordinary text is not', asyn
   assert.ok(!hidden.matches(''));
   assert.equal(hiddenTextMatcher([]).matches('DRAFT COPY'), false);
 });
+
+test('an image larger than the page is removed only when it is see-through', () => {
+  const OPS = {
+    save: 10,
+    restore: 11,
+    transform: 12,
+    setGState: 13,
+    paintImageXObject: 85,
+    setFont: 37,
+    beginText: 31,
+    endText: 32,
+    showText: 44,
+  };
+  // A tiled stamp is drawn far larger than the page and only a part of it shows.
+  const stamp = (alpha) =>
+    scanOperatorList(
+      {
+        fnArray: [OPS.save, OPS.setGState, OPS.transform, OPS.paintImageXObject, OPS.restore],
+        argsArray: [
+          [],
+          [[['ca', alpha]]],
+          [3600, 0, 0, 2025, -1494, -616],
+          ['img', 4800, 2700],
+          [],
+        ],
+      },
+      OPS,
+      [0, 0, 612, 792],
+    );
+  const faded = stamp(0.25),
+    opaque = stamp(1);
+  assert.ok(faded.items[0].coverage > 10);
+  assert.deepEqual([...watermarkOperations(faded, buildModel([faded]))], [3]);
+  assert.equal(watermarkOperations(opaque, buildModel([opaque])).size, 0);
+});
