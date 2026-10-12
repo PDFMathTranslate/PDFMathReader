@@ -30,13 +30,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date       | Feature                                                                                                                                                                                 | Contributor                        |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-13 | [zoom nearby recent covers like the macOS Dock](https://github.com/PDFMathTranslate/PDFMathReader/commit/d6f4e904165446e06e485771f2bcff608f921eed)                                      | [@reycn](https://github.com/reycn) |
 | 2026-10-13 | [add experimental dock-style magic zoom for recent document covers](https://github.com/PDFMathTranslate/PDFMathReader/commit/c66394ace22eb299ea7e191659534386140b0290)                  | [@reycn](https://github.com/reycn) |
 | 2026-10-13 | [hide removed watermark text from the text layer and translation layout](https://github.com/PDFMathTranslate/PDFMathReader/commit/7bfb5c3b0faf571100348d36b74e335abc4c617f)             | [@reycn](https://github.com/reycn) |
 | 2026-10-13 | [add experimental watermark removal by abnormal font and image size](https://github.com/PDFMathTranslate/PDFMathReader/commit/848c53057ea801a7acb0f9025e65ef5f24cecc21)                 | [@reycn](https://github.com/reycn) |
 | 2026-10-12 | [reopen documents with their cached translation version and scope annotations to it](https://github.com/PDFMathTranslate/PDFMathReader/commit/808359a5da75ca7e0c0d0d10d1fe34fbb490868a) | [@reycn](https://github.com/reycn) |
 | 2026-10-12 | [add zotero-pdf2zh to About project links](https://github.com/PDFMathTranslate/PDFMathReader/commit/2a0397544bb646f7c772956a817794986113e92b)                                           | [@reycn](https://github.com/reycn) |
 | 2026-10-12 | [better complex layout detection in ultrafast mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/66f568ba301f9d29e816415344e6fac6a1672753)                                  | [@reycn](https://github.com/reycn) |
-| 2026-10-12 | [move GPU inference preference to Performance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/fb7dcc901ab98ca2519c525e95cfb384c07ebc73)                              | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
