@@ -432,7 +432,7 @@ const reducePadding = defineModel('reducePadding');
         v-model:reduce-transparency="reduceTransparency"
         v-model:ui-language="uiLanguageChoice"
       />
-      <ExperimentalSettings />
+      <ExperimentalSettings titled />
       <section class="settings-section" aria-labelledby="settings-about">
         <h3 id="settings-about">{{ t('settings.about') }}</h3>
         <a

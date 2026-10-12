@@ -47,6 +47,20 @@ export async function verifySettingsWorkspace(window) {
   );
   await category('experimental');
   assert.equal(await visible('[data-setting="formula-ocr"]'), true);
+  // Experimental groups follow the sidebar order: General, Translation, Providers, Advanced.
+  assert.deepEqual(
+    JSON.parse(
+      await evaluate(
+        `JSON.stringify([...document.querySelectorAll('[data-settings-page="experimental"] h3')].map((h)=>h.id))`,
+      ),
+    ),
+    [
+      'settings-experimental-general',
+      'settings-experimental-translation',
+      'settings-experimental-providers',
+      'settings-experimental-advanced',
+    ],
+  );
   assert.equal(await visible('[data-setting="interface-style"]'), false);
   assert.equal(await visible('[data-setting="optimize-paragraph-gaps"]'), false);
   await category('general');
