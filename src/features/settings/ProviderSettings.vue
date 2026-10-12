@@ -1235,6 +1235,9 @@ fluent-button.provider-list-item::part(content) {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  /* Inset the scroll box so focus rings on edge-to-edge fields are not clipped. */
+  padding: 6px;
+  margin: -6px;
 }
 .provider-detail-actions {
   display: flex;
