@@ -78,7 +78,7 @@ export function createTranslationRunner({
     localTranslation = false,
     glossary = [],
     advancedOptions = {},
-    reuseTranslations = true,
+    reuseTranslations = false,
     forceRetranslation = false,
     cacheScope = '',
     onPageTiming,
@@ -154,11 +154,13 @@ export function createTranslationRunner({
         await rm(temporary, { force: true }).catch(() => {});
       }
     };
-    if (reuseTranslations && !forceRetranslation) {
+    if (!forceRetranslation) {
       try {
         const saved = JSON.parse(await readFile(requestPath, 'utf8'));
         if (!/^[0-9a-f]{64}$/.test(saved.key) || typeof saved.model !== 'string')
           throw Error('Invalid page cache index');
+        // Without reuse, only the requested model's own artifact qualifies.
+        if (!reuseTranslations && saved.model !== model) throw Error('Different cached model');
         const [result, metadata] = await Promise.all([
           readFile(join(cacheDir, saved.key + '.pdf')),
           readFile(join(cacheDir, saved.key + '.layout.json'), 'utf8'),

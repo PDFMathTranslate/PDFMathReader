@@ -85,8 +85,8 @@ export function registerKernelRoutes(
         const entry = documentRequest(req);
         if (entry.error) return res.status(entry.error.status).json({ error: entry.error.message });
         const reuseTranslations = Buffer.isBuffer(req.body)
-          ? true
-          : (req.body?.reuseTranslations ?? true);
+          ? false
+          : (req.body?.reuseTranslations ?? false);
         if (typeof reuseTranslations !== 'boolean')
           return res.status(400).json({ error: 'Invalid translation cache preference' });
         const forceRetranslation = Buffer.isBuffer(req.body)

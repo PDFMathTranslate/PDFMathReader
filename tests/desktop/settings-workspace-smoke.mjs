@@ -143,7 +143,7 @@ export async function verifySettingsWorkspace(window) {
   await category('translation');
   assert.equal(await visible('[data-setting="reuse-translations"]'), true);
   await evaluate(`document.querySelector('[aria-labelledby="reuse-translations-label"]').click()`);
-  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===false)()`);
+  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===true)()`);
   await category('kernel');
   assert.equal(await visible('.mac-mode-control'), true);
   assert.equal(await evaluate(`!!document.querySelector('.kernel-navigation')`), false);
@@ -243,7 +243,7 @@ export async function verifySettingsWorkspace(window) {
   await wait('window.previewReady===true');
   const saved = await evaluate('window.previewPreferences.load()');
   assert.equal(saved.restoreDocuments, false);
-  assert.equal(saved.reuseTranslations, false);
+  assert.equal(saved.reuseTranslations, true);
   assert.equal(saved.translationServices.pdf_inspector.id, 'openai');
   assert.equal(
     saved.translationServices.pdf_inspector.profiles.openai.values.model,

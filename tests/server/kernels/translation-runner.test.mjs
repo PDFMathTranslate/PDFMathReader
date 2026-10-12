@@ -238,6 +238,7 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
       page: 1,
       language: 'English',
       model: 'different-model',
+      reuseTranslations: true,
       cacheOnly: true,
     };
     const hit = await runner.translate(request);
@@ -245,6 +246,14 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     assert.equal(hit.layoutKey, first.layoutKey);
     assert.equal(hit.translationModel, 'test-model');
     assert.deepEqual(Buffer.from(hit), Buffer.from(first));
+    // Strict mode still reopens the same model's artifact without kernel discovery.
+    const exact = await runner.translate({
+      ...request,
+      model: 'test-model',
+      reuseTranslations: false,
+    });
+    assert.equal(exact.translationModel, 'test-model');
+    assert.deepEqual(Buffer.from(exact), Buffer.from(first));
     for (const change of [
       { language: 'Chinese' },
       { page: 2 },

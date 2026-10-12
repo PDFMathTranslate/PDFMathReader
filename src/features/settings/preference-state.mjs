@@ -10,7 +10,7 @@ export function createPreferenceState() {
   const documentLanguageDetection = ref(false);
   const jevApiToken = ref('');
   const layoutVisible = ref(false);
-  const reuseTranslations = ref(localStorage.getItem('reuseTranslations') !== 'false');
+  const reuseTranslations = ref(localStorage.getItem('reuseTranslations') === 'true');
   const interactionMode = ref('reading');
   const optimizeParagraphGaps = ref(false);
   const formulaOcrEnabled = ref(localStorage.getItem('formulaOcrEnabled') === 'true');

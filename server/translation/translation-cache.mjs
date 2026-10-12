@@ -13,7 +13,7 @@ export function createTranslationCache({ directory, keyFor, readResult, fallback
     await writeFile(temporary, JSON.stringify({ model, key }));
     await rename(temporary, pointer);
   }
-  async function lookup(model, { reuseTranslations = true, forceRetranslation = false } = {}) {
+  async function lookup(model, { reuseTranslations = false, forceRetranslation = false } = {}) {
     if (forceRetranslation) return null;
     const candidates = [model];
     if (reuseTranslations) {

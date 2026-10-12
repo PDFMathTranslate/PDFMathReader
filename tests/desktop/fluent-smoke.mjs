@@ -75,9 +75,9 @@ export async function verifyFluent(window) {
       await evaluate(
         `document.querySelector('fluent-switch[aria-labelledby="reuse-translations-label"]').checked`,
       ),
-      true,
+      false,
     );
-    for (const checked of [false, true]) {
+    for (const checked of [true, false]) {
       await evaluate(
         `(()=>{const control=document.querySelector('fluent-switch[aria-labelledby="reuse-translations-label"]');control.checked=${checked};control.dispatchEvent(new Event('change',{bubbles:true,composed:true}));})()`,
       );
@@ -87,7 +87,7 @@ export async function verifyFluent(window) {
       );
     }
     console.log(
-      'Windows cache settings passed: Fluent switch rendered, default enabled, both preference changes saved.',
+      'Windows cache settings passed: Fluent switch rendered, default disabled, both preference changes saved.',
     );
     window.close();
     return;

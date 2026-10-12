@@ -31,13 +31,13 @@ export async function verifyLayoutSettings(window) {
   await wait('window.previewReady===true');
   assert.equal(
     (await evaluate('window.previewPreferences.load()')).reuseTranslations,
-    true,
-    'reuse is enabled by default',
+    false,
+    'reuse is disabled by default',
   );
   await open();
   await wait(`!!document.querySelector('[aria-labelledby="reuse-translations-label"]')`);
   await evaluate(`document.querySelector('[aria-labelledby="reuse-translations-label"]').click()`);
-  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===false)()`);
+  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===true)()`);
   await new Promise((resolve) => {
     window.webContents.once('did-finish-load', resolve);
     window.webContents.reload();
@@ -45,14 +45,14 @@ export async function verifyLayoutSettings(window) {
   await open();
   assert.equal(
     (await evaluate('window.previewPreferences.load()')).reuseTranslations,
-    false,
-    'strict preference survives reload',
+    true,
+    'reuse preference survives reload',
   );
   await evaluate(`document.querySelector('[aria-labelledby="reuse-translations-label"]').click()`);
-  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===true)()`);
+  await wait(`(async()=> (await window.previewPreferences.load()).reuseTranslations===false)()`);
   if (process.env.PDF_READER_CACHE_ONLY === '1') {
     await wait(
-      `document.querySelector('[aria-labelledby="reuse-translations-label"]').getAttribute('data-state')==='checked'`,
+      `document.querySelector('[aria-labelledby="reuse-translations-label"]').getAttribute('data-state')==='unchecked'`,
     );
     await open();
     await new Promise((resolve) => setTimeout(resolve, 600));
@@ -62,7 +62,7 @@ export async function verifyLayoutSettings(window) {
       (await window.webContents.capturePage()).toPNG(),
     );
     console.log(
-      'Cache settings passed: default enabled, switch off and on, saved preference survives renderer reload.',
+      'Cache settings passed: default disabled, switch on and off, saved preference survives renderer reload.',
     );
     app.quit();
     return;

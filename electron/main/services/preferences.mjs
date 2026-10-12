@@ -36,7 +36,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
-  reuseTranslations: true,
+  reuseTranslations: false,
   emphasizeTopicSentences: false,
   emphasizeInformation: false,
   emphasizeResearchFindings: true,

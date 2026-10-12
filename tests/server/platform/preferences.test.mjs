@@ -22,7 +22,7 @@ const DEFAULT_PREFERENCES = {
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
-  reuseTranslations: true,
+  reuseTranslations: false,
   emphasizeTopicSentences: false,
   emphasizeInformation: false,
   emphasizeResearchFindings: true,

@@ -36,7 +36,7 @@ export function registerTranslationRoutes(
         language,
         sourceLanguage,
         concurrency = 2,
-        reuseTranslations = true,
+        reuseTranslations = false,
         forceRetranslation = false,
         cacheOnly = false,
       } = req.body || {};
