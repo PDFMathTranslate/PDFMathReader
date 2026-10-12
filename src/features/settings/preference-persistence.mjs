@@ -29,6 +29,12 @@ export function createPreferencePersistence({ preferences, session, view, provid
     if (typeof saved.documentLanguageDetection === 'boolean')
       preferences.documentLanguageDetection.value = saved.documentLanguageDetection;
     if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
+    if (typeof saved.remoteKernelEnabled === 'boolean')
+      preferences.remoteKernelEnabled.value = saved.remoteKernelEnabled;
+    if (typeof saved.remoteKernelUrl === 'string')
+      preferences.remoteKernelUrl.value = saved.remoteKernelUrl;
+    if (typeof saved.remoteKernelService === 'string')
+      preferences.remoteKernelService.value = saved.remoteKernelService;
     for (const [key, target] of Object.entries({
       defaultPageCropEnabled: preferences.defaultPageCropEnabled,
       defaultPageCropX: preferences.defaultPageCropX,
@@ -155,6 +161,9 @@ export function createPreferencePersistence({ preferences, session, view, provid
         automatic: preferences.automatic.value,
         documentLanguageDetection: preferences.documentLanguageDetection.value,
         jevApiToken: preferences.jevApiToken.value,
+        remoteKernelEnabled: preferences.remoteKernelEnabled.value,
+        remoteKernelUrl: preferences.remoteKernelUrl.value,
+        remoteKernelService: preferences.remoteKernelService.value,
         layoutVisible: preferences.layoutVisible.value,
         kernelAdvancedOptions: cloneKernelAdvancedOptions(preferences.kernelAdvancedOptions.value),
         translationServices: cloneTranslationServices(preferences.translationServices.value),

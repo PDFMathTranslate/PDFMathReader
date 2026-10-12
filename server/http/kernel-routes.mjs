@@ -2,6 +2,7 @@ import express from 'express';
 import { createHash, randomBytes } from 'node:crypto';
 import { isTranslationLanguageSupported } from '../../shared/translation/languages.mjs';
 import { mathProviderOutcome } from '../translation/provider-outcome.mjs';
+import { normalizeRemoteKernelUrl } from '../kernels/remote-kernel.mjs';
 
 export function registerKernelRoutes(
   app,
@@ -33,6 +34,15 @@ export function registerKernelRoutes(
     }
   });
   app.get('/api/engines', async (_req, res) => res.json(await engines.startup()));
+  app.post('/api/remote-kernel/health', express.json({ limit: '10kb' }), async (req, res) => {
+    const url = normalizeRemoteKernelUrl(req.body?.url);
+    if (!url) return res.status(400).json({ error: 'Invalid server URL' });
+    try {
+      res.json(await engines.remoteHealth(url));
+    } catch {
+      res.status(503).json({ ok: false, reason: 'Health check failed' });
+    }
+  });
   app.get('/api/engines/:id', async (req, res) => {
     try {
       res.json(await engines.check(req.params.id));
@@ -104,6 +114,17 @@ export function registerKernelRoutes(
         )
           return res.status(400).json({ error: 'Invalid source language' });
         const advancedOptions = Buffer.isBuffer(req.body) ? {} : req.body?.advancedOptions;
+        const remoteKernel = Buffer.isBuffer(req.body) ? undefined : req.body?.remoteKernel;
+        if (
+          remoteKernel !== undefined &&
+          (!remoteKernel ||
+            typeof remoteKernel !== 'object' ||
+            typeof remoteKernel.url !== 'string' ||
+            remoteKernel.url.length > 2048 ||
+            (remoteKernel.service !== undefined &&
+              (typeof remoteKernel.service !== 'string' || remoteKernel.service.length > 100)))
+        )
+          return res.status(400).json({ error: 'Invalid remote kernel' });
         const page = Number(req.query.page),
           threads = Number(req.query.threads || 2),
           pageLimit = Number(req.query.pageLimit || 2);
@@ -211,6 +232,7 @@ export function registerKernelRoutes(
             cacheOnly,
             reuseTranslations,
             forceRetranslation,
+            remoteKernel,
             cacheScope,
             onPageTiming: (timing) => {
               job.timing = timing;

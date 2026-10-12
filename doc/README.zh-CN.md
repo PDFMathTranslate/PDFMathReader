@@ -144,6 +144,8 @@ PDFMathReader 使用 Vue 3 和 PDF.js 构建阅读器，使用 Electron 构建�
 | Fast       | PDFMathTranslate      | 保留公式的翻译后 PDF 页面   |
 | Precise    | PDFMathTranslate-next | 排版更细致的翻译后 PDF 页面 |
 
+实验性：精确模式可改为通过 HTTP 使用远程 [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) 服务器翻译（设置 → 实验性）。PDFMathReader 仅作为客户端实现该服务器的 HTTP 协议，不内置服务器，且为可选项。只有服务器的 `/health` 检查通过时才使用远程内核，否则使用本地精确内核。不会发送 API 密钥；服务器使用自己的翻译服务。远程页面没有阅读文本层，术语表和原生服务始终使用本地内核。
+
 PDF 渲染和版面分析保持在本地。翻译会将文档文本发送给 OpenAI，可能产生 API 费用。Fast 和 Precise 在通过 `uv` 安装、由应用管理的独立 Python 环境中运行，并通过后端代理访问 OpenAI。API 密钥不会进入渲染器。
 
 保存的桌面密钥使用 Electron `safeStorage` 和 macOS 钥匙串保护进行加密。保存的密钥会覆盖 `OPENAI_API_KEY`；清除它后会恢复使用环境变量回退值。安全存储不可用时，保存功能会被禁用。

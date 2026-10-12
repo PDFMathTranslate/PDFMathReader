@@ -45,6 +45,9 @@ const DEFAULT_PREFERENCES = {
   automatic: true,
   documentLanguageDetection: false,
   jevApiToken: '',
+  remoteKernelEnabled: false,
+  remoteKernelUrl: '',
+  remoteKernelService: '',
   layoutVisible: false,
   defaultPageCropEnabled: false,
   defaultPageCropX: 0,
@@ -93,6 +96,9 @@ test('partial saves keep every current setting and unknown key', async () => {
         automatic: false,
         documentLanguageDetection: true,
         jevApiToken: 'custom-test-token',
+        remoteKernelEnabled: true,
+        remoteKernelUrl: 'http://127.0.0.1:8890',
+        remoteKernelService: 'siliconflowfree',
         layoutVisible: true,
         ultraFastSerif: true,
         ultraFastFont: 'Songti SC',
@@ -115,6 +121,9 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
     assert.throws(() => preferences.save({ documentLanguageDetection: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
+    assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));
+    assert.throws(() => preferences.save({ remoteKernelUrl: 123 }));
+    assert.throws(() => preferences.save({ remoteKernelService: 'x'.repeat(101) }));
     assert.throws(() => preferences.save({ optimizeParagraphGaps: 'true' }));
     assert.throws(() => preferences.save({ translationMode: 'invalid' }));
     assert.throws(() => preferences.save({ translationErrorDismissals: [null] }));

@@ -6,12 +6,14 @@ import { translationAdvancedArgs } from './kernel-options.mjs';
 import { createTranslationCache } from '../translation/translation-cache.mjs';
 import { buildKernelServiceConfig } from './kernel-services.mjs';
 import { redactDiagnosticText } from '../diagnostics/developer-diagnostics.mjs';
+import { createRemoteKernel, normalizeRemoteKernelUrl } from './remote-kernel.mjs';
 import {
   isTranslationLanguageSupported,
   translationLanguageCode,
 } from '../../shared/translation/languages.mjs';
 
 const MAX_STDERR_TAIL_LENGTH = 4 * 1024;
+const REMOTE_MODEL = 'pdf2zh-remote';
 const USEFUL_ERROR_LINE =
   /(?:^|[\s:])(?:[A-Za-z_][\w.]*(?:Error|Exception|Failure|Interrupt)\b|(?:error|exception|failure|fatal|failed)\b)/i;
 
@@ -60,6 +62,7 @@ export function createTranslationRunner({
   onDiagnostic,
   onOutput,
   onTiming,
+  remote = createRemoteKernel(),
 } = {}) {
   async function translate({
     id,
@@ -84,6 +87,7 @@ export function createTranslationRunner({
     onPageTiming,
     onProgress,
     cacheOnly = false,
+    remoteKernel,
     runWorker = (fn) => fn(),
   }) {
     const emitTiming = (report) => {
@@ -204,9 +208,125 @@ export function createTranslationRunner({
         } catch {}
       }
     }
+    // Experimental remote Precise kernel. It cannot receive glossaries, native
+    // services or on-device translation, so those requests stay local.
+    const remoteUrl =
+      id === 'pdf_math_precise' && !translationService && !localTranslation && !glossary.length
+        ? normalizeRemoteKernelUrl(remoteKernel?.url)
+        : '';
+    const remoteService =
+      typeof remoteKernel?.service === 'string' ? remoteKernel.service.trim() : '';
+    // Remote artifacts live under their own key, so they stay readable offline.
+    const remoteKey = remoteUrl
+      ? sourceHash
+          .copy()
+          .update(
+            JSON.stringify({
+              remote: 1,
+              id,
+              url: remoteUrl,
+              service: remoteService,
+              page,
+              language,
+              sourceLanguage: sourceLanguage || 'English',
+              layoutSchema: currentLayoutSchema,
+              cacheScope,
+            }),
+          )
+          .digest('hex')
+      : '';
+    const remoteLayoutKey = cacheScope ? `${scopeHash}-${scopeGeneration}-${remoteKey}` : remoteKey;
+    if (remoteKey && !forceRetranslation) {
+      try {
+        const [result, metadata] = await Promise.all([
+          readFile(join(cacheDir, remoteKey + '.pdf')),
+          readFile(join(cacheDir, remoteKey + '.layout.json'), 'utf8'),
+        ]);
+        if (
+          !result.subarray(0, 1024).includes(Buffer.from('%PDF')) ||
+          !Array.isArray(JSON.parse(metadata).paragraphs)
+        )
+          throw Error('Invalid cached page');
+        result.layoutKey = remoteLayoutKey;
+        result.cached = true;
+        result.translationModel = REMOTE_MODEL;
+        step('cacheLookup');
+        emitTiming({
+          engine: id,
+          cached: true,
+          model: REMOTE_MODEL,
+          totalMs: performance.now() - started,
+          stages,
+        });
+        return result;
+      } catch {}
+    }
     // A cache miss is not kernel work. The actual translation request can still
     // migrate legacy artifacts below, but this fast lookup must never probe Python.
     if (cacheOnly) return null;
+    if (remoteKey) {
+      const health = await remote.health(remoteUrl, { signal });
+      if (!health.ok)
+        onDiagnostic?.(`Remote kernel unavailable (${health.reason}); using the local kernel.`);
+      else {
+        try {
+          const remoteResult = await runWorker(async () => {
+            if (signal?.aborted) throw Error('Cancelled');
+            checkpoint = performance.now();
+            const translated = await remote.translatePage({
+              url: remoteUrl,
+              bytes,
+              page,
+              language: lang,
+              sourceLanguage: sourceLanguage ? translationLanguageCode(sourceLanguage) : undefined,
+              service: remoteService,
+              threads,
+              signal,
+              onProgress,
+            });
+            step('remoteProcess');
+            const { PDFDocument } = await loadPdfLib();
+            const size = (await PDFDocument.load(translated)).getPage(0).getSize();
+            // A remote server returns only the PDF, so there is no paragraph
+            // identity to offer the reading text layer.
+            const metadata = {
+              schema: 1,
+              engine: id,
+              page,
+              width: size.width,
+              height: size.height,
+              paragraphs: [],
+            };
+            await mkdir(cacheDir, { recursive: true });
+            for (const [path, data] of [
+              [join(cacheDir, remoteKey + '.pdf'), translated],
+              [join(cacheDir, remoteKey + '.layout.json'), JSON.stringify(metadata)],
+            ]) {
+              const temporary = path + '.' + crypto.randomUUID() + '.tmp';
+              await writeFile(temporary, data);
+              await rename(temporary, path);
+            }
+            translated.layoutKey = remoteLayoutKey;
+            translated.cached = false;
+            translated.translationModel = REMOTE_MODEL;
+            step('outputAndCache');
+            emitTiming({
+              engine: id,
+              cached: false,
+              model: REMOTE_MODEL,
+              totalMs: performance.now() - started,
+              stages,
+            });
+            return translated;
+          });
+          if (remoteResult) return remoteResult;
+        } catch (error) {
+          if (signal?.aborted || error?.message === 'Cancelled') throw error;
+          remote.markUnhealthy(remoteUrl, error?.message);
+          onDiagnostic?.(`Remote kernel failed (${error?.message}); using the local kernel.`);
+        }
+      }
+    }
     const state = await getState(id);
     if (!state.available) throw Error(state.reason);
     const { overrides, args: advancedArgs } = await translationAdvancedArgs(

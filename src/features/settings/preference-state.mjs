@@ -9,6 +9,9 @@ export function createPreferenceState() {
   const automatic = ref(true);
   const documentLanguageDetection = ref(false);
   const jevApiToken = ref('');
+  const remoteKernelEnabled = ref(false);
+  const remoteKernelUrl = ref('');
+  const remoteKernelService = ref('');
   const layoutVisible = ref(false);
   const reuseTranslations = ref(localStorage.getItem('reuseTranslations') === 'true');
   const interactionMode = ref('reading');
@@ -73,6 +76,9 @@ export function createPreferenceState() {
     automatic,
     documentLanguageDetection,
     jevApiToken,
+    remoteKernelEnabled,
+    remoteKernelUrl,
+    remoteKernelService,
     layoutVisible,
     reuseTranslations,
     interactionMode,

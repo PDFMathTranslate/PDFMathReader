@@ -13,6 +13,12 @@ export function createMathTranslation({
   actions,
 }) {
   async function mathPage(p, token, manual = false) {
+    // Experimental: the server only uses the remote kernel after its health check passes.
+    const remoteUrl = preferences.remoteKernelUrl.value.trim();
+    const remoteKernel =
+      preferences.remoteKernelEnabled.value && remoteUrl
+        ? { url: remoteUrl, service: preferences.remoteKernelService.value.trim() }
+        : undefined;
     feedback.error.value = '';
     p.kernelProgress = null;
     p.translationActivity = 'cache';
@@ -52,6 +58,7 @@ export function createMathTranslation({
                 documentId: session.documentId,
                 sourceLanguage: preferences.sourceLanguage.value,
                 reuseTranslations: preferences.reuseTranslations.value,
+                remoteKernel,
                 forceRetranslation: translationState.forceRetranslation,
                 glossary: provider.activeGlossary.value,
                 advancedOptions: actions.preferencePersistence.currentKernelAdvancedOptions(),

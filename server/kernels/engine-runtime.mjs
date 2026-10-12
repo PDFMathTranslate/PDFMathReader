@@ -15,6 +15,7 @@ import { replaceFile } from '../../runtime/node/atomic-file.mjs';
 import { createKernelProcesses } from './kernel-processes.mjs';
 import { createKernelServiceCatalog } from './kernel-services.mjs';
 import { createTranslationRunner } from './translation-runner.mjs';
+import { createRemoteKernel } from './remote-kernel.mjs';
 const exec = promisify(execFile);
 
 import { LANGUAGE_CODES } from '../../shared/translation/languages.mjs';
@@ -580,6 +581,7 @@ export function createEngineRuntime({
     }
   }
 
+  const remote = createRemoteKernel();
   const translationRunner = createTranslationRunner({
     root,
     baseCacheDir,
@@ -601,6 +603,7 @@ export function createEngineRuntime({
     onDiagnostic,
     onOutput,
     onTiming,
+    remote,
   });
 
   function tasks() {
@@ -674,6 +677,7 @@ export function createEngineRuntime({
     advanced,
     services: serviceCatalog.get,
     translate: translationRunner.translate,
+    remoteHealth: (url) => remote.health(url, { force: true }),
     tasks,
     observeProcess: (child, file, metadata = {}) => processes.observe(child, file, metadata),
     processes: processes.snapshot,
