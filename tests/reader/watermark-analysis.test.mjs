@@ -6,7 +6,9 @@ import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
   buildModel,
+  hiddenTextMatcher,
   scanOperatorList,
+  watermarkItems,
   watermarkOperations,
 } from '../../src/features/reader/watermark-analysis.mjs';
 
@@ -138,4 +140,41 @@ test('without other signs, size alone does not mark text or a full-page image', 
     [0, 0, 612, 792],
   );
   assert.equal(watermarkOperations(scan, buildModel([scan])).size, 0);
+});
+
+test('an opaque stamp is removed only when it recurs at the same place on many pages', async () => {
+  const stamp = async (stampedPages) => {
+    const pdf = await PDFDocument.create(),
+      font = await pdf.embedFont(StandardFonts.Helvetica);
+    for (let n = 1; n <= 5; n++) {
+      const page = pdf.addPage([612, 792]);
+      for (let i = 0; i < 20; i++)
+        page.drawText(`Ordinary body sentence number ${n}.${i} of the paper.`, {
+          x: 72,
+          y: 700 - i * 14,
+          size: 10,
+          font,
+        });
+      if (n <= stampedPages) page.drawText('INTERNAL USE', { x: 150, y: 400, size: 40, font });
+    }
+    const pages = await scans(await pdf.save());
+    return pages.map((page) => watermarkOperations(page, buildModel(pages)).size);
+  };
+  assert.ok((await stamp(5)).every((count) => count > 0));
+  assert.ok((await stamp(1)).every((count) => count === 0));
+});
+
+test('the text of removed watermarks is matched, and ordinary text is not', async () => {
+  const pages = await scans(await fixture()),
+    model = buildModel(pages);
+  const hidden = hiddenTextMatcher(watermarkItems(pages[0], model));
+  assert.equal(hidden.length, 1);
+  assert.ok(hidden.matches('DRAFT COPY'));
+  assert.ok(hidden.matches(' draft  copy '));
+  assert.ok(hidden.matches('DRAFT'));
+  assert.ok(!hidden.matches('D'));
+  assert.ok(!hidden.matches('Ordinary body sentence number 1.0 of the paper.'));
+  assert.ok(!hidden.matches('A Large Opaque Title'));
+  assert.ok(!hidden.matches(''));
+  assert.equal(hiddenTextMatcher([]).matches('DRAFT COPY'), false);
 });

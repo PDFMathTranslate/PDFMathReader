@@ -227,6 +227,7 @@ export function createReaderFeatures({
     feedback,
     provider,
     view,
+    watermarkRemoval,
   });
   const mathTranslation = createMathTranslation({
     translationState,
@@ -444,6 +445,7 @@ export function createReaderFeatures({
   });
 
   return {
+    watermarkRemoval,
     ...referenceNavigation,
     ...sidebarInteraction,
     ...pageNavigation,

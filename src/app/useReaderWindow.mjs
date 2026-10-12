@@ -296,6 +296,7 @@ export function useReaderWindow() {
     preferences,
     ...featurePorts,
   });
+  provide('watermarkRemoval', featureActions.watermarkRemoval);
 
   const topicSentenceRevision = ref(0);
   const topicSentenceClassifier = createTopicSentenceClassifier({

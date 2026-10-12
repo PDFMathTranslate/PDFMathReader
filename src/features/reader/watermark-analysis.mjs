@@ -20,6 +20,9 @@ export const WATERMARK_RULES = Object.freeze({
   // Fewer glyphs than this say nothing reliable about a page's body size.
   minBodyGlyphs: 40,
   repeatedPages: 3,
+  // Shortest page text that may be taken for a whole removed run, or for part of one.
+  minMatchedExact: 2,
+  minMatchedPart: 3,
 });
 
 const identity = [1, 0, 0, 1, 0, 0];
@@ -275,10 +278,39 @@ export function watermarkTraits(item, page, model, rules = WATERMARK_RULES) {
     : [];
 }
 
+// The items of a page that read as watermarks.
+export function watermarkItems(page, model, rules = WATERMARK_RULES) {
+  return page.items.filter((item) => watermarkTraits(item, page, model, rules).length);
+}
+
 // Operator indices to leave out when drawing this page.
 export function watermarkOperations(page, model, rules = WATERMARK_RULES) {
   const skip = new Set();
-  for (const item of page.items)
-    if (watermarkTraits(item, page, model, rules).length) for (const op of item.ops) skip.add(op);
+  for (const item of watermarkItems(page, model, rules)) for (const op of item.ops) skip.add(op);
   return skip;
+}
+
+const squash = (text) =>
+  String(text ?? '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+
+// Tells whether a piece of page text (a text layer span, a layout paragraph) is the text of
+// a removed watermark. A short piece must equal a whole run; a longer one may also be part
+// of the watermark, since layers and layout split runs differently than the page paints them.
+export function hiddenTextMatcher(items, rules = WATERMARK_RULES) {
+  const runs = [...new Set(items.filter((i) => i.kind === 'text').map((i) => squash(i.text)))];
+  const parts = new Set(runs.filter(Boolean));
+  const all = [...parts].join('');
+  return {
+    length: parts.size,
+    matches(text) {
+      const value = squash(text);
+      if (!value || !parts.size) return false;
+      return (
+        (value.length >= rules.minMatchedExact && parts.has(value)) ||
+        (value.length >= rules.minMatchedPart && all.includes(value))
+      );
+    },
+  };
 }

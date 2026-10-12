@@ -19,6 +19,15 @@ const COUNT = `(()=>{
   return {red,dark};
 })()`;
 
+// Counts the first page's text layer spans that hold the watermark text and the body text.
+const TEXT = `(()=>{
+  const spans=[...(document.querySelector('.page .reading-text-layer')?.querySelectorAll('span')||[])];
+  const text=(span)=>span.textContent||'';
+  const mark=spans.filter((s)=>/confidential/i.test(text(s))).length;
+  const body=spans.filter((s)=>text(s).includes('Body sentence')).length;
+  return {mark,body};
+})()`;
+
 export async function verifyWatermarkRemoval(window, recents) {
   const evaluate = (code) => window.webContents.executeJavaScript(code);
   const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -90,6 +99,11 @@ export async function verifyWatermarkRemoval(window, recents) {
       'the watermark to render',
     );
 
+    const text = await wait(
+      `(()=>{const t=${TEXT};return t.mark>0&&t.body>0?t:null;})()`,
+      'the text layer',
+    );
+
     await savePreferences({ watermarkRemovalEnabled: true });
     const removed = await wait(
       `(()=>{const r=${COUNT};return r&&r.red===0&&r.dark>0?r:null;})()`,
@@ -100,12 +114,24 @@ export async function verifyWatermarkRemoval(window, recents) {
       'body text must stay when the watermark is removed',
     );
 
+    const hidden = await wait(
+      `(()=>{const t=${TEXT};return t.mark===0&&t.body>=${text.body}?t:null;})()`,
+      'the watermark text to leave the text layer',
+    );
+
     await savePreferences({ watermarkRemovalEnabled: false });
     const restored = await wait(
       `(()=>{const r=${COUNT};return r&&r.red>500?r:null;})()`,
       'the watermark to return',
     );
-    console.log('Watermark removal passed.', JSON.stringify({ before, removed, restored }));
+    const returned = await wait(
+      `(()=>{const t=${TEXT};return t.mark>0?t:null;})()`,
+      'the watermark text to return',
+    );
+    console.log(
+      'Watermark removal passed.',
+      JSON.stringify({ before, removed, restored, text, hidden, returned }),
+    );
   } finally {
     await rm(folder, { recursive: true, force: true });
   }

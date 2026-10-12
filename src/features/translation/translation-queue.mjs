@@ -14,6 +14,7 @@ export function createTranslationQueue({
   view,
   actions,
   paragraphContinuation,
+  watermarkRemoval,
 }) {
   const allowAutomaticTranslation = createDocumentLanguageGuard({
     session,
@@ -47,6 +48,19 @@ export function createTranslationQueue({
         error: '',
       }),
     );
+  }
+
+  // Leaves out the paragraphs that only hold the text of a removed watermark, so they are
+  // neither covered by a translation nor sent to be translated.
+  async function withoutWatermarks(page, result) {
+    if (!watermarkRemoval?.enabled() || !Array.isArray(result?.paragraphs)) return result;
+    try {
+      const hidden = await watermarkRemoval.hiddenText(await session.pdf.getPage(page.number));
+      if (!hidden) return result;
+      return { ...result, paragraphs: result.paragraphs.filter((p) => !hidden.matches(p.text)) };
+    } catch {
+      return result;
+    }
   }
 
   function applyLayout(page, result, token, markReady) {
@@ -95,7 +109,7 @@ export function createTranslationQueue({
           height: page.height,
         }),
       });
-      applyLayout(page, result, token, markReady);
+      applyLayout(page, await withoutWatermarks(page, result), token, markReady);
       return result;
     })();
     layoutLoads.set(page, { epoch: token, promise });

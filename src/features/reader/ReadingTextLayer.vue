@@ -37,6 +37,7 @@ let unbindSelection;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
 const topicSentenceClassifier = inject('topicSentenceClassifier', null);
+const watermarkRemoval = inject('watermarkRemoval', null);
 function topicRangesForRuns(runs) {
   return topicSentenceParagraphs(runs, props.paragraphBoxes || [], uiLanguage.value)
     .filter((paragraph) => {
@@ -216,7 +217,14 @@ watch(
   { flush: 'post' },
 );
 watch(
-  () => [props.document, props.pageNumber, props.zoom, props.active, props.obscuredBoxes],
+  () => [
+    props.document,
+    props.pageNumber,
+    props.zoom,
+    props.active,
+    props.obscuredBoxes,
+    watermarkRemoval?.version.value,
+  ],
   async () => {
     const id = ++generation;
     if (!props.active || !props.document) {
@@ -244,7 +252,10 @@ watch(
       host.value.style.setProperty('--total-scale-factor', props.zoom);
       host.value.style.setProperty('--scale-round-x', '1px');
       host.value.style.setProperty('--scale-round-y', '1px');
-      const nextBoxKey = JSON.stringify(props.obscuredBoxes || []);
+      const nextBoxKey = JSON.stringify([
+        props.obscuredBoxes || [],
+        watermarkRemoval?.version.value,
+      ]);
       if (layer && rendered && boxKey === nextBoxKey) {
         layer.update({ viewport });
         emphasize();
@@ -262,9 +273,15 @@ watch(
         viewport,
       });
       const rendering = layer;
+      // Settled alongside the text so a removed watermark is never selectable.
+      const hidden = watermarkRemoval?.hiddenText(page).catch(() => null);
       await rendering.render();
+      const watermark = await hidden;
       if (id !== generation) return;
       rendered = true;
+      if (watermark)
+        for (const span of rendering.textDivs)
+          if (watermark.matches(span.textContent)) span.remove();
       // Omit source runs covered by Ultra fast's visible translated paragraphs.
       if (props.obscuredBoxes?.length) {
         const bounds = host.value.getBoundingClientRect(),
