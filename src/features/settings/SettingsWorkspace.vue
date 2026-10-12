@@ -28,7 +28,6 @@ const sections = computed(() => [
   { id: 'providers', label: labels.value[1], symbol: 'network' },
   { id: 'shortcuts', label: shortcutLabels(uiLanguage.value).title, symbol: 'keyboard' },
   { id: 'kernel', label: t('settings.advancedCategory'), symbol: 'cpu.fill' },
-  { id: 'experimental', label: t('settings.experimentalCategory'), symbol: 'flask.fill' },
   {
     id: 'performance',
     label:
@@ -53,6 +52,7 @@ const sections = computed(() => [
       }[uiLanguage.value] || 'Performance',
     symbol: 'gauge.with.dots.needle.67percent',
   },
+  { id: 'experimental', label: t('settings.experimentalCategory'), symbol: 'flask.fill' },
   { id: 'about', label: t('settings.about'), symbol: 'info.circle.fill' },
 ]);
 const visibleSections = computed(() => {

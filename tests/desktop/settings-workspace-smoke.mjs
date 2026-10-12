@@ -41,7 +41,7 @@ export async function verifySettingsWorkspace(window) {
   };
   assert.equal(
     await evaluate(
-      `document.querySelector('[data-settings-category="kernel"]').nextElementSibling.dataset.settingsCategory`,
+      `document.querySelector('[data-settings-category="performance"]').nextElementSibling.dataset.settingsCategory`,
     ),
     'experimental',
   );
