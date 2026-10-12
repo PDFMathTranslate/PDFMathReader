@@ -20,6 +20,8 @@ const DEFAULT_PREFERENCES = {
   restoreDocuments: true,
   formulaOcrEnabled: false,
   epubEnabled: true,
+  ultraFastSerif: false,
+  ultraFastFont: '',
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -91,6 +93,8 @@ test('partial saves keep every current setting and unknown key', async () => {
         documentLanguageDetection: true,
         jevApiToken: 'custom-test-token',
         layoutVisible: true,
+        ultraFastSerif: true,
+        ultraFastFont: 'Songti SC',
       },
       { futureSetting: { revision: 3 } },
     );
@@ -105,6 +109,9 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ optimizeParagraphGaps: 'true' }));
     assert.throws(() => preferences.save({ translationMode: 'invalid' }));
     assert.throws(() => preferences.save({ translationErrorDismissals: [null] }));
+    assert.throws(() => preferences.save({ ultraFastSerif: 'true' }));
+    assert.throws(() => preferences.save({ ultraFastFont: 'Evil"; color: red' }));
+    assert.throws(() => preferences.save({ ultraFastFont: 'x'.repeat(101) }));
     assert.deepEqual(preferences.load(), beforeInvalid);
     assert.deepEqual((await createReaderPreferences(path)).load(), beforeInvalid);
     await preferences.save({ fit: 'width', zoom: 1 });

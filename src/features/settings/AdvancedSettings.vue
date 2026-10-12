@@ -11,6 +11,7 @@ import {
 import { t, advancedOptionText, advancedChoiceText } from '../../i18n/index.mjs';
 import DeveloperOptions from '../developer/DeveloperOptions.vue';
 import RecentDebugLogs from '../developer/RecentDebugLogs.vue';
+import UltraFastFontSettings from './UltraFastFontSettings.vue';
 import { GPU_INFERENCE_OPTION } from '../../../shared/gpu-inference.mjs';
 
 const SUPPORTED_ENGINES = ['pdf_math_fast', 'pdf_math_precise'];
@@ -243,9 +244,7 @@ onBeforeUnmount(() => {
     <h3 v-else id="settings-mode-options">{{ t('settings.modeSettings') }}</h3>
     <div class="advanced-options">
       <DeveloperOptions v-if="showDeveloper" embedded />
-      <p v-if="engine === 'pdf_inspector'" class="muted">
-        {{ t('settings.kernelNoManualConfiguration') }}
-      </p>
+      <UltraFastFontSettings v-if="engine === 'pdf_inspector'" />
       <p v-if="busy" class="muted" role="status">{{ t('advanced.loading') }}</p>
       <p v-else-if="message" class="muted" role="status">{{ message }}</p>
       <div

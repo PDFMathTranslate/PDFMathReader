@@ -15,6 +15,8 @@ export function createPreferenceState() {
   const optimizeParagraphGaps = ref(false);
   const formulaOcrEnabled = ref(localStorage.getItem('formulaOcrEnabled') === 'true');
   const epubEnabled = ref(localStorage.getItem('epubEnabled') !== 'false');
+  const ultraFastSerif = ref(false);
+  const ultraFastFont = ref('');
   const restoreDocuments = ref(true);
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
   const defaultPageCropEnabled = ref(false);
@@ -76,6 +78,8 @@ export function createPreferenceState() {
     optimizeParagraphGaps,
     formulaOcrEnabled,
     epubEnabled,
+    ultraFastSerif,
+    ultraFastFont,
     restoreDocuments,
     documentOpenMode,
     defaultPageCropEnabled,

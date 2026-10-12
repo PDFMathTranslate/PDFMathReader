@@ -30,3 +30,9 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* Ultra fast font preferences outrank both the default and experimental stacks. */
+:root:root .page .reading-paragraph.custom-font > .paragraph-text,
+:root:root .page .paragraph.translated.custom-font > .paragraph-text {
+  font-family: var(--translation-font);
+}

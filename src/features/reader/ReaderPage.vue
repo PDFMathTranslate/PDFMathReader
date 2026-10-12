@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, nextTick, onMounted, onBeforeUnmount, shallowRef } from 'vue';
+import { computed, inject, watch, nextTick, onMounted, onBeforeUnmount, shallowRef } from 'vue';
 import ReadingAnnotations from '../annotations/ReadingAnnotations.vue';
 import ReadingLinks from './ReadingLinks.vue';
 import { quickLinkBox } from './quick-links.mjs';
@@ -44,6 +44,11 @@ const props = defineProps({
   selectedAnnotation: String,
   showAnnotations: { type: Boolean, default: true },
 });
+// Ultra fast renders HTML translations, so its font preference applies here.
+const translationFont = inject('translationFont', null);
+const customFont = computed(() =>
+  props.engine === 'pdf_inspector' ? translationFont?.value || '' : '',
+);
 function mapAnnotation(a, inverse = false) {
   const cuts = props.page.paragraphCompaction;
   if (!cuts || a.page !== props.page.number) return a;
@@ -209,6 +214,7 @@ function blockStyle(b) {
   return {
     '--paragraph-align': b.textAlign || 'left',
     '--cover-padding': Math.max(3, b.fontSize * 0.28) * s + 'px',
+    ...(customFont.value ? { '--translation-font': customFont.value } : {}),
     left: b.x * s + 'px',
     top: b.y * s + 'px',
     width: b.width * s + 'px',
@@ -356,6 +362,7 @@ function fit(el, b) {
           :key="b.id"
           :ref="(el) => fit(el, b)"
           class="reading-paragraph"
+          :class="{ 'custom-font': !!customFont }"
           :data-block-id="b.id"
           :style="blockStyle(b)"
         >
@@ -381,6 +388,7 @@ function fit(el, b) {
             revealing: b.revealing,
             outlined: outlined,
             pending: b.status === 'translating',
+            'custom-font': !b.math && !!customFont,
           }"
           :style="blockStyle(b)"
           :aria-label="

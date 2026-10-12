@@ -21,6 +21,8 @@ const SETTINGS_PREFERENCES = [
   'documentOpenMode',
   'reuseTranslations',
   'epubEnabled',
+  'ultraFastSerif',
+  'ultraFastFont',
   'reduceResourceUsage',
   'restoreDocuments',
   'interactionMode',

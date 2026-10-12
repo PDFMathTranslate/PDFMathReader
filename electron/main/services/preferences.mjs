@@ -1,6 +1,7 @@
 import { SUPPORTED_UI_LANGUAGES } from '../../../shared/i18n/ui-language.mjs';
 import { cloneGlossaries, validGlossaries } from '../../../shared/translation/glossary.mjs';
 import { validShortcutOverrides } from '../../../shared/commands/shortcuts.mjs';
+import { isValidTranslationFont } from '../../../shared/reader/translation-font.mjs';
 import {
   cloneTranslationServiceHistory,
   isValidTranslationServiceHistory,
@@ -34,6 +35,8 @@ const DEFAULT_PREFERENCES = Object.freeze({
   restoreDocuments: true,
   formulaOcrEnabled: false,
   epubEnabled: true,
+  ultraFastSerif: false,
+  ultraFastFont: '',
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -243,6 +246,8 @@ const VALIDATORS = {
   reuseTranslations: (value) => typeof value === 'boolean',
   formulaOcrEnabled: (value) => typeof value === 'boolean',
   epubEnabled: (value) => typeof value === 'boolean',
+  ultraFastSerif: (value) => typeof value === 'boolean',
+  ultraFastFont: isValidTranslationFont,
   translationErrorDismissals: (value) =>
     Array.isArray(value) && value.every((id) => typeof id === 'string' && id.length <= 1024),
   emphasizeTopicSentences: (value) => typeof value === 'boolean',
@@ -290,6 +295,8 @@ const VALIDATION_MESSAGES = {
   optimizeParagraphGaps: 'Invalid paragraph gap optimization preference',
   reuseTranslations: 'Invalid translation reuse preference',
   epubEnabled: 'Invalid EPUB support preference',
+  ultraFastSerif: 'Invalid Ultra fast serif font preference',
+  ultraFastFont: 'Invalid Ultra fast font preference',
   translationMode: 'Invalid translation mode',
   interactionMode: 'Invalid interaction mode',
   direction: 'Invalid layout direction',

@@ -16,6 +16,7 @@ import { createPreferenceState } from '../features/settings/preference-state.mjs
 import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
+import { translationFontFamily } from '../../shared/reader/translation-font.mjs';
 import {
   ref,
   shallowRef,
@@ -94,6 +95,16 @@ export function useReaderWindow() {
   const { translationDeferred } = translationState;
   const preferences = createPreferenceState();
   provide('documentLanguagePreferences', preferences);
+  provide(
+    'translationFont',
+    computed(() =>
+      translationFontFamily({
+        serif: preferences.ultraFastSerif.value,
+        font: preferences.ultraFastFont.value,
+        language: preferences.language.value,
+      }),
+    ),
+  );
   const {
     language,
     sourceLanguage,

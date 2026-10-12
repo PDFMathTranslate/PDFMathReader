@@ -38,6 +38,10 @@ export function createPreferencePersistence({ preferences, session, view, provid
     if (typeof saved.formulaOcrEnabled === 'boolean')
       preferences.formulaOcrEnabled.value = saved.formulaOcrEnabled;
     if (typeof saved.epubEnabled === 'boolean') preferences.epubEnabled.value = saved.epubEnabled;
+    if (typeof saved.ultraFastSerif === 'boolean')
+      preferences.ultraFastSerif.value = saved.ultraFastSerif;
+    if (typeof saved.ultraFastFont === 'string')
+      preferences.ultraFastFont.value = saved.ultraFastFont;
     if (['default', 'liquid-glass'].includes(saved.interfaceStyle))
       preferences.interfaceStyle.value = saved.interfaceStyle;
     if (saved.engine) preferences.engine.value = saved.engine;
@@ -118,6 +122,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
         restoreDocuments: preferences.restoreDocuments.value,
         formulaOcrEnabled: preferences.formulaOcrEnabled.value,
         epubEnabled: preferences.epubEnabled.value,
+        ultraFastSerif: preferences.ultraFastSerif.value,
+        ultraFastFont: preferences.ultraFastFont.value,
         defaultPageCropEnabled: preferences.defaultPageCropEnabled.value,
         defaultPageCropX: preferences.defaultPageCropX.value,
         defaultPageCropY: preferences.defaultPageCropY.value,
