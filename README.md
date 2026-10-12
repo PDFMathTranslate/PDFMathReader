@@ -30,13 +30,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date       | Feature                                                                                                                                                         | Contributor                        |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-12 | [即便模型存在差异，也优先沿用已有译文，默认关闭](https://github.com/PDFMathTranslate/PDFMathReader/commit/d3be8d1389792a020adb55610d208a2a028bf482)             | [@reycn](https://github.com/reycn) |
 | 2026-10-11 | [animate reader paragraph gap adjustments](https://github.com/PDFMathTranslate/PDFMathReader/commit/d0a00efac002f4be0faf569b0c464a2e358c1507)                   | [@reycn](https://github.com/reycn) |
 | 2026-10-11 | [discover models and select prompt files](https://github.com/PDFMathTranslate/PDFMathReader/commit/e7ba7e31afc438d79b0d5458dab9ec27771c9c89)                    | [@reycn](https://github.com/reycn) |
 | 2026-10-11 | [show actual kernel translation progress](https://github.com/PDFMathTranslate/PDFMathReader/commit/7e654a43eabe1d048d7e8a5de4f9460a5ebdf4b2)                    | [@reycn](https://github.com/reycn) |
 | 2026-10-10 | [use GPU for formula OCR when enabled](https://github.com/PDFMathTranslate/PDFMathReader/commit/e900310938855b6fbe40b1540e9ecde40b172f34)                       | [@reycn](https://github.com/reycn) |
 | 2026-10-10 | [add GPU inference preference for Windows and macOS](https://github.com/PDFMathTranslate/PDFMathReader/commit/87672e87bfb10b60044d078b51d34a25358c8023)         | [@reycn](https://github.com/reycn) |
 | 2026-10-10 | [add experimental ChatGPT Subscription translation provider](https://github.com/PDFMathTranslate/PDFMathReader/commit/7d1f24ee0dc8c304e83bfdd29b46c1d6053a0173) | [@reycn](https://github.com/reycn) |
-| 2026-10-10 | [notify PDF completion and allow 200 MB files](https://github.com/PDFMathTranslate/PDFMathReader/commit/c49c7c05644b4184845d5cd4e4b588fb6c127689)               | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
