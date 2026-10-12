@@ -54,6 +54,7 @@ export function installLiquidGlass() {
       revision = next;
       failed = false;
     }
+    watchHosts(enabled && !accessible);
     const currentGeneration = generation;
     if (!enabled || accessible || failed || !scenes.size)
       root.dataset.liquidGlass = enabled ? (accessible ? 'solid' : 'fallback') : 'off';
@@ -126,19 +127,11 @@ export function installLiquidGlass() {
       root.dataset.liquidGlass = 'fallback';
     }
   }
-  const observer = new MutationObserver((records) => {
-    if (
-      records.some(
-        (record) =>
-          record.type === 'attributes' ||
-          [...record.addedNodes, ...record.removedNodes].some(
-            (node) => node.nodeType === 1 && (node.matches(hosts) || node.querySelector(hosts)),
-          ),
-      )
-    )
-      schedule();
-  });
-  observer.observe(root, {
+  // Settings changes are rare, so this observer stays on. The body-wide
+  // observer sees every page and text-layer mount while scrolling, so it only
+  // runs while the glass material can actually be drawn.
+  const settingsObserver = new MutationObserver(() => schedule());
+  settingsObserver.observe(root, {
     attributes: true,
     attributeFilter: [
       'data-interface-style',
@@ -147,7 +140,23 @@ export function installLiquidGlass() {
       'data-reduce-transparency',
     ],
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  const hostObserver = new MutationObserver((records) => {
+    if (
+      records.some((record) =>
+        [...record.addedNodes, ...record.removedNodes].some(
+          (node) => node.nodeType === 1 && (node.matches(hosts) || node.querySelector(hosts)),
+        ),
+      )
+    )
+      schedule();
+  });
+  let watching = false;
+  function watchHosts(on) {
+    if (on === watching) return;
+    watching = on;
+    if (on) hostObserver.observe(document.body, { childList: true, subtree: true });
+    else hostObserver.disconnect();
+  }
   for (const query of [transparency, contrast, motion]) query.addEventListener('change', schedule);
   document.addEventListener('visibilitychange', schedule);
   schedule();
@@ -155,7 +164,8 @@ export function installLiquidGlass() {
     stopped = true;
     generation++;
     if (pending) cancelAnimationFrame(pending);
-    observer.disconnect();
+    settingsObserver.disconnect();
+    watchHosts(false);
     clear();
     for (const query of [transparency, contrast, motion])
       query.removeEventListener('change', schedule);

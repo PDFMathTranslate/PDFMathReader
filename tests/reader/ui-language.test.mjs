@@ -11,6 +11,7 @@ import {
 } from '../../shared/i18n/ui-language.mjs';
 import {
   UI_MESSAGES,
+  loadUILanguage,
   setUILanguage,
   uiLanguage,
   uiLanguageChoice,
@@ -57,8 +58,41 @@ test('language choices use English language name order and default to English', 
   assert.equal(resolveUILanguage('system', 'pt-BR'), 'pt');
   assert.equal(resolveUILanguage('system', 'zh-Hant-HK'), 'zh-TW');
 });
-test('new locales cover UI keys, preserve placeholders, and localize menus', () => {
+test('only English is bundled until another language is chosen', async () => {
+  assert.deepEqual(Object.keys(UI_MESSAGES), ['en']);
+  assert.equal(uiLanguage.value, 'en');
+  assert.equal(await loadUILanguage('unsupported'), 'en');
+  assert.equal(await loadUILanguage('ja'), 'ja');
+  assert.ok(UI_MESSAGES.ja);
+  assert.equal(UI_MESSAGES.de, undefined);
+});
+
+test('a language is displayed only after its strings load, and a newer choice wins', async () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = { documentElement: {} };
+  try {
+    assert.equal(setUILanguage('ko'), 'ko');
+    assert.equal(uiLanguageChoice.value, 'ko');
+    assert.equal(uiLanguage.value, 'en', 'English stays until the chunk arrives');
+    assert.equal(globalThis.document.documentElement.lang, undefined);
+    assert.equal(setUILanguage('es'), 'es');
+    assert.equal(setUILanguage('en'), 'en');
+    await Promise.all([loadUILanguage('ko'), loadUILanguage('es')]);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(uiLanguage.value, 'en', 'a superseded choice does not overwrite a newer one');
+    setUILanguage('ko');
+    assert.equal(uiLanguage.value, 'ko', 'a loaded language applies immediately');
+    assert.equal(globalThis.document.documentElement.lang, 'ko');
+    assert.equal(t('settings.title'), UI_MESSAGES.ko.settings.title);
+  } finally {
+    globalThis.document = previousDocument;
+    setUILanguage('en');
+  }
+});
+
+test('new locales cover UI keys, preserve placeholders, and localize menus', async () => {
   for (const locale of added) {
+    await loadUILanguage(locale);
     const localized = new Map(leaves(UI_MESSAGES[locale]));
     for (const [key, english] of leaves(UI_MESSAGES.en)) {
       assert.equal(typeof localized.get(key), 'string', `${locale}: ${key}`);
@@ -97,10 +131,11 @@ test('every new locale persists through a fresh preference store', async () => {
   }
 });
 
-test('switching RTL and LTR updates document metadata and keeps interpolation', () => {
+test('switching RTL and LTR updates document metadata and keeps interpolation', async () => {
   const previousDocument = globalThis.document;
   globalThis.document = { documentElement: {} };
   try {
+    await Promise.all(['ar', 'arz', 'ur'].map(loadUILanguage));
     for (const locale of ['ar', 'arz', 'ur', 'en']) {
       setUILanguage(locale);
       assert.equal(globalThis.document.documentElement.lang, locale);
