@@ -364,10 +364,15 @@ function fit(el, b) {
           class="reading-paragraph"
           :class="{ 'custom-font': !!customFont }"
           :data-block-id="b.id"
+          :data-paragraph-group-id="b.paragraphGroupId"
+          :data-paragraph-index="b.paragraphIndex"
+          :data-paragraph-text="b.paragraphText"
           :style="blockStyle(b)"
         >
           <TextReveal
             :text="b.translation"
+            :topic-context="b.paragraphDisplayTranslation"
+            :topic-offset="b.paragraphDisplayOffset || 0"
             :scale="zoom"
             :emphasize-topic-sentences="emphasizeTopic(b)"
             :emphasize-information="emphasizeInformation"
@@ -382,6 +387,8 @@ function fit(el, b) {
           :ref="(el) => fit(el, b)"
           class="paragraph"
           :data-translation-changed="b.math ? b.text !== b.translation : undefined"
+          :data-paragraph-group-id="b.paragraphGroupId"
+          :data-paragraph-index="b.paragraphIndex"
           :class="{
             math: b.math,
             translated: !b.math && b.translation && (b.translated || b.revealing),
@@ -410,6 +417,8 @@ function fit(el, b) {
             :active="foreground && !!p.visible"
           /><TextReveal
             :emphasize-topic-sentences="emphasizeTopic(b)"
+            :topic-context="b.translated ? b.paragraphDisplayTranslation : b.paragraphSourceText"
+            :topic-offset="(b.translated ? b.paragraphDisplayOffset : b.paragraphSourceOffset) || 0"
             :emphasize-information="emphasizeInformation"
             :information-categories="informationCategories"
             v-if="!b.math && b.translation"

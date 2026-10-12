@@ -33,6 +33,8 @@ const SETTINGS_PREFERENCES = [
   'pageConcurrency',
   'automatic',
   'documentLanguageDetection',
+  'topicSentenceDetection',
+  'paragraphContinuationDetection',
   'jevApiToken',
   'remoteKernelEnabled',
   'remoteKernelUrl',

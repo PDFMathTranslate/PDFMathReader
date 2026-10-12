@@ -44,6 +44,8 @@ const DEFAULT_PREFERENCES = {
   pageConcurrency: 2,
   automatic: true,
   documentLanguageDetection: false,
+  topicSentenceDetection: false,
+  paragraphContinuationDetection: false,
   jevApiToken: '',
   remoteKernelEnabled: false,
   remoteKernelUrl: '',
@@ -73,6 +75,7 @@ test('partial saves keep every current setting and unknown key', async () => {
       preferences = await createReaderPreferences(path);
     assert.equal(preferences.load().translationMode, 'reading-ahead');
     assert.equal(preferences.load().optimizeParagraphGaps, false);
+    assert.equal(preferences.load().paragraphContinuationDetection, false);
     const initial = withPreferences(
       {
         engine: 'pdf_math_precise',
@@ -95,6 +98,8 @@ test('partial saves keep every current setting and unknown key', async () => {
         pageConcurrency: 8,
         automatic: false,
         documentLanguageDetection: true,
+        topicSentenceDetection: true,
+        paragraphContinuationDetection: true,
         jevApiToken: 'custom-test-token',
         remoteKernelEnabled: true,
         remoteKernelUrl: 'http://127.0.0.1:8890',
@@ -120,6 +125,8 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ documentOpenMode: 'invalid' }));
     assert.throws(() => preferences.save({ formulaOcrEnabled: 'true' }));
     assert.throws(() => preferences.save({ documentLanguageDetection: 'true' }));
+    assert.throws(() => preferences.save({ topicSentenceDetection: 'true' }));
+    assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));
     assert.throws(() => preferences.save({ remoteKernelUrl: 123 }));

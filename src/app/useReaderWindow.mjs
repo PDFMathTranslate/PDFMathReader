@@ -13,6 +13,7 @@ import { createRenderState } from '../features/reader/render-state.mjs';
 import { createMotionState } from '../features/reader/motion-state.mjs';
 import { createTranslationQueueState } from '../features/translation/queue-state.mjs';
 import { createPreferenceState } from '../features/settings/preference-state.mjs';
+import { createTopicSentenceClassifier } from '../features/translation/topic-sentence-classifier.mjs';
 import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
@@ -291,6 +292,51 @@ export function useReaderWindow() {
     preferences,
     ...featurePorts,
   });
+
+  const topicSentenceRevision = ref(0);
+  const topicSentenceClassifier = createTopicSentenceClassifier({
+    context: () => ({
+      document: session.pdf,
+      epoch: session.epoch,
+      enabled: preferences.topicSentenceDetection.value && emphasizeTopicSentences.value,
+      token: preferences.jevApiToken.value,
+    }),
+    api: featureActions.api,
+    onUpdate: () => topicSentenceRevision.value++,
+  });
+  provide('topicSentenceClassifier', {
+    revision: topicSentenceRevision,
+    isTopicSentence: topicSentenceClassifier.isTopicSentence,
+  });
+  watch(
+    [preferences.topicSentenceDetection, preferences.jevApiToken, emphasizeTopicSentences],
+    () => {
+      topicSentenceClassifier.invalidate();
+      topicSentenceRevision.value++;
+    },
+  );
+  let topicSentenceDocument = session.pdf,
+    topicSentenceEpoch = session.epoch;
+  watch(pages, () => {
+    if (topicSentenceDocument === session.pdf && topicSentenceEpoch === session.epoch) return;
+    topicSentenceDocument = session.pdf;
+    topicSentenceEpoch = session.epoch;
+    topicSentenceClassifier.invalidate();
+    topicSentenceRevision.value++;
+  });
+  onBeforeUnmount(topicSentenceClassifier.dispose);
+  onBeforeUnmount(() => featureActions.invalidateParagraphGroups());
+  watch(
+    [preferences.paragraphContinuationDetection, preferences.jevApiToken],
+    ([enabled], previous) => {
+      featureActions.invalidateParagraphGroups();
+      if (preferences.loadingPreferences || settingsWindowMode || engine.value !== 'pdf_inspector')
+        return;
+      if (!enabled && !previous?.[0]) return;
+      featureActions.resetTranslations();
+      featureActions.settle();
+    },
+  );
 
   const settingsWindowMode = new URLSearchParams(location.search).get('settingsWindow') === '1';
   const settingsSection = ref(new URLSearchParams(location.search).get('section') || 'general'),
@@ -910,7 +956,13 @@ export function useReaderWindow() {
   );
 
   function toggle(b) {
-    if (b.math || b.translation) b.translated = !b.translated;
+    if (!b.math && !b.translation) return;
+    const translated = !b.translated;
+    if (b.paragraphGroupId) {
+      for (const page of pages.value)
+        for (const member of page.blocks)
+          if (member.paragraphGroupId === b.paragraphGroupId) member.translated = translated;
+    } else b.translated = translated;
   }
 
   // Fit returned text inside the source box, retaining a scrollable minimum size.

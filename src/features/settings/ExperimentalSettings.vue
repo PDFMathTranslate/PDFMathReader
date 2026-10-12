@@ -3,6 +3,8 @@ import { inject } from 'vue';
 import { t, uiLanguage as currentUILanguage } from '../../i18n/index.mjs';
 import { chatGPTSubscriptionLabel } from '../../i18n/chatgpt-subscription-labels.mjs';
 import DocumentLanguageSettings from './DocumentLanguageSettings.vue';
+import TopicSentenceSettings from './TopicSentenceSettings.vue';
+import ParagraphContinuationSettings from './ParagraphContinuationSettings.vue';
 import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import EpubSettings from './EpubSettings.vue';
@@ -14,6 +16,8 @@ const languagePreferences = inject('documentLanguagePreferences');
     <h3 id="settings-experimental">{{ t('settings.experimentalCategory') }}</h3>
     <div class="settings-section-body">
       <DocumentLanguageSettings v-if="languagePreferences" />
+      <TopicSentenceSettings v-if="languagePreferences" />
+      <ParagraphContinuationSettings v-if="languagePreferences" />
       <RemoteKernelSettings v-if="languagePreferences" />
       <EpubSettings />
       <FormulaOcrSettings />

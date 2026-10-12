@@ -22,9 +22,11 @@ const selectedParagraph = defineModel('selectedParagraph');
       </button>
     </div>
     <h3>{{ t('paragraph.original') }}</h3>
-    <p class="comparison-text">{{ selectedParagraph.text }}</p>
+    <p class="comparison-text">{{ selectedParagraph.paragraphText || selectedParagraph.text }}</p>
     <h3>{{ t('paragraph.translation') }}</h3>
-    <p class="comparison-text">{{ selectedParagraph.translation }}</p>
+    <p class="comparison-text">
+      {{ selectedParagraph.paragraphTranslation || selectedParagraph.translation }}
+    </p>
     <p class="muted">
       {{
         t('paragraph.page', {

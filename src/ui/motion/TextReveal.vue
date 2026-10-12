@@ -8,8 +8,8 @@ import {
   revealCharactersPDF,
 } from './text-reveal.mjs';
 import TopicSentenceText from '../../features/translation/TopicSentenceText.vue';
-import { firstSentenceLength } from '../../features/translation/topic-sentences.mjs';
 import { importantInformationRanges } from '../../features/translation/information-emphasis.mjs';
+import { useTopicSentenceDecision } from '../../features/translation/useTopicSentenceDecision.mjs';
 import { uiLanguage } from '../../i18n/index.mjs';
 import { paragraphDisplayText } from '../../../shared/translation/spacing.mjs';
 const props = defineProps({
@@ -19,6 +19,8 @@ const props = defineProps({
   nativeSource: Function,
   scale: Number,
   emphasizeTopicSentences: Boolean,
+  topicContext: String,
+  topicOffset: { type: Number, default: 0 },
   emphasizeInformation: Boolean,
   informationCategories: Object,
 });
@@ -31,10 +33,16 @@ let timer, controller;
 const displayText = computed(() =>
   props.original ? props.text : paragraphDisplayText(props.text),
 );
+const groupSentenceEnd = useTopicSentenceDecision(
+  computed(() => props.topicContext ?? displayText.value),
+  computed(() => props.emphasizeTopicSentences),
+  uiLanguage,
+).topicEnd;
 const sentenceEnd = computed(() =>
-  props.emphasizeTopicSentences
-    ? firstSentenceLength(displayText.value || '', uiLanguage.value)
-    : 0,
+  Math.min(
+    (displayText.value || '').length,
+    Math.max(0, groupSentenceEnd.value - props.topicOffset),
+  ),
 );
 const informationRanges = computed(() =>
   props.emphasizeInformation
@@ -154,6 +162,7 @@ onBeforeUnmount(() => {
     ><TopicSentenceText
       :text="displayText"
       :enabled="emphasizeTopicSentences"
+      :topic-end="sentenceEnd"
       :information="emphasizeInformation"
       :information-categories="informationCategories"
   /></span>

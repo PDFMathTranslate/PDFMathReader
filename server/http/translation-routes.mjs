@@ -11,6 +11,8 @@ import {
 } from '../translation/translation-provider.mjs';
 import { readingAssistRequest } from '../translation/reading-assist.mjs';
 import { createTranslationCache } from '../translation/translation-cache.mjs';
+import { classifyTopicSentence } from '../translation/topic-sentence.mjs';
+import { classifyParagraphContinuation } from '../translation/paragraph-continuation.mjs';
 
 export function registerTranslationRoutes(
   app,
@@ -28,6 +30,14 @@ export function registerTranslationRoutes(
     )
       return res.status(400).json({ error: 'Invalid language detection request' });
     res.json(await detectDocumentLanguage({ samples, targetLanguage, token }));
+  });
+  app.post('/api/topic-sentence', express.json({ limit: '128kb' }), async (req, res) => {
+    const { paragraph, firstSentence, token } = req.body || {};
+    res.json(await classifyTopicSentence({ paragraph, firstSentence, token }));
+  });
+  app.post('/api/paragraph-continuation', express.json({ limit: '128kb' }), async (req, res) => {
+    const { before, after, token } = req.body || {};
+    res.json(await classifyParagraphContinuation({ before, after, token }));
   });
   app.post('/api/translate', express.json({ limit: '100kb' }), async (req, res) =>
     cacheManager.runTask('translation', async () => {

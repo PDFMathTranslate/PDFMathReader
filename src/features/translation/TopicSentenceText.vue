@@ -1,18 +1,27 @@
 <script setup>
 import { computed } from 'vue';
 import { uiLanguage } from '../../i18n/index.mjs';
-import { topicSentenceLength } from './topic-sentences.mjs';
 import { informationTextSegments } from './information-emphasis.mjs';
 import { chineseWordBoundaries } from './chinese-word-boundaries.mjs';
+import { useTopicSentenceDecision } from './useTopicSentenceDecision.mjs';
 const props = defineProps({
   text: String,
   enabled: Boolean,
+  topicEnd: { type: Number, default: undefined },
   information: Boolean,
   informationCategories: Object,
 });
+const decision = useTopicSentenceDecision(
+  computed(() => props.text || ''),
+  computed(() => props.enabled),
+  uiLanguage,
+);
+const topicEnd = computed(() =>
+  props.topicEnd === undefined ? decision.topicEnd.value : props.topicEnd,
+);
 const parts = computed(() =>
   informationTextSegments(props.text || '', {
-    topicEnd: props.enabled ? topicSentenceLength(props.text || '', uiLanguage.value) : 0,
+    topicEnd: topicEnd.value,
     emphasizeInformation: props.information,
     categories: props.informationCategories,
   }),

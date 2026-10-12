@@ -242,15 +242,18 @@ export function topicParagraphBoxes(blocks, translated = false) {
   return source.map((block) => ({
     ...((translated ? block.translatedBox : block.sourceBox) || block),
     id: block.id,
+    paragraphSourceText: block.paragraphSourceText,
+    paragraphSourceOffset: block.paragraphSourceOffset,
     // A lowercase source at the page's first body block is a carried-over sentence.
     // Small numbered notes belong to the apparatus, not the body paragraphs.
     eligible:
-      !(block === firstBody && /^[a-z]/u.test(textValue(block.text).trimStart())) &&
-      !(
-        bodySize &&
-        numeric(block.fontSize) < bodySize * 0.9 &&
-        /^\s*\d{1,3}(?!\d)/u.test(textValue(block.text))
-      ),
+      !!block.paragraphGroupId ||
+      (!(block === firstBody && /^[a-z]/u.test(textValue(block.text).trimStart())) &&
+        !(
+          bodySize &&
+          numeric(block.fontSize) < bodySize * 0.9 &&
+          /^\s*\d{1,3}(?!\d)/u.test(textValue(block.text))
+        )),
   }));
 }
 
@@ -295,7 +298,14 @@ function explicitGeometry(value) {
   const rect = rectangle(value);
   if (!rect) return null;
   const id = value.id ?? value.paragraphId ?? value.blockId ?? value.groupId ?? value.paragraph;
-  return { rect, id, eligible: value.eligible !== false };
+  return {
+    rect,
+    id,
+    eligible: value.eligible !== false,
+    paragraphSourceText:
+      typeof value.paragraphSourceText === 'string' ? value.paragraphSourceText : undefined,
+    paragraphSourceOffset: Math.max(0, numeric(value.paragraphSourceOffset) || 0),
+  };
 }
 
 function contains(rect, x, y) {
@@ -458,7 +468,7 @@ function needsSeparator(left, right) {
   return true;
 }
 
-function rangesForIndices(indices, normalized, locale) {
+function rangesForIndices(indices, normalized, locale, context = {}) {
   let logical = '';
   const parts = [];
   for (const index of indices) {
@@ -468,19 +478,49 @@ function rangesForIndices(indices, normalized, locale) {
     logical += text;
     parts.push({ index, start, end: logical.length });
   }
-  const sentenceEnd = topicSentenceLength(logical, locale);
-  if (!sentenceEnd) return [];
+  const paragraphText = context.paragraphSourceText || logical;
+  const paragraphSentenceEnd = topicSentenceLength(paragraphText, locale);
+  let sentenceEnd = paragraphSentenceEnd - (context.paragraphSourceOffset || 0);
+  if (!paragraphSentenceEnd || sentenceEnd <= 0) return null;
+  if (context.paragraphSourceText) {
+    // Inspector may remove wrap hyphens or normalize whitespace in block text.
+    // Map the logical prefix back to native runs before drawing their ranges.
+    const significant = (value) => Array.from(value).filter((char) => !/[\s\-\u00ad]/u.test(char));
+    const expected = significant(
+      paragraphText.slice(context.paragraphSourceOffset || 0, paragraphSentenceEnd),
+    );
+    let matched = 0,
+      offset = 0,
+      mapped = 0,
+      mismatch = false;
+    for (const char of logical) {
+      offset += char.length;
+      if (/[\s\-\u00ad]/u.test(char)) continue;
+      if (char !== expected[matched]) {
+        mismatch = true;
+        break;
+      }
+      matched++;
+      mapped = offset;
+      if (matched === expected.length) break;
+    }
+    if (!mismatch) sentenceEnd = matched === expected.length ? mapped : logical.length;
+  }
   const ranges = [];
   for (const part of parts) {
     if (part.start >= sentenceEnd) break;
     const end = Math.min(part.end, sentenceEnd) - part.start;
     if (end > 0) ranges.push({ index: part.index, start: 0, end });
   }
-  return ranges;
+  return {
+    text: paragraphText,
+    firstSentence: paragraphText.slice(0, paragraphSentenceEnd),
+    ranges,
+  };
 }
 
-/** Return source offsets for the first sentence in each inferred paragraph. */
-export function topicSentenceRanges(runs, boxes = [], locale = 'en') {
+/** Return inferred paragraphs whose first sentence is eligible for emphasis. */
+export function topicSentenceParagraphs(runs, boxes = [], locale = 'en') {
   const source = Array.isArray(runs) ? runs : [];
   const normalized = source.map((run) => ({
     text: textValue(run?.text),
@@ -503,7 +543,13 @@ export function topicSentenceRanges(runs, boxes = [], locale = 'en') {
     }
     let group = groups.get(match.key);
     if (!group) {
-      group = { indices: [], order: index, eligible: match.eligible };
+      group = {
+        indices: [],
+        order: index,
+        eligible: match.eligible,
+        paragraphSourceText: match.paragraphSourceText,
+        paragraphSourceOffset: match.paragraphSourceOffset,
+      };
       groups.set(match.key, group);
     }
     group.indices.push(index);
@@ -511,10 +557,18 @@ export function topicSentenceRanges(runs, boxes = [], locale = 'en') {
   for (const indices of fallbackGroups(unmatched, normalized))
     groups.set(`fallback:${indices[0]}`, { indices, order: indices[0] });
 
-  const ranges = [];
+  const paragraphs = [];
   for (const group of [...groups.values()].sort((a, b) => a.order - b.order)) {
-    if (group.eligible !== false)
-      ranges.push(...rangesForIndices(group.indices, normalized, locale));
+    if (group.eligible === false) continue;
+    const paragraph = rangesForIndices(group.indices, normalized, locale, group);
+    if (paragraph) paragraphs.push(paragraph);
   }
-  return ranges.sort((a, b) => a.index - b.index || a.start - b.start);
+  return paragraphs;
+}
+
+/** Return source offsets for the first sentence in each inferred paragraph. */
+export function topicSentenceRanges(runs, boxes = [], locale = 'en') {
+  return topicSentenceParagraphs(runs, boxes, locale)
+    .flatMap((paragraph) => paragraph.ranges)
+    .sort((a, b) => a.index - b.index || a.start - b.start);
 }

@@ -49,6 +49,12 @@ async function writeTopicFixture(path) {
 
 export async function verifyTopicSentences(window, recents) {
   const evaluate = (code) => window.webContents.executeJavaScript(code);
+  const focus = () => {
+    window.show();
+    app.focus({ steal: true });
+    window.focus();
+    window.webContents.focus();
+  };
   const wait = async (code, label = code) => {
     for (let attempt = 0; attempt < 300; attempt++) {
       try {
@@ -99,6 +105,7 @@ export async function verifyTopicSentences(window, recents) {
       window.webContents.reload();
     });
     await wait('window.previewReady===true', 'renderer ready after reload');
+    focus();
   };
   const openRecent = async (id) => {
     const selector = `[data-recent-id=${JSON.stringify(id)}]`;
@@ -111,12 +118,40 @@ export async function verifyTopicSentences(window, recents) {
       `(()=>{const d=window.previewRenderDiagnostics?.();return d?.recentId===${JSON.stringify(id)}&&d.totalPages===1&&!d.opening&&document.querySelector('.page canvas')?.width>0;})()`,
       'temporary fixture rendered',
     );
+    focus();
     await wait(`!!document.querySelector('.reading-text-layer span')`, 'PDF text layer rendered');
   };
   const setting = 'document.querySelector("[data-setting=topic-sentences] input")';
+  const detectionSetting =
+    'document.querySelector("[data-setting=topic-sentence-detection] input")';
   const openSettings = async () => {
     await evaluate('document.querySelector("[aria-label=\\"Translation settings\\"]").click()');
     await wait(`!!${setting}`, 'topic sentence setting');
+  };
+  const openExperimentalSettings = async () => {
+    await openSettings();
+    await evaluate('document.querySelector("[data-settings-category=experimental]").click()');
+    await wait(`!!${detectionSetting}`, 'experimental topic sentence setting');
+  };
+  const installTopicSentenceMock = async (mode) => {
+    await evaluate(`(()=>{
+      const originalFetch = window.fetch.bind(window);
+      window.topicSentenceSmoke = {mode:${JSON.stringify(mode)}, calls:[]};
+      window.fetch = async (input, options = {}) => {
+        const url = new URL(String(input), location.href);
+        if (url.pathname !== '/api/topic-sentence') return originalFetch(input, options);
+        let body = {};
+        try { body = JSON.parse(options.body || '{}'); } catch {}
+        window.topicSentenceSmoke.calls.push(body);
+        if (window.topicSentenceSmoke.mode === 'error')
+          throw new Error('topic sentence smoke transport failure');
+        return new Response(JSON.stringify({
+          status: 'classified',
+          isTopicSentence: window.topicSentenceSmoke.mode !== 'no'
+        }), {status:200, headers:{'Content-Type':'application/json'}});
+      };
+      return true;
+    })()`);
   };
   const markedText = () =>
     evaluate(
@@ -132,6 +167,7 @@ export async function verifyTopicSentences(window, recents) {
   try {
     const { expected } = await writeTopicFixture(generated);
     await wait('window.previewReady===true', 'initial renderer ready');
+    focus();
     const initial = await evaluate('window.previewPreferences.load()');
     assert.equal(initial.emphasizeTopicSentences, false, 'topic sentence emphasis defaults off');
     await evaluate(
@@ -239,7 +275,7 @@ export async function verifyTopicSentences(window, recents) {
     await recents.clear();
     await evaluate('window.previewCredentials.save("sk-topic-sentences-test-only")');
     await evaluate(
-      'window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading",emphasizeTopicSentences:true})',
+      'window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading",restoreDocuments:false,emphasizeTopicSentences:true,translationServices:{pdf_inspector:{id:"openai",values:{}}}})',
     );
     await reload();
     await evaluate('document.querySelector(".sample-button")?.click()');
@@ -248,7 +284,7 @@ export async function verifyTopicSentences(window, recents) {
       'mock translated paragraph',
     );
     await wait(
-      'document.querySelector(".reading-paragraph .paragraph-text").textContent.includes("第二句保持普通字重。")',
+      'document.querySelector(".reading-paragraph .paragraph-text")?.textContent.includes("第二句保持普通字重。")',
       'mock translation content',
     );
     await wait(
@@ -257,11 +293,131 @@ export async function verifyTopicSentences(window, recents) {
     );
     assert.equal(
       await evaluate(
-        'document.querySelector(".reading-paragraph .topic-sentence-text").textContent',
+        'Array.from(document.querySelectorAll(".reading-paragraph .topic-sentence-text"),node=>node.textContent).join("")',
       ),
       '译文第一句。',
     );
     const translatedTopic = true;
+
+    // Keep the Jev lane local to this renderer. Each scenario changes the
+    // synthetic token before reload so the classifier cannot reuse a previous
+    // decision, while the fetch shim handles only the topic-sentence endpoint.
+    await recents.remember(generated);
+    const classifierFixtureId = recents
+      .list()
+      .find((entry) => entry.name === fixtureName && recents.path(entry.id) === generated)?.id;
+    assert.ok(classifierFixtureId, 'classifier fixture was added to recents');
+
+    await evaluate(
+      'window.previewPreferences.save({automatic:false,documentOpenMode:"original",interactionMode:"reading",restoreDocuments:false,emphasizeTopicSentences:true,topicSentenceDetection:false,jevApiToken:"topic-smoke-off"})',
+    );
+    await reload();
+    await installTopicSentenceMock('off');
+    await openRecent(classifierFixtureId);
+    await pause(350);
+    assert.equal(
+      await evaluate('window.topicSentenceSmoke.calls.length'),
+      0,
+      'topic detection off makes no classifier requests',
+    );
+    assert.equal(
+      await evaluate(
+        'document.querySelectorAll(".reader .reading-text-layer .pdf-topic-sentence").length',
+      ),
+      4,
+      'topic detection off keeps the heuristic emphasis',
+    );
+
+    await evaluate(
+      'window.previewPreferences.save({topicSentenceDetection:true,jevApiToken:"topic-smoke-no"})',
+    );
+    await reload();
+    await installTopicSentenceMock('no');
+    await openRecent(classifierFixtureId);
+    await wait('window.topicSentenceSmoke.calls.length>0', 'original classifier request');
+    await wait(
+      'document.querySelectorAll(".reader .reading-text-layer .pdf-topic-sentence").length===0',
+      'classified non-topic original sentence removes emphasis',
+    );
+    const originalClassificationCalls = await evaluate('window.topicSentenceSmoke.calls');
+    assert.ok(
+      originalClassificationCalls.every(
+        (call) =>
+          typeof call.paragraph === 'string' &&
+          typeof call.firstSentence === 'string' &&
+          call.paragraph.startsWith(call.firstSentence),
+      ),
+      'original classifier requests carry paragraph and first sentence',
+    );
+
+    await evaluate(
+      'window.previewPreferences.save({topicSentenceDetection:true,jevApiToken:"topic-smoke-error"})',
+    );
+    await reload();
+    await installTopicSentenceMock('error');
+    await openRecent(classifierFixtureId);
+    await wait('window.topicSentenceSmoke.calls.length>0', 'original failure request');
+    await wait(
+      'document.querySelectorAll(".reader .reading-text-layer .pdf-topic-sentence").length===4',
+      'failed original classifier request restores heuristic emphasis',
+    );
+
+    const openMockTranslation = async (mode) => {
+      await reload();
+      await installTopicSentenceMock(mode);
+      await evaluate('document.querySelector(".sample-button")?.click()');
+      await wait(
+        '!!document.querySelector(".reading-paragraph .paragraph-text")',
+        'mock translated paragraph after classifier reload',
+      );
+      await wait(
+        'document.querySelector(".reading-paragraph .paragraph-text")?.textContent.includes("第二句保持普通字重。")',
+        'mock translation content after classifier reload',
+      );
+      await wait(
+        'window.topicSentenceSmoke.calls.some(call=>call.firstSentence==="译文第一句。")',
+        'translated classifier request',
+      );
+    };
+
+    await recents.clear();
+    await evaluate(
+      'window.previewPreferences.save({automatic:true,documentOpenMode:"translation",interactionMode:"reading",restoreDocuments:false,emphasizeTopicSentences:true,topicSentenceDetection:true,jevApiToken:"topic-smoke-translated-no",translationServices:{pdf_inspector:{id:"openai",values:{}}}})',
+    );
+    await openMockTranslation('no');
+    await wait(
+      '!document.querySelector(".reading-paragraph .topic-sentence-text")',
+      'classified non-topic translated sentence removes emphasis',
+    );
+
+    await evaluate(
+      'window.previewPreferences.save({topicSentenceDetection:true,jevApiToken:"topic-smoke-translated-error"})',
+    );
+    await openMockTranslation('error');
+    await wait(
+      '!!document.querySelector(".reading-paragraph .topic-sentence-text")',
+      'failed translated classifier request restores emphasis',
+    );
+
+    await openExperimentalSettings();
+    assert.equal(
+      await evaluate(`${detectionSetting}.getAttribute('aria-valuetext')`),
+      'On',
+      'experimental topic detection control is on after translated checks',
+    );
+    await evaluate(`${detectionSetting}.click()`);
+    await wait(
+      `(async()=> (await window.previewPreferences.load()).topicSentenceDetection===false)()`,
+      'experimental topic detection toggle saves off',
+    );
+    await reload();
+    await openExperimentalSettings();
+    assert.equal(
+      await evaluate(`${detectionSetting}.getAttribute('aria-valuetext')`),
+      'Off',
+      'experimental topic detection toggle persists after reload',
+    );
+
     console.log(
       'Topic sentence smoke passed',
       JSON.stringify({
@@ -273,6 +429,12 @@ export async function verifyTopicSentences(window, recents) {
         persisted: true,
         realFixture: !!external,
         translationMockTopic: translatedTopic,
+        classifierOffNoCalls: true,
+        classifierOriginalNo: true,
+        classifierOriginalFailureFallback: true,
+        classifierTranslatedNo: true,
+        classifierTranslatedFailureFallback: true,
+        classifierPreferencePersisted: true,
       }),
     );
   } finally {

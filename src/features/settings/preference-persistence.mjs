@@ -28,6 +28,10 @@ export function createPreferencePersistence({ preferences, session, view, provid
     preferences.applyingSavedSettings = true;
     if (typeof saved.documentLanguageDetection === 'boolean')
       preferences.documentLanguageDetection.value = saved.documentLanguageDetection;
+    if (typeof saved.topicSentenceDetection === 'boolean')
+      preferences.topicSentenceDetection.value = saved.topicSentenceDetection;
+    if (typeof saved.paragraphContinuationDetection === 'boolean')
+      preferences.paragraphContinuationDetection.value = saved.paragraphContinuationDetection;
     if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
     if (typeof saved.remoteKernelEnabled === 'boolean')
       preferences.remoteKernelEnabled.value = saved.remoteKernelEnabled;
@@ -160,6 +164,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
         pageConcurrency: preferences.pageConcurrency.value,
         automatic: preferences.automatic.value,
         documentLanguageDetection: preferences.documentLanguageDetection.value,
+        topicSentenceDetection: preferences.topicSentenceDetection.value,
+        paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
         jevApiToken: preferences.jevApiToken.value,
         remoteKernelEnabled: preferences.remoteKernelEnabled.value,
         remoteKernelUrl: preferences.remoteKernelUrl.value,

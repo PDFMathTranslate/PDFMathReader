@@ -54,6 +54,10 @@ export async function runDesktopSmoke({
     ).verifyInformationEmphasis(window, recents);
   else if (smoke === 'topic-sentences')
     await (await import('./topic-sentences-smoke.mjs')).verifyTopicSentences(window, recents);
+  else if (smoke === 'paragraph-continuation')
+    await (
+      await import('./paragraph-continuation-smoke.mjs')
+    ).verifyParagraphContinuation(window, recents);
   else if (smoke === 'page-edits')
     await (await import('./page-edits-smoke.mjs')).verifyPageEdits(window, recents);
   else if (smoke === 'cache-progress')

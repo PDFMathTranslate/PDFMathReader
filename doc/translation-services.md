@@ -41,3 +41,44 @@ The integration uses the [TypeSafe System One API](https://docs.typesafe.ai/intr
 with `jev-latest` and a Choice judgment. The experimental skip threshold is 0.9;
 it is a conservative application policy, not a guarantee of language detection
 accuracy.
+
+## Experimental topic-sentence check
+
+Enable **Check topic sentences with Jev** in Settings → Experimental to check
+whether the first sentence expresses the main idea of a paragraph. The check
+only applies when topic-sentence emphasis is enabled, and it keeps the existing
+rule that a paragraph must exceed 60 word-equivalents before it can be
+emphasized. The feature is off by default.
+
+The reader sends each eligible paragraph's complete text, up to 12,000 Unicode
+characters, to Jev. Longer paragraphs are skipped and treated as topic
+sentences. Requests run through four asynchronous lanes, and the server deadline
+for each request is 5 seconds. A Jev result is accepted as yes when its yes
+probability is at least 0.5. While a request is pending, the first sentence
+remains highlighted; it is cleared only when Jev returns no.
+
+Missing credentials, network errors, malformed responses, timeouts and other
+failed requests fall back to yes so the reading aid remains available. The
+custom Jev API Token is shared with the document-language check; the topic
+sentence feature does not add another credential field. The implementation uses
+the official [TypeSafe Noul primitive](https://docs.typesafe.ai/primitives/noul).
+
+## Experimental paragraph-continuation check
+
+Enable **Combine interrupted paragraphs with Jev** in Settings → Experimental
+to ask Jev whether adjoining layout fragments belong to one paragraph. The
+reader can group fragments on the same page, at a column break, or in a page
+break group, then recombine the split layout for continuous translation. The
+original regions remain unchanged. This feature is off by default and currently
+applies only to Ultra fast (`pdf_inspector`), because the Python math kernels
+own their layout.
+
+Requests use the shared Jev API Token, with at most four concurrent requests,
+a 5-second server deadline, a 0.8 yes-probability threshold, and limits of 6,000
+characters per fragment, 16 fragments per group, and 20,000 characters per
+group. Failed or uncertain requests keep fragments separate. Changing the setting
+rebuilds the current document's paragraph translations. Each confirmed group is
+translated once; its translation is split at word boundaries into the original
+regions in source order. This distribution approximates the original fragment
+boundaries. Clicking a member toggles the whole group; copying and comparison
+use the complete paragraph.

@@ -44,7 +44,10 @@ export function useReaderFeedback(interactionMode) {
       return;
     }
     const block = hoveredParagraph.value,
-      text = block.translation && block.translated ? block.translation : block.text;
+      text =
+        block.translation && block.translated
+          ? block.paragraphTranslation || block.translation
+          : block.paragraphText || block.text;
     if (!text) return;
     try {
       if (window.previewClipboard) await window.previewClipboard.writeText(text);

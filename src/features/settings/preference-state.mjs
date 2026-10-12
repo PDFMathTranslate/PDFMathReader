@@ -8,6 +8,8 @@ export function createPreferenceState() {
   const pageConcurrency = ref(2);
   const automatic = ref(true);
   const documentLanguageDetection = ref(false);
+  const topicSentenceDetection = ref(false);
+  const paragraphContinuationDetection = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
   const remoteKernelUrl = ref('');
@@ -75,6 +77,8 @@ export function createPreferenceState() {
     pageConcurrency,
     automatic,
     documentLanguageDetection,
+    topicSentenceDetection,
+    paragraphContinuationDetection,
     jevApiToken,
     remoteKernelEnabled,
     remoteKernelUrl,

@@ -52,23 +52,29 @@ export function createTranslationScope({
     const order = readingTranslationPages(),
       allowed = new Set(order),
       rank = new Map(order.map((n, i) => [n, i]));
+    const jobPages = (job) => {
+      const pages = Array.isArray(job?.pages) && job.pages.length ? job.pages : [job?.page];
+      return pages.filter((page) => Number.isInteger(page));
+    };
+    const jobRank = (job) =>
+      jobPages(job).reduce((best, page) => Math.min(best, rank.get(page) ?? Infinity), Infinity);
+    const retained = (job) => job.manual || jobPages(job).some((page) => allowed.has(page));
     for (const [controller, job] of translationState.translationRequests)
-      if (!job.manual && !allowed.has(job.page)) controller.abort();
+      if (!retained(job)) controller.abort();
     for (let i = translationState.pageQueue.length - 1; i >= 0; i--)
       if (!allowed.has(translationState.pageQueue[i].p.number)) {
         const { p } = translationState.pageQueue.splice(i, 1)[0];
         if (p.status === 'queued') p.status = p.blocks.length ? 'ready' : 'idle';
       }
     for (let i = translationState.queue.length - 1; i >= 0; i--)
-      if (!translationState.queue[i].manual && !allowed.has(translationState.queue[i].page)) {
+      if (!retained(translationState.queue[i])) {
         const job = translationState.queue.splice(i, 1)[0];
-        if (job.block.status === 'queued') job.block.status = 'idle';
+        if (job.onPruned) job.onPruned();
+        else if (job.block?.status === 'queued') job.block.status = 'idle';
       }
     translationState.pageQueue.sort((a, b) => rank.get(a.p.number) - rank.get(b.p.number));
     translationState.queue.sort(
-      (a, b) =>
-        Number(b.manual) - Number(a.manual) ||
-        (rank.get(a.page) ?? Infinity) - (rank.get(b.page) ?? Infinity),
+      (a, b) => Number(b.manual) - Number(a.manual) || jobRank(a) - jobRank(b),
     );
   }
   return { readingTranslationPages, scopePages, pruneTranslationQueue };

@@ -1,12 +1,12 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, inject } from 'vue';
 import { uiLanguage } from '../../i18n/index.mjs';
 import {
   informationRunRanges,
   informationTextSegments,
   mergeInformationRects,
 } from '../translation/information-emphasis.mjs';
-import { topicSentenceRanges } from '../translation/topic-sentences.mjs';
+import { topicSentenceParagraphs } from '../translation/topic-sentences.mjs';
 import { loadPDFRuntime } from './pdf-runtime.mjs';
 import { bindTextLayerSelection, preserveTextLayerSelection } from './text-layer-selection.mjs';
 const props = defineProps({
@@ -36,6 +36,23 @@ let layer,
 let unbindSelection;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
+const topicSentenceClassifier = inject('topicSentenceClassifier', null);
+function topicRangesForRuns(runs) {
+  return topicSentenceParagraphs(runs, props.paragraphBoxes || [], uiLanguage.value)
+    .filter((paragraph) => {
+      if (!paragraph.ranges.length) return false;
+      if (typeof topicSentenceClassifier?.isTopicSentence !== 'function') return true;
+      try {
+        return (
+          topicSentenceClassifier.isTopicSentence(paragraph.text, paragraph.firstSentence) !== false
+        );
+      } catch {
+        return true;
+      }
+    })
+    .flatMap((paragraph) => paragraph.ranges)
+    .sort((a, b) => a.index - b.index || a.start - b.start);
+}
 function drawEmphasis() {
   if (!host.value) return;
   overlay?.remove();
@@ -118,7 +135,7 @@ onMounted(() => {
   });
 });
 function emphasize() {
-  if (!rendered || !host.value || !layer) return;
+  if (!rendered || !host.value || !layer || !props.active) return;
   const spans = layer.textDivs.filter((span) => host.value.contains(span));
   const restoreSelection = preserveTextLayerSelection(spans);
   for (const span of spans) {
@@ -146,9 +163,7 @@ function emphasize() {
       height: r.height / scale,
     };
   });
-  const topicRanges = props.emphasizeTopicSentences
-    ? topicSentenceRanges(runs, props.paragraphBoxes || [], uiLanguage.value)
-    : [];
+  const topicRanges = props.emphasizeTopicSentences ? topicRangesForRuns(runs) : [];
   const informationRanges = props.emphasizeInformation
     ? informationRunRanges(runs, props.informationCategories)
     : [];
@@ -195,6 +210,7 @@ watch(
     props.informationCategories,
     props.paragraphBoxes,
     uiLanguage.value,
+    topicSentenceClassifier?.revision?.value,
   ],
   emphasize,
   { flush: 'post' },
