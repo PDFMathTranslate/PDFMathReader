@@ -89,6 +89,13 @@ const paths = await packager({
             LSItemContentTypes: ['com.adobe.pdf'],
             CFBundleTypeExtensions: ['pdf'],
           },
+          {
+            CFBundleTypeName: 'EPUB Book',
+            CFBundleTypeRole: 'Viewer',
+            LSHandlerRank: 'Alternate',
+            LSItemContentTypes: ['org.idpf.epub-container'],
+            CFBundleTypeExtensions: ['epub'],
+          },
         ],
       },
   platform,

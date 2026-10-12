@@ -25,7 +25,13 @@ import { createChatGPTSubscription } from './main/services/chatgpt-subscription.
 import { createDocumentSession } from './main/services/document-session.mjs';
 import { createRecents } from './main/services/recents.mjs';
 import { createReaderPreferences } from './main/services/preferences.mjs';
-import { readSystemPDF, validateSystemPDF, pdfLaunchPaths } from './main/services/documents.mjs';
+import {
+  configureEPUBSupport,
+  readSystemPDF,
+  validateSystemPDF,
+  pdfLaunchPaths,
+} from './main/services/documents.mjs';
+import { createEPUBConverter } from './main/services/epub-converter.mjs';
 import {
   appendPerformanceReport,
   loadPerformanceReports,
@@ -303,6 +309,11 @@ else {
         },
       });
       preferences = readerPreferences;
+      configureEPUBSupport({
+        enabled: () => preferences.load().epubEnabled !== false,
+        convert: createEPUBConverter({ directory: join(app.getPath('userData'), 'epub-documents') })
+          .convert,
+      });
       annotations = annotationStore;
       performanceReports.items = savedPerformanceReports;
       documentSession = savedDocumentSession;

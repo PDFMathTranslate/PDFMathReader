@@ -37,6 +37,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
       if (saved[key] !== undefined) target.value = saved[key];
     if (typeof saved.formulaOcrEnabled === 'boolean')
       preferences.formulaOcrEnabled.value = saved.formulaOcrEnabled;
+    if (typeof saved.epubEnabled === 'boolean') preferences.epubEnabled.value = saved.epubEnabled;
     if (['default', 'liquid-glass'].includes(saved.interfaceStyle))
       preferences.interfaceStyle.value = saved.interfaceStyle;
     if (saved.engine) preferences.engine.value = saved.engine;
@@ -116,6 +117,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         documentOpenMode: preferences.documentOpenMode.value,
         restoreDocuments: preferences.restoreDocuments.value,
         formulaOcrEnabled: preferences.formulaOcrEnabled.value,
+        epubEnabled: preferences.epubEnabled.value,
         defaultPageCropEnabled: preferences.defaultPageCropEnabled.value,
         defaultPageCropX: preferences.defaultPageCropX.value,
         defaultPageCropY: preferences.defaultPageCropY.value,

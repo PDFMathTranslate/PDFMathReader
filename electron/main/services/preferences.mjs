@@ -33,6 +33,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   optimizeParagraphGaps: false,
   restoreDocuments: true,
   formulaOcrEnabled: false,
+  epubEnabled: true,
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -241,6 +242,7 @@ const VALIDATORS = {
   reduceBackgroundFrameRate: (value) => typeof value === 'boolean',
   reuseTranslations: (value) => typeof value === 'boolean',
   formulaOcrEnabled: (value) => typeof value === 'boolean',
+  epubEnabled: (value) => typeof value === 'boolean',
   translationErrorDismissals: (value) =>
     Array.isArray(value) && value.every((id) => typeof id === 'string' && id.length <= 1024),
   emphasizeTopicSentences: (value) => typeof value === 'boolean',
@@ -287,6 +289,7 @@ const VALIDATION_MESSAGES = {
   restoreDocuments: 'Invalid document restoration preference',
   optimizeParagraphGaps: 'Invalid paragraph gap optimization preference',
   reuseTranslations: 'Invalid translation reuse preference',
+  epubEnabled: 'Invalid EPUB support preference',
   translationMode: 'Invalid translation mode',
   interactionMode: 'Invalid interaction mode',
   direction: 'Invalid layout direction',

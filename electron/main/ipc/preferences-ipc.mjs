@@ -20,6 +20,7 @@ const SETTINGS_PREFERENCES = [
   'cacheLimitMB',
   'documentOpenMode',
   'reuseTranslations',
+  'epubEnabled',
   'reduceResourceUsage',
   'restoreDocuments',
   'interactionMode',

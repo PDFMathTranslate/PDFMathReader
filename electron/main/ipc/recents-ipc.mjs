@@ -1,6 +1,7 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { app, clipboard, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
+import { documentSource } from '../services/documents.mjs';
 
 const recentContextMenuLabels = {
   en: {
@@ -243,12 +244,7 @@ export function registerRecentsIPC({
           throw error;
         }
         const state = registry.stateFor(target);
-        const source = {
-          path,
-          reliable: true,
-          preserveWithoutPath: false,
-          bytes: Buffer.from(document.bytes),
-        };
+        const source = { ...documentSource(path), bytes: Buffer.from(document.bytes) };
         state.annotationSources.set(value, source);
         state.unkeyedAnnotationSource = source;
         const ticket = randomBytes(16).toString('hex');
@@ -289,7 +285,11 @@ export function registerRecentsIPC({
       if (!smoke) app.addRecentDocument(path);
       const entries = await recents.remember(path, value?.thumbnail);
       const first = entries.find((item) => recents.path(item.id) === path);
-      const source = { path, reliable: true, preserveWithoutPath: false };
+      const previous = state.unkeyedAnnotationSource;
+      // An EPUB's converted PDF exists only in memory and the app cache; keep it.
+      const source = documentSource(path);
+      if (!source.reliable && previous?.path === path && previous.bytes)
+        source.bytes = previous.bytes;
       state.annotationSources.set(first.id, source);
       state.unkeyedAnnotationSource = source;
       const restored = state.restoreView;

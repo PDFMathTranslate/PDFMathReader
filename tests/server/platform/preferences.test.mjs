@@ -19,6 +19,7 @@ const DEFAULT_PREFERENCES = {
   optimizeParagraphGaps: false,
   restoreDocuments: true,
   formulaOcrEnabled: false,
+  epubEnabled: true,
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,

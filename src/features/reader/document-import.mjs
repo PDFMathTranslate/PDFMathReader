@@ -61,15 +61,21 @@ export function createDocumentImport({
   }
 
   async function importFile(file, ticket, origin, { skipAutoAlign = false } = {}) {
+    // EPUB files are converted to PDF by the desktop process before they reach the reader.
+    const epub = /\.epub$/i.test(file?.name || '');
     if (
       file &&
       !ticket &&
-      (session.pages.value.length || session.loading.value) &&
+      (session.pages.value.length || session.loading.value || epub) &&
       window.previewDocuments?.open
     ) {
+      // A blank window receives the converted book itself; show progress meanwhile.
+      const converting = epub && !session.pages.value.length && !session.loading.value;
+      if (converting) session.loading.value = true;
       try {
         await window.previewDocuments.open(file);
       } catch (e) {
+        if (converting) session.loading.value = false;
         feedback.error.value = e.message;
       }
       return;

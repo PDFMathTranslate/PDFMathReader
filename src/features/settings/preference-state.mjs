@@ -14,6 +14,7 @@ export function createPreferenceState() {
   const interactionMode = ref('reading');
   const optimizeParagraphGaps = ref(false);
   const formulaOcrEnabled = ref(localStorage.getItem('formulaOcrEnabled') === 'true');
+  const epubEnabled = ref(localStorage.getItem('epubEnabled') !== 'false');
   const restoreDocuments = ref(true);
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
   const defaultPageCropEnabled = ref(false);
@@ -74,6 +75,7 @@ export function createPreferenceState() {
     interactionMode,
     optimizeParagraphGaps,
     formulaOcrEnabled,
+    epubEnabled,
     restoreDocuments,
     documentOpenMode,
     defaultPageCropEnabled,

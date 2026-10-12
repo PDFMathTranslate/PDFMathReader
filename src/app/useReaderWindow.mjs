@@ -1118,6 +1118,7 @@ export function useReaderWindow() {
     documentOpening,
     documentOutline,
     effectiveTranslationSummary,
+    epubEnabled: preferences.epubEnabled,
     emphasizeInformation,
     emphasizeTopicSentences,
     engine,

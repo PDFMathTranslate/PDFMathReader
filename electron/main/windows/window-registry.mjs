@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+import { documentSource } from '../services/documents.mjs';
 
 /*
  * The registry is the owner of desktop window identity. IPC handlers and menu
@@ -29,8 +30,7 @@ export function createWindowRegistry() {
     return target;
   };
   const annotationSourceForDocument = (document) => {
-    if (typeof document === 'string')
-      return { path: document, reliable: true, preserveWithoutPath: false };
+    if (typeof document === 'string') return documentSource(document);
     if (document?.bytes instanceof Uint8Array)
       return { bytes: Buffer.from(document.bytes), reliable: false, preserveWithoutPath: true };
     return null;

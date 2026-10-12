@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { documentSource } from '../services/documents.mjs';
 
 export function registerDocumentIPC({
   handle,
@@ -22,12 +23,7 @@ export function registerDocumentIPC({
     }
     try {
       const loaded = await readSystemPDF(document);
-      const source = {
-        path: document,
-        reliable: true,
-        preserveWithoutPath: false,
-        bytes: Buffer.from(loaded.bytes),
-      };
+      const source = { ...documentSource(document), bytes: Buffer.from(loaded.bytes) };
       state.unkeyedAnnotationSource = source;
       state.annotationSources.set(document, source);
       const ticket = randomBytes(16).toString('hex');
@@ -36,7 +32,11 @@ export function registerDocumentIPC({
     } catch {
       state.documentIdentity = null;
       state.performance.hasDocument = false;
-      return { error: 'Could not open this PDF. Check file access and the 200 MB limit.' };
+      return {
+        error: /\.epub$/i.test(document)
+          ? 'Could not open this EPUB. It may be damaged, DRM-protected or larger than 200 MB.'
+          : 'Could not open this PDF. Check file access and the 200 MB limit.',
+      };
     }
   });
   handle('documents:editPages', async (event, value) => {

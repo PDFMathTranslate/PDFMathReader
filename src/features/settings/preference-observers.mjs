@@ -28,6 +28,9 @@ export function installReaderPreferenceObservers({ bindings }) {
   });
   for (const setting of bindings.informationCategorySettings)
     watch(setting.value, (value) => localStorage.setItem(setting.key, String(value)));
+  watch(bindings.preferences.epubEnabled, (value) =>
+    localStorage.setItem('epubEnabled', String(value)),
+  );
   watch(bindings.emphasizeInformation, (value) =>
     localStorage.setItem('emphasizeInformation', String(value)),
   );
@@ -39,6 +42,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.documentOpenMode,
       bindings.restoreDocuments,
       bindings.preferences.formulaOcrEnabled,
+      bindings.preferences.epubEnabled,
       bindings.defaultPageCropEnabled,
       bindings.defaultPageCropX,
       bindings.defaultPageCropY,

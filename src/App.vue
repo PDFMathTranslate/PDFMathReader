@@ -221,6 +221,7 @@ const {
   zoomEntry,
   zoomEntryInput,
   zoomInput,
+  epubEnabled,
 } = useReaderWindow();
 const copyToastHeading = computed(() => copyToast.value.split('\n')[0]);
 const copyToastDetail = computed(() =>
@@ -317,7 +318,9 @@ const copyToastDetail = computed(() =>
       <input
         ref="fileInput"
         type="file"
-        accept="application/pdf,.pdf"
+        :accept="
+          epubEnabled ? 'application/pdf,.pdf,application/epub+zip,.epub' : 'application/pdf,.pdf'
+        "
         hidden
         @change="
           importFile($event.target.files[0]);

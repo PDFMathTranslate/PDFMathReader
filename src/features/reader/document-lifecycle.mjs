@@ -29,8 +29,26 @@ export function createDocumentLifecycle({
     session.receivingDocuments = true;
     try {
       let document;
-      while ((document = await window.previewDocuments.next())) {
+      for (;;) {
+        // EPUB conversion happens inside next(); show progress in a blank window
+        // without flashing it for ordinary instant deliveries.
+        let shown = false;
+        const timer =
+          !session.pages.value.length && !session.loading.value
+            ? setTimeout(() => {
+                shown = true;
+                session.loading.value = true;
+              }, 150)
+            : null;
+        try {
+          document = await window.previewDocuments.next();
+        } finally {
+          clearTimeout(timer);
+          if (shown) session.loading.value = false;
+        }
+        if (!document) break;
         if (document.error) {
+          if (!session.pages.value.length) session.loading.value = false;
           feedback.error.value = document.error;
           continue;
         }
