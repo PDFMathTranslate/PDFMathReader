@@ -3,6 +3,10 @@ import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';
 import { nextTick } from 'vue';
 import { animateParagraphGaps } from './paragraph-gap-motion.mjs';
 
+// A visible page left empty after a pass is painted again, a few times and with a growing pause.
+const PAINT_RETRIES = 3;
+const PAINT_RETRY_MS = 200;
+
 export function createCanvasRendering({
   renderState,
   session,
@@ -13,6 +17,8 @@ export function createCanvasRendering({
   actions,
   watermarkRemoval,
 }) {
+  let paintRetryTimer;
+
   function releaseCanvas(canvas) {
     if (!canvas) return;
     canvas.paragraphGapCleanup?.();
@@ -24,6 +30,7 @@ export function createCanvasRendering({
   }
 
   function resetBitmaps() {
+    clearTimeout(paintRetryTimer);
     renderState.bitmapFrames.clear();
     // Bitmap eviction must retain the mounted sidebar window so foreground
     // resume can repaint it even when its scroll position has not changed.
@@ -177,6 +184,8 @@ export function createCanvasRendering({
       current = renderState.pageTasks.get(canvas);
     if (
       cached?.page === page &&
+      // An emptied canvas must repaint even though its cache entry survived.
+      canvas.width &&
       cached.scale === scale &&
       cached.dpr >= dpr &&
       cached.cropKey === cropKey &&
@@ -325,7 +334,7 @@ export function createCanvasRendering({
     }
   }
 
-  async function renderPages(animate = false, force = false, viewportOverride = null) {
+  async function renderPages(animate = false, force = false, viewportOverride = null, retry = 0) {
     if (!activity.foreground.value || (!force && motion.fitResizing)) return;
     if (viewportOverride === null) renderState.scheduledViewport = null;
     await nextTick();
@@ -397,19 +406,41 @@ export function createCanvasRendering({
     };
     // A slow page must not leave its visible neighbour blank. Keep two paint
     // lanes for visible pages; prefetch starts only after those lanes finish.
+    // One page that cannot be drawn must not abort the pass for the pages after it.
+    const paint = async (source) => {
+      try {
+        await renderPage(source);
+      } catch (error) {
+        console.error('Page ' + source.number + ' could not be drawn', error);
+      }
+    };
     const visible = ordered.filter((p) => renderState.visiblePages.has(p.number));
     let next = 0;
     await Promise.all(
       Array.from({ length: Math.min(2, visible.length) }, async () => {
         while (next < visible.length && token === renderState.renderEpoch)
-          await renderPage(visible[next++]);
+          await paint(visible[next++]);
       }),
     );
     for (const source of ordered) {
       if (token !== renderState.renderEpoch) return;
-      if (!renderState.visiblePages.has(source.number)) await renderPage(source);
+      if (!renderState.visiblePages.has(source.number)) await paint(source);
     }
     if (token !== renderState.renderEpoch) return;
+    // Nothing else repaints a visible page that came out empty until the next scroll or zoom.
+    if (
+      retry < PAINT_RETRIES &&
+      visible.some((p) => {
+        const canvas = renderState.canvasEls.get(p.number);
+        return canvas?.isConnected && !canvas.width && renderState.visiblePages.has(p.number);
+      })
+    ) {
+      clearTimeout(paintRetryTimer);
+      paintRetryTimer = setTimeout(
+        () => void renderPages(false, force, null, retry + 1),
+        PAINT_RETRY_MS * 2 ** retry,
+      );
+    }
     if (actions.readerFit.updateReaderInsets() && view.fitMode.value !== 'manual')
       actions.readerFit.applyFit();
   }

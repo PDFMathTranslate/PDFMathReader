@@ -40,14 +40,21 @@ export function createWatermarkRemoval({ session, preferences, loadRuntime, onTo
   }
 
   // The document's own pages teach what recurs; a page of any other document (a
-  // translated copy) is judged on its own.
+  // translated copy) is judged on its own. A sampled page is read only for its operators;
+  // pdf.js keeps its decoded images (a page-sized watermark is tens of megabytes) until the
+  // page is cleaned up, so they are released unless that page is the one about to be drawn.
   async function modelFor(page, own, OPS) {
     if (!own) return buildModel([await scan(page, OPS)]);
     if (!models.has(own))
       models.set(
         own,
         Promise.all(
-          samplePages(own.numPages).map(async (n) => scan(await own.getPage(n), OPS)),
+          samplePages(own.numPages).map(async (n) => {
+            const sample = await own.getPage(n),
+              found = await scan(sample, OPS);
+            if (sample !== page) sample.cleanup?.();
+            return found;
+          }),
         ).then(buildModel),
       );
     return models.get(own);

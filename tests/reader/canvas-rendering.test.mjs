@@ -281,3 +281,72 @@ test('bitmap eviction preserves the thumbnail window for foreground repaint', as
     f.restore();
   }
 });
+
+for (const [shape, fail] of [
+  ['a rejected render task', () => ({ promise: Promise.reject(Error('boom')), cancel() {} })],
+  [
+    'a render call that throws',
+    () => {
+      throw Error('boom');
+    },
+  ],
+]) {
+  test(`${shape} neither aborts the pass nor leaves its visible page blank`, async () => {
+    const f = fixture(),
+      render = f.pdfPages[1].render,
+      error = console.error;
+    let attempts = 0;
+    f.pdfPages[1].render = (options) => (attempts++ ? render(options) : fail());
+    console.error = () => {};
+    try {
+      await f.renderer.renderPages();
+      assert.ok(f.state.canvasEls.get(1).width > 0);
+      assert.ok(f.state.canvasEls.get(3).width > 0, 'pages after the failure still paint');
+      assert.equal(f.state.canvasEls.get(2).width, 0);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      assert.ok(f.state.canvasEls.get(2).width > 0, 'the empty visible page is painted again');
+      assert.equal(attempts, 2);
+    } finally {
+      console.error = error;
+      f.renderer.resetBitmaps();
+      f.restore();
+    }
+  });
+}
+
+test('a visible page that stays empty is retried a bounded number of times', async () => {
+  const f = fixture(),
+    error = console.error;
+  let attempts = 0;
+  f.pdfPages[1].render = () => {
+    attempts++;
+    return { promise: Promise.reject(Error('boom')), cancel() {} };
+  };
+  console.error = () => {};
+  try {
+    await f.renderer.renderPages();
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    assert.equal(attempts, 4);
+    assert.equal(f.state.canvasEls.get(2).width, 0);
+  } finally {
+    console.error = error;
+    f.renderer.resetBitmaps();
+    f.restore();
+  }
+});
+
+test('a cached frame is not trusted once its canvas has been emptied', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1);
+  try {
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
+    target.width = target.height = 0;
+    f.pdfPages[0].render = () => {
+      throw Error('The shared bitmap must be reused');
+    };
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
+    assert.ok(target.width > 0);
+  } finally {
+    f.restore();
+  }
+});
