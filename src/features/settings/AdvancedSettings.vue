@@ -12,11 +12,12 @@ import { t, advancedOptionText, advancedChoiceText } from '../../i18n/index.mjs'
 import DeveloperOptions from '../developer/DeveloperOptions.vue';
 import RecentDebugLogs from '../developer/RecentDebugLogs.vue';
 import UltraFastFontSettings from './UltraFastFontSettings.vue';
-import { GPU_INFERENCE_OPTION } from '../../../shared/gpu-inference.mjs';
 
 const SUPPORTED_ENGINES = ['pdf_math_fast', 'pdf_math_precise'];
 const INVALID = Symbol('invalid-advanced-value');
 const SERVICE_OPTIONS = ['prompt', 'custom_system_prompt'];
+// Edited elsewhere (Performance); kept untouched here.
+const PRESERVED_OPTIONS = [...SERVICE_OPTIONS, 'prefer_gpu'];
 const props = defineProps({
   engine: { type: String, default: '' },
   engineState: { type: Object, default: null },
@@ -85,7 +86,7 @@ function normalize(option, value, { emptyToDefault = true } = {}) {
 
 function sanitize(raw) {
   const next = Object.fromEntries(
-    Object.entries(raw || {}).filter(([id]) => SERVICE_OPTIONS.includes(id)),
+    Object.entries(raw || {}).filter(([id]) => PRESERVED_OPTIONS.includes(id)),
   );
   for (const option of options.value) {
     if (!Object.prototype.hasOwnProperty.call(raw || {}, option.id)) continue;
@@ -112,7 +113,7 @@ function effectiveValue(option) {
 }
 
 const hasOverrides = computed(() =>
-  Object.keys(sanitize(values.value)).some((id) => !SERVICE_OPTIONS.includes(id)),
+  Object.keys(sanitize(values.value)).some((id) => !PRESERVED_OPTIONS.includes(id)),
 );
 
 function emitValues(nextValues) {
@@ -126,7 +127,7 @@ function emitValues(nextValues) {
 function update(option, value) {
   const nextValue = normalize(option, value);
   if (nextValue === INVALID) return;
-  const next = option.id === 'prefer_gpu' ? { ...values.value } : sanitize(values.value);
+  const next = sanitize(values.value);
   if (nextValue === '' || sameValue(nextValue, option.default, option.type)) delete next[option.id];
   else next[option.id] = nextValue;
   emitValues(next);
@@ -134,7 +135,9 @@ function update(option, value) {
 
 function reset() {
   emitValues(
-    Object.fromEntries(Object.entries(values.value).filter(([id]) => SERVICE_OPTIONS.includes(id))),
+    Object.fromEntries(
+      Object.entries(values.value).filter(([id]) => PRESERVED_OPTIONS.includes(id)),
+    ),
   );
 }
 
@@ -146,7 +149,7 @@ function normalizeSchema(raw) {
       !option ||
       typeof option.id !== 'string' ||
       !option.id ||
-      ['lang_in', 'lang_out', ...SERVICE_OPTIONS].includes(option.id) ||
+      ['lang_in', 'lang_out', ...PRESERVED_OPTIONS].includes(option.id) ||
       seen.has(option.id) ||
       !['boolean', 'number', 'string'].includes(option.type)
     )
@@ -172,7 +175,7 @@ watch(
   async () => {
     const token = ++generation;
     requestController?.abort();
-    options.value = eligible.value && expanded.value ? [{ ...GPU_INFERENCE_OPTION }] : [];
+    options.value = [];
     message.value = '';
     busy.value = false;
     if (!eligible.value || !expanded.value || props.installing) return;
@@ -203,7 +206,7 @@ watch(
           });
       } while (result.pending && token === generation && !controller.signal.aborted);
       if (token === generation) {
-        options.value = normalizeSchema([GPU_INFERENCE_OPTION, ...result.options]);
+        options.value = normalizeSchema(result.options);
         if (!result.reason) {
           const normalized = sanitize(values.value);
           if (!sameMap(values.value, normalized)) emitValues(normalized);

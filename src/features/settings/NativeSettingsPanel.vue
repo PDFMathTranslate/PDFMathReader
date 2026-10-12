@@ -21,13 +21,13 @@ import TranslationLanguageSelect from './TranslationLanguageSelect.vue';
 import DeveloperOptions from '../developer/DeveloperOptions.vue';
 import AboutVersionInfo from './AboutVersionInfo.vue';
 import AboutAcknowledgements from './AboutAcknowledgements.vue';
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 const SettingsWorkspace = defineAsyncComponent(() => import('./SettingsWorkspace.vue'));
 const AppearanceSettings = defineAsyncComponent(() => import('./AppearanceSettings.vue'));
 const ProviderSettings = defineAsyncComponent(() => import('./ProviderSettings.vue'));
 const AdvancedSettings = defineAsyncComponent(() => import('./AdvancedSettings.vue'));
 const ShortcutSettings = defineAsyncComponent(() => import('./ShortcutSettings.vue'));
-defineProps([
+const props = defineProps([
   'effectiveTranslationSummary',
   'settingsWindowMode',
   'closeSettingsWindow',
@@ -102,6 +102,15 @@ const translationServices = defineModel('translationServices');
 const serviceCredentialValues = defineModel('serviceCredentialValues');
 const translationServiceRequest = defineModel('translationServiceRequest');
 const kernelAdvancedOptions = defineModel('kernelAdvancedOptions');
+// GPU inference is stored per kernel next to the other kernel options.
+const gpuSupported = computed(() => ['pdf_math_fast', 'pdf_math_precise'].includes(props.engine));
+const preferGpu = computed(() => kernelAdvancedOptions.value?.[props.engine]?.prefer_gpu === true);
+function setPreferGpu(value) {
+  const current = { ...kernelAdvancedOptions.value?.[props.engine] };
+  if (value) current.prefer_gpu = true;
+  else delete current.prefer_gpu;
+  kernelAdvancedOptions.value = { ...kernelAdvancedOptions.value, [props.engine]: current };
+}
 const keyEntry = defineModel('keyEntry');
 </script>
 
@@ -282,6 +291,9 @@ const keyEntry = defineModel('keyEntry');
           v-if="settingsSection === 'performance'"
           v-model:reduce-resource-usage="reduceResourceUsage"
           v-model:reduce-background-frame-rate="reduceBackgroundFrameRate"
+          :prefer-gpu="preferGpu"
+          :gpu-supported="gpuSupported"
+          @update:prefer-gpu="setPreferGpu"
         />
       </template>
       <template #appearance>

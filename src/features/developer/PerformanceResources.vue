@@ -1,12 +1,19 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
 import { AppButton, AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
-import { t, uiLanguage } from '../../i18n/index.mjs';
+import { t, uiLanguage, advancedOptionText } from '../../i18n/index.mjs';
+import { GPU_INFERENCE_OPTION } from '../../../shared/gpu-inference.mjs';
 const props = defineProps({
   reduceResourceUsage: Boolean,
   reduceBackgroundFrameRate: { type: Boolean, default: true },
+  preferGpu: Boolean,
+  gpuSupported: Boolean,
 });
-const emit = defineEmits(['update:reduceResourceUsage', 'update:reduceBackgroundFrameRate']);
+const emit = defineEmits([
+  'update:reduceResourceUsage',
+  'update:reduceBackgroundFrameRate',
+  'update:preferGpu',
+]);
 const words = {
   en: [
     'Resources',
@@ -428,6 +435,17 @@ onBeforeUnmount(() => {
           @update:model-value="emit('update:reduceBackgroundFrameRate', $event)"
         />
       </div>
+      <template v-if="gpuSupported">
+        <div class="setting-row" data-setting="prefer-gpu">
+          <span id="prefer-gpu-label">{{ advancedOptionText(GPU_INFERENCE_OPTION, 'label') }}</span
+          ><AppSwitch
+            :model-value="props.preferGpu"
+            aria-labelledby="prefer-gpu-label"
+            @update:model-value="emit('update:preferGpu', $event)"
+          />
+        </div>
+        <p class="muted">{{ advancedOptionText(GPU_INFERENCE_OPTION, 'help') }}</p>
+      </template>
     </div>
   </section>
   <section class="settings-section performance-cache" aria-labelledby="settings-cache">
