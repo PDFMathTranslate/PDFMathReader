@@ -2,8 +2,51 @@ import express from 'express';
 import { kernelTranslationSpacing } from '../../shared/translation/spacing.mjs';
 import { CHATGPT_INFERENCE_TIMEOUT_MS } from '../../shared/translation/timeouts.mjs';
 import { FREE_SERVICE_TIMEOUT_MS } from '../translation/translation-provider.mjs';
+import { classifyParagraphContinuation } from '../translation/paragraph-continuation.mjs';
 
-export function registerProxyRoutes(app, { limiter, proxyJobs, localTranslator, providerClient }) {
+const FALLBACK_CONTINUATION = { combine: false, status: 'fallback' };
+
+export function registerProxyRoutes(
+  app,
+  {
+    limiter,
+    proxyJobs,
+    localTranslator,
+    providerClient,
+    classifyParagraphContinuation: classify = classifyParagraphContinuation,
+  },
+) {
+  app.post(
+    '/kernel-proxy/v1/paragraph-continuation',
+    express.json({ limit: '128kb' }),
+    async (req, res) => {
+      const job = proxyJobs.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
+      if (!job || job.paragraphContinuationEnabled !== true) return res.sendStatus(403);
+      let result;
+      try {
+        result = await limiter.run(
+          () =>
+            classify({
+              before: req.body?.before,
+              after: req.body?.after,
+              layout: req.body?.layout,
+              token: job.paragraphContinuationToken,
+            }),
+          {
+            signal: job.controller.signal,
+            meta: { kind: 'paragraph-continuation', kernel: job.kernel },
+          },
+        );
+      } catch {
+        result = null;
+      }
+      res.json(
+        result?.status === 'classified' && typeof result.combine === 'boolean'
+          ? result
+          : FALLBACK_CONTINUATION,
+      );
+    },
+  );
   app.post('/kernel-proxy/v1/translate', express.json({ limit: '1mb' }), async (req, res) => {
     const job = proxyJobs.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
     if (!job || job.provider.id !== 'apple-local') return res.sendStatus(403);

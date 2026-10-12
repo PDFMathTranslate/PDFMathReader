@@ -35,22 +35,70 @@ test('classifies continuation at the conservative threshold and sends the docume
   assert.equal(request.options.headers.Authorization, 'Bearer custom-token');
   assert.equal(request.options.headers['Content-Type'], 'application/json');
   const body = JSON.parse(request.options.body);
-  assert.deepEqual(body, {
-    model: 'jev-latest',
-    state: input,
-    questions: {
-      paragraph_continuation: {
-        type: 'noul',
-        instructions:
-          'Are `before` and `after` consecutive fragments of one paragraph that was split by the document layout?',
-        criteria: {
-          true: 'The fragments are semantically and grammatically continuous parts of one paragraph separated by an artificial document-layout boundary.',
-          false:
-            'The fragments mark an intentional paragraph boundary, a new topic, a list entry, a heading, a caption, or a footnote.',
-        },
+  assert.equal(body.model, 'jev-latest');
+  assert.deepEqual(body.state, input);
+  assert.equal(body.questions.paragraph_continuation.type, 'noul');
+  assert.ok(body.questions.paragraph_continuation.instructions.includes('complete sentences'));
+});
+
+test('sends only bounded layout evidence to the classifier', async () => {
+  let request;
+  const result = await classifyParagraphContinuation(
+    {
+      ...input,
+      token: 'custom-token',
+      layout: {
+        sameColumn: true,
+        gapInEm: 0.25,
+        afterIndentInEm: 0,
+        lineHeightInEm: 1.2,
+        secret: 'must not leave the server',
       },
     },
+    {
+      env: {},
+      fetchImpl: async (url, options) => {
+        request = { url, options };
+        return response(answer(0.8));
+      },
+    },
+  );
+
+  assert.deepEqual(result, { combine: true, status: 'classified' });
+  const body = JSON.parse(request.options.body);
+  assert.deepEqual(body.state, {
+    ...input,
+    layout: { sameColumn: true, gapInEm: 0.25, afterIndentInEm: 0 },
   });
+});
+
+test('ignores malformed layout context without falling back or sending it', async () => {
+  let calls = 0;
+  let body;
+  const result = await classifyParagraphContinuation(
+    {
+      ...input,
+      token: 'custom-token',
+      layout: {
+        sameColumn: 'true',
+        gapInEm: Number.NaN,
+        afterIndentInEm: 4.01,
+        secret: 'must not leave the server',
+      },
+    },
+    {
+      env: {},
+      fetchImpl: async (_url, options) => {
+        calls++;
+        body = JSON.parse(options.body);
+        return response(answer(1));
+      },
+    },
+  );
+
+  assert.deepEqual(result, { combine: true, status: 'classified' });
+  assert.equal(calls, 1);
+  assert.deepEqual(body.state, input);
 });
 
 test('keeps fragments separate below the conservative threshold', async () => {
@@ -60,6 +108,30 @@ test('keeps fragments separate below the conservative threshold', async () => {
   });
 
   assert.deepEqual(result, { combine: false, status: 'classified' });
+});
+
+test('continuous rows support a related complete sentence while indentation retains the higher threshold', async () => {
+  const options = {
+    env: { TYPESAFE_API_KEY: 'fixture' },
+    fetchImpl: async () => response(answer(0.74)),
+  };
+  for (const [layout, combine] of [
+    [{ sameColumn: true, gapInEm: 0.25, afterIndentInEm: 0 }, true],
+    [{ sameColumn: true, gapInEm: 0.25, afterIndentInEm: 1 }, false],
+    [{ sameColumn: true, gapInEm: 1, afterIndentInEm: 0 }, false],
+    [{ sameColumn: false, gapInEm: 0.25, afterIndentInEm: 0 }, false],
+    [{ sameColumn: true, gapInEm: 0.25 }, false],
+  ]) {
+    assert.deepEqual(await classifyParagraphContinuation({ ...input, layout }, options), {
+      combine,
+      status: 'classified',
+    });
+  }
+  const uncertain = await classifyParagraphContinuation(
+    { ...input, layout: { sameColumn: true, gapInEm: 0.25, afterIndentInEm: 0 } },
+    { ...options, fetchImpl: async () => response(answer(0.69)) },
+  );
+  assert.equal(uncertain.combine, false);
 });
 
 test('uses the environment token when the custom token is blank', async () => {

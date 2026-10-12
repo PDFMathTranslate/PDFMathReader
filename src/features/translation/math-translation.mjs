@@ -60,6 +60,8 @@ export function createMathTranslation({
                 reuseTranslations: preferences.reuseTranslations.value,
                 remoteKernel,
                 forceRetranslation: translationState.forceRetranslation,
+                paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
+                jevApiToken: preferences.jevApiToken.value,
                 glossary: provider.activeGlossary.value,
                 advancedOptions: actions.preferencePersistence.currentKernelAdvancedOptions(),
                 translationService: provider.currentTranslationService.value,

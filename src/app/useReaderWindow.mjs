@@ -330,7 +330,11 @@ export function useReaderWindow() {
     [preferences.paragraphContinuationDetection, preferences.jevApiToken],
     ([enabled], previous) => {
       featureActions.invalidateParagraphGroups();
-      if (preferences.loadingPreferences || settingsWindowMode || engine.value !== 'pdf_inspector')
+      if (
+        preferences.loadingPreferences ||
+        settingsWindowMode ||
+        !['pdf_inspector', 'pdf_math_fast'].includes(engine.value)
+      )
         return;
       if (!enabled && !previous?.[0]) return;
       featureActions.resetTranslations();

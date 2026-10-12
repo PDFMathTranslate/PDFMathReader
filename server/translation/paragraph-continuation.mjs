@@ -3,6 +3,10 @@ const MODEL = 'jev-latest';
 const MAX_FRAGMENT_CHARACTERS = 6000;
 const MAX_TOKEN_CHARACTERS = 4096;
 const REQUEST_TIMEOUT_MS = 5000;
+const MIN_GAP_IN_EM = -0.25;
+const MAX_GAP_IN_EM = 3;
+const MIN_AFTER_INDENT_IN_EM = -4;
+const MAX_AFTER_INDENT_IN_EM = 4;
 
 const fallbackResult = () => ({ combine: false, status: 'fallback' });
 
@@ -29,19 +33,40 @@ function boundedInput(before, after) {
   return { before, after };
 }
 
-function requestBody(before, after) {
+function boundedLayout(layout) {
+  if (!layout || typeof layout !== 'object' || Array.isArray(layout)) return undefined;
+  const bounded = {};
+  if (typeof layout.sameColumn === 'boolean') bounded.sameColumn = layout.sameColumn;
+  if (
+    typeof layout.gapInEm === 'number' &&
+    Number.isFinite(layout.gapInEm) &&
+    layout.gapInEm >= MIN_GAP_IN_EM &&
+    layout.gapInEm <= MAX_GAP_IN_EM
+  )
+    bounded.gapInEm = layout.gapInEm;
+  if (
+    typeof layout.afterIndentInEm === 'number' &&
+    Number.isFinite(layout.afterIndentInEm) &&
+    layout.afterIndentInEm >= MIN_AFTER_INDENT_IN_EM &&
+    layout.afterIndentInEm <= MAX_AFTER_INDENT_IN_EM
+  )
+    bounded.afterIndentInEm = layout.afterIndentInEm;
+  return Object.keys(bounded).length ? bounded : undefined;
+}
+
+function requestBody(before, after, layout) {
   return {
     model: MODEL,
-    state: { before, after },
+    state: { before, after, ...(layout ? { layout } : {}) },
     questions: {
       paragraph_continuation: {
         type: 'noul',
         instructions:
-          'Are `before` and `after` consecutive fragments of one paragraph that was split by the document layout?',
+          'Should these adjoining text fragments be translated as one continuous body paragraph? A paragraph can contain several complete sentences. When layout is supplied, gapInEm is the empty vertical gap measured in font sizes and afterIndentInEm is the next first-line indentation. Same-column text with a normal row gap (about 0.25 em) and zero indentation is strong evidence of a continuation. A following sentence about the same data, methods, or results can continue the paragraph even when the previous sentence is complete. Use text and layout evidence; a period alone is not a paragraph boundary.',
         criteria: {
-          true: 'The fragments are semantically and grammatically continuous parts of one paragraph separated by an artificial document-layout boundary.',
+          true: 'The next fragment continues the same body paragraph, within a sentence or between related complete sentences. With matching font, same-column placement, a normal row gap and no new first-line indentation, related sentences should be combined unless there is explicit evidence of a new paragraph.',
           false:
-            'The fragments mark an intentional paragraph boundary, a new topic, a list entry, a heading, a caption, or a footnote.',
+            'There is evidence of an intentional paragraph boundary such as extra paragraph spacing, new first-line indentation, a distinct unrelated subject, a list entry, a heading, a caption, or a footnote. A new sentence expanding on the same subject, or a period in before, is not sufficient evidence of a new paragraph.',
         },
       },
     },
@@ -98,20 +123,28 @@ function noulAnswer(data) {
 }
 
 export async function classifyParagraphContinuation(
-  { before, after, token } = {},
+  { before, after, layout, token } = {},
   { fetchImpl = fetch, env = process.env } = {},
 ) {
   const input = boundedInput(before, after);
   const credential = resolveToken(token, env);
   if (!input || !credential) return fallbackResult();
+  const safeLayout = boundedLayout(layout);
 
   const data = await requestClassification(
     fetchImpl,
     credential,
-    requestBody(input.before, input.after),
+    requestBody(input.before, input.after, safeLayout),
   );
   const answer = noulAnswer(data);
   if (answer === null) return fallbackResult();
 
-  return { combine: answer >= 0.8, status: 'classified' };
+  const continuousRows =
+    safeLayout?.sameColumn === true &&
+    typeof safeLayout.gapInEm === 'number' &&
+    safeLayout.gapInEm >= 0 &&
+    safeLayout.gapInEm <= 0.5 &&
+    typeof safeLayout.afterIndentInEm === 'number' &&
+    Math.abs(safeLayout.afterIndentInEm) <= 0.2;
+  return { combine: answer >= (continuousRows ? 0.7 : 0.8), status: 'classified' };
 }

@@ -95,6 +95,228 @@ def fast_progress_map(executor, worker, paragraphs):
     return executor.map(counted, paragraphs)
 
 
+def fast_combine_paragraph_text(texts):
+    """Join source fragments while preserving word and CJK boundaries."""
+    cjk = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]")
+    result = ""
+    for value in texts:
+        next_text = str(value or "").strip()
+        if not next_text:
+            continue
+        if not result:
+            result = next_text
+            continue
+        if (
+            len(result) > 1
+            and result[-1] in "-\u00ad"
+            and result[-2].isalpha()
+            and next_text[0].isalpha()
+        ):
+            result = result[:-1] + next_text
+        elif cjk.search(result[-1]) and cjk.search(next_text[0]):
+            result += next_text
+        else:
+            result += " " + next_text
+    return result
+
+
+def fast_paragraph_continuation_candidate(before_text, after_text, before, after):
+    """Bound Jev requests to adjacent prose with compatible page geometry."""
+    if not isinstance(before_text, str) or not isinstance(after_text, str):
+        return False
+    before_text, after_text = before_text.strip(), after_text.strip()
+    if not before_text or not after_text:
+        return False
+    if len(before_text) > 6000 or len(after_text) > 6000:
+        return False
+    formula = re.compile(r"^\{+\s*v\d+\s*\}+$", re.IGNORECASE)
+    if formula.fullmatch(before_text) or formula.fullmatch(after_text):
+        return False
+    barrier = re.compile(
+        r"^\s*(?:[•●▪◦]|\d+[.)、]\s|[（(]\d+[）)]\s|fig(?:ure)?\.?\s*\d|table\s*\d|图\s*\d|表\s*\d)",
+        re.IGNORECASE,
+    )
+    if barrier.search(before_text) or barrier.search(after_text):
+        return False
+    heading = re.compile(
+        r"^(?:abstract|introduction|keywords|references|conclusions?|discussion|results|methods|acknowledg(?:e)?ments|摘要|关键词|参考文献|结论)\s*[:：]?$",
+        re.IGNORECASE,
+    )
+    if heading.fullmatch(before_text) or heading.fullmatch(after_text):
+        return False
+
+    fields = ("x0", "x1", "y0", "y1", "size")
+    values = [getattr(item, field, None) for item in (before, after) for field in fields]
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in values):
+        return False
+    if any(not math.isfinite(float(value)) for value in values):
+        return False
+    before_size, after_size = float(before.size), float(after.size)
+    size = max(1.0, before_size, after_size)
+    if abs(before_size - after_size) > max(1.0, size * 0.12):
+        return False
+
+    # pdfminer uses a bottom-left page frame. A same-line split is adjacent in x;
+    # a wrapped continuation is below it and starts in the same column.
+    y_overlap = min(float(before.y1), float(after.y1)) - max(float(before.y0), float(after.y0))
+    x_gap = float(after.x0) - float(before.x1)
+    same_line_height = abs(float(after.y1) - (float(before.y0) + size))
+    if y_overlap >= size * 0.5 and same_line_height <= size * 0.5 and -size <= x_gap <= size * 1.5:
+        return True
+    vertical_gap = float(before.y0) - float(after.y1)
+    aligned = abs(float(after.x0) - float(before.x0)) <= size * 4
+    return -size * 0.25 <= vertical_gap <= size * 3 and aligned
+
+
+def fast_classify_paragraph_continuation(before, after, url, token, layout=None, timeout=7):
+    """Ask the app-owned gateway whether two bounded fragments are continuous."""
+    if (
+        not isinstance(url, str)
+        or not url.strip()
+        or not isinstance(token, str)
+        or not token.strip()
+    ):
+        return False
+    if not isinstance(before, str) or not isinstance(after, str):
+        return False
+    if not before.strip() or not after.strip() or len(before) > 6000 or len(after) > 6000:
+        return False
+    import urllib.request
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(
+            {"before": before, "after": after, "layout": layout}, ensure_ascii=False
+        ).encode("utf-8"),
+        headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            if getattr(response, "status", 200) != 200:
+                return False
+            value = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return False
+    return (
+        isinstance(value, dict)
+        and value.get("status") == "classified"
+        and value.get("combine") is True
+    )
+
+
+def fast_group_paragraphs(texts, paragraphs, url, token, variables=None):
+    """Resolve bounded same-page groups before Fast submits translation work."""
+    texts, paragraphs = list(texts), list(paragraphs)
+    if len(texts) != len(paragraphs) or len(texts) < 2 or not url or not token:
+        return texts, paragraphs
+
+    # Fast sometimes gives space glyphs their own layout class and paragraph.
+    # They are invisible in the captured text layer and must not hide adjacency
+    # between real prose fragments. Formula placeholders remain barriers.
+    nonempty = [(text, paragraph) for text, paragraph in zip(texts, paragraphs) if text.strip()]
+    if not nonempty:
+        return texts, paragraphs
+    texts, paragraphs = map(list, zip(*nonempty))
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def judgment_text(text):
+        def restore(match):
+            index = int(match.group(1))
+            if variables is None or index >= len(variables):
+                return match.group(0)
+            return "".join(character.get_text() for character in variables[index])
+
+        return re.sub(r"\{+\s*v(\d+)\s*\}+", restore, text)
+
+    def layout_context(before, after):
+        size = max(1, float(before.size), float(after.size))
+        aligned = abs(float(after.x0) - float(before.x0)) <= size * 4
+        return {
+            "sameColumn": aligned,
+            "gapInEm": max(-0.25, min(3, (float(before.y0) - float(after.y1)) / size)),
+            "afterIndentInEm": max(-4, min(4, (float(after.x) - float(before.x0)) / size)),
+        }
+
+    candidates = {
+        index: (
+            judgment_text(texts[index]),
+            judgment_text(texts[index + 1]),
+            layout_context(paragraphs[index], paragraphs[index + 1]),
+        )
+        for index in range(len(texts) - 1)
+        if fast_paragraph_continuation_candidate(
+            texts[index], texts[index + 1], paragraphs[index], paragraphs[index + 1]
+        )
+    }
+    # Keep a pathological page from creating an unbounded pre-translation queue.
+    candidates = dict(list(candidates.items())[:256])
+    decisions = {}
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(
+                fast_classify_paragraph_continuation, before, after, url, token, layout
+            ): index
+            for index, (before, after, layout) in candidates.items()
+        }
+        for future in as_completed(futures):
+            index = futures[future]
+            try:
+                decisions[index] = future.result()
+            except Exception:
+                decisions[index] = False
+
+    from copy import copy
+
+    def build(indices):
+        if len(indices) == 1:
+            return texts[indices[0]], paragraphs[indices[0]]
+        merged = copy(paragraphs[indices[0]])
+        merged.x0 = min(float(paragraphs[index].x0) for index in indices)
+        merged.x1 = max(float(paragraphs[index].x1) for index in indices)
+        merged.y0 = min(float(paragraphs[index].y0) for index in indices)
+        merged.y1 = max(float(paragraphs[index].y1) for index in indices)
+        merged.brk = any(bool(getattr(paragraphs[index], "brk", False)) for index in indices)
+        if not merged.brk:
+            merged.brk = any(
+                not fast_paragraph_continuation_candidate(
+                    texts[index], texts[index + 1], paragraphs[index], paragraphs[index + 1]
+                )
+                or min(float(paragraphs[index].y1), float(paragraphs[index + 1].y1))
+                - max(float(paragraphs[index].y0), float(paragraphs[index + 1].y0))
+                < -max(1.0, float(paragraphs[index].size) * 0.25)
+                for index in indices[:-1]
+            )
+        merged._preview_source_indices = list(indices)
+        merged._preview_source_texts = [texts[index] for index in indices]
+        return fast_combine_paragraph_text(merged._preview_source_texts), merged
+
+    grouped_texts, grouped_paragraphs = [], []
+    current = [0]
+    for index in range(1, len(texts)):
+        candidate = decisions.get(index - 1, False)
+        combined = fast_combine_paragraph_text([texts[item] for item in (*current, index)])
+        if (
+            candidate
+            and len(current) < 16
+            and len(combined) <= 20000
+            and fast_paragraph_continuation_candidate(
+                texts[index - 1], texts[index], paragraphs[index - 1], paragraphs[index]
+            )
+        ):
+            current.append(index)
+        else:
+            text, paragraph = build(current)
+            grouped_texts.append(text)
+            grouped_paragraphs.append(paragraph)
+            current = [index]
+    text, paragraph = build(current)
+    grouped_texts.append(text)
+    grouped_paragraphs.append(paragraph)
+    return grouped_texts, grouped_paragraphs
+
+
 def emit_precise_progress(event):
     """Forward BabelDOC's native overall progress and stage counters."""
     if not isinstance(event, dict):
@@ -666,6 +888,7 @@ def main(capture_only=False):
             count = 0
             indent_count = 0
             prose_count = 0
+            grouping_count = 0
 
             def visit_FunctionDef(self, node):
                 self.generic_visit(node)
@@ -676,6 +899,19 @@ def main(capture_only=False):
                             "_preview_prose = set() if self.vfont else _preview_italic_prose(ltpage)"
                         ).body[0],
                     )
+                    worker_indices = [
+                        index
+                        for index, child in enumerate(node.body)
+                        if isinstance(child, ast.FunctionDef) and child.name == "worker"
+                    ]
+                    if len(worker_indices) == 1:
+                        node.body.insert(
+                            worker_indices[0] + 1,
+                            ast.parse(
+                                "sstk, pstk = _preview_group_paragraphs(sstk, pstk, _preview_group_url, _preview_group_token, var)"
+                            ).body[0],
+                        )
+                        self.grouping_count += 1
                 return node
 
             def visit_Call(self, node):
@@ -810,12 +1046,22 @@ def main(capture_only=False):
 
         injector = CaptureParagraph()
         tree = injector.visit(tree)
-        if injector.count != 1 or injector.indent_count != 1 or injector.prose_count != 1:
+        if (
+            injector.count != 1
+            or injector.indent_count != 1
+            or injector.prose_count != 1
+            or injector.grouping_count != 1
+        ):
             raise RuntimeError("Fast paragraph capture is incompatible with this kernel version")
         namespace = {
             **original.__globals__,
             "_preview_capture": capture,
             "_preview_progress_map": fast_progress_map,
+            "_preview_group_paragraphs": fast_group_paragraphs,
+            "_preview_group_url": os.environ.get("PDFMATHREADER_PARAGRAPH_CONTINUATION_URL", ""),
+            "_preview_group_token": os.environ.get(
+                "PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN", ""
+            ),
             "_preview_indent": fast_paragraph_indent,
             "_preview_wrap_advance": fast_typography_advance,
             "_preview_italic_prose": fast_italic_prose_characters,

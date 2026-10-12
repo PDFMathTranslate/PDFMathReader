@@ -368,3 +368,63 @@ test('kernel stdout progress reaches the per-request callback independently of d
   assert.equal(progress.length, 1);
   assert.equal(progress[0].percent, 50);
 });
+
+test('Fast paragraph continuation config uses only the ephemeral proxy token', async (t) => {
+  const enabled = await fixture(t, (child) => {
+    assert.equal(
+      child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_URL,
+      'https://example.test/paragraph-continuation',
+    );
+    assert.equal(child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN, 'test-secret');
+    child.emit('close', 1, null);
+  });
+  await assert.rejects(enabled.translate({ paragraphContinuationDetection: true }), /exit code 1/);
+
+  const disabled = await fixture(t, (child) => {
+    assert.equal(child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_URL, undefined);
+    assert.equal(child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN, undefined);
+    child.emit('close', 1, null);
+  });
+  await assert.rejects(
+    disabled.translate({ paragraphContinuationDetection: false }),
+    /exit code 1/,
+  );
+
+  const precise = await fixture(t, (child) => {
+    assert.equal(child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_URL, undefined);
+    assert.equal(child.spawnOptions.env.PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN, undefined);
+    child.emit('close', 1, null);
+  });
+  await assert.rejects(
+    precise.translate({ id: 'pdf_math_precise', paragraphContinuationDetection: true }),
+    /exit code 1/,
+  );
+});
+
+test('Fast paragraph continuation partitions cache identities and rejects legacy fallback artifacts', async (t) => {
+  const { PDFDocument } = await import('pdf-lib');
+  const pdf = await PDFDocument.create();
+  pdf.addPage();
+  const bytes = Buffer.from(await pdf.save());
+  let spawned = 0;
+  const data = await fixture(t, async (child) => {
+    spawned++;
+    const dir = dirname(child.spawnArgs[2]);
+    await writeFile(join(dir, 'result.mono.pdf'), bytes);
+    await writeFile(join(dir, 'layout.json'), JSON.stringify({ paragraphs: [] }));
+    child.emit('close', 0, null);
+  });
+
+  const ungrouped = await data.translate({ bytes, paragraphContinuationDetection: false });
+  assert.equal(ungrouped.cached, false);
+  const grouped = await data.translate({ bytes, paragraphContinuationDetection: true });
+  assert.equal(grouped.cached, false);
+  assert.equal(spawned, 2);
+
+  const ungroupedHit = await data.translate({
+    bytes,
+    paragraphContinuationDetection: false,
+    cacheOnly: true,
+  });
+  assert.equal(ungroupedHit.cached, true);
+});

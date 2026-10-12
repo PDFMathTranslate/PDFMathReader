@@ -4,6 +4,8 @@ import { isTranslationLanguageSupported } from '../../shared/translation/languag
 import { mathProviderOutcome } from '../translation/provider-outcome.mjs';
 import { normalizeRemoteKernelUrl } from '../kernels/remote-kernel.mjs';
 
+const MAX_JEV_TOKEN_CHARACTERS = 4096;
+
 export function registerKernelRoutes(
   app,
   {
@@ -107,6 +109,19 @@ export function registerKernelRoutes(
         const cacheOnly = Buffer.isBuffer(req.body) ? false : (req.body?.cacheOnly ?? false);
         if (typeof cacheOnly !== 'boolean')
           return res.status(400).json({ error: 'Invalid cache lookup preference' });
+        const paragraphContinuationDetection = Buffer.isBuffer(req.body)
+          ? false
+          : (req.body?.paragraphContinuationDetection ?? false);
+        if (typeof paragraphContinuationDetection !== 'boolean')
+          return res.status(400).json({ error: 'Invalid paragraph continuation preference' });
+        const suppliedJevApiToken = Buffer.isBuffer(req.body) ? undefined : req.body?.jevApiToken;
+        if (
+          suppliedJevApiToken !== undefined &&
+          (typeof suppliedJevApiToken !== 'string' ||
+            Array.from(suppliedJevApiToken).length > MAX_JEV_TOKEN_CHARACTERS)
+        )
+          return res.status(400).json({ error: 'Invalid Jev token' });
+        const jevApiToken = suppliedJevApiToken || '';
         const sourceLanguage = Buffer.isBuffer(req.body) ? undefined : req.body?.sourceLanguage;
         if (
           sourceLanguage !== undefined &&
@@ -168,6 +183,8 @@ export function registerKernelRoutes(
           return res.status(400).json({ error: 'Invalid progress request' });
         const controller = new AbortController();
         let queueMs = 0;
+        const paragraphContinuationEnabled =
+          engine === 'pdf_math_fast' && paragraphContinuationDetection;
         const cacheScope = await documentCache.scope(
           entry.documentHash || createHash('sha256').update(entry.bytes),
         );
@@ -185,6 +202,8 @@ export function registerKernelRoutes(
             provider,
             cacheScope,
             forceRetranslation,
+            paragraphContinuationEnabled,
+            paragraphContinuationToken: paragraphContinuationEnabled ? jevApiToken : '',
             providerCalls: 0,
             providerQueueMs: 0,
             providerAggregateMs: 0,
@@ -234,6 +253,7 @@ export function registerKernelRoutes(
             forceRetranslation,
             remoteKernel,
             cacheScope,
+            paragraphContinuationDetection: paragraphContinuationEnabled,
             onPageTiming: (timing) => {
               job.timing = timing;
             },

@@ -84,6 +84,7 @@ export function createTranslationRunner({
     reuseTranslations = false,
     forceRetranslation = false,
     cacheScope = '',
+    paragraphContinuationDetection = false,
     onPageTiming,
     onProgress,
     cacheOnly = false,
@@ -125,6 +126,9 @@ export function createTranslationRunner({
           ? 6
           : 4
         : 3;
+    const paragraphContinuationEnabled =
+      id === 'pdf_math_fast' && paragraphContinuationDetection === true;
+    const groupingIdentity = paragraphContinuationEnabled ? { paragraphGroupingSchema: 2 } : {};
     // This request index points to complete artifacts, so reopening does not
     // need Python discovery, option introspection, or the service catalog.
     // Only a digest is persisted; service values may contain credentials.
@@ -145,6 +149,7 @@ export function createTranslationRunner({
               ? { translationService: cacheSelection, serviceIdentity, localTranslation }
               : { compatible: 1 }),
             cacheScope,
+            ...groupingIdentity,
           }),
         )
         .digest('hex');
@@ -362,6 +367,7 @@ export function createTranslationRunner({
             ...(glossary.length ? { glossary } : {}),
             ...(cacheScope ? { cacheScope } : {}),
             layoutSchema,
+            ...groupingIdentity,
             ...(Object.keys(overrides).length ? { advancedOptions: overrides } : {}),
           }),
         )
@@ -372,7 +378,7 @@ export function createTranslationRunner({
       keyFor,
       compatibleKey: keyFor(undefined, currentLayoutSchema, false),
       fallbackKeyFors:
-        currentLayoutSchema >= 5
+        paragraphContinuationEnabled || currentLayoutSchema >= 5
           ? []
           : [(cacheModel) => keyFor(cacheModel, currentLayoutSchema - 1)],
       readResult: async (cachedKey) => {
@@ -463,6 +469,10 @@ export function createTranslationRunner({
           Object.assign(env, service.env);
         }
         if (localTranslation) env.PDFMATHREADER_LOCAL_TRANSLATION = '1';
+        if (paragraphContinuationEnabled) {
+          env.PDFMATHREADER_PARAGRAPH_CONTINUATION_URL = `${proxy.url}/paragraph-continuation`;
+          env.PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN = proxy.token;
+        }
         const args =
           id === 'pdf_math_fast'
             ? [
