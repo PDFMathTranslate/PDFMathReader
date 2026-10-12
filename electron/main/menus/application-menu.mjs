@@ -140,6 +140,12 @@ export function createApplicationMenu({
       const choice = item(id);
       if (choice) choice.enabled = !!registry.stateFor(target)?.performance.hasDocument;
     }
+    // Experimental: available only while the setting is on.
+    const generate = item('edit-generate-toc');
+    if (generate)
+      generate.enabled =
+        !!registry.stateFor(target)?.performance.hasDocument &&
+        preferences?.load?.().tocGenerationEnabled === true;
   };
   const normalizeMenuPath = (value) => {
     const path = Array.isArray(value) ? value : typeof value === 'string' ? [value] : null;
@@ -377,6 +383,16 @@ export function createApplicationMenu({
               undefined,
               'page-edit:align-height',
               'edit-align-height',
+            ),
+            enabled: false,
+          },
+          { type: 'separator' },
+          {
+            ...command(
+              'Generate Table of Contents',
+              undefined,
+              'generate-toc',
+              'edit-generate-toc',
             ),
             enabled: false,
           },

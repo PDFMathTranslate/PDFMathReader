@@ -14,6 +14,7 @@ export function createReferenceNavigation({
   actions,
 }) {
   async function loadOutline(document, token) {
+    actions.tocGeneration.resetTocGeneration();
     try {
       const items = await readOutline(document);
       if (token === session.epoch) shell.documentOutline.value = items;

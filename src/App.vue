@@ -52,6 +52,9 @@ const {
   documentOpenMode,
   documentOpening,
   documentOutline,
+  tocGeneration,
+  cancelTocGeneration,
+  dismissTocGeneration,
   effectiveTranslationSummary,
   emphasizeInformation,
   emphasizeTopicSentences,
@@ -340,6 +343,9 @@ const copyToastDetail = computed(() =>
         :sidebar-keyboard="sidebarKeyboard"
         :focus-sidebar-item="focusSidebarItem"
         :document-outline="documentOutline"
+        :toc-generation="tocGeneration"
+        :cancel-toc-generation="cancelTocGeneration"
+        :dismiss-toc-generation="dismissTocGeneration"
         :read-chapters="readChapters"
         :annotations="annotations"
         :selected-annotation="selectedAnnotation"

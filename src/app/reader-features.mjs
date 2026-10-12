@@ -24,6 +24,7 @@ import { createKernelSettings } from '../features/settings/kernel-settings.mjs';
 import { createAppearanceSettings } from '../features/settings/appearance.mjs';
 import { createCredentialSettings } from '../features/settings/credentials.mjs';
 import { createReaderCommands } from '../features/reader/reader-commands.mjs';
+import { createTocGeneration } from '../features/reader/toc-generation.mjs';
 import { createReaderPopovers } from '../features/reader/reader-popovers.mjs';
 import { createReaderInputs } from '../features/reader/reader-inputs.mjs';
 import { createReadingPosition } from '../features/reader/reading-position.mjs';
@@ -55,12 +56,23 @@ export function createReaderFeatures({
   credentials,
   rootActions,
 }) {
+  const tocGeneration = createTocGeneration({
+    session,
+    shell,
+    view,
+    preferences,
+    actions: createLazyPort({
+      rootActions: () => rootActions,
+      readerFit: () => readerFit,
+    }),
+  });
   const referenceNavigation = createReferenceNavigation({
     session,
     motion,
     renderState,
     preferences,
     actions: createLazyPort({
+      tocGeneration: () => tocGeneration,
       readingPosition: () => readingPosition,
       pageNavigation: () => pageNavigation,
       readerViewport: () => readerViewport,
@@ -263,6 +275,7 @@ export function createReaderFeatures({
       readingPosition: () => readingPosition,
       kernelSettings: () => kernelSettings,
       readerPopovers: () => readerPopovers,
+      tocGeneration: () => tocGeneration,
       canvasRendering: () => canvasRendering,
     }),
     feedback,
@@ -358,6 +371,7 @@ export function createReaderFeatures({
       readerFit: () => readerFit,
       readerPopovers: () => readerPopovers,
       referenceNavigation: () => referenceNavigation,
+      tocGeneration: () => tocGeneration,
     }),
     shell,
     view,
@@ -447,6 +461,7 @@ export function createReaderFeatures({
   return {
     watermarkRemoval,
     ...referenceNavigation,
+    ...tocGeneration,
     ...sidebarInteraction,
     ...pageNavigation,
     ...readerFit,

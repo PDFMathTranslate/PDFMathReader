@@ -592,6 +592,14 @@ for (const [locale, values] of Object.entries(pageEditLabels))
     Object.fromEntries(pageEditLabels.en.map((key, index) => [key, values[index]])),
   );
 
+// Other languages fall back to the English label.
+for (const [locale, value] of Object.entries({
+  en: 'Generate Table of Contents',
+  'zh-CN': '生成目录',
+  'zh-TW': '生成目錄',
+}))
+  menuMessages[locale]['Generate Table of Contents'] = value;
+
 function localeMessages(locale) {
   return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
 }

@@ -9,6 +9,7 @@ export function createPreferenceState() {
   const automatic = ref(true);
   const documentLanguageDetection = ref(false);
   const topicSentenceDetection = ref(false);
+  const tocGenerationEnabled = ref(false);
   const watermarkRemovalEnabled = ref(false);
   const paragraphContinuationDetection = ref(false);
   const recentMagicZoomEnabled = ref(false);
@@ -80,6 +81,7 @@ export function createPreferenceState() {
     automatic,
     documentLanguageDetection,
     topicSentenceDetection,
+    tocGenerationEnabled,
     watermarkRemovalEnabled,
     paragraphContinuationDetection,
     jevApiToken,

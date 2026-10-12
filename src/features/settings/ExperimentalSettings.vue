@@ -9,6 +9,7 @@ import ParagraphContinuationSettings from './ParagraphContinuationSettings.vue';
 import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import EpubSettings from './EpubSettings.vue';
+import TocGenerationSettings from './TocGenerationSettings.vue';
 import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
 import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 import RecentMagicZoomSettings from './RecentMagicZoomSettings.vue';
@@ -25,6 +26,7 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
       <div class="settings-section-body">
         <EpubSettings />
         <FormulaOcrSettings />
+        <TocGenerationSettings v-if="languagePreferences" />
         <WatermarkRemovalSettings v-if="languagePreferences" />
         <TopicSentenceSettings v-if="languagePreferences" />
         <RecentMagicZoomSettings v-if="languagePreferences" />

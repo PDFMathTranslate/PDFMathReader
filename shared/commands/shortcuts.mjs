@@ -15,6 +15,7 @@ const entries = [
   ['page-edit:rotate', 'Rotate Current Page', 'Edit', 'edit-rotate-page'],
   ['page-edit:align-width', 'Align Page Widths', 'Edit', 'edit-align-width'],
   ['page-edit:align-height', 'Align Page Heights', 'Edit', 'edit-align-height'],
+  ['generate-toc', 'Generate Table of Contents', 'Edit', 'edit-generate-toc'],
   ['search', 'Find…', 'View', 'view-search', 'F'],
   ['translation', 'Show Original / Translation', 'View', 'view-translation', 'R'],
   ['zoom-in', 'Zoom In', 'View', 'view-zoom-in', '='],

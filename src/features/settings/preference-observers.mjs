@@ -58,6 +58,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.automatic,
       bindings.preferences.documentLanguageDetection,
       bindings.preferences.topicSentenceDetection,
+      bindings.preferences.tocGenerationEnabled,
       bindings.preferences.watermarkRemovalEnabled,
       bindings.preferences.paragraphContinuationDetection,
       bindings.preferences.recentMagicZoomEnabled,

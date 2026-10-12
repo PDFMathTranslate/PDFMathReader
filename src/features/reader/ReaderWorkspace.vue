@@ -34,6 +34,9 @@ defineProps([
   'sidebarKeyboard',
   'focusSidebarItem',
   'documentOutline',
+  'tocGeneration',
+  'cancelTocGeneration',
+  'dismissTocGeneration',
   'readChapters',
   'annotations',
   'selectedAnnotation',
@@ -139,11 +142,14 @@ const hoveredParagraph = defineModel('hoveredParagraph');
         <SidebarNavigation
           v-model:mode="sidebarMode"
           :outline="documentOutline"
+          :toc-generation="tocGeneration"
           :read-chapters="readChapters"
           :annotations="annotations"
           :selected="selectedAnnotation"
           :reduced-motion="reduceMotion"
           @ready="sidebarReady"
+          @cancel-toc="cancelTocGeneration"
+          @dismiss-toc="dismissTocGeneration"
           @page="navigateFromSidebar"
           @annotation="navigateFromSidebar"
           @scroll="showScrollbar"

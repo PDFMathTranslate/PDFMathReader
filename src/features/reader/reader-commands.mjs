@@ -57,6 +57,10 @@ export function createReaderCommands({
       void actions.rootActions.editDocumentPages(action.slice(10));
       return;
     }
+    if (action === 'generate-toc') {
+      if (!shell.settingsWindowMode) void actions.tocGeneration.startTocGeneration();
+      return;
+    }
     if (action.startsWith('crop:')) {
       void actions.readingPosition.changeCrop(action);
       return;

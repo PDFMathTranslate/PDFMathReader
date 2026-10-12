@@ -3,15 +3,25 @@ import { computed, watch, ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t, uiLanguage } from '../../i18n/index.mjs';
 import { annotationSections, annotationChapters } from '../annotations/annotation-browser.mjs';
 import { platform, AppSegmentedControl, AppSegment } from '../../ui/controls.mjs';
+import { tocGenerationLabel } from './toc-generation-labels.mjs';
 const props = defineProps({
   mode: String,
   outline: Array,
+  tocGeneration: { type: Object, default: () => ({ status: 'idle' }) },
   readChapters: { type: Set, default: () => new Set() },
   annotations: Array,
   selected: String,
   reducedMotion: Boolean,
 });
-const emit = defineEmits(['update:mode', 'page', 'annotation', 'ready', 'scroll']);
+const emit = defineEmits([
+  'update:mode',
+  'page',
+  'annotation',
+  'ready',
+  'scroll',
+  'cancel-toc',
+  'dismiss-toc',
+]);
 const collapsed = ref(new Set());
 const view = ref(),
   dateNow = ref(new Date());
@@ -38,9 +48,22 @@ onBeforeUnmount(() => {
   viewMotion?.cancel();
   clearInterval(dateTimer);
 });
+// Experimental contents generation keeps the tab available while it runs or reports.
+const tocActive = computed(() => props.tocGeneration.status !== 'idle');
+const tocRunning = computed(() => props.tocGeneration.status === 'running');
+const tocPercent = computed(() => {
+  const { done = 0, total = 0 } = props.tocGeneration;
+  return total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+});
+const tocMessage = computed(() => {
+  const { status, source, count } = props.tocGeneration;
+  if (status === 'done')
+    return tocGenerationLabel(source === 'toc-page' ? 'doneToc' : 'doneHeadings', { count });
+  return tocGenerationLabel(status === 'empty' ? 'empty' : 'failed');
+});
 const tabs = computed(() => [
   'thumbnails',
-  ...(props.outline.length ? ['outline'] : []),
+  ...(props.outline.length || tocActive.value ? ['outline'] : []),
   ...(props.annotations.length ? ['annotations'] : []),
 ]);
 const selectedTab = computed(() => Math.max(0, tabs.value.indexOf(props.mode)));
@@ -143,10 +166,10 @@ function annotationDate(item) {
     : t('annotationBrowser.date.unknown');
 }
 watch(
-  () => [props.mode, props.outline.length, props.annotations.length],
+  () => [props.mode, props.outline.length, props.annotations.length, tocActive.value],
   () => {
     if (
-      (props.mode === 'outline' && !props.outline.length) ||
+      (props.mode === 'outline' && !props.outline.length && !tocActive.value) ||
       (props.mode === 'annotations' && !props.annotations.length)
     )
       emit('update:mode', 'thumbnails');
@@ -163,6 +186,31 @@ watch(
       :aria-label="t('sidebar.outline')"
       @scroll.passive="emit('scroll', $event)"
     >
+      <div v-if="tocActive" class="sidebar-toc-status" role="status" aria-live="polite">
+        <template v-if="tocRunning">
+          <span>{{
+            tocGenerationLabel('reading', { done: tocGeneration.done, total: tocGeneration.total })
+          }}</span>
+          <div
+            class="sidebar-toc-progress"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-valuenow="tocPercent"
+          >
+            <span :style="{ width: tocPercent + '%' }"></span>
+          </div>
+          <button class="sidebar-toc-action" @click="emit('cancel-toc')">
+            {{ tocGenerationLabel('cancel') }}
+          </button>
+        </template>
+        <template v-else>
+          <span>{{ tocMessage }}</span>
+          <button class="sidebar-toc-action" @click="emit('dismiss-toc')">
+            {{ tocGenerationLabel('dismiss') }}
+          </button>
+        </template>
+      </div>
       <div
         v-for="item in visibleOutline"
         :key="item.id"
@@ -392,6 +440,39 @@ watch(
   overflow: auto;
   padding: 8px 6px;
   scrollbar-width: thin;
+}
+.sidebar-toc-status {
+  display: grid;
+  gap: 6px;
+  margin: 0 2px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.sidebar-toc-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.sidebar-toc-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 160ms ease;
+}
+.sidebar-toc-action {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
 }
 .sidebar-outline-item,
 .sidebar-annotation-item {

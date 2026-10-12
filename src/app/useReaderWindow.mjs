@@ -47,6 +47,7 @@ import { createKernelState } from '../features/settings/kernel-state.mjs';
 import { createProviderState } from '../features/settings/provider-state.mjs';
 import { createImmersiveHeader } from '../features/reader/immersive-header.mjs';
 import { createPageEdits } from '../features/reader/page-edits.mjs';
+import { IDLE_TOC_GENERATION } from '../features/reader/toc-generation.mjs';
 import { createReaderDocumentSurface } from '../features/reader/document-surface.mjs';
 import { createLazyPort, createWritablePort } from './reader-ports.mjs';
 import {
@@ -157,6 +158,7 @@ export function useReaderWindow() {
   const featurePorts = {
     shell: createLazyPort({
       documentOutline: () => documentOutline,
+      tocGeneration: () => tocGeneration,
       selectedAnnotation: () => selectedAnnotation,
       showAnnotations: () => showAnnotations,
       sidebarMode: () => sidebarMode,
@@ -353,6 +355,7 @@ export function useReaderWindow() {
 
   const sidebarMode = ref('thumbnails'),
     documentOutline = shallowRef([]),
+    tocGeneration = shallowRef(IDLE_TOC_GENERATION),
     selectedAnnotation = ref(null);
 
   watch(sidebarMode, () => nextTick(() => featureActions.resizeFit()));
@@ -1191,6 +1194,7 @@ export function useReaderWindow() {
     documentOpenMode,
     documentOpening,
     documentOutline,
+    tocGeneration,
     effectiveTranslationSummary,
     epubEnabled: preferences.epubEnabled,
     emphasizeInformation,

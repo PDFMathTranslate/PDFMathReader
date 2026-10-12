@@ -30,6 +30,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.documentLanguageDetection.value = saved.documentLanguageDetection;
     if (typeof saved.topicSentenceDetection === 'boolean')
       preferences.topicSentenceDetection.value = saved.topicSentenceDetection;
+    if (typeof saved.tocGenerationEnabled === 'boolean')
+      preferences.tocGenerationEnabled.value = saved.tocGenerationEnabled;
     if (typeof saved.watermarkRemovalEnabled === 'boolean')
       preferences.watermarkRemovalEnabled.value = saved.watermarkRemovalEnabled;
     if (typeof saved.paragraphContinuationDetection === 'boolean')
@@ -169,6 +171,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         automatic: preferences.automatic.value,
         documentLanguageDetection: preferences.documentLanguageDetection.value,
         topicSentenceDetection: preferences.topicSentenceDetection.value,
+        tocGenerationEnabled: preferences.tocGenerationEnabled.value,
         watermarkRemovalEnabled: preferences.watermarkRemovalEnabled.value,
         paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
         jevApiToken: preferences.jevApiToken.value,

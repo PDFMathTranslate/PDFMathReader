@@ -197,6 +197,7 @@ export function createDocumentLifecycle({
     annotations.annotationKey.value = '';
     shell.sidebarMode.value = 'thumbnails';
     shell.documentOutline.value = [];
+    actions.tocGeneration.resetTocGeneration();
     shell.selectedAnnotation.value = null;
     void activity.performanceRecorder.finish();
     let closed = Promise.resolve();
