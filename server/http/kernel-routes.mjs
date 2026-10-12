@@ -13,6 +13,7 @@ export function registerKernelRoutes(
     cacheManager,
     documentCache,
     documentRequest,
+    translationVersions,
     limiter,
     pageLimiter,
     proxyJobs,
@@ -259,6 +260,8 @@ export function registerKernelRoutes(
             },
           });
           if (!bytes) return res.sendStatus(204);
+          // A returned page, cached or newly translated, makes this kernel and language a reopenable version.
+          void translationVersions?.record(cacheScope, { engine, language });
           const report = {
             ...job.timing,
             queueMs,

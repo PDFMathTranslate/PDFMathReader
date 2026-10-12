@@ -1,6 +1,7 @@
 <script setup>
 import { t } from '../../i18n/index.mjs';
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ref, computed, inject, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ownsTranslationGeometry } from '../translation/translation-versions.mjs';
 import {
   annotationDisplaysTranslation,
   annotationLineRects,
@@ -40,6 +41,10 @@ const props = defineProps({
   selectedAnnotation: String,
 });
 const emit = defineEmits(['change', 'notice', 'rail', 'search-document']);
+// Translated geometry belongs to the kernel and language that produced it, so another
+// version shows only the note marker, positioned on the source text.
+const translationVersion = inject('translationVersion', null);
+const foreign = (a) => !ownsTranslationGeometry(a, translationVersion?.value);
 const assistance = ref(null);
 let assistController;
 const confirmPopup = ref();
@@ -53,7 +58,7 @@ let gestureController;
 const motionController = useAnnotationMotion({
   getZoom: () => props.zoom,
   getGesture: () => gestureController?.gesture.value,
-  getEraseHasLines: (a) => (a.origin === 'translation') === translatedAt(a),
+  getEraseHasLines: (a) => rectsShown(a),
   onRemove: (a) => remove(a),
 });
 const { motion, erasing, reducedMotion, highlightDuration, motionStyle, eraseStyle } =
@@ -117,6 +122,17 @@ const visible = computed(() =>
   ].map((a) => ({ ...a, rects: annotationLineRects(a.rects) })),
 );
 function blockFor(a) {
+  if (foreign(a)) {
+    const r = a.sourceRect;
+    if (!r) return undefined;
+    // sourceRect sits just under the source box, so probe one unit above it.
+    const x = r.x + r.width / 2,
+      y = r.y - 1;
+    return props.page.blocks.find((b) => {
+      const box = b.sourceBox || b;
+      return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
+    });
+  }
   const known = props.page.blocks.find((b) => a.blockId !== undefined && b.id === a.blockId);
   if (known) return known;
   const r = a.rects[0],
@@ -129,6 +145,10 @@ function blockFor(a) {
 }
 function translatedAt(a) {
   return annotationDisplaysTranslation(props.page, props.translated, blockFor(a));
+}
+// True when the annotation's own rectangles are drawn on the current view.
+function rectsShown(a) {
+  return !foreign(a) && (a.origin === 'translation') === translatedAt(a);
 }
 // Measure the displayed page once for a shared margin rail, including async PDF text.
 const noteRail = computed(() => {
@@ -160,9 +180,9 @@ const noteRail = computed(() => {
 watch(noteRail, (x) => emit('rail', x), { immediate: true });
 function baseNoteRect(a) {
   const b = blockFor(a),
-    translated = translatedAt(a),
+    translated = !foreign(a) && translatedAt(a),
     box = translated ? b?.translatedBox || b : b?.sourceBox || b;
-  const line = a.rects[0],
+  const line = foreign(a) ? a.sourceRect || a.rects[0] : a.rects[0],
     anchor = box || line,
     markerSize = 34 / props.zoom,
     top = (props.page.height * props.crop.y) / 2,
@@ -183,12 +203,7 @@ function baseNoteRect(a) {
 const notePositions = computed(() =>
   annotationNotePositions(
     visible.value
-      .filter(
-        (a) =>
-          a.kind === 'comment' ||
-          !!a.comment?.trim() ||
-          (a.origin === 'translation') !== translatedAt(a),
-      )
+      .filter((a) => a.kind === 'comment' || !!a.comment?.trim() || !rectsShown(a))
       .map((a) => ({ id: a.id, y: baseNoteRect(a).y })),
     props.page.height,
     props.zoom,
@@ -228,8 +243,7 @@ function point() {
   const state = editor.value || opened.value || (toolbar.value ? selection.value : focused.value),
     host = props.host()?.getBoundingClientRect();
   if (!state || !host) return { left: '8px', top: '8px' };
-  const fromNote =
-    !!state.id && ((state.origin === 'translation') !== translatedAt(state) || popupFromNote.value);
+  const fromNote = !!state.id && (!rectsShown(state) || popupFromNote.value);
   const line = fromNote ? noteRect(state) : state.rects.at(-1),
     popup = editor.value
       ? editorPopup.value
@@ -346,6 +360,9 @@ function capture(event) {
       blockId: block?.id,
       sourceRect: end(sourceBox),
       translationRect: end(translationBox),
+      ...(origin === 'translation' && translationVersion?.value
+        ? { translationVersion: { ...translationVersion.value } }
+        : {}),
     };
     toolbar.value = true;
     opened.value = null;
@@ -399,9 +416,7 @@ function remove(a) {
       animateUntil: 0,
       eraseHasNote:
         opened.value?.id !== a.id &&
-        (a.kind === 'comment' ||
-          !!a.comment?.trim() ||
-          (a.origin === 'translation') !== translatedAt(a)),
+        (a.kind === 'comment' || !!a.comment?.trim() || !rectsShown(a)),
     };
     if (motion.value?.id === a.id) snapshot.eraseMotion = { ...motion.value };
     motionController.beginErase(snapshot);
@@ -689,7 +704,7 @@ watch(
   <div class="annotation-layer">
     <template v-for="a in visible" :key="a.id">
       <button
-        v-for="(r, i) in (a.origin === 'translation') === translatedAt(a) ? a.rects : []"
+        v-for="(r, i) in rectsShown(a) ? a.rects : []"
         :key="i"
         class="annotation-mark annotation-highlight"
         :class="{
@@ -719,9 +734,7 @@ watch(
       <button
         v-if="
           (erasing.has(a.id) ? a.eraseHasNote : opened?.id !== a.id) &&
-          (a.kind === 'comment' ||
-            !!a.comment?.trim() ||
-            (a.origin === 'translation') !== translatedAt(a))
+          (a.kind === 'comment' || !!a.comment?.trim() || !rectsShown(a))
         "
         class="annotation-mark annotation-note"
         :class="{

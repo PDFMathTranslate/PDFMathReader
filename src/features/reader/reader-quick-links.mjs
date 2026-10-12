@@ -1,4 +1,5 @@
 import { quickLinkAnchor, quickLinkBox } from './quick-links.mjs';
+import { sameVersion } from '../translation/translation-versions.mjs';
 
 export function createReaderQuickLinks({
   session,
@@ -8,12 +9,21 @@ export function createReaderQuickLinks({
   search,
   annotations,
   view,
+  preferences,
   actions,
 }) {
+  const currentVersion = () => ({
+    engine: preferences.engine.value,
+    language: preferences.language.value,
+  });
   function paragraphAnchor(anchorView, box) {
     const p = session.pages.value[anchorView.page - 1];
     if (!p) return null;
-    return quickLinkAnchor(p, anchorView, box, anchorView.showTranslations);
+    const anchor = quickLinkAnchor(p, anchorView, box, anchorView.showTranslations);
+    // Math kernels number and size translated paragraphs themselves.
+    return anchorView.showTranslations && p.mathDocument
+      ? { ...anchor, translationVersion: currentVersion() }
+      : anchor;
   }
 
   function quickLinkButtons(page) {
@@ -72,7 +82,9 @@ export function createReaderQuickLinks({
     await actions.pageNavigation.go(anchor.page);
     if (token !== session.epoch) return;
     const p = session.pages.value[anchor.page - 1],
-      block = p?.blocks.find((b) => b.id === anchor.blockId),
+      foreign =
+        anchor.translationVersion && !sameVersion(anchor.translationVersion, currentVersion()),
+      block = foreign ? undefined : p?.blocks.find((b) => b.id === anchor.blockId),
       box = quickLinkBox(block, view.showTranslations.value) || anchor.box,
       host = renderState.pageEls.get(anchor.page),
       el = view.reader.value;

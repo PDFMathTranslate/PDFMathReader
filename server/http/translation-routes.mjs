@@ -16,7 +16,16 @@ import { classifyParagraphContinuation } from '../translation/paragraph-continua
 
 export function registerTranslationRoutes(
   app,
-  { limiter, cacheManager, cacheDir, documentCache, documents, providerRuntime, getApiKey },
+  {
+    limiter,
+    cacheManager,
+    cacheDir,
+    documentCache,
+    documents,
+    providerRuntime,
+    getApiKey,
+    translationVersions,
+  },
 ) {
   const { providerFor, complete, serviceHeader, providerClient } = providerRuntime;
   app.post('/api/document-language', express.json({ limit: '16kb' }), async (req, res) => {
@@ -133,7 +142,10 @@ export function registerTranslationRoutes(
         },
       });
       const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
-      if (hit) return res.json({ ...hit.result, model: hit.model, cached: true });
+      if (hit) {
+        void translationVersions?.record(cacheScope, { engine: 'pdf_inspector', language });
+        return res.json({ ...hit.result, model: hit.model, cached: true });
+      }
       if (cacheOnly) return res.sendStatus(204);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
@@ -201,6 +213,7 @@ export function registerTranslationRoutes(
         await writeFile(temp, JSON.stringify(result));
         await rename(temp, path);
         await cache.remember(model, key).catch(() => {});
+        void translationVersions?.record(cacheScope, { engine: 'pdf_inspector', language });
         res.setHeader('X-Translation-Outcome', 'success');
         res.json({ ...result, cached: false });
       } catch (e) {

@@ -183,8 +183,17 @@ export function createDocumentImport({
       activity.performanceRecorder.pages(session.pdf.numPages);
       session.bytes = undefined;
       if (session.pendingPDFTask === task) session.pendingPDFTask = undefined;
-      view.showTranslations.value = preferences.documentOpenMode.value === 'translation';
-      translationState.translationDeferred.value = preferences.documentOpenMode.value === 'manual';
+      // Any cached kernel and language version opens as is; the usual reading-scope
+      // logic then translates the pages it lacks. Only an uncached document is new.
+      const cachedVersion = await actions.translationVersions.openCachedVersion(
+        registered.id,
+        token,
+      );
+      if (token !== session.epoch) return;
+      view.showTranslations.value =
+        !!cachedVersion || preferences.documentOpenMode.value === 'translation';
+      translationState.translationDeferred.value =
+        !cachedVersion && preferences.documentOpenMode.value === 'manual';
       session.title.value = (shell.testMode ? 'TEST — ' : '') + file.name;
       view.active.value = 1;
       const list = [];
@@ -257,9 +266,11 @@ export function createDocumentImport({
       if (token !== session.epoch) return;
       session.pages.value = list;
       await actions.readingPosition.restoreReadingView(
-        saved && preferences.documentOpenMode.value === 'manual'
-          ? { ...saved, showTranslations: false }
-          : saved,
+        cachedVersion && saved
+          ? { ...saved, showTranslations: true }
+          : saved && preferences.documentOpenMode.value === 'manual'
+            ? { ...saved, showTranslations: false }
+            : saved,
       );
       if (view.showTranslations.value) translationState.translationDeferred.value = false;
       activity.performanceRecorder.mark('restoreView');

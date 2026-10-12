@@ -8,6 +8,7 @@ import {
   createAnnotationStore,
   managedAnnotationPrefix,
   stripManagedAnnotations,
+  validateAnnotation,
 } from '../../../electron/main/services/annotations.mjs';
 
 const createdAt = '2026-10-04T00:00:00.000Z';
@@ -225,4 +226,30 @@ test('opening an unannotated or link-only PDF preserves its exact bytes', async 
     assert.deepEqual(prepared.bytes, bytes);
     assert.deepEqual(prepared.annotations, []);
   }
+});
+
+test('translation annotations keep the kernel and language that drew them', () => {
+  const base = {
+    id: 'a',
+    page: 1,
+    kind: 'highlight',
+    origin: 'translation',
+    text: 'x',
+    comment: '',
+    color: '#ffff00',
+    rects: [rect(1, 2, 3, 4)],
+    createdAt,
+  };
+  const version = { engine: 'pdf_math_fast', language: 'Chinese', extra: 1 };
+  assert.deepEqual(
+    validateAnnotation({ ...base, translationVersion: version }).translationVersion,
+    {
+      engine: 'pdf_math_fast',
+      language: 'Chinese',
+    },
+  );
+  assert.equal('translationVersion' in validateAnnotation(base), false);
+  assert.throws(() =>
+    validateAnnotation({ ...base, translationVersion: { engine: 'x', language: 'a' } }),
+  );
 });

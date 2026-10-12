@@ -24,6 +24,7 @@ import { createCacheManager } from './cache/cache-management.mjs';
 import { createEngines, createLimiter } from './kernels/engines.mjs';
 import { createLocalTranslation } from './platform/macos/local-translation.mjs';
 import { createTranslationRuntime } from './translation/provider-runtime.mjs';
+import { createTranslationVersions } from './translation/translation-versions.mjs';
 import { isProviderPortOpen } from './http/provider-port.mjs';
 import {
   registerAccessMiddleware,
@@ -105,6 +106,7 @@ export async function startServer({
   });
   const documents = createDocumentStore();
   const documentCache = createDocumentCache(cacheDir);
+  const translationVersions = createTranslationVersions({ directory: cacheDir, documentCache });
   const providerLimiter = createLimiter(4, { label: 'provider' });
   const pageLimiter = createLimiter(2, { label: 'kernel-pages' });
   const proxyJobs = new Map();
@@ -220,12 +222,14 @@ export async function startServer({
     performanceTracker,
     cacheManager,
     maxDocumentBytes: MAX_DOCUMENT_BYTES,
+    translationVersions,
   });
   registerKernelRoutes(app, {
     engines,
     cacheManager,
     documentCache,
     documentRequest,
+    translationVersions,
     limiter: providerLimiter,
     pageLimiter,
     proxyJobs,
@@ -254,6 +258,7 @@ export async function startServer({
     documents,
     providerRuntime,
     getApiKey,
+    translationVersions,
   });
 
   registerErrorMiddleware(app);

@@ -1,6 +1,7 @@
 import { mapCompactRect } from './paragraph-compaction.mjs';
 import { readOutline } from './sidebar-outline.mjs';
 import { resolvePDFDestination, destinationPoint, destinationScale } from './pdf-navigation.mjs';
+import { ownsTranslationGeometry } from '../translation/translation-versions.mjs';
 import { nextTick } from 'vue';
 
 export function createReferenceNavigation({
@@ -112,14 +113,27 @@ export function createReferenceNavigation({
     shell.selectedAnnotation.value = null;
     preferences.interactionMode.value = 'reading';
     shell.showAnnotations.value = true;
-    view.showTranslations.value = a.origin === 'translation';
-    for (const block of p.blocks) block.translated = a.origin === 'translation';
+    // Translated rectangles only mean something in the version that drew them; any
+    // other version is located through the source text, which every version shares.
+    const translated =
+        a.origin === 'translation' &&
+        ownsTranslationGeometry(a, {
+          engine: preferences.engine.value,
+          language: preferences.language.value,
+        }),
+      target = translated
+        ? a.rects[0]
+        : a.origin === 'translation'
+          ? a.sourceRect || a.rects[0]
+          : a.rects[0];
+    view.showTranslations.value = translated;
+    for (const block of p.blocks) block.translated = translated;
     await actions.pageNavigation.go(a.page);
     if (token !== session.epoch) return;
     const host = renderState.pageEls.get(a.page),
       el = view.reader.value,
       cuts = actions.rootActions.displayedPage(p).paragraphCompaction,
-      box = cuts ? mapCompactRect(a.rects[0], cuts) : a.rects[0];
+      box = cuts && target ? mapCompactRect(target, cuts) : target;
     if (host && el && box) {
       const bounds = el.getBoundingClientRect(),
         rect = host.getBoundingClientRect();

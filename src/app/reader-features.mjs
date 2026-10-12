@@ -13,6 +13,7 @@ import { createReaderScroll } from '../features/reader/reader-scroll.mjs';
 import { createTranslationScope } from '../features/translation/translation-scope.mjs';
 import { createTranslationQueue } from '../features/translation/translation-queue.mjs';
 import { createMathTranslation } from '../features/translation/math-translation.mjs';
+import { createTranslationVersions } from '../features/translation/translation-versions.mjs';
 import { createDocumentLifecycle } from '../features/reader/document-lifecycle.mjs';
 import { createDocumentImport } from '../features/reader/document-import.mjs';
 import { createPreferencePersistence } from '../features/settings/preference-persistence.mjs';
@@ -257,6 +258,14 @@ export function createReaderFeatures({
     view,
     shell,
   });
+  const translationVersions = createTranslationVersions({
+    session,
+    preferences,
+    actions: createLazyPort({
+      backendRequests: () => backendRequests,
+      kernelSettings: () => kernelSettings,
+    }),
+  });
   const documentImport = createDocumentImport({
     session,
     motion,
@@ -266,6 +275,7 @@ export function createReaderFeatures({
     actions: createLazyPort({
       rootActions: () => rootActions,
       kernelSettings: () => kernelSettings,
+      translationVersions: () => translationVersions,
       readingPosition: () => readingPosition,
       documentLifecycle: () => documentLifecycle,
       canvasRendering: () => canvasRendering,
@@ -406,6 +416,7 @@ export function createReaderFeatures({
     search,
     annotations,
     view,
+    preferences,
   });
   const translationHistory = createTranslationHistory({ preferences, session, provider });
   const nativeMenuOptions = createNativeMenuOptions({ preferences, provider });

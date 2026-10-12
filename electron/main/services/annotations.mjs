@@ -18,6 +18,7 @@ const MAX_COORDINATE = 1000000;
 const MAX_PDF_BYTES = 200 * 1024 * 1024;
 const MANAGED_PREFIX = 'PDFMathReader:';
 const HEX_COLOR = /^#[\da-f]{6}(?:[\da-f]{2})?$/i;
+const TRANSLATION_ENGINES = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']);
 
 function invalid(message) {
   throw Error(message);
@@ -127,6 +128,19 @@ export function validateAnnotation(value, index = 0) {
     result.sourceRect = validateRect(value.sourceRect, `annotation ${index} source rectangle`);
   if (value.modifiedAt !== undefined)
     result.modifiedAt = validateTimestamp(value.modifiedAt, 'modified-at');
+  if (value.translationVersion !== undefined) {
+    const version = value.translationVersion;
+    if (
+      !version ||
+      typeof version !== 'object' ||
+      !TRANSLATION_ENGINES.has(version.engine) ||
+      typeof version.language !== 'string' ||
+      !version.language ||
+      version.language.length > 100
+    )
+      invalid(`Invalid annotation ${index} translation version.`);
+    result.translationVersion = { engine: version.engine, language: version.language };
+  }
   return result;
 }
 
@@ -140,6 +154,9 @@ function clone(value) {
     ...annotation,
     rects: annotation.rects.map((rect) => ({ ...rect })),
     ...(annotation.sourceRect ? { sourceRect: { ...annotation.sourceRect } } : {}),
+    ...(annotation.translationVersion
+      ? { translationVersion: { ...annotation.translationVersion } }
+      : {}),
   }));
 }
 

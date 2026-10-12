@@ -106,6 +106,10 @@ export function useReaderWindow() {
       }),
     ),
   );
+  provide(
+    'translationVersion',
+    computed(() => ({ engine: preferences.engine.value, language: preferences.language.value })),
+  );
   const {
     language,
     sourceLanguage,

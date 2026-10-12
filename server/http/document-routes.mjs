@@ -62,6 +62,7 @@ export function registerDocumentRoutes(
     performanceTracker,
     cacheManager,
     maxDocumentBytes,
+    translationVersions,
   },
 ) {
   app.post(
@@ -92,6 +93,17 @@ export function registerDocumentRoutes(
       layoutEntries.delete(req.params.id);
     }
     res.status(204).end();
+  });
+  // Kernel and language pairs whose translations are cached for this document, newest first.
+  app.get('/api/documents/:id/translation-versions', async (req, res) => {
+    const entry = isDocumentId(req.params.id) ? documents.getEntry(req.params.id) : null;
+    if (!entry) return res.status(404).json({ error: 'Document not found.' });
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      res.json({ versions: (await translationVersions?.list(entry.documentHash)) ?? [] });
+    } catch {
+      res.json({ versions: [] });
+    }
   });
 
   const documentRequest = (req) => {
