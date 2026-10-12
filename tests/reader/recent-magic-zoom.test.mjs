@@ -14,6 +14,17 @@ test('item under the pointer is largest and distant items stay untouched', () =>
   assert.equal(layout[9].scale, 1);
 });
 
+test('nearby items zoom like the Dock, fading out over a few covers', () => {
+  const items = row(11);
+  const layout = magicZoomLayout(items, items[5].center);
+  const scale = (offset) => layout[5 + offset].scale;
+  assert.ok(scale(1) > 1.25 && scale(-1) > 1.25);
+  assert.ok(scale(2) > 1.1 && scale(-2) > 1.1);
+  assert.ok(scale(3) > 1 && scale(3) < 1.06);
+  assert.ok(scale(0) > scale(1) && scale(1) > scale(2) && scale(2) > scale(3));
+  assert.ok(Math.abs(scale(1) - scale(-1)) < 1e-9);
+});
+
 test('neighbours are pushed away from the hovered item', () => {
   const items = row(9);
   const layout = magicZoomLayout(items, items[4].center);

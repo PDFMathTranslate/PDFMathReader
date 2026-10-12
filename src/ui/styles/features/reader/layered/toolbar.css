@@ -394,7 +394,7 @@
    items are not clipped by its scroll container, without moving anything else. */
 .recent-gallery.recent-magic {
   position: relative;
-  padding: 92px 40px 14px;
+  padding: 92px 64px 14px;
   margin-top: -88px;
 }
 
