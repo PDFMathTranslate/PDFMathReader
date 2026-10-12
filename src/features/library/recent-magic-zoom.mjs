@@ -2,21 +2,27 @@
 // ({ center, width }) in the gallery's scroll coordinates; the result gives each
 // item a scale and a horizontal shift so neighbours make room and the point under
 // the pointer stays where it is.
-export const MAGIC_ZOOM_MAX_SCALE = 1.45;
-// Falloff width in item pitches (centre-to-centre spacing): about three covers on each
-// side of the pointer grow, with the nearest neighbours close to full size.
-export const MAGIC_ZOOM_SPREAD = 1.4;
-const CUTOFF = 2.5;
-const TAIL = Math.exp(-(CUTOFF * CUTOFF) / 2);
+export const MAGIC_ZOOM_MAX_SCALE = 2.4;
+// Falloff width in item pitches (centre-to-centre spacing). Narrow enough that the
+// direct neighbours of the focal cover only reach about 1.5x.
+export const MAGIC_ZOOM_SPREAD = 0.7;
+// Covers this many pitches from the pointer are back at their raw size.
+export const MAGIC_ZOOM_REACH = 2;
 
 export function magicZoomLayout(items, pointerX, options = {}) {
-  const { maxScale = MAGIC_ZOOM_MAX_SCALE, spread = MAGIC_ZOOM_SPREAD } = options;
+  const {
+    maxScale = MAGIC_ZOOM_MAX_SCALE,
+    spread = MAGIC_ZOOM_SPREAD,
+    reach = MAGIC_ZOOM_REACH,
+  } = options;
   const sigma = spread * pitchOf(items);
+  const cutoff = reach / spread;
+  const tail = Math.exp(-(cutoff * cutoff) / 2);
   const scales = items.map(({ center }) => {
     const u = Math.abs(pointerX - center) / sigma;
-    if (u >= CUTOFF) return 1;
+    if (u >= cutoff) return 1;
     // Gaussian bump lowered by its tail so the curve reaches 1 without a step.
-    return 1 + ((maxScale - 1) * (Math.exp(-(u * u) / 2) - TAIL)) / (1 - TAIL);
+    return 1 + ((maxScale - 1) * (Math.exp(-(u * u) / 2) - tail)) / (1 - tail);
   });
   // Shift measured from the row's left edge, then re-anchored on the pointer.
   let grown = 0;
@@ -45,4 +51,16 @@ function interpolate(items, values, x) {
   const span = items[index + 1].center - items[index].center;
   const ratio = span ? (x - items[index].center) / span : 0;
   return values[index] + (values[index + 1] - values[index]) * ratio;
+}
+
+// Scroll position that brings a cover fully into view with `margin` to spare on the side
+// it was cut off (room for its zoom). Returns null when it is already comfortably visible
+// or the scroll range cannot improve on the current position.
+export function revealScrollTarget({ left, width, scrollLeft, viewWidth, scrollWidth, margin }) {
+  let target = scrollLeft;
+  if (left - scrollLeft < margin) target = left - margin;
+  else if (left + width - scrollLeft > viewWidth - margin)
+    target = left + width - viewWidth + margin;
+  target = Math.min(Math.max(scrollWidth - viewWidth, 0), Math.max(0, target));
+  return Math.abs(target - scrollLeft) < 2 ? null : target;
 }

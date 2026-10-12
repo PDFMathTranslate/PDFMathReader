@@ -11,8 +11,8 @@ import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import EpubSettings from './EpubSettings.vue';
 import TocGenerationSettings from './TocGenerationSettings.vue';
 import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
-import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 import RecentMagicZoomSettings from './RecentMagicZoomSettings.vue';
+import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 defineProps({ titled: { type: Boolean, default: false } });
 const languagePreferences = inject('documentLanguagePreferences');
 const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.value));
@@ -28,8 +28,8 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
         <FormulaOcrSettings />
         <TocGenerationSettings v-if="languagePreferences" />
         <WatermarkRemovalSettings v-if="languagePreferences" />
-        <TopicSentenceSettings v-if="languagePreferences" />
         <RecentMagicZoomSettings v-if="languagePreferences" />
+        <TopicSentenceSettings v-if="languagePreferences" />
       </div>
     </section>
     <section class="settings-section" aria-labelledby="settings-experimental-translation">

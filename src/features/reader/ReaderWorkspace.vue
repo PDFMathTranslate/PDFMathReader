@@ -278,6 +278,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
             v-if="recentDocuments.length"
             class="recent-documents"
             :aria-label="t('startup.recentDocuments')"
+            @pointermove="magicZoom.move"
+            @pointerleave="magicZoom.leave"
           >
             <div class="recent-heading">
               <h2>{{ t('startup.recentDocuments') }}</h2>
@@ -325,9 +327,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
                 'recent-magic': magicZoomReady,
                 'is-magnifying': magicZoom.magnifying.value,
               }"
-              @pointermove="magicZoom.move"
-              @pointerleave="magicZoom.leave"
               @scroll.passive="magicZoom.scroll"
+              @wheel.passive="magicZoom.stopReveal"
             >
               <button
                 v-for="document in recentDocuments"

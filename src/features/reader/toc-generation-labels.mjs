@@ -3,7 +3,7 @@ import { uiLanguage } from '../../i18n/index.mjs';
 // Experimental feature: English is the fallback for every other language.
 const labels = {
   en: {
-    setting: 'Generate table of contents (experimental)',
+    setting: 'Generate table of contents',
     hint: 'Adds Edit → Generate Table of Contents. Documents without bookmarks get a contents list built locally from a printed contents page or from heading fonts and numbering. Nothing is sent anywhere, and scanned pages without text are not supported.',
     reading: 'Reading page {done} of {total}',
     cancel: 'Cancel',
@@ -15,7 +15,7 @@ const labels = {
     doneHeadings: 'Generated {count} entries from headings.',
   },
   'zh-CN': {
-    setting: '生成目录（实验性）',
+    setting: '生成目录',
     hint: '在“编辑”菜单中加入“生成目录”。对没有书签的文档，在本机根据印刷目录页，或根据标题字号与编号生成目录。不会向外发送任何内容，也不支持没有文字层的扫描页。',
     reading: '正在读取第 {done} / {total} 页',
     cancel: '取消',
@@ -27,7 +27,7 @@ const labels = {
     doneHeadings: '已根据标题生成 {count} 个条目。',
   },
   'zh-TW': {
-    setting: '生成目錄（實驗性）',
+    setting: '生成目錄',
     hint: '在「編輯」選單中加入「生成目錄」。對沒有書籤的文件，在本機根據印刷目錄頁，或根據標題字級與編號生成目錄。不會向外傳送任何內容，也不支援沒有文字層的掃描頁。',
     reading: '正在讀取第 {done} / {total} 頁',
     cancel: '取消',

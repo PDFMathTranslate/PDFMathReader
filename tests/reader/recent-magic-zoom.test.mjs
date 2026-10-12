@@ -1,28 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { magicZoomLayout } from '../../src/features/library/recent-magic-zoom.mjs';
+import {
+  magicZoomLayout,
+  revealScrollTarget,
+} from '../../src/features/library/recent-magic-zoom.mjs';
 
 const row = (count, width = 140, gap = 18) =>
   Array.from({ length: count }, (_, i) => ({ center: i * (width + gap) + width / 2, width }));
 
 test('item under the pointer is largest and distant items stay untouched', () => {
-  const items = row(10);
-  const layout = magicZoomLayout(items, items[4].center);
-  assert.equal(Math.max(...layout.map((l) => l.scale)), layout[4].scale);
-  assert.ok(layout[4].scale > 1.4);
+  const items = row(14);
+  const layout = magicZoomLayout(items, items[6].center);
+  assert.equal(Math.max(...layout.map((l) => l.scale)), layout[6].scale);
+  assert.ok(layout[6].scale > 2.39);
   assert.equal(layout[0].scale, 1);
-  assert.equal(layout[9].scale, 1);
+  assert.equal(layout[13].scale, 1);
 });
 
-test('nearby items zoom like the Dock, fading out over a few covers', () => {
-  const items = row(11);
-  const layout = magicZoomLayout(items, items[5].center);
-  const scale = (offset) => layout[5 + offset].scale;
-  assert.ok(scale(1) > 1.25 && scale(-1) > 1.25);
-  assert.ok(scale(2) > 1.1 && scale(-2) > 1.1);
-  assert.ok(scale(3) > 1 && scale(3) < 1.06);
-  assert.ok(scale(0) > scale(1) && scale(1) > scale(2) && scale(2) > scale(3));
+test('the focal cover reaches 2.4x, its direct neighbours grow, and covers two places away stay raw', () => {
+  const items = row(15);
+  const layout = magicZoomLayout(items, items[7].center);
+  const scale = (offset) => layout[7 + offset].scale;
+  assert.ok(Math.abs(scale(0) - 2.4) < 1e-9);
+  assert.ok(scale(1) > 1.3 && scale(1) < 1.8 && scale(1) < scale(0));
   assert.ok(Math.abs(scale(1) - scale(-1)) < 1e-9);
+  assert.equal(scale(2), 1);
+  assert.equal(scale(-2), 1);
 });
 
 test('neighbours are pushed away from the hovered item', () => {
@@ -58,5 +61,23 @@ test('the point under the pointer does not move', () => {
 test('empty and single-item galleries are handled', () => {
   assert.deepEqual(magicZoomLayout([], 10), []);
   const [only] = magicZoomLayout(row(1), 70);
-  assert.ok(only.scale > 1.4 && Math.abs(only.shift) < 1e-9);
+  assert.ok(only.scale > 2.39 && Math.abs(only.shift) < 1e-9);
+});
+
+test('covers cut off at either edge scroll into view, with room for the zoom', () => {
+  const view = { viewWidth: 800, scrollWidth: 2000, margin: 100 };
+  // Cut off on the left: bring it back with the margin on its left.
+  assert.equal(revealScrollTarget({ ...view, left: 450, width: 140, scrollLeft: 500 }), 350);
+  // Cut off on the right: bring it back with the margin on its right.
+  assert.equal(revealScrollTarget({ ...view, left: 1200, width: 140, scrollLeft: 500 }), 640);
+  // Already comfortably visible.
+  assert.equal(revealScrollTarget({ ...view, left: 700, width: 140, scrollLeft: 500 }), null);
+});
+
+test('reveal never scrolls past the ends of the gallery', () => {
+  const view = { viewWidth: 800, scrollWidth: 1000, margin: 100 };
+  assert.equal(revealScrollTarget({ ...view, left: 20, width: 140, scrollLeft: 60 }), 0);
+  assert.equal(revealScrollTarget({ ...view, left: 860, width: 140, scrollLeft: 150 }), 200);
+  // Nothing to gain when already at the end.
+  assert.equal(revealScrollTarget({ ...view, left: 860, width: 140, scrollLeft: 200 }), null);
 });

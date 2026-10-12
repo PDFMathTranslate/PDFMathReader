@@ -390,33 +390,29 @@
   border-color: var(--accent);
 }
 
-/* Experimental magic zoom: the gallery reserves headroom above the covers so scaled
-   items are not clipped by its scroll container, without moving anything else. */
+/* Experimental magic zoom: the gallery becomes a click-through overlay with headroom
+   above the covers, so a magnified cover can rise over the Open PDF button and heading
+   instead of being clipped by the gallery's scroll container. The transform is driven
+   frame by frame from script (see useRecentMagicZoom), so it has no CSS transition. */
 .recent-gallery.recent-magic {
   position: relative;
-  padding: 92px 64px 14px;
-  margin-top: -88px;
+  z-index: 5;
+  padding: 296px 112px 14px;
+  margin-top: -292px;
+  pointer-events: none;
+  /* Snapping would fight the scripted slide that reveals cut-off covers. */
+  scroll-snap-type: none;
 }
 
-.recent-heading {
-  position: relative;
-  z-index: 1;
-}
-
-.recent-magic .recent-document {
+.recent-gallery.recent-magic .recent-document {
+  pointer-events: auto;
   transform-origin: 50% 100%;
-  transform: translateX(var(--magic-shift, 0px)) scale(var(--magic-scale, 1));
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Opaque, so nothing shows through a cover that overlaps other content. */
+  background: var(--chrome-solid);
 }
 
-/* While the pointer is tracking, follow it with no easing lag. */
-.recent-magic.is-magnifying .recent-document {
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+.recent-gallery.recent-magic .recent-document:hover {
+  background: var(--chrome-solid);
 }
 
 .recent-document .recent-pin {

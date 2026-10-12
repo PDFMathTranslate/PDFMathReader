@@ -11,8 +11,8 @@ export function createPreferenceState() {
   const topicSentenceDetection = ref(false);
   const tocGenerationEnabled = ref(false);
   const watermarkRemovalEnabled = ref(false);
-  const paragraphContinuationDetection = ref(false);
   const recentMagicZoomEnabled = ref(false);
+  const paragraphContinuationDetection = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
   const remoteKernelUrl = ref('');
@@ -83,9 +83,9 @@ export function createPreferenceState() {
     topicSentenceDetection,
     tocGenerationEnabled,
     watermarkRemovalEnabled,
+    recentMagicZoomEnabled,
     paragraphContinuationDetection,
     jevApiToken,
-    recentMagicZoomEnabled,
     remoteKernelEnabled,
     remoteKernelUrl,
     remoteKernelService,
