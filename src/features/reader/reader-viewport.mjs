@@ -38,8 +38,13 @@ export function createReaderViewport({ renderState, session, motion, view, activ
         },
         view.active.value,
       );
+    // Reset only pages that left the viewport. Clearing a still-visible page and
+    // restoring its ratio triggers pageLayout, which schedules this lookup again
+    // on the next frame and keeps the whole reader re-rendering while idle.
+    const stillVisible = new Set(window.visible.map((item) => item.number));
     for (const n of renderState.visiblePages)
-      if (session.pages.value[n - 1]) session.pages.value[n - 1].visible = 0;
+      if (!stillVisible.has(n) && session.pages.value[n - 1])
+        session.pages.value[n - 1].visible = 0;
     renderState.visiblePages.clear();
     let best;
     for (const item of window.visible) {

@@ -309,7 +309,10 @@ export function createParagraphCompaction({
           ':' +
           p.blocks.map((b) => b.translation).join('\n');
         if (cache.has(key)) {
-          if (cache.get(key)) results.value = new Map(results.value).set(p.number, cache.get(key));
+          const cached = cache.get(key);
+          // An unchanged result must not replace the map and re-render every page.
+          if (cached && results.value.get(p.number) !== cached)
+            results.value = new Map(results.value).set(p.number, cached);
           continue;
         }
         try {
