@@ -101,6 +101,8 @@ function quickLinkStyle(button, index) {
   };
 }
 const p = computed(() => props.page),
+  // The visible ratio changes on every scroll frame; render only on show/hide.
+  shown = computed(() => !!props.page.visible),
   emit = defineEmits([
     'toggle',
     'retry',
@@ -327,17 +329,17 @@ function fit(el, b) {
         :document="pdfDocument"
         :page-number="pdfPageNumber"
         :zoom="zoom"
-        :active="foreground && !!p.visible"
+        :active="foreground && shown"
         :obscured-boxes="obscuredBoxes"
       /><ReadingLinks
         v-if="interactionMode === 'reading' && !translations"
         :document="pdfDocument"
         :page-number="pdfPageNumber"
         :zoom="zoom"
-        :active="foreground && !!p.visible"
+        :active="foreground && shown"
         @navigate="emit('navigate', $event)"
       />
-      <template v-if="interactionMode === 'reading' && foreground && p.visible">
+      <template v-if="interactionMode === 'reading' && foreground && shown">
         <FormulaOcrRegion
           v-for="region in recognizedFormulaRegions"
           :key="
@@ -414,7 +416,7 @@ function fit(el, b) {
             :source="() => mathSource(p.number, b.translated)"
             :box="mathBox(b)"
             :zoom="zoom"
-            :active="foreground && !!p.visible"
+            :active="foreground && shown"
           /><TextReveal
             :emphasize-topic-sentences="emphasizeTopic(b)"
             :topic-context="b.translated ? b.paragraphDisplayTranslation : b.paragraphSourceText"

@@ -20,15 +20,26 @@ const popupPlatform = window.previewAppearance?.platform || 'web';
 const readerPopup = ref(),
   editorPopup = ref(),
   toolbarPopup = ref(),
-  layoutVersion = ref(0);
+  layoutVersion = ref(0),
+  popupVersion = ref(0);
 let popupObserver,
   textObserver,
-  layoutFrame = 0;
+  layoutFrame = 0,
+  popupFrame = 0;
 function updatePopupLayout() {
   if (!layoutFrame)
     layoutFrame = requestAnimationFrame(() => {
       layoutFrame = 0;
       layoutVersion.value++;
+    });
+}
+// Scrolling moves popups but not page-relative geometry; re-measuring the
+// note rail's text on every scroll event costs a layout pass per mounted page.
+function updatePopupPosition() {
+  if (!popupFrame)
+    popupFrame = requestAnimationFrame(() => {
+      popupFrame = 0;
+      popupVersion.value++;
     });
 }
 const props = defineProps({
@@ -240,6 +251,7 @@ function highlightPosition(r, a) {
 }
 function point() {
   layoutVersion.value;
+  popupVersion.value;
   const state = editor.value || opened.value || (toolbar.value ? selection.value : focused.value),
     host = props.host()?.getBoundingClientRect();
   if (!state || !host) return { left: '8px', top: '8px' };
@@ -647,7 +659,7 @@ onMounted(() => {
     });
   popupObserver = new ResizeObserver(updatePopupLayout);
   window.addEventListener('resize', updatePopupLayout);
-  window.addEventListener('scroll', updatePopupLayout, true);
+  window.addEventListener('scroll', updatePopupPosition, true);
   void window.previewAnnotations
     ?.palette?.()
     .then((value) => {
@@ -664,8 +676,9 @@ onBeforeUnmount(() => {
   textObserver?.disconnect();
   popupObserver?.disconnect();
   cancelAnimationFrame(layoutFrame);
+  cancelAnimationFrame(popupFrame);
   window.removeEventListener('resize', updatePopupLayout);
-  window.removeEventListener('scroll', updatePopupLayout, true);
+  window.removeEventListener('scroll', updatePopupPosition, true);
   motionController.cleanup();
   gestureController.cleanup();
   selectionController.cleanup();

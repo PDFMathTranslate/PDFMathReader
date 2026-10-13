@@ -1,4 +1,4 @@
-import { shallowRef, watch, markRaw, onBeforeUnmount } from 'vue';
+import { computed, shallowRef, watch, markRaw, onBeforeUnmount } from 'vue';
 
 export function compactBands(occupied, rowScale, pageHeight, lineHeight) {
   const first = occupied.findIndex(Boolean),
@@ -251,6 +251,32 @@ export async function compactPDF(document, number, getDocument, blocks) {
   }
 }
 
+// Forward the remaining page fields so readers track the source page. A copied
+// `visible` would rebuild this view, the document layout and every page's text
+// emphasis on each scroll frame.
+export function compactPageView(p, result) {
+  const view = {
+    height: result.height,
+    mathDocument: result.document,
+    blocks: p.blocks.map((b) => ({
+      ...mapCompactRect(b, result.cuts),
+      sourceBox: mapCompactRect(b.sourceBox, result.cuts),
+      translatedBox: mapCompactRect(b.translatedBox, result.cuts),
+    })),
+    paragraphCompaction: result.cuts,
+  };
+  for (const key of Object.keys(p))
+    if (!(key in view))
+      Object.defineProperty(view, key, {
+        enumerable: true,
+        get: () => p[key],
+        set: (value) => {
+          p[key] = value;
+        },
+      });
+  return view;
+}
+
 function releaseCompactDocument(document) {
   const task = document?.loadingTask;
   const promise = task?.destroy?.() ?? document?.destroy?.();
@@ -348,7 +374,7 @@ export function createParagraphCompaction({
     ++epoch;
     clear();
   });
-  return (p) => {
+  function display(p) {
     const result = enabled.value && results.value.get(p.number);
     if (
       !result ||
@@ -357,17 +383,13 @@ export function createParagraphCompaction({
       result.inputText !== p.blocks.map((b) => b.translation).join('\n')
     )
       return p;
-    const blocks = p.blocks.map((b) => ({
-      ...mapCompactRect(b, result.cuts),
-      sourceBox: mapCompactRect(b.sourceBox, result.cuts),
-      translatedBox: mapCompactRect(b.translatedBox, result.cuts),
-    }));
-    return {
-      ...p,
-      height: result.height,
-      mathDocument: result.document,
-      blocks,
-      paragraphCompaction: result.cuts,
-    };
+    return compactPageView(p, result);
+  }
+  // One cached view per page keeps its identity until compaction inputs change.
+  const views = new WeakMap();
+  return (p) => {
+    let view = views.get(p);
+    if (!view) views.set(p, (view = computed(() => display(p))));
+    return view.value;
   };
 }

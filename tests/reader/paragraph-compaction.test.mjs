@@ -96,3 +96,30 @@ test('space freed by a shorter last translation is trimmed to one line of slack'
   translated.fill(true, 120, 170);
   assert.equal(trailingCut(source, translated, 1, 12), null);
 });
+
+test('a compacted page view follows scroll visibility without being rebuilt', async () => {
+  const { effect, reactive, stop } = await import('vue');
+  const { compactPageView } = await import('../../src/features/reader/paragraph-compaction.mjs');
+  const page = reactive({
+    number: 1,
+    height: 200,
+    status: 'ready',
+    visible: 0,
+    blocks: [{ id: 'a', x: 0, y: 150, width: 10, height: 10, translation: 'x' }],
+  });
+  const result = { height: 160, document: {}, cuts: [{ start: 100, end: 140 }] };
+  let builds = 0,
+    view;
+  const runner = effect(() => {
+    view = compactPageView(page, result);
+    builds++;
+  });
+  page.visible = 0.5;
+  assert.equal(builds, 1);
+  assert.equal(view.visible, 0.5);
+  assert.equal(view.height, 160);
+  assert.equal(view.blocks[0].y, 110);
+  view.visible = 0;
+  assert.equal(page.visible, 0);
+  stop(runner);
+});
