@@ -65,6 +65,19 @@ export async function verifyExternalApplicationTargeting(platform = 'darwin') {
     menuPathItems,
   });
   controller.rebuild();
+  const rootItems = controller.serialize();
+  for (const id of ['file-close-document', 'file-close-window']) {
+    const rootItem = rootItems.find((item) => item.id === id);
+    const fileItems = rootItems.find((item) => item.id === 'file-menu').submenu;
+    if (['win32', 'linux'].includes(platform)) {
+      assert.ok(rootItem, `${id} is available in the first-level menu on ${platform}`);
+      assert.equal(rootItem.path.length, 1);
+      assert.ok(!fileItems.some((item) => item.id === id));
+    } else {
+      assert.ok(!rootItem);
+      assert.ok(fileItems.some((item) => item.id === id));
+    }
+  }
   await new Promise((resolve) => setImmediate(resolve));
   const submenu = controller.getApplicationMenu().getMenuItemById('file-other-app');
   assert.equal(submenu.label, '在其他应用中继续阅读');
@@ -181,7 +194,11 @@ export async function verifyFileMenu(window, recents) {
     assert.ok(!file().items.some((item) => item.id === 'file-preferences'));
     const externalIndex = file().items.findIndex((item) => item.id === 'file-other-app');
     const closeIndex = file().items.findIndex((item) => item.id === 'file-close-document');
-    assert.ok(closeIndex > externalIndex);
+    if (['win32', 'linux'].includes(process.platform)) {
+      assert.equal(closeIndex, -1);
+      assert.ok(menu().items.some((item) => item.id === 'file-close-document'));
+      assert.ok(menu().items.some((item) => item.id === 'file-close-window'));
+    } else assert.ok(closeIndex > externalIndex);
     for (const action of ['reveal', process.platform === 'win32' ? 'share' : 'airdrop']) {
       for (const kind of ['original', 'translated']) {
         const entry = menu().getMenuItemById(`file-${action}-${kind}`);

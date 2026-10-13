@@ -582,7 +582,7 @@ export function createApplicationMenu({
     if (['win32', 'linux'].includes(platform)) {
       const appItems = template.find((item) => item.id === 'app-menu').submenu;
       const fileItems = template.find((item) => item.id === 'file-menu').submenu;
-      const promotedIds = ['file-open', 'app-settings'];
+      const promotedIds = ['file-open', 'file-close-document', 'file-close-window', 'app-settings'];
       const promoted = promotedIds.map((id) =>
         [...fileItems, ...appItems].find((item) => item.id === id),
       );
