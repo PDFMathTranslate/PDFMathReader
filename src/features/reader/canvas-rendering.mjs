@@ -2,6 +2,8 @@ import { renderPixelRatio, scrollPixelRatio, renderFrame } from './render-resolu
 import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';
 import { nextTick } from 'vue';
 import { animateParagraphGaps } from './paragraph-gap-motion.mjs';
+import { bionicRenderOptions } from './bionic-rendering.mjs';
+import { normalizeBionicReading } from '../translation/bionic-reading.mjs';
 
 // A visible page left empty after a pass is painted again, a few times and with a growing pause.
 const PAINT_RETRIES = 3;
@@ -73,6 +75,17 @@ export function createCanvasRendering({
         },
       ],
     };
+  }
+
+  function bionicPreferenceKey(number, normalized) {
+    if (!number) return '';
+    const { mode, fixedLength } =
+      normalized ||
+      normalizeBionicReading({
+        mode: preferences?.bionicReading?.value,
+        fixedLength: preferences?.bionicFixedLength?.value,
+      });
+    return mode === 'off' ? '' : `bionic:${mode}:${fixedLength}`;
   }
 
   function presentFrame(canvas, frame, page, scale, dpr, geometry = frame.pdfFrame) {
@@ -148,6 +161,7 @@ export function createCanvasRendering({
       geometry,
       cropKey,
       filter: frame.pdfFilter || '',
+      bionicKey: frame.pdfBionicKey || '',
     });
     canvas.paragraphGapState = gapState;
     if (gapState && previousGap?.source === source)
@@ -163,12 +177,33 @@ export function createCanvasRendering({
   }
 
   async function draw(page, canvas, scale, preview = false) {
-    // Pages with a watermark to hide are drawn, and cached, apart from the plain page.
-    const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null,
-      filter = removal?.key || '';
     if (!activity.foreground.value || !canvas || !canvas.isConnected) return false;
     const number = Number(canvas.closest('.page')?.dataset.page);
     if (number && !renderState.renderWindow.value.has(number)) return false;
+    const normalizedBionic = normalizeBionicReading({
+        mode: preferences?.bionicReading?.value,
+        fixedLength: preferences?.bionicFixedLength?.value,
+      }),
+      plannedBionicKey = bionicPreferenceKey(number, normalizedBionic);
+    // Pages with a watermark to hide or bionic glyphs are drawn, and cached,
+    // apart from the plain page. Thumbnails deliberately stay unmodified.
+    const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null;
+    if (!activity.foreground.value || !canvas.isConnected) return false;
+    const bionic = plannedBionicKey
+      ? await bionicRenderOptions(page, {
+          mode: normalizedBionic.mode,
+          fixedLength: normalizedBionic.fixedLength,
+        })
+      : { key: '', render: {} };
+    if (!activity.foreground.value || !canvas.isConnected) return false;
+    const filter = removal?.key || '',
+      bionicKey = bionic?.key || '';
+    if (
+      (number && !renderState.renderWindow.value.has(number)) ||
+      bionicKey !== plannedBionicKey ||
+      bionicPreferenceKey(number) !== plannedBionicKey
+    )
+      return false;
     const base = page.getViewport({ scale }),
       geometry = renderFrame(base.width, base.height, number ? view.pageCrop.value : undefined),
       cropKey = geometry.x + ':' + geometry.y + ':' + geometry.width + ':' + geometry.height,
@@ -189,7 +224,8 @@ export function createCanvasRendering({
       cached.scale === scale &&
       cached.dpr >= dpr &&
       cached.cropKey === cropKey &&
-      cached.filter === filter
+      cached.filter === filter &&
+      cached.bionicKey === bionicKey
     ) {
       if (current) {
         renderState.pageTasks.delete(canvas);
@@ -202,7 +238,8 @@ export function createCanvasRendering({
       current.previewScale === scale &&
       current.previewDpr >= dpr &&
       current.previewCrop === cropKey &&
-      current.previewFilter === filter
+      current.previewFilter === filter &&
+      current.previewBionicKey === bionicKey
     )
       return current.previewResult;
     if (current) {
@@ -211,7 +248,17 @@ export function createCanvasRendering({
     }
     if (!renderState.bitmapIds.has(page)) renderState.bitmapIds.set(page, ++renderState.bitmapId);
     const frameKey = (ratio) =>
-        renderState.bitmapIds.get(page) + ':' + scale + ':' + ratio + ':' + cropKey + filter,
+        renderState.bitmapIds.get(page) +
+        ':' +
+        scale +
+        ':' +
+        ratio +
+        ':' +
+        cropKey +
+        ':' +
+        filter +
+        ':' +
+        bionicKey,
       key = frameKey(dpr),
       // A settled page's sharper frame also serves its scroll previews, and
       // replaces the preview frame in the cache once it is drawn.
@@ -237,11 +284,13 @@ export function createCanvasRendering({
     frame.height = Math.ceil(geometry.height * dpr);
     frame.pdfFrame = geometry;
     frame.pdfFilter = filter;
+    frame.pdfBionicKey = bionicKey;
     const task = page.render({
       canvasContext: frame.getContext('2d'),
       viewport,
       transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
       ...removal?.render,
+      ...bionic?.render,
     });
     Object.assign(task, {
       previewPage: page,
@@ -249,6 +298,7 @@ export function createCanvasRendering({
       previewDpr: dpr,
       previewCrop: cropKey,
       previewFilter: filter,
+      previewBionicKey: bionicKey,
     });
     renderState.pageTasks.set(canvas, task);
     task.onContinue = (continuation) => {
@@ -274,7 +324,8 @@ export function createCanvasRendering({
         if (
           renderState.pageTasks.get(canvas) !== task ||
           !canvas.isConnected ||
-          !activity.foreground.value
+          !activity.foreground.value ||
+          bionicPreferenceKey(number) !== bionicKey
         )
           return false;
         if (!number || renderState.visiblePages.has(number))

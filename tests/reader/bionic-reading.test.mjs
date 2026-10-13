@@ -8,7 +8,6 @@ import {
   withBionicSegments,
 } from '../../src/features/translation/bionic-reading.mjs';
 import { informationTextSegments } from '../../src/features/translation/information-emphasis.mjs';
-import { bionicBands, emboldenPixels } from '../../src/features/reader/bionic-overlay.mjs';
 
 const marked = (text, options) => {
   let out = '',
@@ -97,56 +96,4 @@ test('PDF runs join hyphenated words before finding the root', () => {
     { index: 1, start: 9, end: 11 },
   ]);
   assert.deepEqual(bionicRunRanges(runs, { mode: 'off' }), []);
-});
-
-test('faux bold adds only new ink beside dark glyphs', () => {
-  // A one-pixel stroke grows by one pixel even when the box allows two.
-  const row = new Uint8ClampedArray([
-    255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-  ]);
-  const out = emboldenPixels(row, 4, 1, 2);
-  assert.deepEqual([...out.slice(0, 8)], [0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.deepEqual([...out.slice(8)], [0, 0, 0, 255, 0, 0, 0, 0]);
-  // A four-pixel stroke grows by three fifths of its width, never past `spread`.
-  const wide = new Uint8ClampedArray(10 * 4).fill(255);
-  for (let x = 1; x <= 4; x++) wide.set([0, 0, 0, 255], x * 4);
-  const grown = (spread) =>
-    [...Array(10).keys()].filter((x) => emboldenPixels(wide, 10, 1, spread)[x * 4 + 3]);
-  assert.deepEqual(grown(4), [5, 6, 7]);
-  assert.deepEqual(grown(1), [5]);
-  // Light ink on a dark page spreads the maximum instead.
-  const dark = new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255]);
-  assert.deepEqual([...emboldenPixels(dark, 3, 1, 1).slice(4, 8)], [255, 255, 255, 255]);
-  // Blank paper gains nothing.
-  assert.ok(emboldenPixels(new Uint8ClampedArray(16).fill(255), 4, 1, 2).every((v) => !v));
-  // Skipped pixels (another line inside a drop cap's box) never gain or lend ink.
-  const skip = new Uint8Array(10);
-  skip.fill(1, 1, 5);
-  assert.ok(emboldenPixels(wide, 10, 1, 4, skip).every((v) => !v));
-  const long = new Uint8ClampedArray(20 * 4).fill(255);
-  long.set(wide);
-  const gap = new Uint8Array(20).fill(1, 6, 8);
-  const kept = emboldenPixels(long, 20, 1, 4, gap);
-  assert.deepEqual(
-    [...Array(20).keys()].filter((x) => kept[x * 4 + 3]),
-    [5],
-  );
-});
-
-test('overlay boxes group into bounded bands', () => {
-  const bands = bionicBands(
-    [
-      { x: 0, y: 600, width: 5, height: 20 },
-      { x: 0, y: 0, width: 5, height: 20 },
-      { x: 9, y: 30, width: 5, height: 20 },
-    ],
-    512,
-  );
-  assert.deepEqual(
-    bands.map((b) => [b.top, b.bottom, b.boxes.length]),
-    [
-      [0, 50, 2],
-      [600, 620, 1],
-    ],
-  );
 });

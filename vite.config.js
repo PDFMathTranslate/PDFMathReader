@@ -4,6 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { readBuildInfo } from './scripts/build-info.mjs';
+import { pdfBionicRuntimePlugin } from './scripts/pdf-bionic-runtime.mjs';
 
 function buildInfoPlugin() {
   let source;
@@ -66,7 +67,8 @@ function pdfRuntimeAssetsPlugin() {
 }
 
 export default defineConfig({
-  plugins: [vue(), buildInfoPlugin(), pdfRuntimeAssetsPlugin()],
+  plugins: [pdfBionicRuntimePlugin(), vue(), buildInfoPlugin(), pdfRuntimeAssetsPlugin()],
+  optimizeDeps: { exclude: ['pdfjs-dist'] },
   build: {
     rollupOptions: {
       output: {

@@ -43,6 +43,11 @@ export function installReaderPreferenceObservers({ bindings }) {
   watch(bindings.preferences.bionicFixedLength, (value) =>
     localStorage.setItem('bionicFixedLength', String(value)),
   );
+  watch([bindings.preferences.bionicReading, bindings.preferences.bionicFixedLength], () => {
+    // The render key makes old frames harmless; repaint mounted pages without
+    // clearing the bounded bitmap cache or resetting reader geometry.
+    void bindings.renderPages(false, true);
+  });
   watch(
     [
       bindings.documentOpenMode,

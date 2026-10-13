@@ -13,6 +13,24 @@ const source = (await readFile(sourceURL, 'utf8'))
     "import { animateParagraphGaps } from './paragraph-gap-motion.mjs';",
     'const animateParagraphGaps = () => {};',
   )
+  .replace(
+    "import { normalizeBionicReading } from '../translation/bionic-reading.mjs';",
+    `const normalizeBionicReading = ({ mode, fixedLength } = {}) => {
+      const length = Math.round(Number(fixedLength));
+      return {
+        mode: ['off', 'fixed', 'root'].includes(mode) ? mode : 'off',
+        fixedLength: Number.isFinite(length) ? Math.min(6, Math.max(1, length)) : 3,
+      };
+    };`,
+  )
+  .replace(
+    "import { bionicRenderOptions } from './bionic-rendering.mjs';",
+    `const bionicRenderOptions = async (page, options) => {
+      const key = options.mode === 'off' ? '' : 'bionic:' + options.mode + ':' + options.fixedLength;
+      await page.bionicPlans?.get(key)?.promise;
+      return { key, render: key ? { bionicGlyphs: key } : {} };
+    };`,
+  )
   .replace("'vue'", JSON.stringify(import.meta.resolve('vue')))
   .replace(
     "import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';",
@@ -71,6 +89,7 @@ function fixture() {
   const pages = [1, 2, 3].map((number) => ({ number, blocks: [] }));
   const pdfPages = pages.map(() => ({
     getViewport: ({ scale }) => ({ width: 100 * scale, height: 200 * scale }),
+    bionicPlans: new Map(),
     render: () => ({ promise: Promise.resolve(), cancel() {} }),
   }));
   const pdf = { getPage: async (number) => pdfPages[number - 1] };
@@ -84,10 +103,15 @@ function fixture() {
       value: { getBoundingClientRect: () => ({ top: 0, bottom: 200, left: 0, right: 100 }) },
     },
   };
+  const preferences = {
+    bionicReading: { value: 'off' },
+    bionicFixedLength: { value: 3 },
+  };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf, pages: { value: pages } },
     motion: { pinching: { value: false } },
+    preferences,
     view,
     activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
     actions: {
@@ -101,6 +125,7 @@ function fixture() {
     pdf,
     pdfPages,
     pages,
+    preferences,
     view,
     renderer,
     restore() {
@@ -347,6 +372,102 @@ test('a cached frame is not trusted once its canvas has been emptied', async () 
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
     assert.ok(target.width > 0);
   } finally {
+    f.restore();
+  }
+});
+
+test('bionic render keys separate canvas, task, and bitmap reuse', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1),
+    page = f.pdfPages[0],
+    options = [];
+  page.render = (renderOptions) => {
+    options.push(renderOptions);
+    return { promise: Promise.resolve(), cancel() {} };
+  };
+  try {
+    f.preferences.bionicReading.value = 'fixed';
+    f.preferences.bionicFixedLength.value = 2;
+    assert.equal(await f.renderer.draw(page, target, 1), true);
+    assert.equal(options.length, 1);
+    assert.equal(options[0].bionicGlyphs, 'bionic:fixed:2');
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:2');
+    assert.ok([...f.state.bitmapFrames.keys()].some((key) => key.endsWith(':bionic:fixed:2')));
+
+    f.preferences.bionicFixedLength.value = 3;
+    assert.equal(await f.renderer.draw(page, target, 1), true);
+    assert.equal(options.length, 2);
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:3');
+
+    f.preferences.bionicReading.value = 'off';
+    assert.equal(await f.renderer.draw(page, target, 1), true);
+    assert.equal(options.length, 3);
+    assert.equal(options[2].bionicGlyphs, undefined);
+    assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+  } finally {
+    f.restore();
+  }
+});
+
+test('a stale bionic plan cannot start rendering after settings change', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1),
+    page = f.pdfPages[0],
+    plan = deferred(),
+    options = [];
+  page.bionicPlans.set('bionic:fixed:2', plan);
+  page.render = (renderOptions) => {
+    options.push(renderOptions);
+    return { promise: Promise.resolve(), cancel() {} };
+  };
+  try {
+    f.preferences.bionicReading.value = 'fixed';
+    f.preferences.bionicFixedLength.value = 2;
+    const stale = f.renderer.draw(page, target, 1);
+    await new Promise((resolve) => setImmediate(resolve));
+    f.preferences.bionicReading.value = 'off';
+    plan.resolve();
+    assert.equal(await stale, false);
+    assert.equal(options.length, 0);
+
+    assert.equal(await f.renderer.draw(page, target, 1), true);
+    assert.equal(options.length, 1);
+    assert.equal(options[0].bionicGlyphs, undefined);
+    assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+  } finally {
+    plan.resolve();
+    f.restore();
+  }
+});
+
+test('an in-flight bionic frame cannot present after settings change', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1),
+    page = f.pdfPages[0],
+    gate = deferred(),
+    options = [];
+  page.render = (renderOptions) => {
+    options.push(renderOptions);
+    return { promise: gate.promise, cancel() {} };
+  };
+  try {
+    f.preferences.bionicReading.value = 'fixed';
+    f.preferences.bionicFixedLength.value = 2;
+    const stale = f.renderer.draw(page, target, 1);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(options.length, 1);
+    f.preferences.bionicReading.value = 'off';
+    gate.resolve();
+    assert.equal(await stale, false);
+    assert.equal(target.width, 0);
+    assert.equal(f.state.bitmapFrames.size, 0);
+
+    assert.equal(await f.renderer.draw(page, target, 1), true);
+    assert.equal(options.length, 2);
+    assert.equal(options[1].bionicGlyphs, undefined);
+    assert.equal(target.width > 0, true);
+  } finally {
+    gate.resolve();
     f.restore();
   }
 });
