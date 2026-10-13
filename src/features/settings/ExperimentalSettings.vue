@@ -10,6 +10,7 @@ import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import EpubSettings from './EpubSettings.vue';
 import TocGenerationSettings from './TocGenerationSettings.vue';
+import TranslationCompareSettings from './TranslationCompareSettings.vue';
 import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
 import RecentMagicZoomSettings from './RecentMagicZoomSettings.vue';
 import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
@@ -37,6 +38,7 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
       <div class="settings-section-body">
         <DocumentLanguageSettings v-if="languagePreferences" />
         <ParagraphContinuationSettings v-if="languagePreferences" />
+        <TranslationCompareSettings v-if="languagePreferences" />
       </div>
     </section>
     <section class="settings-section" aria-labelledby="settings-experimental-providers">

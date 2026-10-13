@@ -5,6 +5,14 @@ import { shortcutAction, effectiveShortcutBindings } from '../../../shared/comma
 import { initializeShortcutState, shortcutOverrides } from './shortcut-state.mjs';
 import { nextTick } from 'vue';
 
+const COMPARE_PASSTHROUGH = new Set([
+  'compare-translations',
+  'preferences',
+  'settings',
+  'open',
+  'close-document',
+]);
+
 export function createReaderCommands({
   session,
   translationState,
@@ -69,6 +77,15 @@ export function createReaderCommands({
     }
     if (action.startsWith('page-edit:')) {
       void actions.rootActions.editDocumentPages(action.slice(10));
+      return;
+    }
+    if (action === 'compare-translations') {
+      if (
+        !shell.settingsWindowMode &&
+        session.pages.value.length &&
+        preferences.translationCompareEnabled.value
+      )
+        actions.translationCompare.toggleCompare();
       return;
     }
     if (action === 'generate-toc') {
@@ -149,6 +166,32 @@ export function createReaderCommands({
     const editable =
       actions.readerPopovers.editableTarget(e.target) ||
       actions.readerPopovers.editableTarget(document.activeElement);
+    // The comparison view owns scrolling keys; only window-level commands pass through.
+    if (actions.translationCompare.compareOpen.value) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        actions.translationCompare.closeCompare();
+        return;
+      }
+      const action = shortcutAction(
+        shell.platform,
+        {
+          type: 'keyDown',
+          key: e.key,
+          code: e.code,
+          meta: e.metaKey,
+          control: e.ctrlKey,
+          alt: e.altKey,
+          shift: e.shiftKey,
+        },
+        shortcutOverrides.value,
+      );
+      if (action && COMPARE_PASSTHROUGH.has(action) && !editable) {
+        e.preventDefault();
+        readerAction(action);
+      }
+      return;
+    }
     if (
       motion.referenceReturn.value &&
       !editable &&

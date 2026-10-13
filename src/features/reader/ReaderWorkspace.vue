@@ -425,6 +425,7 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           />
         </div>
       </main>
+      <slot name="overlay" />
       <Transition name="reference-return"
         ><div v-if="referenceReturn && pages.length" class="reference-return-actions">
           <button

@@ -13,6 +13,9 @@ const NativeSettingsPanel = defineAsyncComponent(
 const LegacySettingsPanel = defineAsyncComponent(
   () => import('./features/settings/LegacySettingsPanel.vue'),
 );
+const TranslationCompare = defineAsyncComponent(
+  () => import('./features/translation/compare/TranslationCompare.vue'),
+);
 import RecentTranslationStatus from './features/translation/RecentTranslationStatus.vue';
 import { useReaderWindow } from './app/useReaderWindow.mjs';
 const {
@@ -230,6 +233,7 @@ const {
   epubEnabled,
   draw,
   releaseCanvas,
+  translationCompare,
 } = useReaderWindow();
 const windowTabs = useWindowTabs();
 const tabsVisible = windowTabs.visible;
@@ -427,7 +431,17 @@ const copyToastDetail = computed(() =>
         v-model:sidebar-mode="sidebarMode"
         v-model:sidebar-drag="motion.sidebarDrag"
         v-model:hovered-paragraph="hoveredParagraph"
-      />
+      >
+        <template #overlay>
+          <TranslationCompare
+            v-if="translationCompare.compareOpen.value"
+            :compare="translationCompare"
+            :pages="pages"
+            :kernel-options="kernelOptions"
+            :initial-page="active"
+          />
+        </template>
+      </ReaderWorkspace>
       <ReaderFloatingTools
         :navigator-visible="navigatorVisible"
         :pages="pages"

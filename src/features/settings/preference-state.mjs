@@ -10,6 +10,7 @@ export function createPreferenceState() {
   const documentLanguageDetection = ref(false);
   const topicSentenceDetection = ref(false);
   const tocGenerationEnabled = ref(false);
+  const translationCompareEnabled = ref(false);
   const watermarkRemovalEnabled = ref(false);
   const recentMagicZoomEnabled = ref(false);
   const paragraphContinuationDetection = ref(false);
@@ -83,6 +84,7 @@ export function createPreferenceState() {
     documentLanguageDetection,
     topicSentenceDetection,
     tocGenerationEnabled,
+    translationCompareEnabled,
     watermarkRemovalEnabled,
     recentMagicZoomEnabled,
     paragraphContinuationDetection,

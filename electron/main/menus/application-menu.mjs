@@ -148,6 +148,11 @@ export function createApplicationMenu({
       generate.enabled =
         !!registry.stateFor(target)?.performance.hasDocument &&
         preferences?.load?.().tocGenerationEnabled === true;
+    const compare = item('translation-compare');
+    if (compare)
+      compare.enabled =
+        !!registry.stateFor(target)?.performance.hasDocument &&
+        preferences?.load?.().translationCompareEnabled === true;
   };
   const normalizeMenuPath = (value) => {
     const path = Array.isArray(value) ? value : typeof value === 'string' ? [value] : null;
@@ -529,6 +534,11 @@ export function createApplicationMenu({
           ),
           command('Choose Language…', accelerator('L'), 'language', 'translation-language'),
           command('Choose Kernel…', accelerator('K'), 'kernel', 'translation-kernel'),
+          { type: 'separator' },
+          {
+            ...command('Compare…', undefined, 'compare-translations', 'translation-compare'),
+            enabled: false,
+          },
         ],
       },
       ...(platform === 'win32'

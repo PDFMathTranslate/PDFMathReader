@@ -55,6 +55,7 @@ const entries = [
   ['kernel', 'Choose Kernel…', 'Translation', 'translation-kernel', 'K'],
   ['previous-tab', 'Show Previous Tab', 'Window', 'window-previous-tab'],
   ['next-tab', 'Show Next Tab', 'Window', 'window-next-tab'],
+  ['compare-translations', 'Compare…', 'Translation', 'translation-compare'],
 ];
 export function shortcutCatalog(platform) {
   return entries.map(([id, label, group, menuId, key]) => {

@@ -72,15 +72,10 @@ export function createProviderState({ preferences, engine, configured }) {
       : translationLanguageLabel(name, uiLanguage.value);
   }
 
-  const currentTranslationService = computed(() => {
-    const config = translationServices.value?.[engine.value] || {};
-    const requestMatches = translationServiceRequest.value?.engine === engine.value;
-    const id =
-      typeof config.id === 'string'
-        ? config.id
-        : requestMatches && typeof translationServiceRequest.value?.id === 'string'
-          ? translationServiceRequest.value.id
-          : 'auto';
+  // Resolves one kernel's service selection, with its saved profile and credentials.
+  function translationServiceFor(kernel, requestedId) {
+    const config = translationServices.value?.[kernel] || {};
+    const id = typeof requestedId === 'string' ? requestedId : 'auto';
     // Custom services live once for the app; a deleted one falls back to automatic.
     if (isCustomServiceId(id)) {
       const values = customSelectionValues(
@@ -91,8 +86,40 @@ export function createProviderState({ preferences, engine, configured }) {
       return values ? { id, values } : { id: 'auto', values: {} };
     }
     const profile = { ...(config.values || {}), ...(config.profiles?.[id]?.values || {}) };
-    const secrets = serviceCredentialValues.value?.[engine.value]?.[id] || {};
+    const secrets = serviceCredentialValues.value?.[kernel]?.[id] || {};
     return { id, values: { ...profile, ...secrets } };
+  }
+  function selectedServiceId(kernel) {
+    const config = translationServices.value?.[kernel] || {};
+    const requestMatches = translationServiceRequest.value?.engine === kernel;
+    return typeof config.id === 'string'
+      ? config.id
+      : requestMatches && typeof translationServiceRequest.value?.id === 'string'
+        ? translationServiceRequest.value.id
+        : 'auto';
+  }
+  // The configured services a kernel can use, given that kernel's native catalog.
+  function serviceOptionsFor(kernel, nativeServices) {
+    return configuredMenuServices(
+      {
+        services: [
+          ...nativeServices,
+          ...customServiceDescriptors(kernel, nativeServices, customTranslationServices.value),
+        ],
+      },
+      withCustomProfiles(translationServices.value[kernel], customTranslationServices.value),
+      withSharedOpenAIKey(
+        nativeServices,
+        withCustomCredentials(serviceCredentialValues.value, kernel)[kernel],
+        configured.value,
+      ),
+    ).map((item) => ({
+      ...item,
+      label: item.value === 'auto' ? menuLabel('Automatic', uiLanguage.value) : item.label,
+    }));
+  }
+  const currentTranslationService = computed(() => {
+    return translationServiceFor(engine.value, selectedServiceId(engine.value));
   });
   const translationServiceId = computed(() => currentTranslationService.value.id);
   const nativeMenuServices = ref([]);
@@ -136,30 +163,7 @@ export function createProviderState({ preferences, engine, configured }) {
     },
     provider: {
       selected: translationServiceId.value,
-      options: configuredMenuServices(
-        {
-          services: [
-            ...nativeMenuServices.value,
-            ...customServiceDescriptors(
-              engine.value,
-              nativeMenuServices.value,
-              customTranslationServices.value,
-            ),
-          ],
-        },
-        withCustomProfiles(
-          translationServices.value[engine.value],
-          customTranslationServices.value,
-        ),
-        withSharedOpenAIKey(
-          nativeMenuServices.value,
-          withCustomCredentials(serviceCredentialValues.value, engine.value)[engine.value],
-          configured.value,
-        ),
-      ).map((item) => ({
-        ...item,
-        label: item.value === 'auto' ? menuLabel('Automatic', uiLanguage.value) : item.label,
-      })),
+      options: serviceOptionsFor(engine.value, nativeMenuServices.value),
     },
     uiLanguage: {
       selected: uiLanguageChoice.value,
@@ -198,6 +202,9 @@ export function createProviderState({ preferences, engine, configured }) {
     sourceLanguageOptions,
     languageLabel,
     currentTranslationService,
+    translationServiceFor,
+    selectedServiceId,
+    serviceOptionsFor,
     translationServiceId,
     nativeMenuServices,
     effectiveTranslationSummary,

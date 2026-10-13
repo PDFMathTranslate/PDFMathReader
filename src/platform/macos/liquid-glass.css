@@ -123,8 +123,10 @@
 }
 [data-interface-style='liquid-glass']
   .app.desktop[data-platform='darwin']
-  .toolbar
-  :is(.icon-button, .toolbar-kernel) {
+  :is(
+    .toolbar :is(.icon-button, .toolbar-kernel),
+    .compare-header :is(.icon-button, .compare-control)
+  ) {
   position: relative;
   isolation: isolate;
   border: 1px solid rgb(128 128 128 / 17%);
@@ -161,8 +163,10 @@
 }
 [data-appearance='dark'][data-interface-style='liquid-glass']
   .app.desktop[data-platform='darwin']
-  .toolbar
-  :is(.icon-button, .toolbar-kernel) {
+  :is(
+    .toolbar :is(.icon-button, .toolbar-kernel),
+    .compare-header :is(.icon-button, .compare-control)
+  ) {
   background: linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 4%));
   border-color: rgb(255 255 255 / 18%);
   box-shadow:
@@ -172,8 +176,10 @@
 [data-liquid-glass='solid'] .app.desktop[data-platform='darwin'] .toolbar,
 [data-liquid-glass='solid']
   .app.desktop[data-platform='darwin']
-  .toolbar
-  :is(.icon-button, .toolbar-kernel) {
+  :is(
+    .toolbar :is(.icon-button, .toolbar-kernel),
+    .compare-header :is(.icon-button, .compare-control)
+  ) {
   background: var(--chrome-solid, #f5f5f7);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -201,10 +207,46 @@
 
 [data-interface-style='liquid-glass']
   .app.desktop[data-platform='darwin']
-  .toolbar
-  :is(.icon-button, .toolbar-kernel),
+  :is(
+    .toolbar :is(.icon-button, .toolbar-kernel),
+    .compare-header :is(.icon-button, .compare-control)
+  ),
 [data-interface-style='liquid-glass'] .reader-glass-material {
   corner-shape: round;
+}
+
+/* Compare pickers: the capsule is the control, so the inner pop-up button takes
+   its shape instead of painting a squircle fill past the capsule's curve. */
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .compare-header
+  .compare-control {
+  overflow: clip;
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .compare-header
+  .compare-control
+  .macvue-pop-up-button {
+  height: 34px;
+  min-height: 34px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .compare-header
+  .compare-control
+  .macvue-pop-up-button:is(:hover, :active, [data-state='open']):not(:disabled) {
+  background: rgb(0 0 0 / 5%);
+}
+[data-appearance='dark'][data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .compare-header
+  .compare-control
+  .macvue-pop-up-button:is(:hover, :active, [data-state='open']):not(:disabled) {
+  background: rgb(255 255 255 / 8%);
 }
 
 /* The sidebar is a transparent rail; only its floating controls carry glass. */

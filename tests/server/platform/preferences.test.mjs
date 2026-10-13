@@ -47,6 +47,7 @@ const DEFAULT_PREFERENCES = {
   documentLanguageDetection: false,
   topicSentenceDetection: false,
   tocGenerationEnabled: false,
+  translationCompareEnabled: false,
   watermarkRemovalEnabled: false,
   recentMagicZoomEnabled: false,
   paragraphContinuationDetection: false,
@@ -104,6 +105,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         documentLanguageDetection: true,
         topicSentenceDetection: true,
         tocGenerationEnabled: true,
+        translationCompareEnabled: true,
         watermarkRemovalEnabled: true,
         recentMagicZoomEnabled: true,
         paragraphContinuationDetection: true,
@@ -134,6 +136,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ documentLanguageDetection: 'true' }));
     assert.throws(() => preferences.save({ topicSentenceDetection: 'true' }));
     assert.throws(() => preferences.save({ tocGenerationEnabled: 'true' }));
+    assert.throws(() => preferences.save({ translationCompareEnabled: 'true' }));
     assert.throws(() => preferences.save({ watermarkRemovalEnabled: 'true' }));
     assert.throws(() => preferences.save({ recentMagicZoomEnabled: 'true' }));
     assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));

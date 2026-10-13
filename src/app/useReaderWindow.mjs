@@ -233,6 +233,9 @@ export function useReaderWindow() {
       historyTracker: () => providerState.historyTracker,
       translationServiceCatalogRevision: () => providerState.translationServiceCatalogRevision,
       registeredMenuOptions: () => providerState.registeredMenuOptions,
+      translationServiceFor: () => providerState.translationServiceFor,
+      selectedServiceId: () => providerState.selectedServiceId,
+      serviceOptionsFor: () => providerState.serviceOptionsFor,
     }),
     annotations: createLazyPort({
       annotations: () => annotations,

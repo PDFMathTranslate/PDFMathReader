@@ -36,6 +36,7 @@ const SETTINGS_PREFERENCES = [
   'documentLanguageDetection',
   'topicSentenceDetection',
   'tocGenerationEnabled',
+  'translationCompareEnabled',
   'watermarkRemovalEnabled',
   'recentMagicZoomEnabled',
   'paragraphContinuationDetection',

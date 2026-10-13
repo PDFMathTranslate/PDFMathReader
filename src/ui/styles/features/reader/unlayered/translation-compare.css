@@ -1,0 +1,326 @@
+/* Experimental side-by-side translation comparison, layered over the reader. */
+
+.translation-compare {
+  --compare-top: 0px;
+  --compare-header-height: 52px;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--reader);
+  animation: compare-enter 180ms ease-out;
+}
+
+/* The window toolbar stays above the comparison; pages scroll beneath both bars. */
+.content-glass .translation-compare {
+  --compare-top: var(--toolbar-height);
+}
+
+.app:has(.translation-compare) .toolbar {
+  z-index: 7;
+}
+
+/* The comparison header extends up behind the toolbar as one material band, so
+   the titlebar's own progressive fade would only stack a second blur on top. */
+.app:has(.translation-compare) .toolbar-progressive-blur {
+  display: none;
+}
+
+@keyframes compare-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.compare-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, var(--compare-column)));
+  justify-content: center;
+  align-items: center;
+  column-gap: var(--compare-gap);
+  height: calc(var(--compare-top) + var(--compare-header-height));
+  padding: var(--compare-top) calc(24px + var(--compare-scrollbar, 0px)) 0 24px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--chrome-divider);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.compare-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.compare-side-right {
+  justify-content: space-between;
+}
+
+.compare-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.compare-control {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+}
+
+.compare-close.icon-button {
+  box-sizing: border-box;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--chrome-hover);
+  box-shadow: none;
+}
+
+.compare-close.icon-button:is(:hover, :active):not(:disabled) {
+  color: var(--text);
+  background: var(--chrome-pressed);
+}
+
+.compare-close .system-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Liquid glass: the header is one thin material band like the Preview title bar;
+   its controls are the toolbar's glass capsules (see platform/macos/liquid-glass.css). */
+[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .compare-header {
+  background: rgb(250 250 252 / 52%);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  backdrop-filter: blur(24px) saturate(135%);
+  border-bottom-color: rgb(128 128 128 / 14%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+}
+
+[data-appearance='dark'][data-interface-style='liquid-glass']
+  .app[data-platform='darwin']
+  .compare-header {
+  background: rgb(30 30 34 / 58%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+[data-liquid-glass='solid'] .app[data-platform='darwin'] .compare-header {
+  background: var(--chrome-solid, #f5f5f7);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-interface-style='liquid-glass'] .app[data-platform='darwin'] .compare-picker {
+  background: var(--reader-glass-fill);
+  border-color: var(--reader-glass-rim);
+  border-radius: 22px;
+  box-shadow: var(--reader-glass-shadow), var(--shadow-popover);
+}
+
+.compare-eyebrow {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.compare-scroller {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding-top: calc(var(--compare-top) + var(--compare-header-height));
+  overflow: auto;
+  outline: none;
+  overscroll-behavior: contain;
+}
+
+.compare-track {
+  position: relative;
+  min-width: 100%;
+}
+
+.compare-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: var(--compare-gap);
+}
+
+.compare-page-number {
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  transform: translateX(-50%);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-page {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: var(--shadow-page);
+}
+
+.compare-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: opacity 220ms ease;
+}
+
+.compare-page.dimmed .compare-canvas {
+  opacity: 0.38;
+}
+
+.compare-paragraphs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.compare-paragraph {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0 1px;
+  color: #202024;
+  background: #fff;
+  /* Same cover as the reader, so ascenders and descenders of the source stay hidden. */
+  box-shadow: 0 0 0 var(--cover-padding, 3px) #fff;
+  font-family: var(--translation-font, inherit);
+  line-height: 1.22;
+  text-align: var(--paragraph-align, left);
+  white-space: pre-wrap;
+  animation: compare-paragraph-in 200ms ease-out;
+}
+
+@keyframes compare-paragraph-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.compare-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compare-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--chrome-raised);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-chip.error {
+  color: var(--danger, #c4302b);
+}
+
+.compare-retry {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-on-accent);
+  background: var(--accent);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.compare-picker-host {
+  position: absolute;
+  top: calc(var(--compare-top) + var(--compare-header-height));
+  bottom: 0;
+  /* Centred over the right page column. */
+  left: calc(50% + var(--compare-gap) / 2 - var(--compare-scrollbar, 0px) / 2);
+  width: var(--compare-column);
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  padding: 24px 0;
+  pointer-events: none;
+}
+
+.compare-picker {
+  display: grid;
+  gap: 12px;
+  width: min(340px, 100%);
+  padding: 20px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 14px;
+  background: var(--chrome-raised);
+  box-shadow: var(--shadow-popover);
+  pointer-events: auto;
+  backdrop-filter: blur(24px) saturate(1.5);
+  animation: compare-picker-in 260ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+@keyframes compare-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.compare-picker h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.compare-picker .muted {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.compare-field {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+/* macOS 27 sheet actions are capsules. */
+.app[data-platform='darwin'] .compare-picker > .macvue-button {
+  min-height: 32px;
+  border-radius: 999px;
+  corner-shape: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .translation-compare,
+  .compare-picker,
+  .compare-paragraph {
+    animation: none;
+  }
+}

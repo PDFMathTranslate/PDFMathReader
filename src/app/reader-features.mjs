@@ -25,6 +25,7 @@ import { createAppearanceSettings } from '../features/settings/appearance.mjs';
 import { createCredentialSettings } from '../features/settings/credentials.mjs';
 import { createReaderCommands } from '../features/reader/reader-commands.mjs';
 import { createTocGeneration } from '../features/reader/toc-generation.mjs';
+import { createTranslationCompare } from '../features/translation/compare/translation-compare.mjs';
 import { createReaderPopovers } from '../features/reader/reader-popovers.mjs';
 import { createReaderInputs } from '../features/reader/reader-inputs.mjs';
 import { createReadingPosition } from '../features/reader/reading-position.mjs';
@@ -66,6 +67,7 @@ export function createReaderFeatures({
       readerFit: () => readerFit,
     }),
   });
+  const translationCompare = createTranslationCompare({ session, preferences, provider, kernel });
   const referenceNavigation = createReferenceNavigation({
     session,
     motion,
@@ -372,6 +374,7 @@ export function createReaderFeatures({
       readerPopovers: () => readerPopovers,
       referenceNavigation: () => referenceNavigation,
       tocGeneration: () => tocGeneration,
+      translationCompare: () => translationCompare,
     }),
     shell,
     view,
@@ -460,6 +463,7 @@ export function createReaderFeatures({
 
   return {
     watermarkRemoval,
+    translationCompare,
     ...referenceNavigation,
     ...tocGeneration,
     ...sidebarInteraction,

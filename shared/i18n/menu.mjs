@@ -614,6 +614,12 @@ for (const [locale, value] of Object.entries({
   'zh-TW': '生成目錄',
 }))
   menuMessages[locale]['Generate Table of Contents'] = value;
+for (const [locale, value] of Object.entries({
+  en: 'Compare…',
+  'zh-CN': '对比…',
+  'zh-TW': '對比…',
+}))
+  menuMessages[locale]['Compare…'] = value;
 
 function localeMessages(locale) {
   return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
