@@ -4,6 +4,7 @@ export function createMotionState() {
   const pinching = ref(false);
   const navigatorVisible = ref(false);
   const sidebarWidth = ref(null);
+  const sidebarDefaultWidth = undefined;
   const sidebarLeaving = ref(false);
   const referenceReturn = shallowRef(null);
   const referenceNavigation = 0;
@@ -37,6 +38,7 @@ export function createMotionState() {
     pinching,
     navigatorVisible,
     sidebarWidth,
+    sidebarDefaultWidth,
     sidebarLeaving,
     referenceReturn,
     referenceNavigation,

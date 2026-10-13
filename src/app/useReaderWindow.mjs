@@ -35,6 +35,7 @@ import { useFormulaOcr } from '../features/reader/useFormulaOcr.mjs';
 import {
   buildReaderLayout,
   buildThumbnailLayout,
+  thumbnailFactor,
   visibleThumbnailWindow,
 } from '../features/reader/reader-layout.mjs';
 
@@ -895,7 +896,14 @@ export function useReaderWindow() {
       ),
     ),
   );
-  const thumbnailLayout = computed(() => markRaw(buildThumbnailLayout(pages.value)));
+  const thumbnailLayout = computed(() =>
+    markRaw(
+      buildThumbnailLayout(
+        pages.value,
+        thumbnailFactor(sidebarWidth.value, motion.sidebarDefaultWidth),
+      ),
+    ),
+  );
   const thumbnailItems = computed(() =>
     sidebar.value || sidebarLeaving.value
       ? visibleThumbnailWindow(thumbnailLayout.value, thumbnailTop.value, thumbnailHeight.value)
@@ -926,6 +934,7 @@ export function useReaderWindow() {
   );
 
   watch(immersiveHeaderHidden, featureActions.updateThumbnailViewport, { flush: 'post' });
+  watch(thumbnailLayout, featureActions.anchorThumbnails, { flush: 'post' });
 
   watch(
     thumbnailItems,

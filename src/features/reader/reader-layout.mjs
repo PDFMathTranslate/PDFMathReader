@@ -105,10 +105,18 @@ export function visibleReaderWindow(layout, bounds, active = 1, buffer = 4) {
       numbers.push(layout.frames[n].number);
   return { visible, numbers, firstRow: from, lastRow: to };
 }
-export function buildThumbnailLayout(pages) {
+// Thumbnails fit a 128x160 box at the sidebar's default width and grow or
+// shrink with a resized sidebar while each page keeps its own aspect ratio.
+export function thumbnailFactor(sidebarWidth, defaultWidth) {
+  return sidebarWidth && defaultWidth ? sidebarWidth / defaultWidth : 1;
+}
+export function thumbnailScale(page, factor = 1) {
+  return Math.min((128 * factor) / page.width, (160 * factor) / page.height);
+}
+export function buildThumbnailLayout(pages, factor) {
   let height = 0;
   const frames = pages.map((p) => {
-    const scale = Math.min(128 / p.width, 160 / p.height),
+    const scale = thumbnailScale(p, factor),
       item = {
         number: p.number,
         offset: height,

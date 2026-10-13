@@ -1,3 +1,5 @@
+import { thumbnailFactor, thumbnailScale } from './reader-layout.mjs';
+
 export function createThumbnails({ renderState, motion, session, shell, activity, view, actions }) {
   function bindThumbnail(number, el) {
     const old = renderState.thumbEls.get(number);
@@ -27,7 +29,9 @@ export function createThumbnails({ renderState, motion, session, shell, activity
   }
 
   async function renderThumbnails() {
-    if (!activity.foreground.value || motion.fitResizing) return;
+    // While the sidebar is dragged the canvases stretch with CSS; the sharp
+    // raster is drawn once the drag ends.
+    if (!activity.foreground.value || motion.fitResizing || motion.sidebarDrag) return;
     const token = ++renderState.thumbnailEpoch,
       documentToken = session.epoch;
     const numbers = [...renderState.visibleThumbnails];
@@ -53,7 +57,10 @@ export function createThumbnails({ renderState, motion, session, shell, activity
             await actions.canvasRendering.draw(
               page,
               canvas,
-              Math.min(128 / p.width, 160 / p.height),
+              thumbnailScale(
+                p,
+                thumbnailFactor(motion.sidebarWidth?.value, motion.sidebarDefaultWidth),
+              ),
             );
         }
       }),
@@ -71,6 +78,22 @@ export function createThumbnails({ renderState, motion, session, shell, activity
       root.scrollTop = bottom - root.clientHeight;
     updateThumbnailViewport();
   }
+
+  // Keep the first visible thumbnail in place when the sidebar width rescales the list.
+  function anchorThumbnails(layout, previous) {
+    const root = renderState.thumbnailList.value;
+    if (!root || !previous?.frames.length || layout.frames.length !== previous.frames.length)
+      return;
+    const top = root.scrollTop - parseFloat(getComputedStyle(root).paddingTop),
+      index = previous.frames.findIndex((f) => f.offset + f.height + 14 > top);
+    if (index < 0) return;
+    const before = previous.frames[index],
+      after = layout.frames[index],
+      ratio = Math.max(0, top - before.offset) / (before.height + 14);
+    root.scrollTop =
+      after.offset + ratio * (after.height + 14) + parseFloat(getComputedStyle(root).paddingTop);
+    updateThumbnailViewport();
+  }
   return {
     bindThumbnail,
     thumbnailScrolling,
@@ -78,5 +101,6 @@ export function createThumbnails({ renderState, motion, session, shell, activity
     observeThumbnails,
     renderThumbnails,
     scrollThumbnailTo,
+    anchorThumbnails,
   };
 }

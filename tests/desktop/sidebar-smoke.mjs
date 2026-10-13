@@ -334,6 +334,8 @@ export async function verifySidebar(window, recents) {
       `!!document.querySelector('.thumbnail-list')&&!document.querySelector('.sidebar-view-motion-enter-active')`,
     );
     const before = await run(`document.querySelector('.sidebar').getBoundingClientRect().width`);
+    const thumbSize = `(()=>{const c=document.querySelector('.thumb canvas'),r=c.getBoundingClientRect();return {width:r.width,height:r.height,raster:c.width};})()`;
+    const thumbBefore = await run(thumbSize);
     const point = await run(
       `(()=>{const r=document.querySelector('.sidebar-resize-handle').getBoundingClientRect();return {x:Math.round(r.left+3),y:Math.round(r.top+60)};})()`,
     );
@@ -364,6 +366,14 @@ export async function verifySidebar(window, recents) {
     });
     await wait(`document.querySelector('.sidebar').getBoundingClientRect().width>${before + 60}`);
     const expanded = await run(`document.querySelector('.sidebar').getBoundingClientRect().width`);
+    await wait(`document.querySelector('.thumb canvas').width>${thumbBefore.raster}`);
+    const thumbAfter = await run(thumbSize);
+    assert.ok(
+      Math.abs(thumbAfter.width / thumbBefore.width - expanded / before) < 0.03 &&
+        Math.abs(thumbAfter.width / thumbAfter.height - thumbBefore.width / thumbBefore.height) <
+          0.02,
+      'thumbnails scale with the sidebar width and keep their aspect ratio',
+    );
     await run(
       `document.querySelector('.sidebar-resize-handle').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`,
     );

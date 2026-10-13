@@ -60,6 +60,8 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Width-driven rescaling re-anchors the scroll position itself. */
+  overflow-anchor: none;
   align-items: center;
   gap: 14px;
   padding: 24px 12px 22px;
@@ -83,8 +85,9 @@
 
 .sidebar .thumbnail-list .thumb canvas {
   display: block;
-  max-width: 128px;
-  max-height: 160px;
+  /* The virtual layout sizes each canvas from the sidebar width. */
+  max-width: none;
+  max-height: none;
   min-height: 0;
   object-fit: contain;
   margin: 0;
@@ -218,8 +221,6 @@
   border-radius: 4px;
   box-shadow: none;
   border: 0;
-  max-width: 154px;
-  max-height: 200px;
 }
 
 .desktop .thumbnail-list .thumb small {

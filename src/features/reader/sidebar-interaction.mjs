@@ -28,9 +28,15 @@ export function createSidebarInteraction({ motion, shell, view, actions }) {
   function resizeSidebarEnd(event) {
     if (!motion.sidebarDrag || event.pointerId !== motion.sidebarDrag.id) return;
     motion.sidebarDrag = null;
+    void actions.thumbnails.renderThumbnails();
   }
 
   function setSidebarWidth(width) {
+    // The platform's default width is the reference size for thumbnail scaling.
+    if (motion.sidebarWidth.value == null)
+      motion.sidebarDefaultWidth = document
+        .querySelector('.workspace > .sidebar')
+        ?.getBoundingClientRect().width;
     motion.sidebarWidth.value = Math.max(200, Math.min(640, window.innerWidth * 0.5, width));
   }
 
