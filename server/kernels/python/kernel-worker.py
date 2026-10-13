@@ -329,6 +329,75 @@ def emit_precise_progress(event):
     )
 
 
+# BabelDOC's OpenAI-style rich-text placeholders are <style id='N'>...</style>, and its
+# parser only accepts that literal tag with single quotes. LLMs sometimes translate the
+# tag name (<样式 id='1'>) or requote it. Only tags that carry a numeric id are treated as
+# placeholders; their closing tags are matched by the same name.
+PRECISE_RICH_TEXT_LEFT = re.compile(
+    r"<\s*([^\s<>/='\"]+)\s+id\s*=\s*(['\"]?)\s*(\d+)\s*\2\s*>", re.IGNORECASE
+)
+
+
+def precise_canonical_rich_text_tags(text):
+    """Rewrite placeholder tags to the form BabelDOC's parse_translate_output matches."""
+    if not isinstance(text, str):
+        return text
+    # BabelDOC reads the inner {vN} of {{vN}} and would leave the outer braces as prose.
+    if "{" in text:
+        text = re.sub(r"\{+(\s*v\s*\d+\s*)\}+", r"{\1}", text, flags=re.IGNORECASE)
+    if "<" not in text:
+        return text
+    names = {match.group(1) for match in PRECISE_RICH_TEXT_LEFT.finditer(text)}
+    if not names:
+        return text
+    text = PRECISE_RICH_TEXT_LEFT.sub(lambda match: f"<style id='{match.group(3)}'>", text)
+    closing = "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
+    return re.sub(rf"<\s*/\s*(?:{closing})\s*>", "</style>", text, flags=re.IGNORECASE)
+
+
+def precise_composition_text(obj):
+    """Plain text of a BabelDOC paragraph composition: styled runs and formulas inline."""
+    if obj is None:
+        return ""
+    for name in ("pdf_line", "pdf_formula", "pdf_same_style_characters"):
+        value = getattr(obj, name, None)
+        if value is not None:
+            return "".join(
+                precise_composition_text(c) for c in getattr(value, "pdf_character", []) or []
+            )
+    for name in ("pdf_character", "pdf_same_style_unicode_characters"):
+        value = getattr(obj, name, None)
+        if value is not None:
+            return precise_composition_text(value)
+    # PdfCharacter stores char_unicode; PdfSameStyleUnicodeCharacters stores unicode.
+    return getattr(obj, "char_unicode", None) or getattr(obj, "unicode", None) or ""
+
+
+# pdf2zh's converter reads formulas with this pattern and skips IDs it does not own.
+FAST_FORMULA_PLACEHOLDER = re.compile(r"\{\s*v([\d\s]+)\}", re.IGNORECASE)
+
+
+def fast_formula_placeholders(text, source):
+    """Give pdf2zh's typesetter only formula placeholder shapes its parser reads."""
+    if not isinstance(text, str) or "{" not in text:
+        return text
+    # {{v0}} would otherwise typeset its outer braces as prose.
+    text = re.sub(r"\{+(\s*v[\d\s]+)\}+", r"{\1}", text, flags=re.IGNORECASE)
+    # {v*} is prompt notation, not an upstream formula ID. Recover only when the
+    # source paragraph identifies exactly one original run; otherwise keep the source.
+    wildcard = re.compile(r"\{+\s*v\s*\*\s*\}+", re.IGNORECASE)
+    if wildcard.search(text):
+        ids = {
+            int(match.replace(" ", ""))
+            for match in FAST_FORMULA_PLACEHOLDER.findall(source or "")
+            if match.strip()
+        }
+        if len(ids) != 1:
+            return source
+        text = wildcard.sub(lambda _: "{v%d}" % next(iter(ids)), text)
+    return text
+
+
 def fast_paragraph_indent(text, x, x0, language):
     """Replace inherited source indentation with two CJK full-width spaces."""
     # Protected tables and formulas are emitted as one placeholder run. Their
@@ -819,27 +888,21 @@ def main(capture_only=False):
             raw_source, raw_target = v["sstk"][index], v["news"][index]
             variables = ["".join(c.get_text() for c in chars) for chars in v["var"]]
 
+            # Mirror the typesetter: unknown formula IDs are dropped, as upstream does.
+            def formula(match):
+                digits = match.group(1).replace(" ", "")
+                return variables[int(digits)] if digits and int(digits) < len(variables) else ""
+
             def restore(text):
-                return re.sub(
-                    r"\{+\s*v(\d+)\s*\}+",
-                    lambda m: variables[int(m[1])] if int(m[1]) < len(variables) else m[0],
-                    text,
-                )
+                return FAST_FORMULA_PLACEHOLDER.sub(formula, text)
 
             display_target, _ = fast_paragraph_indent(
-                raw_target, paragraph.x, paragraph.x0, output_language
+                fast_formula_placeholders(raw_target, raw_source),
+                paragraph.x,
+                paragraph.x0,
+                output_language,
             )
             text, translation = restore(raw_source), restore(display_target)
-            # {v*} is prompt notation, not an upstream formula ID. Recover only
-            # when the source paragraph identifies exactly one original run.
-            source_ids = set(int(m) for m in re.findall(r"\{+\s*v(\d+)\s*\}+", raw_source))
-            wildcard = re.compile(r"\{+\s*v\s*\*\s*\}+", re.IGNORECASE)
-            if wildcard.search(translation):
-                if len(source_ids) == 1 and next(iter(source_ids)) < len(variables):
-                    replacement = variables[next(iter(source_ids))]
-                    translation = wildcard.sub(lambda _: replacement, translation)
-                else:
-                    translation = text
             if text.strip():
                 values = [item for item in v["ops_vals"] if item.get("type").value == "text"]
                 low = min(
@@ -1012,6 +1075,7 @@ def main(capture_only=False):
                 if isinstance(node.target, ast.Name) and node.target.id == "cstk":
                     self.indent_count += 1
                     return [
+                        *ast.parse("new = _preview_formula_placeholders(new, sstk[id])").body,
                         *ast.parse("new, x = _preview_indent(new, x, x0, _preview_language)").body,
                         node,
                     ]
@@ -1063,6 +1127,7 @@ def main(capture_only=False):
                 "PDFMATHREADER_PARAGRAPH_CONTINUATION_TOKEN", ""
             ),
             "_preview_indent": fast_paragraph_indent,
+            "_preview_formula_placeholders": fast_formula_placeholders,
             "_preview_wrap_advance": fast_typography_advance,
             "_preview_italic_prose": fast_italic_prose_characters,
             "_preview_identity": id,
@@ -1098,22 +1163,11 @@ def main(capture_only=False):
         from babeldoc.format.pdf.document_il.midend.typesetting import Typesetting
 
         pending = []
+        # Parsed translation text per paragraph, taken before typesetting splits it into lines.
+        parsed = {}
 
         def values(rect):
             return (rect.x, rect.y, rect.x2, rect.y2)
-
-        def content(obj):
-            if obj is None:
-                return ""
-            for name in ("pdf_line", "pdf_formula", "pdf_same_style_characters"):
-                value = getattr(obj, name, None)
-                if value is not None:
-                    return "".join(content(c) for c in getattr(value, "pdf_character", []))
-            for name in ("pdf_character", "pdf_same_style_unicode_characters"):
-                value = getattr(obj, name, None)
-                if value is not None:
-                    return getattr(value, "unicode", "") or ""
-            return getattr(obj, "unicode", "") or ""
 
         def wrap_translate(original):
             def translate(self, docs):
@@ -1146,24 +1200,47 @@ def main(capture_only=False):
 
         ILTranslator.translate = wrap_translate(ILTranslator.translate)
         ILTranslatorLLMOnly.translate = wrap_translate(ILTranslatorLLMOnly.translate)
+        original_parse_output = ILTranslator.parse_translate_output
+
+        # Both translators funnel LLM output through this parser; it typesets each
+        # <style id='N'> run with that source span's original PDF style.
+        def parse_translate_output(self, input_text, output, *positional, **kwargs):
+            return original_parse_output(
+                self,
+                input_text,
+                precise_canonical_rich_text_tags(output),
+                *positional,
+                **kwargs,
+            )
+
+        ILTranslator.parse_translate_output = parse_translate_output
+        original_post_translate = ILTranslator.post_translate_paragraph
+
+        def post_translate_paragraph(self, paragraph, *positional, **kwargs):
+            changed = original_post_translate(self, paragraph, *positional, **kwargs)
+            if changed:
+                parsed[id(paragraph)] = "".join(
+                    precise_composition_text(c) for c in paragraph.pdf_paragraph_composition
+                )
+            return changed
+
+        ILTranslator.post_translate_paragraph = post_translate_paragraph
         original_typeset = Typesetting.typesetting_document
 
         def typeset(self, docs):
             result = original_typeset(self, docs)
             for para, record in pending:
                 record["translationOutput"] = para.unicode
-                record["translation"] = (
-                    "".join(content(c) for c in para.pdf_paragraph_composition)
-                    or para.unicode
-                    or record["text"]
-                )
+                # The PDF shows the parsed runs; para.unicode still holds the raw placeholders.
+                record["translation"] = parsed.get(id(para)) or para.unicode or record["text"]
                 record["translatedBox"] = box(values(para.box))
                 records.append(record)
             pending.clear()
+            parsed.clear()
             Path(sidecar).write_text(
                 json.dumps(
                     {
-                        "schema": 1,
+                        "schema": 2,
                         "engine": kind,
                         "page": selected,
                         "width": source_page.rect.width,
@@ -1208,7 +1285,7 @@ def main(capture_only=False):
         Path(sidecar).write_text(
             json.dumps(
                 {
-                    "schema": 1,
+                    "schema": 2,
                     "engine": kind,
                     "page": selected,
                     "width": source_page.rect.width,

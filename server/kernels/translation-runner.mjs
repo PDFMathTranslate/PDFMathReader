@@ -7,6 +7,7 @@ import { createTranslationCache } from '../translation/translation-cache.mjs';
 import { buildKernelServiceConfig } from './kernel-services.mjs';
 import { redactDiagnosticText } from '../diagnostics/developer-diagnostics.mjs';
 import { createRemoteKernel, normalizeRemoteKernelUrl } from './remote-kernel.mjs';
+import { hasUnparsedPlaceholders } from '../../shared/translation/rich-text-placeholders.mjs';
 import {
   isTranslationLanguageSupported,
   translationLanguageCode,
@@ -185,11 +186,16 @@ export function createTranslationRunner({
             readFile(join(cacheDir, saved.key + '.pdf')),
             readFile(join(cacheDir, saved.key + '.layout.json'), 'utf8'),
           ]);
-          if (
-            !result.subarray(0, 1024).includes(Buffer.from('%PDF')) ||
-            !Array.isArray(JSON.parse(metadata).paragraphs)
-          )
+          const { paragraphs, schema } = JSON.parse(metadata);
+          if (!result.subarray(0, 1024).includes(Buffer.from('%PDF')) || !Array.isArray(paragraphs))
             throw Error('Invalid cached page');
+          // Before schema 2, placeholders upstream cannot parse (<样式 id='N'>, {v*}, {{vN}})
+          // were typeset literally into the PDF; translate those pages again.
+          if (
+            schema !== 2 &&
+            paragraphs.some((paragraph) => hasUnparsedPlaceholders(paragraph?.translationOutput))
+          )
+            throw Error('Cached page contains unparsed placeholders');
           if (indexPath === compatibleRequestPath)
             await writeIndex(requestPath, {
               key: saved.key,
