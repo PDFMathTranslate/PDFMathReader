@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                         | Contributor                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-13 | [open a page gallery by double-clicking a sidebar thumbnail](https://github.com/PDFMathTranslate/PDFMathReader/commit/f51d80eb2d036d1cb417f3efec4b360a1f25fa56)                 | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [scale sidebar thumbnails with sidebar width](https://github.com/PDFMathTranslate/PDFMathReader/commit/a96c772951a2b437450a048937ffa0b4273c4e9d)                                | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add Finder-style tab mode switcher to reading behavior settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/231bf7c03c09d503eb36ff2db74848e5f32ce1ad)            | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [verify Edit menu rotate current page is selectable](https://github.com/PDFMathTranslate/PDFMathReader/commit/aa6e05f1f7b3febba6f84d206f300f3fe35c9683)                         | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [redesign kernel mode switcher with symbol icons and sliding selection ring](https://github.com/PDFMathTranslate/PDFMathReader/commit/09923cdc2fa91ac190c6f4e5204f85e58baf3500) | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [refine recents magic zoom with smoother easing and edge reveal](https://github.com/PDFMathTranslate/PDFMathReader/commit/a09bc6c07a3013d300cb82719c245087f9ab52f7)             | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add experimental automatic table of contents generation](https://github.com/PDFMathTranslate/PDFMathReader/commit/3f33f3ab4066875db2699a78e9551613bdcd347a)                    | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                              | Contributor                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-13 | [add experimental side-by-side translation compare view](https://github.com/PDFMathTranslate/PDFMathReader/commit/eb5c7bd08cf9c28c89d9383e726550835f62f719)          | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [offer Copy Email for addresses detected in selected text](https://github.com/PDFMathTranslate/PDFMathReader/commit/6aedde81476e28381999764e8d09096234e8df94)        | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [offer Open Link for URLs detected in selected text](https://github.com/PDFMathTranslate/PDFMathReader/commit/a1899494a02d8198ec3778a8301904c403b0107c)              | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [open a page gallery by double-clicking a sidebar thumbnail](https://github.com/PDFMathTranslate/PDFMathReader/commit/f51d80eb2d036d1cb417f3efec4b360a1f25fa56)      | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [scale sidebar thumbnails with sidebar width](https://github.com/PDFMathTranslate/PDFMathReader/commit/a96c772951a2b437450a048937ffa0b4273c4e9d)                     | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [add Finder-style tab mode switcher to reading behavior settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/231bf7c03c09d503eb36ff2db74848e5f32ce1ad) | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [verify Edit menu rotate current page is selectable](https://github.com/PDFMathTranslate/PDFMathReader/commit/aa6e05f1f7b3febba6f84d206f300f3fe35c9683)              | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
