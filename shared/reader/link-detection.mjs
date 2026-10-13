@@ -6,6 +6,8 @@ const urlPattern =
 const trailingPunctuation = /[.,;:!?'"\u2018\u2019\u201c\u201d]+$/;
 const closers = { ')': '(', ']': '[', '}': '{', '>': '<' };
 const maxLinks = 5;
+const emailPattern =
+  /(?<![\w.%+-])[A-Za-z0-9][\w.%+-]*@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}\b/g;
 
 function rejoinWrappedUrls(text) {
   // Each pass joins one break per URL; repeat for URLs spanning several lines.
@@ -67,6 +69,19 @@ export function detectLinks(text) {
     if (links.length === maxLinks) break;
   }
   return links;
+}
+
+export function detectEmails(text) {
+  if (typeof text !== 'string' || !text.trim()) return [];
+  const emails = [];
+  for (const [match] of text.matchAll(emailPattern)) {
+    // Domains are case-insensitive; keep the local part as written.
+    const at = match.lastIndexOf('@');
+    const email = match.slice(0, at) + match.slice(at).toLowerCase();
+    if (!emails.includes(email)) emails.push(email);
+    if (emails.length === maxLinks) break;
+  }
+  return emails;
 }
 
 export function linkLabel(url, maxLength = 48) {

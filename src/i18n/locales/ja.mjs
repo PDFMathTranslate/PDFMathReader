@@ -104,6 +104,7 @@ export default {
   },
   copy: {
     paragraphCopied: '段落をコピーしました',
+    emailCopied: 'メールアドレスをコピーしました',
     failed: 'コピーに失敗しました。もう一度お試しください。',
   },
   paragraph: {

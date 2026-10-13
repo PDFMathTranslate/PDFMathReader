@@ -2,6 +2,7 @@ export const MENU_EXTRA_MESSAGES = {
   ar: {
     'Search in Document': 'البحث في المستند',
     'Open Link': 'فتح الرابط',
+    'Copy Email': 'نسخ البريد الإلكتروني',
     Menu: 'القائمة',
     'Menu unavailable': 'القائمة غير متاحة',
     Minimize: 'تصغير',
@@ -70,6 +71,7 @@ export const MENU_EXTRA_MESSAGES = {
   arz: {
     'Search in Document': 'دوّر في المستند',
     'Open Link': 'افتح اللينك',
+    'Copy Email': 'انسخ الإيميل',
     Menu: 'القائمة',
     'Menu unavailable': 'القائمة مش متاحة',
     Minimize: 'تصغير',
@@ -138,6 +140,7 @@ export const MENU_EXTRA_MESSAGES = {
   hi: {
     'Search in Document': 'दस्तावेज़ में खोजें',
     'Open Link': 'लिंक खोलें',
+    'Copy Email': 'ईमेल कॉपी करें',
     Menu: 'मेनू',
     'Menu unavailable': 'मेनू उपलब्ध नहीं है',
     Minimize: 'छोटा करें',
@@ -206,6 +209,7 @@ export const MENU_EXTRA_MESSAGES = {
   bn: {
     'Search in Document': 'নথিতে অনুসন্ধান করুন',
     'Open Link': 'লিংক খুলুন',
+    'Copy Email': 'ইমেইল কপি করুন',
     Menu: 'মেনু',
     'Menu unavailable': 'মেনু উপলভ্য নয়',
     Minimize: 'ছোট করুন',
@@ -274,6 +278,7 @@ export const MENU_EXTRA_MESSAGES = {
   ru: {
     'Search in Document': 'Поиск в документе',
     'Open Link': 'Открыть ссылку',
+    'Copy Email': 'Скопировать e-mail',
     Menu: 'Меню',
     'Menu unavailable': 'Меню недоступно',
     Minimize: 'Свернуть',
@@ -342,6 +347,7 @@ export const MENU_EXTRA_MESSAGES = {
   pt: {
     'Search in Document': 'Pesquisar no documento',
     'Open Link': 'Abrir link',
+    'Copy Email': 'Copiar e-mail',
     Menu: 'Menu',
     'Menu unavailable': 'Menu indisponível',
     Minimize: 'Minimizar',
@@ -410,6 +416,7 @@ export const MENU_EXTRA_MESSAGES = {
   ur: {
     'Search in Document': 'دستاویز میں تلاش کریں',
     'Open Link': 'لنک کھولیں',
+    'Copy Email': 'ای میل کاپی کریں',
     Menu: 'مینو',
     'Menu unavailable': 'مینو دستیاب نہیں',
     Minimize: 'چھوٹا کریں',
@@ -478,6 +485,7 @@ export const MENU_EXTRA_MESSAGES = {
   de: {
     'Search in Document': 'Im Dokument suchen',
     'Open Link': 'Link öffnen',
+    'Copy Email': 'E-Mail-Adresse kopieren',
     Menu: 'Menü',
     'Menu unavailable': 'Menü nicht verfügbar',
     Minimize: 'Minimieren',
@@ -546,6 +554,7 @@ export const MENU_EXTRA_MESSAGES = {
   pcm: {
     'Search in Document': 'Find inside document',
     'Open Link': 'Open link',
+    'Copy Email': 'Copy email',
     Menu: 'Menu',
     'Menu unavailable': 'Menu no dey available',
     Minimize: 'Make small',

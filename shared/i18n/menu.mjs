@@ -12,6 +12,7 @@ const menuMessages = {
   en: {
     'Search in Document': 'Search in Document',
     'Open Link': 'Open Link',
+    'Copy Email': 'Copy Email',
     Menu: 'Menu',
     'Menu unavailable': 'Menu unavailable',
     Minimize: 'Minimize',
@@ -84,6 +85,7 @@ const menuMessages = {
   'zh-CN': {
     'Search in Document': '在文档中搜索',
     'Open Link': '打开链接',
+    'Copy Email': '拷贝电子邮件地址',
     Menu: '菜单',
     'Menu unavailable': '菜单暂不可用',
     Minimize: '最小化',
@@ -156,6 +158,7 @@ const menuMessages = {
   'zh-TW': {
     'Search in Document': '在文件中搜尋',
     'Open Link': '開啟連結',
+    'Copy Email': '拷貝電子郵件地址',
     Menu: '選單',
     'Menu unavailable': '選單暫不可用',
     Minimize: '最小化',
@@ -228,6 +231,7 @@ const menuMessages = {
   fr: {
     'Search in Document': 'Rechercher dans le document',
     'Open Link': 'Ouvrir le lien',
+    'Copy Email': 'Copier l’adresse e-mail',
     Menu: 'Menu',
     'Menu unavailable': 'Menu indisponible',
     Minimize: 'Réduire',
@@ -302,6 +306,7 @@ const menuMessages = {
   es: {
     'Search in Document': 'Buscar en el documento',
     'Open Link': 'Abrir enlace',
+    'Copy Email': 'Copiar correo electrónico',
     Menu: 'Menú',
     'Menu unavailable': 'Menú no disponible',
     Minimize: 'Minimizar',
@@ -374,6 +379,7 @@ const menuMessages = {
   ja: {
     'Search in Document': '文書内を検索',
     'Open Link': 'リンクを開く',
+    'Copy Email': 'メールアドレスをコピー',
     Menu: 'メニュー',
     'Menu unavailable': 'メニューを利用できません',
     Minimize: '最小化',
@@ -446,6 +452,7 @@ const menuMessages = {
   ko: {
     'Search in Document': '문서에서 검색',
     'Open Link': '링크 열기',
+    'Copy Email': '이메일 주소 복사',
     Menu: '메뉴',
     'Menu unavailable': '메뉴를 사용할 수 없음',
     Minimize: '최소화',

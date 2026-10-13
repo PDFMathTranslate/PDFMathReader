@@ -1,6 +1,6 @@
 import { selectionSearchQuery } from '../search/document-search.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
-import { uiLanguage } from '../../i18n/index.mjs';
+import { t, uiLanguage } from '../../i18n/index.mjs';
 import { shortcutAction, effectiveShortcutBindings } from '../../../shared/commands/shortcuts.mjs';
 import { initializeShortcutState, shortcutOverrides } from './shortcut-state.mjs';
 import { nextTick } from 'vue';
@@ -36,6 +36,20 @@ export function createReaderCommands({
           );
         } catch (error) {
           actions.rootActions.notifyCopy(error.message || '无法打开 AI Chat。', 4500);
+        }
+      })();
+      return;
+    }
+    if (action === 'copy-email') {
+      const email = typeof selectionText === 'string' ? selectionText.trim() : '';
+      if (!email) return;
+      void (async () => {
+        try {
+          if (window.previewClipboard) await window.previewClipboard.writeText(email);
+          else await window.navigator.clipboard.writeText(email);
+          actions.rootActions.notifyCopy(`${t('copy.emailCopied')}\n${email}`, 2500);
+        } catch {
+          actions.rootActions.notifyCopy(t('copy.failed'));
         }
       })();
       return;

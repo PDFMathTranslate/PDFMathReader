@@ -114,6 +114,7 @@ export default {
   },
   copy: {
     paragraphCopied: 'অনুচ্ছেদ কপি হয়েছে',
+    emailCopied: 'ইমেইল কপি হয়েছে',
     failed: 'কপি ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
   },
   paragraph: {

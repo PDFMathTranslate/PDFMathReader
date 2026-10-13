@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectLinks, linkLabel } from '../../shared/reader/link-detection.mjs';
+import { detectEmails, detectLinks, linkLabel } from '../../shared/reader/link-detection.mjs';
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 
 test('detects a link at the end of a selected reference', () => {
@@ -60,4 +60,20 @@ test('deduplicates links and labels them compactly', () => {
   assert.equal(linkLabel('https://www.example.org/'), 'example.org');
   assert.equal(linkLabel(`https://example.org/${'a'.repeat(80)}`).length, 48);
   assert.equal(menuLabel('Open Link', 'zh-CN'), '打开链接');
+});
+
+test('detects email addresses in a selection', () => {
+  assert.deepEqual(
+    detectEmails('Corresponding author: Jane.Doe+pdf@Example.EDU.cn; cc mailto:lab@uni.org.'),
+    ['Jane.Doe+pdf@example.edu.cn', 'lab@uni.org'],
+  );
+  assert.deepEqual(detectEmails('邮箱：zhang_san@pku.edu.cn。'), ['zhang_san@pku.edu.cn']);
+  assert.deepEqual(detectEmails('a@b.org and a@b.org'), ['a@b.org']);
+});
+
+test('ignores at-signs that are not email addresses', () => {
+  assert.deepEqual(detectEmails('https://medium.com/@writer and @handle at 5 @ 10.2'), []);
+  assert.deepEqual(detectEmails('name@localhost or x@y.c'), []);
+  assert.deepEqual(detectEmails(null), []);
+  assert.equal(menuLabel('Copy Email', 'zh-CN'), '拷贝电子邮件地址');
 });

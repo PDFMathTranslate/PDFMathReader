@@ -114,6 +114,7 @@ export default {
   },
   copy: {
     paragraphCopied: 'نُسخت الفقرة',
+    emailCopied: 'نُسخ البريد الإلكتروني',
     failed: 'فشل النسخ. حاول مرة أخرى.',
   },
   paragraph: {

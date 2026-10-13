@@ -1,7 +1,7 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createTabGroups } from './tab-groups.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
-import { detectLinks, linkLabel } from '../../../shared/reader/link-detection.mjs';
+import { detectEmails, detectLinks, linkLabel } from '../../../shared/reader/link-detection.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
 import { realpath, stat } from 'node:fs/promises';
@@ -388,13 +388,20 @@ export function createWindowController({
       );
       // Links come from the selected text itself; only http(s) URLs survive detection.
       const links = detectLinks(params.selectionText);
+      const emails = detectEmails(params.selectionText);
       const openLabel = menuLabel('Open Link', locale);
+      const copyEmailLabel = menuLabel('Copy Email', locale);
       const template = [
         ...links.map((url) => ({
           label: links.length === 1 ? openLabel : `${openLabel}: ${linkLabel(url)}`,
           click: () => void shellApi.openExternal(url),
         })),
-        ...(links.length ? [{ type: 'separator' }] : []),
+        ...emails.map((email) => ({
+          label: emails.length === 1 ? copyEmailLabel : `${copyEmailLabel}: ${email}`,
+          // The renderer copies and confirms with its toast.
+          click: () => target.webContents.send('reader:action', 'copy-email', email),
+        })),
+        ...(links.length || emails.length ? [{ type: 'separator' }] : []),
         { role: 'copy' },
         { role: 'selectAll' },
         { type: 'separator' },

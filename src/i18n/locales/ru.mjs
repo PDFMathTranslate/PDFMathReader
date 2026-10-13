@@ -114,6 +114,7 @@ export default {
   },
   copy: {
     paragraphCopied: 'Абзац скопирован',
+    emailCopied: 'E-mail скопирован',
     failed: 'Не удалось скопировать. Повторите попытку.',
   },
   paragraph: {

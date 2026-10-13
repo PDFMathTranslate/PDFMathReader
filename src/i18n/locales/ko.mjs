@@ -101,6 +101,7 @@ export default {
   },
   copy: {
     paragraphCopied: '단락이 복사됨',
+    emailCopied: '이메일 주소가 복사됨',
     failed: '복사에 실패했습니다. 다시 시도하세요.',
   },
   paragraph: {
