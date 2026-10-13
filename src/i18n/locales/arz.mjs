@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'برّز المعلومات',
     emphasizeInformationHint:
       'خطوط تحتية خفيفة بتعلّم كلمات نتائج البحث والترتيب والاستدلال والاكتشاف والمقارنة.',
+    bionicReading: 'القراية البيونية',
+    bionicReadingHint:
+      'بيخلّي أول كل كلمة تقيل عشان يوجّه عينك. الحروف الثابتة بتتقّل نفس عدد الحروف في كل كلمة، وجذور الكلمات بتتقّل كل كلمة إنجليزي لحد جذرها.',
+    bionicReadingOff: 'مقفول',
+    bionicReadingFixed: 'حروف ثابتة',
+    bionicReadingRoot: 'جذور الكلمات',
+    bionicFixedLength: 'الحروف التقيلة',
     reduceResourceUsage: 'قلّل استخدام الموارد',
     reduceResourceUsageHint:
       'وقّف الرسم في الخلفية وحرّر صور الصفحات لما التطبيق يتصغّر أو يبقى مش نشط. ترجمة المستند كله بتكمل.',

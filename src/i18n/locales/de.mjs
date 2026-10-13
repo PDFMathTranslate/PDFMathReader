@@ -175,6 +175,13 @@ export default {
     emphasizeInformation: 'Informationen hervorheben',
     emphasizeInformationHint:
       'Dezente Unterstreichungen markieren Schlüsselwörter zu Forschungsergebnissen, Reihenfolge, Argumentation, Entdeckungen und Vergleichen.',
+    bionicReading: 'Bionisches Lesen',
+    bionicReadingHint:
+      'Hebt den Anfang jedes Wortes fett hervor, um den Blick zu führen. Feste Zeichenzahl hebt in jedem Wort gleich viele Buchstaben hervor; Wortstämme hebt jedes englische Wort bis zu seinem Stamm hervor.',
+    bionicReadingOff: 'Aus',
+    bionicReadingFixed: 'Feste Zeichenzahl',
+    bionicReadingRoot: 'Wortstämme',
+    bionicFixedLength: 'Fette Zeichen',
     reduceResourceUsage: 'Ressourcenverbrauch reduzieren',
     reduceResourceUsageHint:
       'Hintergrunddarstellung pausieren und Seiten-Bitmaps bei minimiertem oder inaktivem Fenster freigeben. Die Übersetzung des gesamten Dokuments läuft weiter.',

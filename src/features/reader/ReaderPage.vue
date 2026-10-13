@@ -7,6 +7,7 @@ import ReadingTextLayer from './ReadingTextLayer.vue';
 import TopicSentenceText from '../translation/TopicSentenceText.vue';
 import TextReveal from '../../ui/motion/TextReveal.vue';
 import { mapCompactRect } from './paragraph-compaction.mjs';
+import { bionicReadingActive } from '../translation/bionic-reading.mjs';
 import { revealPDF } from '../../ui/motion/text-reveal.mjs';
 import MathRegion from './MathRegion.vue';
 import FormulaOcrRegion from './FormulaOcrRegion.vue';
@@ -46,6 +47,8 @@ const props = defineProps({
 });
 // Ultra fast renders HTML translations, so its font preference applies here.
 const translationFont = inject('translationFont', null);
+const bionicReading = inject('bionicReading', null);
+const bionicActive = computed(() => bionicReadingActive(bionicReading?.value));
 const customFont = computed(() =>
   props.engine === 'pdf_inspector' ? translationFont?.value || '' : '',
 );
@@ -320,7 +323,12 @@ function fit(el, b) {
         aria-hidden="true"
       ></div>
       <ReadingTextLayer
-        v-if="interactionMode === 'reading' || emphasizeTopicSentences || emphasizeInformation"
+        v-if="
+          interactionMode === 'reading' ||
+          emphasizeTopicSentences ||
+          emphasizeInformation ||
+          bionicActive
+        "
         :selectable="interactionMode === 'reading'"
         :emphasize-topic-sentences="emphasizeTopicSentences"
         :emphasize-information="emphasizeInformation"

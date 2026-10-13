@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'Make important information stand out',
     emphasizeInformationHint:
       'Small underlines mark research result, order, reasoning, discovery and comparison keywords.',
+    bionicReading: 'Bionic reading',
+    bionicReadingHint:
+      'E dey make the start of every word bold so your eye fit follow am. Fixed characters dey bold the same number of letters for every word; word roots dey bold every English word reach im root.',
+    bionicReadingOff: 'Off',
+    bionicReadingFixed: 'Fixed characters',
+    bionicReadingRoot: 'Word roots',
+    bionicFixedLength: 'Bold characters',
     reduceResourceUsage: 'Use fewer resources',
     reduceResourceUsageHint:
       'Pause background drawing and free page pictures when app small or no dey active. Full document translation still dey go on.',

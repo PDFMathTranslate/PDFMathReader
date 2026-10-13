@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { uiLanguage } from '../../i18n/index.mjs';
 import { informationTextSegments } from './information-emphasis.mjs';
+import { bionicReadingRanges, withBionicSegments } from './bionic-reading.mjs';
 import { chineseWordBoundaries } from './chinese-word-boundaries.mjs';
 import { useTopicSentenceDecision } from './useTopicSentenceDecision.mjs';
 const props = defineProps({
@@ -19,12 +20,16 @@ const decision = useTopicSentenceDecision(
 const topicEnd = computed(() =>
   props.topicEnd === undefined ? decision.topicEnd.value : props.topicEnd,
 );
+const bionicReading = inject('bionicReading', null);
 const parts = computed(() =>
-  informationTextSegments(props.text || '', {
-    topicEnd: topicEnd.value,
-    emphasizeInformation: props.information,
-    categories: props.informationCategories,
-  }),
+  withBionicSegments(
+    informationTextSegments(props.text || '', {
+      topicEnd: topicEnd.value,
+      emphasizeInformation: props.information,
+      categories: props.informationCategories,
+    }),
+    bionicReadingRanges(props.text || '', bionicReading?.value),
+  ),
 );
 const experimental = document.documentElement.dataset.experimentalTypography === 'true';
 const words = computed(() => {
@@ -47,14 +52,20 @@ const words = computed(() => {
         v-for="part in word.parts"
         :key="part.start"
         :class="{ 'topic-sentence-text': part.topic }"
-        ><mark v-if="part.important" class="information-keyword">{{ part.text }}</mark
+        ><mark v-if="part.important" class="information-keyword"
+          ><b v-if="part.bionic" class="bionic-fixation">{{ part.text }}</b
+          ><template v-else>{{ part.text }}</template></mark
+        ><b v-else-if="part.bionic" class="bionic-fixation">{{ part.text }}</b
         ><template v-else>{{ part.text }}</template></component
       ></span
     >
   </template>
   <template v-for="part in experimental ? [] : parts" :key="part.start"
     ><component :is="part.topic ? 'strong' : 'span'" :class="{ 'topic-sentence-text': part.topic }"
-      ><mark v-if="part.important" class="information-keyword">{{ part.text }}</mark
+      ><mark v-if="part.important" class="information-keyword"
+        ><b v-if="part.bionic" class="bionic-fixation">{{ part.text }}</b
+        ><template v-else>{{ part.text }}</template></mark
+      ><b v-else-if="part.bionic" class="bionic-fixation">{{ part.text }}</b
       ><template v-else>{{ part.text }}</template></component
     ></template
   >
@@ -66,6 +77,9 @@ const words = computed(() => {
   border-radius: 2px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+}
+.bionic-fixation {
+  font-weight: bolder;
 }
 .information-keyword {
   font: inherit;

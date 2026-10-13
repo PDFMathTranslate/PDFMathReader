@@ -37,6 +37,12 @@ export function installReaderPreferenceObservers({ bindings }) {
   watch(bindings.emphasizeTopicSentences, (value) =>
     localStorage.setItem('emphasizeTopicSentences', String(value)),
   );
+  watch(bindings.preferences.bionicReading, (value) =>
+    localStorage.setItem('bionicReading', value),
+  );
+  watch(bindings.preferences.bionicFixedLength, (value) =>
+    localStorage.setItem('bionicFixedLength', String(value)),
+  );
   watch(
     [
       bindings.documentOpenMode,
@@ -75,6 +81,8 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.emphasizeOrdinals,
       bindings.emphasizeKeyVerbs,
       bindings.emphasizeLogicalConnectives,
+      bindings.preferences.bionicReading,
+      bindings.preferences.bionicFixedLength,
       bindings.autoHideHeader,
       bindings.optimizeParagraphGaps,
       bindings.showKernelToolbarShortcut,

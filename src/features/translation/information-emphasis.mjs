@@ -373,8 +373,8 @@ export function informationTextSegments(
   }));
 }
 
-/** Match native PDF runs without changing their text, coordinates or selection. */
-export function informationRunRanges(runs = [], categories) {
+/** Join native PDF runs into reading text, mending line-end hyphenation. */
+export function joinLogicalRuns(runs = []) {
   let logical = '';
   const parts = [];
   for (let index = 0; index < runs.length; index++) {
@@ -393,21 +393,31 @@ export function informationRunRanges(runs = [], categories) {
     logical += text;
     parts.push({ index, start, end: logical.length });
   }
-  const matches = importantInformationRanges(logical, categories),
-    result = [];
+  return { logical, parts };
+}
+
+/** Map ranges over joined text back to offsets within each run. */
+export function splitLogicalRanges(matches, parts) {
+  const result = [];
   for (const match of matches)
     for (const part of parts) {
       const start = Math.max(match.start, part.start),
         end = Math.min(match.end, part.end);
       if (end > start)
         result.push({
+          ...match,
           index: part.index,
           start: start - part.start,
           end: end - part.start,
-          category: match.category,
         });
     }
   return result;
+}
+
+/** Match native PDF runs without changing their text, coordinates or selection. */
+export function informationRunRanges(runs = [], categories) {
+  const { logical, parts } = joinLogicalRuns(runs);
+  return splitLogicalRanges(importantInformationRanges(logical, categories), parts);
 }
 
 // Only join touching boxes on the same line; distant keywords stay separate.

@@ -173,6 +173,13 @@ export default {
     emphasizeInformation: 'जानकारी पर ज़ोर दें',
     emphasizeInformationHint:
       'अनुसंधान परिणाम, क्रम, तर्क, खोज और तुलना के प्रमुख शब्दों के नीचे हल्की रेखाएँ लगाता है।',
+    bionicReading: 'बायोनिक रीडिंग',
+    bionicReadingHint:
+      'नज़र को राह दिखाने के लिए हर शब्द की शुरुआत बोल्ड करता है। निश्चित अक्षर हर शब्द में उतने ही अक्षर बोल्ड करता है; शब्द-मूल हर अंग्रेज़ी शब्द को उसके मूल तक बोल्ड करता है।',
+    bionicReadingOff: 'बंद',
+    bionicReadingFixed: 'निश्चित अक्षर',
+    bionicReadingRoot: 'शब्द-मूल',
+    bionicFixedLength: 'बोल्ड अक्षर',
     reduceResourceUsage: 'संसाधन उपयोग घटाएँ',
     reduceResourceUsageHint:
       'न्यूनतम या निष्क्रिय होने पर पृष्ठ चित्रों को छोड़कर पृष्ठभूमि रेंडरिंग रोकें। पूरे दस्तावेज़ का अनुवाद जारी रहता है।',

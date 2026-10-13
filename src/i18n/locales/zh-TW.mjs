@@ -167,6 +167,13 @@ export default {
       '以淡色底紋標示超過 60 個詞或 120 個中日韓字元的長段落首句；只有一句的段落不強調。',
     emphasizeInformation: '強調資訊',
     emphasizeInformationHint: '用細底線標示科研結果、序數、邏輯、發現與比較關鍵詞。',
+    bionicReading: '仿生閱讀',
+    bionicReadingHint:
+      '加粗每個詞的開頭以引導視線。「固定字元」在每個詞中加粗相同數量的字母；「詞根」將每個英文單字加粗到其詞根。',
+    bionicReadingOff: '關',
+    bionicReadingFixed: '固定字元',
+    bionicReadingRoot: '詞根',
+    bionicFixedLength: '加粗字元數',
     reduceResourceUsage: '降低資源佔用',
     reduceResourceUsageHint:
       '視窗最小化或應用程式非前景時暫停繪製並釋放頁面點陣圖；全文翻譯繼續執行。',

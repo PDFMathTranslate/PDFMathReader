@@ -2,12 +2,18 @@
 import { ref, watch, onMounted, onBeforeUnmount, inject } from 'vue';
 import { uiLanguage } from '../../i18n/index.mjs';
 import {
+  bionicReadingActive,
+  bionicRunRanges,
+  withBionicSegments,
+} from '../translation/bionic-reading.mjs';
+import {
   informationRunRanges,
   informationTextSegments,
   mergeInformationRects,
 } from '../translation/information-emphasis.mjs';
 import { topicSentenceParagraphs } from '../translation/topic-sentences.mjs';
 import { loadPDFRuntime } from './pdf-runtime.mjs';
+import { drawBionicOverlay } from './bionic-overlay.mjs';
 import { bindTextLayerSelection, preserveTextLayerSelection } from './text-layer-selection.mjs';
 const props = defineProps({
   document: Object,
@@ -31,12 +37,15 @@ let layer,
   boxKey,
   overlay,
   highlights,
+  bionicInk,
   frameHost;
 let unbindSelection;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
 const topicSentenceClassifier = inject('topicSentenceClassifier', null);
 const watermarkRemoval = inject('watermarkRemoval', null);
+const bionicReading = inject('bionicReading', null);
+const bionicActive = () => bionicReadingActive(bionicReading?.value);
 function topicRangesForRuns(runs) {
   return topicSentenceParagraphs(runs, props.paragraphBoxes || [], uiLanguage.value)
     .filter((paragraph) => {
@@ -60,12 +69,20 @@ function clearEmphasis() {
   overlay = null;
   highlights?.remove();
   highlights = null;
+  bionicInk?.remove();
+  bionicInk = null;
 }
 function drawEmphasis() {
   if (!host.value) return;
   clearEmphasis();
   if (!rendered || !props.active) return;
   const pageBounds = host.value.getBoundingClientRect();
+  if (bionicActive())
+    bionicInk = drawBionicOverlay(
+      host.value,
+      frameHost?.querySelector(':scope > canvas'),
+      host.value.querySelectorAll('.pdf-bionic-fixation'),
+    );
   if (props.emphasizeInformation) {
     const boxes = [];
     for (const mark of host.value.querySelectorAll('.pdf-information-keyword')) {
@@ -139,7 +156,7 @@ function emphasize() {
   for (const span of spans) {
     if (!originals.has(span)) originals.set(span, span.textContent);
   }
-  if (!props.emphasizeTopicSentences && !props.emphasizeInformation) {
+  if (!props.emphasizeTopicSentences && !props.emphasizeInformation && !bionicActive()) {
     for (const span of spans) {
       if (!emphasisKeys.has(span)) continue;
       span.textContent = originals.get(span);
@@ -165,15 +182,19 @@ function emphasize() {
   const informationRanges = props.emphasizeInformation
     ? informationRunRanges(runs, props.informationCategories)
     : [];
+  const bionicRanges = bionicRunRanges(runs, bionicReading?.value);
   for (let index = 0; index < spans.length; index++) {
     const span = spans[index],
       text = originals.get(span),
       topicEnd = topicRanges.find((r) => r.index === index)?.end || 0;
-    const parts = informationTextSegments(text, {
-      topicEnd,
-      emphasizeInformation: props.emphasizeInformation,
-      ranges: informationRanges.filter((r) => r.index === index),
-    });
+    const parts = withBionicSegments(
+      informationTextSegments(text, {
+        topicEnd,
+        emphasizeInformation: props.emphasizeInformation,
+        ranges: informationRanges.filter((r) => r.index === index),
+      }),
+      bionicRanges.filter((r) => r.index === index),
+    );
     const key = JSON.stringify(parts);
     // Page/layout refreshes must preserve the text nodes holding the native
     // selection when emphasis has not changed.
@@ -182,6 +203,12 @@ function emphasize() {
     span.replaceChildren(
       ...parts.map((part) => {
         let node = window.document.createTextNode(part.text);
+        if (part.bionic) {
+          const fixation = window.document.createElement('b');
+          fixation.className = 'pdf-bionic-fixation';
+          fixation.append(node);
+          node = fixation;
+        }
         if (part.important) {
           const mark = window.document.createElement('mark');
           mark.className = 'pdf-information-keyword';
@@ -209,6 +236,7 @@ watch(
     props.paragraphBoxes,
     uiLanguage.value,
     topicSentenceClassifier?.revision?.value,
+    bionicReading?.value,
   ],
   emphasize,
   { flush: 'post' },
@@ -328,7 +356,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
   user-select: none;
 }
-.reading-text-layer :is(.pdf-topic-sentence, .pdf-information-keyword) {
+.reading-text-layer :is(.pdf-topic-sentence, .pdf-information-keyword, .pdf-bionic-fixation) {
   position: static;
   font: inherit;
   color: transparent;
@@ -369,5 +397,17 @@ onBeforeUnmount(() => {
   pointer-events: none;
   background: color-mix(in srgb, var(--accent) 65%, transparent);
   border-radius: 1px;
+}
+/* Thickened glyph starts sit just above the page bitmap, under selection. */
+.reading-text-layer > div.bionic-ink {
+  position: absolute;
+  inset: 0;
+  transform: none;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.reading-text-layer > div.bionic-ink > canvas {
+  position: absolute;
 }
 </style>

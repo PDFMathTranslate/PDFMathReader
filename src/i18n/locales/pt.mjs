@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'Destacar informação',
     emphasizeInformationHint:
       'Sublinhados subtis marcam palavras-chave de resultados de investigação, ordem, raciocínio, descobertas e comparações.',
+    bionicReading: 'Leitura biônica',
+    bionicReadingHint:
+      'Coloca em negrito o início de cada palavra para guiar o olhar. Caracteres fixos destaca o mesmo número de letras em cada palavra; raízes destaca cada palavra em inglês até a sua raiz.',
+    bionicReadingOff: 'Desativada',
+    bionicReadingFixed: 'Caracteres fixos',
+    bionicReadingRoot: 'Raízes das palavras',
+    bionicFixedLength: 'Caracteres em negrito',
     reduceResourceUsage: 'Reduzir utilização de recursos',
     reduceResourceUsageHint:
       'Pausar a renderização em segundo plano e libertar mapas de bits das páginas quando minimizado ou inativo. A tradução do documento completo continua.',

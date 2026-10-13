@@ -158,6 +158,13 @@ export default {
     emphasizeInformation: 'Destacar información',
     emphasizeInformationHint:
       'Subrayar suavemente palabras clave de resultados, orden, lógica, descubrimientos y comparaciones.',
+    bionicReading: 'Lectura biónica',
+    bionicReadingHint:
+      'Pone en negrita el inicio de cada palabra para guiar la vista. Caracteres fijos resalta el mismo número de letras en cada palabra; raíces resalta cada palabra inglesa hasta su raíz.',
+    bionicReadingOff: 'Desactivada',
+    bionicReadingFixed: 'Caracteres fijos',
+    bionicReadingRoot: 'Raíces de palabras',
+    bionicFixedLength: 'Caracteres en negrita',
     reduceResourceUsage: 'Reducir el uso de recursos',
     reduceResourceUsageHint:
       'Pausar el renderizado y liberar imágenes en segundo plano. La traducción completa continúa.',

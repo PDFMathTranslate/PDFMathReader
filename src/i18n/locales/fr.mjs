@@ -158,6 +158,13 @@ export default {
     emphasizeInformation: 'Mettre en évidence les informations',
     emphasizeInformationHint:
       'Souligner discrètement les mots clés des résultats, de l’ordre, du raisonnement, des découvertes et des comparaisons.',
+    bionicReading: 'Lecture bionique',
+    bionicReadingHint:
+      'Met en gras le début de chaque mot pour guider le regard. Caractères fixes met en gras le même nombre de lettres dans chaque mot ; racines met en gras chaque mot anglais jusqu’à sa racine.',
+    bionicReadingOff: 'Désactivée',
+    bionicReadingFixed: 'Caractères fixes',
+    bionicReadingRoot: 'Racines des mots',
+    bionicFixedLength: 'Caractères en gras',
     reduceResourceUsage: 'Réduire l’utilisation des ressources',
     reduceResourceUsageHint:
       'Suspendre le rendu et libérer les images en arrière-plan. La traduction intégrale continue.',

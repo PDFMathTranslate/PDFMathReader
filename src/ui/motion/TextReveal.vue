@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue';
+import { computed, inject, ref, watch, nextTick, onBeforeUnmount } from 'vue';
 import {
   characters,
   reducedMotion,
@@ -9,6 +9,7 @@ import {
 } from './text-reveal.mjs';
 import TopicSentenceText from '../../features/translation/TopicSentenceText.vue';
 import { importantInformationRanges } from '../../features/translation/information-emphasis.mjs';
+import { bionicReadingRanges } from '../../features/translation/bionic-reading.mjs';
 import { useTopicSentenceDecision } from '../../features/translation/useTopicSentenceDecision.mjs';
 import { uiLanguage } from '../../i18n/index.mjs';
 import { paragraphDisplayText } from '../../../shared/translation/spacing.mjs';
@@ -49,6 +50,10 @@ const informationRanges = computed(() =>
     ? importantInformationRanges(displayText.value || '', props.informationCategories)
     : [],
 );
+const bionicReading = inject('bionicReading', null);
+const bionicRanges = computed(() =>
+  bionicReadingRanges(displayText.value || '', bionicReading?.value),
+);
 const wordSegmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
 const words = computed(() => {
   let index = 0,
@@ -60,8 +65,9 @@ const words = computed(() => {
       letters: characters(word).map((text) => {
         const emphasized = offset < sentenceEnd.value;
         const important = informationRanges.value.some((r) => offset >= r.start && offset < r.end);
+        const bionic = bionicRanges.value.some((r) => offset >= r.start && offset < r.end);
         offset += text.length;
-        return { text, index: index++, emphasized, important };
+        return { text, index: index++, emphasized, important, bionic };
       }),
     }),
   );
@@ -182,6 +188,7 @@ onBeforeUnmount(() => {
             :class="{
               'topic-sentence-text': letter.emphasized,
               'information-keyword': letter.important,
+              'bionic-fixation': letter.bionic,
             }"
             :style="{ '--reveal-delay': Math.min(letter.index * 6, 180) + 'ms' }"
             >{{ letter.text }}</span

@@ -162,6 +162,13 @@ export default {
     emphasizeInformation: '重要情報を強調',
     emphasizeInformationHint:
       '研究結果・順序・論理・発見・比較のキーワードに細い下線を表示します。',
+    bionicReading: 'バイオニックリーディング',
+    bionicReadingHint:
+      '各単語の先頭を太字にして視線を導きます。「固定文字数」はすべての単語で同じ文字数を太字にし、「語根」は英単語を語根まで太字にします。',
+    bionicReadingOff: 'オフ',
+    bionicReadingFixed: '固定文字数',
+    bionicReadingRoot: '語根',
+    bionicFixedLength: '太字の文字数',
     reduceResourceUsage: 'リソース使用量を削減',
     reduceResourceUsageHint:
       '最小化・非アクティブ時に描画を停止し、ページ画像を解放します。全文翻訳は継続します。',

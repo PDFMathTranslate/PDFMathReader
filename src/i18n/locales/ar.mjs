@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'إبراز المعلومات',
     emphasizeInformationHint:
       'تضع خطوط سفلية خفيفة علامات على الكلمات المفتاحية لنتائج البحث والترتيب والاستدلال والاكتشاف والمقارنة.',
+    bionicReading: 'القراءة البيونية',
+    bionicReadingHint:
+      'يجعل بداية كل كلمة غامقة لتوجيه نظرك. الأحرف الثابتة تُغمّق العدد نفسه من الأحرف في كل كلمة، وجذور الكلمات تُغمّق كل كلمة إنجليزية حتى جذرها.',
+    bionicReadingOff: 'إيقاف',
+    bionicReadingFixed: 'أحرف ثابتة',
+    bionicReadingRoot: 'جذور الكلمات',
+    bionicFixedLength: 'الأحرف الغامقة',
     reduceResourceUsage: 'تقليل استخدام الموارد',
     reduceResourceUsageHint:
       'يوقف العرض في الخلفية ويحرر الصور النقطية للصفحات عند التصغير أو عدم النشاط. تستمر ترجمة المستند بالكامل.',

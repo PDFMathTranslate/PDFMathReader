@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'معلومات نمایاں کریں',
     emphasizeInformationHint:
       'تحقیقی نتائج، ترتیب، استدلال، دریافت اور موازنے کے کلیدی الفاظ کے نیچے ہلکی لکیریں لگاتا ہے۔',
+    bionicReading: 'بایونک ریڈنگ',
+    bionicReadingHint:
+      'نظر کی رہنمائی کے لیے ہر لفظ کا آغاز بولڈ کرتا ہے۔ مقررہ حروف ہر لفظ میں اتنے ہی حروف بولڈ کرتا ہے؛ لفظی جڑیں ہر انگریزی لفظ کو اس کی جڑ تک بولڈ کرتی ہیں۔',
+    bionicReadingOff: 'بند',
+    bionicReadingFixed: 'مقررہ حروف',
+    bionicReadingRoot: 'لفظی جڑیں',
+    bionicFixedLength: 'بولڈ حروف',
     reduceResourceUsage: 'وسائل کا استعمال کم کریں',
     reduceResourceUsageHint:
       'ونڈو چھوٹی یا غیر فعال ہونے پر پس منظر کی رینڈرنگ روک کر صفحے کی بٹ میپس آزاد کرتا ہے۔ مکمل دستاویز کا ترجمہ جاری رہتا ہے۔',

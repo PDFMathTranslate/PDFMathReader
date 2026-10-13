@@ -1,4 +1,5 @@
 <script setup>
+import BionicReadingSettings from './BionicReadingSettings.vue';
 import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import {
@@ -78,6 +79,8 @@ const interfaceStyle = defineModel('interfaceStyle');
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
+const bionicReading = defineModel('bionicReading');
+const bionicFixedLength = defineModel('bionicFixedLength');
 const restoreDocuments = defineModel('restoreDocuments');
 const windowMode = defineModel('windowMode');
 const autoHideHeader = defineModel('autoHideHeader');
@@ -396,6 +399,10 @@ const reducePadding = defineModel('reducePadding');
             />
           </div>
         </div>
+        <BionicReadingSettings
+          v-model:mode="bionicReading"
+          v-model:fixed-length="bionicFixedLength"
+        />
         <div class="setting-row" data-setting="restore-documents">
           <span id="restore-documents-label">{{ t('settings.restoreDocuments') }}</span
           ><AppSwitch v-model="restoreDocuments" aria-labelledby="restore-documents-label" />

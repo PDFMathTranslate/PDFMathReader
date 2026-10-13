@@ -18,6 +18,7 @@ import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 import { translationFontFamily } from '../../shared/reader/translation-font.mjs';
+import { normalizeBionicReading } from '../features/translation/bionic-reading.mjs';
 import {
   ref,
   shallowRef,
@@ -105,6 +106,15 @@ export function useReaderWindow() {
         serif: preferences.ultraFastSerif.value,
         font: preferences.ultraFastFont.value,
         language: preferences.language.value,
+      }),
+    ),
+  );
+  provide(
+    'bionicReading',
+    computed(() =>
+      normalizeBionicReading({
+        mode: preferences.bionicReading.value,
+        fixedLength: preferences.bionicFixedLength.value,
       }),
     ),
   );
@@ -1209,6 +1219,8 @@ export function useReaderWindow() {
     tocGeneration,
     effectiveTranslationSummary,
     epubEnabled: preferences.epubEnabled,
+    bionicReading: preferences.bionicReading,
+    bionicFixedLength: preferences.bionicFixedLength,
     emphasizeInformation,
     emphasizeTopicSentences,
     engine,

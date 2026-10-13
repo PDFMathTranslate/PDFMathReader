@@ -171,6 +171,13 @@ export default {
       '以淡色底纹标示超过 60 个词或 120 个中日韩字符的长段落首句；只有一句的段落不强调。',
     emphasizeInformation: '强调信息',
     emphasizeInformationHint: '用细下划线标示科研结果、序数、逻辑、发现和比较关键词。',
+    bionicReading: '仿生阅读',
+    bionicReadingHint:
+      '加粗每个词的开头以引导视线。“固定字符”在每个词中加粗相同数量的字母；“词根”将每个英文单词加粗到其词根。',
+    bionicReadingOff: '关',
+    bionicReadingFixed: '固定字符',
+    bionicReadingRoot: '词根',
+    bionicFixedLength: '加粗字符数',
     reduceResourceUsage: '降低资源占用',
     reduceResourceUsageHint: '窗口最小化或应用非前台时暂停绘制并释放页面位图；全文翻译继续执行。',
     optimizeParagraphGaps: '阅读模式段落间隙优化',

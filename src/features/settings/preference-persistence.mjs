@@ -4,6 +4,7 @@ import { uiLanguageChoice, t, setUILanguage } from '../../i18n/index.mjs';
 import { cloneTranslationServices } from '../translation/translation-services.mjs';
 import { cloneCustomServices } from '../../../shared/translation/custom-services.mjs';
 import { nextTick } from 'vue';
+import { BIONIC_READING_MODES, normalizeBionicReading } from '../translation/bionic-reading.mjs';
 
 export function createPreferencePersistence({ preferences, session, view, provider, feedback }) {
   function cloneKernelAdvancedOptions(value) {
@@ -89,6 +90,12 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.emphasizeInformation.value = !!saved.emphasizeInformation;
     if (saved.emphasizeTopicSentences !== undefined)
       preferences.emphasizeTopicSentences.value = !!saved.emphasizeTopicSentences;
+    if (BIONIC_READING_MODES.includes(saved.bionicReading))
+      preferences.bionicReading.value = saved.bionicReading;
+    if (Number.isInteger(saved.bionicFixedLength))
+      preferences.bionicFixedLength.value = normalizeBionicReading({
+        fixedLength: saved.bionicFixedLength,
+      }).fixedLength;
     if (saved.documentOpenMode) preferences.documentOpenMode.value = saved.documentOpenMode;
     if (saved.windowMode) preferences.windowMode.value = saved.windowMode;
     if (saved.restoreDocuments !== undefined)
@@ -162,6 +169,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
         emphasizeOrdinals: preferences.emphasizeOrdinals.value,
         emphasizeKeyVerbs: preferences.emphasizeKeyVerbs.value,
         emphasizeLogicalConnectives: preferences.emphasizeLogicalConnectives.value,
+        bionicReading: preferences.bionicReading.value,
+        bionicFixedLength: preferences.bionicFixedLength.value,
         interactionMode: preferences.interactionMode.value,
         optimizeParagraphGaps: preferences.optimizeParagraphGaps.value,
         language: preferences.language.value,

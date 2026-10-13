@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'Emphasize information',
     emphasizeInformationHint:
       'Subtle underlines mark research results, ordering, reasoning, discovery and comparison keywords.',
+    bionicReading: 'Bionic reading',
+    bionicReadingHint:
+      'Bold the start of each word to guide your eyes. Fixed characters bolds the same number of letters in every word; word roots bolds each English word up to its root.',
+    bionicReadingOff: 'Off',
+    bionicReadingFixed: 'Fixed characters',
+    bionicReadingRoot: 'Word roots',
+    bionicFixedLength: 'Bold characters',
     reduceResourceUsage: 'Reduce resource usage',
     reduceResourceUsageHint:
       'Pause background rendering and release page bitmaps when minimized or inactive. Full-document translation continues.',

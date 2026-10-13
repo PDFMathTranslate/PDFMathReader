@@ -33,6 +33,8 @@ const DEFAULT_PREFERENCES = {
   emphasizeOrdinals: true,
   emphasizeKeyVerbs: true,
   emphasizeLogicalConnectives: true,
+  bionicReading: 'off',
+  bionicFixedLength: 3,
   interfaceStyle: 'default',
   appearance: 'system',
   accentColor: 'system',

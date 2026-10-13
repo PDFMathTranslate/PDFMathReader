@@ -1,4 +1,5 @@
 <script setup>
+import BionicReadingSettings from './BionicReadingSettings.vue';
 import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import { dependencyProjects } from '../../../shared/dependency-projects.mjs';
@@ -78,6 +79,8 @@ const windowMode = defineModel('windowMode');
 const autoHideHeader = defineModel('autoHideHeader');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
+const bionicReading = defineModel('bionicReading');
+const bionicFixedLength = defineModel('bionicFixedLength');
 const defaultPageCropEnabled = defineModel('defaultPageCropEnabled');
 const defaultPageCropX = defineModel('defaultPageCropX');
 const defaultPageCropY = defineModel('defaultPageCropY');
@@ -266,6 +269,10 @@ const keyEntry = defineModel('keyEntry');
                 />
               </div>
             </div>
+            <BionicReadingSettings
+              v-model:mode="bionicReading"
+              v-model:fixed-length="bionicFixedLength"
+            />
           </div>
         </section>
         <DocumentDefaultsSettings

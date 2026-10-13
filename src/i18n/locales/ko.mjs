@@ -159,6 +159,13 @@ export default {
     emphasizeInformation: '중요 정보 강조',
     emphasizeInformationHint:
       '연구 결과, 순서, 논리, 발견 및 비교 관련 키워드에 가는 밑줄을 표시합니다.',
+    bionicReading: '바이오닉 리딩',
+    bionicReadingHint:
+      '각 단어의 앞부분을 굵게 표시해 시선을 안내합니다. 고정 글자 수는 모든 단어에서 같은 수의 글자를, 어근은 영어 단어를 어근까지 굵게 표시합니다.',
+    bionicReadingOff: '끄기',
+    bionicReadingFixed: '고정 글자 수',
+    bionicReadingRoot: '어근',
+    bionicFixedLength: '굵게 표시할 글자 수',
     reduceResourceUsage: '리소스 사용량 줄이기',
     reduceResourceUsageHint:
       '최소화하거나 비활성 상태일 때 렌더링을 멈추고 페이지 이미지를 해제합니다. 전체 문서 번역은 계속됩니다.',

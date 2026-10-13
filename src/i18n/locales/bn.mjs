@@ -172,6 +172,13 @@ export default {
     emphasizeInformation: 'তথ্যে জোর দিন',
     emphasizeInformationHint:
       'গবেষণার ফল, ক্রম, যুক্তি, আবিষ্কার ও তুলনার মূল শব্দের নিচে হালকা দাগ দেয়।',
+    bionicReading: 'বায়োনিক রিডিং',
+    bionicReadingHint:
+      'চোখকে পথ দেখাতে প্রতিটি শব্দের শুরু বোল্ড করে। নির্দিষ্ট অক্ষর প্রতিটি শব্দে সমান সংখ্যক অক্ষর বোল্ড করে; শব্দমূল প্রতিটি ইংরেজি শব্দকে তার মূল পর্যন্ত বোল্ড করে।',
+    bionicReadingOff: 'বন্ধ',
+    bionicReadingFixed: 'নির্দিষ্ট অক্ষর',
+    bionicReadingRoot: 'শব্দমূল',
+    bionicFixedLength: 'বোল্ড অক্ষর',
     reduceResourceUsage: 'সম্পদের ব্যবহার কমান',
     reduceResourceUsageHint:
       'ছোট করা বা নিষ্ক্রিয় অবস্থায় পেছনের রেন্ডারিং থামিয়ে পৃষ্ঠার বিটম্যাপ ছেড়ে দেয়। সম্পূর্ণ নথির অনুবাদ চলতে থাকে।',

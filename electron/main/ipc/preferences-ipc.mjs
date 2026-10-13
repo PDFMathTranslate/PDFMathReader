@@ -51,6 +51,8 @@ const SETTINGS_PREFERENCES = [
   'emphasizeOrdinals',
   'emphasizeKeyVerbs',
   'emphasizeLogicalConnectives',
+  'bionicReading',
+  'bionicFixedLength',
   'autoHideHeader',
   'uiLanguage',
   'kernelAdvancedOptions',
