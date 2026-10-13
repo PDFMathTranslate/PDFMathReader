@@ -43,8 +43,11 @@ export async function verifyPageEdits(window, recents) {
       'window.previewRenderDiagnostics().totalPages===3&&!!document.querySelector(".page canvas")?.width',
     );
     const menu = Menu.getApplicationMenu();
-    for (const id of ['edit-rotate-page', 'edit-align-width', 'edit-align-height'])
+    // Programmatic clicks bypass `enabled`, so check what the user can actually choose.
+    for (const id of ['edit-rotate-page', 'edit-align-width', 'edit-align-height']) {
       assert(menu.getMenuItemById('edit-menu').submenu.items.some((item) => item.id === id));
+      assert(menu.getMenuItemById(id).enabled, `${id} should be enabled with a document open`);
+    }
     menu.getMenuItemById('edit-align-width').click();
     for (let i = 0; i < 200; i++) {
       if ((await PDFDocument.load(await readFile(path))).getPage(2).getWidth() === 600) break;
