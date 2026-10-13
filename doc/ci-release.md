@@ -59,8 +59,39 @@ needed. A failed test run cannot publish; a later successful run with the same
 increased version can publish it. Published versions are not replaced by subsequent
 fixes; bump the version again to release a fix.
 
-The packages retain the existing CI signing policy: macOS builds are unsigned
-and are not notarized. This workflow does not introduce signing credentials.
+CI packages macOS builds unsigned, and the release gate only accepts macOS apps
+signed with the pinned local identity (`local.previewtranslate.reader`, team
+`XUG85B2S2L`). CI holds no signing credentials, so in practice the Release workflow
+fails at that check and releases are published from a Mac with the script below.
+Builds are not notarized.
+
+## Publishing from a Mac
+
+`scripts/release.mjs` publishes a release in one command on a Mac that holds the
+pinned signing certificate:
+
+```sh
+bun run release 0.1.11   # bump, commit "release: 0.1.11", push, then publish
+bun run release          # publish the latest pushed release commit (resume)
+bun run release --dry-run  # rehearse everything except creating the release
+```
+
+It requires a clean default branch and an authenticated `gh`. With a version, it
+updates `package.json` and `bun.lock`, commits, and pushes. It then:
+
+1. Builds and signs the two macOS packages locally and checks them with the same
+   verifier the Release workflow uses.
+2. Waits until `Packaging`, `Code style`, and `Update README recent features`
+   succeed at the release commit, and stops if any of them fails or is cancelled.
+3. Downloads the Windows and Linux packages from that Packaging run, with retries,
+   and runs the same package checks as CI.
+4. Generates the release notes with the CI script, uploads a draft, confirms every
+   upload, then publishes it as the latest release at the release commit.
+
+Without a version it resumes from the most recent `release` commit, provided only
+the README bot has committed since. Rerun it after an interruption or a failed check;
+it reuses an existing draft and exits when the version is already published. Work
+files are kept in `release/publish-v<version>/` until publication succeeds.
 
 ## Automatic release notes
 
