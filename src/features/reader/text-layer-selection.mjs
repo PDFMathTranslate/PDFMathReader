@@ -46,6 +46,57 @@ function reset(end, host) {
   host.classList.remove('selecting');
 }
 
+// Shared document listeners live outside bindTextLayerSelection so their
+// closures cannot retain the first layer's host (and its detached page).
+function installSharedListeners(document) {
+  listeners = new AbortController();
+  const options = { signal: listeners.signal };
+  const resetAll = () => layers.forEach(reset);
+  document.addEventListener('pointerup', resetAll, options);
+  document.addEventListener('pointercancel', resetAll, options);
+  document.defaultView.addEventListener('blur', resetAll, options);
+  let previousRange;
+  const version = /\bChrome\/(\d+)\b/.exec(navigator.userAgent)?.[1];
+  const needsBoundaryFix = !!version && Number(version) < 148;
+  document.addEventListener(
+    'selectionchange',
+    () => {
+      const selection = document.getSelection();
+      if (!selection?.rangeCount || selection.isCollapsed) {
+        resetAll();
+        previousRange = undefined;
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      for (const [layer, boundary] of layers) {
+        if (range.intersectsNode(layer)) layer.classList.add('selecting');
+        else reset(boundary, layer);
+      }
+      // Older Chromium otherwise jumps to the end of the page when the
+      // pointer crosses a gap. Keep the empty boundary next to the endpoint.
+      if (needsBoundaryFix) {
+        const atStart =
+          previousRange &&
+          (range.compareBoundaryPoints(Range.END_TO_END, previousRange) === 0 ||
+            range.compareBoundaryPoints(Range.START_TO_END, previousRange) === 0);
+        let anchor = atStart ? range.startContainer : range.endContainer;
+        if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentElement;
+        const layer = anchor?.closest?.('.reading-text-layer');
+        const boundary = layers.get(layer);
+        if (boundary && anchor !== boundary) {
+          while (anchor.parentElement !== layer) anchor = anchor.parentElement;
+          boundary.style.width = layer.style.width;
+          boundary.style.height = layer.style.height;
+          boundary.style.userSelect = 'text';
+          layer.insertBefore(boundary, atStart ? anchor : anchor.nextSibling);
+        }
+        previousRange = range.cloneRange();
+      }
+    },
+    options,
+  );
+}
+
 export function bindTextLayerSelection(host, getSpans) {
   const document = host.ownerDocument;
   const view = document.defaultView;
@@ -132,55 +183,7 @@ export function bindTextLayerSelection(host, getSpans) {
   const start = () => host.classList.add('selecting');
   host.addEventListener('mousedown', start);
   layers.set(host, end);
-  if (!listeners) {
-    listeners = new AbortController();
-    const options = { signal: listeners.signal };
-    const document = host.ownerDocument;
-    const resetAll = () => layers.forEach(reset);
-    document.addEventListener('pointerup', resetAll, options);
-    document.addEventListener('pointercancel', resetAll, options);
-    document.defaultView.addEventListener('blur', resetAll, options);
-    let previousRange;
-    const version = /\bChrome\/(\d+)\b/.exec(navigator.userAgent)?.[1];
-    const needsBoundaryFix = !!version && Number(version) < 148;
-    document.addEventListener(
-      'selectionchange',
-      () => {
-        const selection = document.getSelection();
-        if (!selection?.rangeCount || selection.isCollapsed) {
-          resetAll();
-          previousRange = undefined;
-          return;
-        }
-        const range = selection.getRangeAt(0);
-        for (const [layer, boundary] of layers) {
-          if (range.intersectsNode(layer)) layer.classList.add('selecting');
-          else reset(boundary, layer);
-        }
-        // Older Chromium otherwise jumps to the end of the page when the
-        // pointer crosses a gap. Keep the empty boundary next to the endpoint.
-        if (needsBoundaryFix) {
-          const atStart =
-            previousRange &&
-            (range.compareBoundaryPoints(Range.END_TO_END, previousRange) === 0 ||
-              range.compareBoundaryPoints(Range.START_TO_END, previousRange) === 0);
-          let anchor = atStart ? range.startContainer : range.endContainer;
-          if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentElement;
-          const layer = anchor?.closest?.('.reading-text-layer');
-          const boundary = layers.get(layer);
-          if (boundary && anchor !== boundary) {
-            while (anchor.parentElement !== layer) anchor = anchor.parentElement;
-            boundary.style.width = layer.style.width;
-            boundary.style.height = layer.style.height;
-            boundary.style.userSelect = 'text';
-            layer.insertBefore(boundary, atStart ? anchor : anchor.nextSibling);
-          }
-          previousRange = range.cloneRange();
-        }
-      },
-      options,
-    );
-  }
+  if (!listeners) installSharedListeners(document);
   return () => {
     host.removeEventListener('mousedown', begin, true);
     document.removeEventListener('mousemove', extend);

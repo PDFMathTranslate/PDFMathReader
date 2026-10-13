@@ -31,8 +31,7 @@ let layer,
   boxKey,
   overlay,
   highlights,
-  frameHost,
-  appearanceObserver;
+  frameHost;
 let unbindSelection;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
@@ -54,12 +53,17 @@ function topicRangesForRuns(runs) {
     .flatMap((paragraph) => paragraph.ranges)
     .sort((a, b) => a.index - b.index || a.start - b.start);
 }
-function drawEmphasis() {
-  if (!host.value) return;
+// Detached overlays would otherwise stay referenced after their page leaves
+// the viewport.
+function clearEmphasis() {
   overlay?.remove();
   overlay = null;
   highlights?.remove();
   highlights = null;
+}
+function drawEmphasis() {
+  if (!host.value) return;
+  clearEmphasis();
   if (!rendered || !props.active) return;
   const pageBounds = host.value.getBoundingClientRect();
   if (props.emphasizeInformation) {
@@ -127,11 +131,6 @@ function drawEmphasis() {
 onMounted(() => {
   frameHost = host.value?.parentElement;
   frameHost?.addEventListener('pdf-frame-presented', drawEmphasis);
-  appearanceObserver = new MutationObserver(drawEmphasis);
-  appearanceObserver.observe(window.document.documentElement, {
-    attributes: true,
-    attributeFilter: ['style'],
-  });
 });
 function emphasize() {
   if (!rendered || !host.value || !layer || !props.active) return;
@@ -231,6 +230,7 @@ watch(
       layer?.cancel();
       layer = null;
       rendered = false;
+      clearEmphasis();
       host.value?.replaceChildren();
       return;
     }
@@ -264,6 +264,7 @@ watch(
       unbindSelection?.();
       unbindSelection = null;
       layer?.cancel();
+      clearEmphasis();
       host.value.replaceChildren();
       layer = new runtime.TextLayer({
         textContentSource: page.streamTextContent(),
@@ -309,7 +310,7 @@ onBeforeUnmount(() => {
   generation++;
   unbindSelection?.();
   layer?.cancel();
-  appearanceObserver?.disconnect();
+  clearEmphasis();
   frameHost?.removeEventListener('pdf-frame-presented', drawEmphasis);
 });
 </script>
