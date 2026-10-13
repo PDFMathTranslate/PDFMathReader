@@ -1,6 +1,7 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createTabGroups } from './tab-groups.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
+import { detectLinks, linkLabel } from '../../../shared/reader/link-detection.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
 import { realpath, stat } from 'node:fs/promises';
@@ -381,18 +382,24 @@ export function createWindowController({
         !params.selectionText.trim()
       )
         return;
+      const locale = resolveUILanguage(
+        registry.stateFor(target)?.preferences?.uiLanguage || 'en',
+        application.getPreferredSystemLanguages()[0] || application.getLocale(),
+      );
+      // Links come from the selected text itself; only http(s) URLs survive detection.
+      const links = detectLinks(params.selectionText);
+      const openLabel = menuLabel('Open Link', locale);
       const template = [
+        ...links.map((url) => ({
+          label: links.length === 1 ? openLabel : `${openLabel}: ${linkLabel(url)}`,
+          click: () => void shellApi.openExternal(url),
+        })),
+        ...(links.length ? [{ type: 'separator' }] : []),
         { role: 'copy' },
         { role: 'selectAll' },
         { type: 'separator' },
         {
-          label: menuLabel(
-            'Search in Document',
-            resolveUILanguage(
-              registry.stateFor(target)?.preferences?.uiLanguage || 'en',
-              application.getPreferredSystemLanguages()[0] || application.getLocale(),
-            ),
-          ),
+          label: menuLabel('Search in Document', locale),
           click: () =>
             target.webContents.send('reader:action', 'search-selection', params.selectionText),
         },
