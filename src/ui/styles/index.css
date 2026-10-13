@@ -16,3 +16,4 @@
 @import './features/reader/layered/reader-layout.css' layer(reader);
 @import './features/reader/unlayered/reader-motion.css';
 @import './features/reader/unlayered/overlays.css';
+@import './features/reader/unlayered/window-tabs.css';

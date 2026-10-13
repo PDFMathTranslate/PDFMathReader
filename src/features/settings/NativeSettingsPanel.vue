@@ -74,6 +74,7 @@ const documentOpenMode = defineModel('documentOpenMode');
 const interactionMode = defineModel('interactionMode');
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const restoreDocuments = defineModel('restoreDocuments');
+const windowMode = defineModel('windowMode');
 const autoHideHeader = defineModel('autoHideHeader');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
@@ -215,6 +216,7 @@ const keyEntry = defineModel('keyEntry');
           </div>
         </section>
         <ReadingBehaviorSettings
+          v-model:window-mode="windowMode"
           v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
           v-model:reduce-padding="reducePadding"
         />

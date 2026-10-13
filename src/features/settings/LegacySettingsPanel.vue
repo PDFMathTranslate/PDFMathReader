@@ -79,6 +79,7 @@ const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
 const restoreDocuments = defineModel('restoreDocuments');
+const windowMode = defineModel('windowMode');
 const autoHideHeader = defineModel('autoHideHeader');
 const reduceResourceUsage = defineModel('reduceResourceUsage');
 const showKernelToolbarShortcut = defineModel('showKernelToolbarShortcut');
@@ -409,6 +410,7 @@ const reducePadding = defineModel('reducePadding');
         </div>
       </section>
       <ReadingBehaviorSettings
+        v-model:window-mode="windowMode"
         v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
         v-model:reduce-padding="reducePadding"
       />

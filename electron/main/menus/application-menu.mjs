@@ -15,7 +15,9 @@ export function createApplicationMenu({
   recents,
   validateSystemPDF,
   openDocumentWindow,
-  createWindow,
+  newWindow,
+  tabs,
+  newTab,
   handleBackendFailure,
   hideNativeMenuBar,
   resolveUILanguage,
@@ -288,6 +290,43 @@ export function createApplicationMenu({
     }));
   };
 
+  const tabMenuItems = () => {
+    if (!tabs || preferences?.load?.().windowMode !== 'tabs') return [];
+    const target = focusedWindow();
+    const count = target ? tabs.tabCount(target) : 1;
+    const readers = [...registry.windows.values()].filter(
+      (state) => !state.settingsOwner && !state.closing,
+    ).length;
+    return [
+      { type: 'separator' },
+      {
+        id: 'window-previous-tab',
+        label: 'Show Previous Tab',
+        enabled: count > 1,
+        click: (_item, receiver) => void tabs.previous(receiver || focusedWindow()),
+      },
+      {
+        id: 'window-next-tab',
+        label: 'Show Next Tab',
+        enabled: count > 1,
+        click: (_item, receiver) => void tabs.next(receiver || focusedWindow()),
+      },
+      {
+        id: 'window-move-tab',
+        label: 'Move Tab to New Window',
+        enabled: count > 1,
+        click: (_item, receiver) =>
+          void tabs.moveToNewWindow(tabs.activeFor(receiver || focusedWindow())),
+      },
+      {
+        id: 'window-merge-all',
+        label: 'Merge All Windows',
+        enabled: readers > count,
+        click: (_item, receiver) => tabs.mergeAll(receiver || focusedWindow()),
+      },
+    ];
+  };
+
   const rebuild = () => {
     const template = [
       {
@@ -308,10 +347,20 @@ export function createApplicationMenu({
             id: 'file-new-window',
             label: 'New Window',
             accelerator: accelerator('N'),
-            click: () => {
-              void createWindow().catch(handleBackendFailure);
-            },
+            click: (_item, target) =>
+              void newWindow(target || focusedWindow()).catch(handleBackendFailure),
           },
+          ...(newTab && preferences?.load?.().windowMode === 'tabs'
+            ? [
+                {
+                  id: 'file-new-tab',
+                  label: 'New Tab',
+                  accelerator: accelerator('T'),
+                  click: (_item, target) =>
+                    void newTab(target || focusedWindow()).catch(handleBackendFailure),
+                },
+              ]
+            : []),
           command('Open PDF…', accelerator('O'), 'open', 'file-open'),
           { type: 'separator' },
           { id: 'file-recents', label: 'Recent Documents', enabled: false },
@@ -482,7 +531,22 @@ export function createApplicationMenu({
           command('Choose Kernel…', accelerator('K'), 'kernel', 'translation-kernel'),
         ],
       },
-      ...(platform === 'win32' ? [] : [{ id: 'window-menu', role: 'windowMenu' }]),
+      ...(platform === 'win32'
+        ? []
+        : [
+            {
+              id: 'window-menu',
+              label: 'Window',
+              role: 'windowMenu',
+              submenu: [
+                { id: 'window-minimize', role: 'minimize' },
+                { id: 'window-zoom', role: 'zoom' },
+                ...tabMenuItems(),
+                { type: 'separator' },
+                { id: 'window-front', role: 'front' },
+              ],
+            },
+          ]),
     ];
     const locale = resolveUILanguage(
       preferences?.load?.().uiLanguage || 'en',

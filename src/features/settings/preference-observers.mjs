@@ -41,6 +41,7 @@ export function installReaderPreferenceObservers({ bindings }) {
     [
       bindings.documentOpenMode,
       bindings.restoreDocuments,
+      bindings.preferences.windowMode,
       bindings.preferences.formulaOcrEnabled,
       bindings.preferences.epubEnabled,
       bindings.preferences.ultraFastSerif,

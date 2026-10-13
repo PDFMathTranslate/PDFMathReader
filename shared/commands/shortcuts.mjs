@@ -8,6 +8,7 @@ export function closeWindowAccelerator(platform) {
 const entries = [
   ['settings', 'Settings…', 'File', 'app-settings', ','],
   ['new-window', 'New Window', 'File', 'file-new-window', 'N'],
+  ['new-tab', 'New Tab', 'File', 'file-new-tab', 'T'],
   ['open', 'Open PDF…', 'File', 'file-open', 'O'],
   ['close-document', 'Close Document', 'File', 'file-close-document', 'W'],
   ['close-window', 'Close Window', 'File', 'file-close-window'],
@@ -52,6 +53,8 @@ const entries = [
   ['force-retranslate', 'Force Retranslate', 'Translation', 'translation-force-retranslate'],
   ['language', 'Choose Language…', 'Translation', 'translation-language', 'L'],
   ['kernel', 'Choose Kernel…', 'Translation', 'translation-kernel', 'K'],
+  ['previous-tab', 'Show Previous Tab', 'Window', 'window-previous-tab'],
+  ['next-tab', 'Show Next Tab', 'Window', 'window-next-tab'],
 ];
 export function shortcutCatalog(platform) {
   return entries.map(([id, label, group, menuId, key]) => {
@@ -61,6 +64,8 @@ export function shortcutCatalog(platform) {
       defaults = [platform === 'darwin' ? 'Command+Control+F' : 'F11'];
     if (id === 'page-previous') defaults = ['PageUp', 'Shift+Up', 'Shift+Left'];
     if (id === 'page-next') defaults = ['PageDown', 'Shift+Down', 'Shift+Right'];
+    if (id === 'previous-tab') defaults = ['Control+Shift+Tab'];
+    if (id === 'next-tab') defaults = ['Control+Tab'];
     if (id === 'page-first') defaults = ['Home'];
     if (id === 'page-last') defaults = ['End'];
     if (id === 'zoom-in')

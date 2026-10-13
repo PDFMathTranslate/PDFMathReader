@@ -192,6 +192,23 @@ contextBridge.exposeInMainWorld(
 );
 
 contextBridge.exposeInMainWorld(
+  'previewTabs',
+  Object.freeze({
+    list: () => ipcRenderer.invoke('tabs:list'),
+    select: (id) => ipcRenderer.invoke('tabs:select', id),
+    close: (id) => ipcRenderer.invoke('tabs:close', id),
+    new: () => ipcRenderer.invoke('tabs:new'),
+    move: (id, index) => ipcRenderer.invoke('tabs:move', id, index),
+    contextMenu: (id) => ipcRenderer.invoke('tabs:contextMenu', id),
+    onChanged: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('tabs:changed', listener);
+      return () => ipcRenderer.removeListener('tabs:changed', listener);
+    },
+  }),
+);
+
+contextBridge.exposeInMainWorld(
   'previewRecents',
   Object.freeze({
     statusDialog: (value) => ipcRenderer.invoke('recents:statusDialog', value),

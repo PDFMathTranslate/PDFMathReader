@@ -88,6 +88,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
     if (saved.emphasizeTopicSentences !== undefined)
       preferences.emphasizeTopicSentences.value = !!saved.emphasizeTopicSentences;
     if (saved.documentOpenMode) preferences.documentOpenMode.value = saved.documentOpenMode;
+    if (saved.windowMode) preferences.windowMode.value = saved.windowMode;
     if (saved.restoreDocuments !== undefined)
       preferences.restoreDocuments.value = saved.restoreDocuments;
     if (saved.reuseTranslations !== undefined)
@@ -141,6 +142,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         ...(force ? { engine: preferences.engine.value } : {}),
         documentOpenMode: preferences.documentOpenMode.value,
         restoreDocuments: preferences.restoreDocuments.value,
+        windowMode: preferences.windowMode.value,
         formulaOcrEnabled: preferences.formulaOcrEnabled.value,
         epubEnabled: preferences.epubEnabled.value,
         ultraFastSerif: preferences.ultraFastSerif.value,

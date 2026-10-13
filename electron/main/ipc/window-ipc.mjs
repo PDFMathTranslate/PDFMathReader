@@ -10,7 +10,7 @@ export function registerWindowIPC({
   validateSystemPDF,
   openDocumentWindow,
   openSettingsWindow,
-  createWindow,
+  newWindow,
   app,
 }) {
   handle('window:translated-file-ready', (event, ready) => {
@@ -129,7 +129,6 @@ export function registerWindowIPC({
     return true;
   });
   handle('window:new', async (event) => {
-    trustedWindow(event);
-    await createWindow();
+    await newWindow(trustedWindow(event));
   });
 }

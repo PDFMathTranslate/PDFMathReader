@@ -1273,6 +1273,7 @@ export function useReaderWindow() {
     reduceTransparency,
     referenceReturn,
     restoreDocuments,
+    windowMode: preferences.windowMode,
     restoringView,
     reuseTranslations,
     revealHeader,

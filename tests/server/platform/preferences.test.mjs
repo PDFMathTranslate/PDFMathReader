@@ -18,6 +18,7 @@ const DEFAULT_PREFERENCES = {
   interactionMode: 'reading',
   optimizeParagraphGaps: false,
   restoreDocuments: true,
+  windowMode: 'window',
   formulaOcrEnabled: false,
   epubEnabled: true,
   ultraFastSerif: false,

@@ -25,6 +25,7 @@ const SETTINGS_PREFERENCES = [
   'ultraFastFont',
   'reduceResourceUsage',
   'restoreDocuments',
+  'windowMode',
   'interactionMode',
   'optimizeParagraphGaps',
   'language',
@@ -92,6 +93,7 @@ export function registerPreferencesIPC({
   updateAppearance,
   rebuildMenu,
   updateMenu,
+  setWindowMode,
 }) {
   const shortcutSnapshot = () => {
     const overrides = preferences.load().shortcutBindings || {};
@@ -177,6 +179,7 @@ export function registerPreferencesIPC({
       }
       nativeTheme.themeSource = next.appearance;
       if (previous.uiLanguage !== next.uiLanguage) rebuildMenu();
+      if (previous.windowMode !== next.windowMode) setWindowMode?.(next.windowMode, target);
       for (const [window, state] of registry.windows) {
         state.preferences = mergeWindowPreferences(
           next,

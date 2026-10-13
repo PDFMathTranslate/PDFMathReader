@@ -26,6 +26,7 @@ export function createPreferenceState() {
   const ultraFastSerif = ref(false);
   const ultraFastFont = ref('');
   const restoreDocuments = ref(true);
+  const windowMode = ref('window');
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
   const defaultPageCropEnabled = ref(false);
   const defaultPageCropX = ref(0);
@@ -98,6 +99,7 @@ export function createPreferenceState() {
     ultraFastSerif,
     ultraFastFont,
     restoreDocuments,
+    windowMode,
     documentOpenMode,
     defaultPageCropEnabled,
     defaultPageCropX,

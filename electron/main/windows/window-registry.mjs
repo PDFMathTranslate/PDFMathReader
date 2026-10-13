@@ -11,12 +11,18 @@ export function createWindowRegistry() {
   const settingsWindows = new Map();
   const closingBackends = new Set();
   const openingDocuments = new Map();
+  // Tab groups hide inactive tabs; implicit targets resolve to the visible tab.
+  let activeTab = (target) => target;
 
   const stateFor = (target) => (target ? windows.get(target) : undefined);
   const focusedWindow = () => {
     const focused = BrowserWindow.getFocusedWindow();
     if (windows.has(focused)) return windows.get(focused).settingsOwner || focused;
-    return [...windows.keys()].filter((target) => !windows.get(target)?.settingsOwner).at(-1);
+    const last = [...windows.keys()].filter((target) => !windows.get(target)?.settingsOwner).at(-1);
+    return last && activeTab(last);
+  };
+  const setActiveTabResolver = (resolve) => {
+    activeTab = resolve;
   };
   const trustedWindow = (event) => {
     const target = BrowserWindow.fromWebContents(event.sender);
@@ -66,6 +72,7 @@ export function createWindowRegistry() {
     openingDocuments,
     stateFor,
     focusedWindow,
+    setActiveTabResolver,
     trustedWindow,
     annotationSourceForDocument,
     annotationSourceForWindow,

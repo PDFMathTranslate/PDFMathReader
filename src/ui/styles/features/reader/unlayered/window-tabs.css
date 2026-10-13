@@ -1,0 +1,34 @@
+/* Finder-style tabs extend the header downward: the toolbar keeps its controls
+   in the original band, and every --toolbar-height inset (reader padding,
+   sidebar, popovers, the titlebar material) automatically clears the tab bar. */
+
+.app {
+  --tabbar-height: 36px;
+}
+
+.desktop.app.has-tabs {
+  --toolbar-height: calc(64px + var(--tabbar-height));
+  grid-template-rows: var(--toolbar-height) minmax(0, 1fr) var(--statusbar-height);
+}
+
+.desktop.app.has-tabs:is([data-platform='win32'], [data-platform='linux']) {
+  --toolbar-height: calc(56px + var(--tabbar-height));
+}
+
+.app.has-tabs .toolbar {
+  padding-bottom: var(--tabbar-height);
+}
+
+.immersive-header-hidden .window-tab-bar {
+  transform: translateY(calc(-1 * var(--toolbar-height)));
+  pointer-events: none;
+}
+
+[data-appearance='dark'] .window-tab-bar {
+  --tab-track: rgba(255, 255, 255, 0.075);
+  --tab-hover: rgba(255, 255, 255, 0.06);
+  --tab-hover-strong: rgba(255, 255, 255, 0.14);
+  --tab-text: rgba(255, 255, 255, 0.6);
+  --tab-active: rgba(255, 255, 255, 0.17);
+  --tab-active-text: rgba(255, 255, 255, 0.92);
+}

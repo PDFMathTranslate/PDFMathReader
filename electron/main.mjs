@@ -1,5 +1,14 @@
 import { registerGlassMenuIPC } from './main/services/glass-menu.mjs';
-import { app, dialog, ipcMain, nativeTheme, safeStorage, shell, systemPreferences } from 'electron';
+import {
+  app,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeTheme,
+  safeStorage,
+  shell,
+  systemPreferences,
+} from 'electron';
 import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
@@ -71,6 +80,7 @@ import { registerQuickLinksIPC } from './main/ipc/quick-links-ipc.mjs';
 import { registerRecentsIPC } from './main/ipc/recents-ipc.mjs';
 import { registerUpdatesIPC } from './main/ipc/updates-ipc.mjs';
 import { registerWindowIPC } from './main/ipc/window-ipc.mjs';
+import { registerTabsIPC } from './main/ipc/tabs-ipc.mjs';
 
 const developerOperationMetrics = createOperationMetrics();
 const runFile = promisify(execFile);
@@ -403,7 +413,9 @@ else {
         recents,
         validateSystemPDF,
         openDocumentWindow: windowController.openDocumentWindow,
-        createWindow: windowController.createWindow,
+        newWindow: windowController.newWindow,
+        tabs: windowController.tabs,
+        newTab: windowController.newTab,
         handleBackendFailure,
         hideNativeMenuBar: windowController.hideNativeMenuBar,
         resolveUILanguage,
@@ -497,6 +509,10 @@ else {
         updateAppearance,
         rebuildMenu: menuController.rebuild,
         updateMenu: menuController.updateMenu,
+        setWindowMode: (mode, target) => {
+          windowController.tabs.setMode(mode, registry.stateFor(target)?.settingsOwner || target);
+          menuController.rebuild();
+        },
       });
       registerPerformanceIPC({
         handle: handleMeasuredIPC,
@@ -534,7 +550,19 @@ else {
         validateSystemPDF,
         openDocumentWindow: windowController.openDocumentWindow,
         openSettingsWindow: windowController.openSettingsWindow,
-        createWindow: windowController.createWindow,
+        newWindow: windowController.newWindow,
+        app,
+      });
+      registerTabsIPC({
+        handle: handleMeasuredIPC,
+        trustedWindow: registry.trustedWindow,
+        registry,
+        tabs: windowController.tabs,
+        newTab: windowController.newTab,
+        handleBackendFailure,
+        Menu,
+        menuLabel,
+        resolveUILanguage,
         app,
       });
       nativeTheme.on('updated', updateAppearance);

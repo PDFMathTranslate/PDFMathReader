@@ -4,6 +4,8 @@ import DocumentSearchBar from './features/search/DocumentSearchBar.vue';
 import ReaderWorkspace from './features/reader/ReaderWorkspace.vue';
 import ReaderFloatingTools from './features/reader/ReaderFloatingTools.vue';
 import ParagraphDetails from './features/translation/ParagraphDetails.vue';
+import WindowTabBar from './features/tabs/WindowTabBar.vue';
+import { useWindowTabs } from './features/tabs/window-tabs.mjs';
 import { computed, defineAsyncComponent } from 'vue';
 const NativeSettingsPanel = defineAsyncComponent(
   () => import('./features/settings/NativeSettingsPanel.vue'),
@@ -159,6 +161,7 @@ const {
   resizeSidebarMove,
   resizeSidebarStart,
   restoreDocuments,
+  windowMode,
   restoringView,
   returnFromReference,
   reuseTranslations,
@@ -225,7 +228,11 @@ const {
   zoomEntryInput,
   zoomInput,
   epubEnabled,
+  draw,
+  releaseCanvas,
 } = useReaderWindow();
+const windowTabs = useWindowTabs();
+const tabsVisible = windowTabs.visible;
 const copyToastHeading = computed(() => copyToast.value.split('\n')[0]);
 const copyToastDetail = computed(() =>
   copyToast.value.includes('\n')
@@ -250,6 +257,7 @@ const copyToastDetail = computed(() =>
       'windows-glass': windowsGlass,
       'startup-page': !pages.length,
       'is-fullscreen': fullscreen,
+      'has-tabs': tabsVisible && !settingsWindowMode && !fullscreen,
       'background-paused': !foreground,
       'immersive-header-hidden': immersiveHeaderHidden,
       'horizontal-immersive': pages.length && direction === 'horizontal' && autoHideHeader,
@@ -305,6 +313,7 @@ const copyToastDetail = computed(() =>
         v-model:show-translations="showTranslations"
         v-model:settings="settings"
       />
+      <WindowTabBar v-if="tabsVisible && !fullscreen" :controller="windowTabs" />
       <DocumentSearchBar
         :search-open="searchOpen"
         :pages="pages"
@@ -412,6 +421,8 @@ const copyToastDetail = computed(() =>
         :return-from-reference="returnFromReference"
         :search-open="searchOpen"
         :create-quick-return="createQuickReturn"
+        :draw-page="draw"
+        :release-canvas="releaseCanvas"
         v-model:sidebar-leaving="sidebarLeaving"
         v-model:sidebar-mode="sidebarMode"
         v-model:sidebar-drag="motion.sidebarDrag"
@@ -541,6 +552,7 @@ const copyToastDetail = computed(() =>
       v-model:interaction-mode="interactionMode"
       v-model:optimize-paragraph-gaps="optimizeParagraphGaps"
       v-model:restore-documents="restoreDocuments"
+      v-model:window-mode="windowMode"
       v-model:auto-hide-header="autoHideHeader"
       v-model:emphasize-topic-sentences="emphasizeTopicSentences"
       v-model:emphasize-information="emphasizeInformation"
@@ -627,6 +639,7 @@ const copyToastDetail = computed(() =>
       v-model:emphasize-topic-sentences="emphasizeTopicSentences"
       v-model:emphasize-information="emphasizeInformation"
       v-model:restore-documents="restoreDocuments"
+      v-model:window-mode="windowMode"
       v-model:auto-hide-header="autoHideHeader"
       v-model:reduce-resource-usage="reduceResourceUsage"
       v-model:show-kernel-toolbar-shortcut="showKernelToolbarShortcut"

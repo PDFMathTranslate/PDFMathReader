@@ -1,4 +1,5 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
+import { createTabGroups } from './tab-groups.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
@@ -36,6 +37,12 @@ export function createWindowController({
   getUpdateMenu,
   updateAppearance,
 }) {
+  const tabs = createTabGroups({
+    registry,
+    isTabMode: () => getPreferences()?.load?.().windowMode === 'tabs',
+    backgroundRenderSmoke,
+  });
+  registry.setActiveTabResolver?.(tabs.activeFor);
   const setWindowVibrancy = (target, reduceTransparency) => {
     if (process.platform === 'win32' && windowsBuild >= 22621) {
       target.setBackgroundMaterial(reduceTransparency ? 'none' : 'acrylic');
@@ -84,6 +91,10 @@ export function createWindowController({
     return info.ino ? `${info.dev}:${info.ino}` : canonical;
   };
   const focusDocumentWindow = (target) => {
+    if (tabs.isInactiveTab(target)) {
+      void tabs.select(target);
+      return target;
+    }
     if (target.isMinimized()) target.restore();
     if (!backgroundRenderSmoke) {
       target.show();
@@ -140,6 +151,7 @@ export function createWindowController({
     settingsSection = 'general',
     activate = true,
     knownIdentity,
+    placement,
   ) => {
     const identity =
       typeof document === 'string' ? (knownIdentity ?? (await documentIdentity(document))) : null;
@@ -162,11 +174,14 @@ export function createWindowController({
           },
         });
     const preferences = getPreferences();
+    // In tab mode a new reader window opens as a hidden tab at its anchor's frame.
+    const tabAnchor = settingsOwner ? null : tabs.anchorFor(placement);
     target = new Window({
       width: 1200,
       height: 850,
       minWidth: 720,
       minHeight: 500,
+      ...(tabAnchor ? tabAnchor.getBounds() : {}),
       title: settingsOwner ? 'PDFMathReader Settings' : 'PDFMathReader',
       ...(settingsOwner
         ? {
@@ -245,6 +260,7 @@ export function createWindowController({
         : preferences.load(),
       performance: { peaks: new Map(), timer: null, samples: 0, hasDocument: !!document },
     });
+    if (!settingsOwner) tabs.adopt(target, tabAnchor);
     const fullscreenChanged = () => {
       if (!target || target.isDestroyed()) return;
       const full = target.isFullScreen();
@@ -329,7 +345,17 @@ export function createWindowController({
       // retain their normal caret and scrolling behavior.
       if (action === 'new-window') {
         event.preventDefault();
-        void createWindow().catch(handleBackendFailure);
+        void newWindow(target).catch(handleBackendFailure);
+        return;
+      }
+      if (action === 'new-tab' && getPreferences()?.load?.().windowMode === 'tabs') {
+        event.preventDefault();
+        void newTab(target).catch(handleBackendFailure);
+        return;
+      }
+      if (action === 'next-tab' || action === 'previous-tab') {
+        event.preventDefault();
+        void (action === 'next-tab' ? tabs.next(target) : tabs.previous(target));
         return;
       }
       if (action === 'toggle-fullscreen') {
@@ -443,14 +469,20 @@ export function createWindowController({
     });
     const showLoadedWindow = () => {
       hideNativeMenuBar(target);
-      if (!backgroundRenderSmoke && !target.isVisible()) {
-        if (!activate || process.argv.includes('--background')) target.showInactive();
+      const foreground = activate && !process.argv.includes('--background');
+      if (
+        !backgroundRenderSmoke &&
+        !target.isVisible() &&
+        !tabs.presentLoaded(target, foreground)
+      ) {
+        if (!foreground) target.showInactive();
         else target.show();
       }
       windowPerformance.update(target);
     };
     target.once('ready-to-show', showLoadedWindow);
     if (process.platform === 'win32') target.webContents.once('did-finish-load', showLoadedWindow);
+    target.on('page-title-updated', () => setImmediate(() => tabs.titleChanged(target)));
     target.on('focus', () => {
       updateAppearance();
       getRebuildMenu()();
@@ -464,7 +496,8 @@ export function createWindowController({
       registry.stateFor(target).closing = true;
       // A native close responds immediately; keep the renderer alive only long
       // enough to save its reading position and persist the document session.
-      target.hide();
+      // A closing active tab stays up until its neighbor has painted over it.
+      if (!tabs.beforeClose(target)) target.hide();
       void saveWindowReadingView(target)
         .then(() => getDocumentSession()?.close(target.id))
         .finally(() => {
@@ -472,6 +505,7 @@ export function createWindowController({
         });
     });
     target.on('closed', () => {
+      tabs.forget(target);
       windowPerformance.stop(target);
       registry.stateFor(target)?.performance.peaks.clear();
       registry.windows.delete(target);
@@ -614,6 +648,15 @@ export function createWindowController({
     target.focus();
     return target;
   };
+  const newTab = (owner) =>
+    createWindow(undefined, undefined, null, 'general', true, undefined, {
+      anchor: registry.stateFor(owner)?.settingsOwner || owner || registry.focusedWindow(),
+    });
+  // New Window (⌘N) opens its start page as a tab of the current group in tab mode.
+  const newWindow = (owner) =>
+    getPreferences()?.load?.().windowMode === 'tabs'
+      ? newTab(owner)
+      : createWindow(undefined, undefined, null, 'general', true, undefined, 'window');
   let runtime = { quitting: false };
   const getRuntime = () => runtime;
   const setRuntime = (next) => {
@@ -632,5 +675,8 @@ export function createWindowController({
     hideNativeMenuBar,
     setWindowVibrancy,
     setRuntime,
+    tabs,
+    newTab,
+    newWindow,
   };
 }

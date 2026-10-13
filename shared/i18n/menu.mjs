@@ -6,6 +6,7 @@ import {
   MENU_EXTRA_PAGE_EDIT_LABELS,
   MENU_EXTRA_QUIT_LABELS,
 } from './menu-extra.mjs';
+import { MENU_TAB_KEYS, MENU_TAB_LABELS } from './menu-tabs.mjs';
 
 const menuMessages = {
   en: {
@@ -616,6 +617,8 @@ const pageBoundaryLabels = {
 };
 for (const [locale, labels] of Object.entries(pageBoundaryLabels))
   Object.assign(menuMessages[locale], { 'First Page': labels[0], 'Last Page': labels[1] });
+for (const [locale, labels] of Object.entries(MENU_TAB_LABELS))
+  MENU_TAB_KEYS.forEach((key, index) => (menuMessages[locale][key] = labels[index]));
 
 export function menuLabel(label, locale = 'en') {
   if (typeof label !== 'string' || properName.test(label)) return label;
