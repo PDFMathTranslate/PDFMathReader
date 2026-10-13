@@ -62,15 +62,15 @@ export async function verifyKernelSettings(reader, createWindow) {
   await category('general');
   await wait(
     settings,
-    `[...document.querySelectorAll('.kernel-mode-switcher img')].every(img=>img.complete&&img.naturalWidth===148&&img.naturalHeight===100)`,
+    `(()=>{const icons=[...document.querySelectorAll('.kernel-mode-preview .system-icon')];return icons.length===3&&icons.every(el=>getComputedStyle(el).maskImage.includes('url(')&&el.getBoundingClientRect().width===28)})()`,
   );
   assert.equal(
     await evaluate(
       settings,
-      `[...document.querySelectorAll('.kernel-mode-preview')].every(el=>{const r=el.getBoundingClientRect();return r.width===74&&r.height===50})`,
+      `[...document.querySelectorAll('.kernel-mode-preview')].every(el=>{const r=el.getBoundingClientRect();return r.width===56&&r.height===56})`,
     ),
     true,
-    'mode preview proportions match appearance',
+    'mode previews are square',
   );
   for (const id of ['pdf_math_fast', 'pdf_math_precise', 'pdf_inspector']) {
     await category('general');
@@ -81,6 +81,10 @@ export async function verifyKernelSettings(reader, createWindow) {
       `document.querySelector('[data-kernel-mode="${id}"]').getAttribute('aria-checked')==='true'&&!document.querySelector('[data-kernel-mode="${id}"]').disabled`,
     );
     assert.equal((await evaluate(settings, 'window.previewPreferences.load()')).engine, id);
+    await wait(
+      settings,
+      `(()=>{const ring=document.querySelector('.kernel-mode-ring').getBoundingClientRect();const tile=document.querySelector('[data-kernel-mode="${id}"] .kernel-mode-preview').getBoundingClientRect();return [ring.left+6-tile.left,ring.top+6-tile.top,ring.width-12-tile.width,ring.height-12-tile.height].every(d=>Math.abs(d)<1)})()`,
+    );
     assert.equal(
       await evaluate(settings, `!!document.querySelector('.legacy-settings-button')`),
       false,
