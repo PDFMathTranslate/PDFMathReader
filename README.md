@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                     | Contributor                        |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-13 | [refine recents magic zoom with smoother easing and edge reveal](https://github.com/PDFMathTranslate/PDFMathReader/commit/a09bc6c07a3013d300cb82719c245087f9ab52f7)         | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add experimental automatic table of contents generation](https://github.com/PDFMathTranslate/PDFMathReader/commit/3f33f3ab4066875db2699a78e9551613bdcd347a)                | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [zoom nearby recent covers like the macOS Dock](https://github.com/PDFMathTranslate/PDFMathReader/commit/d6f4e904165446e06e485771f2bcff608f921eed)                          | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [remove translucent page-sized watermark images](https://github.com/PDFMathTranslate/PDFMathReader/commit/1aa136bcb4d093f4747ef63bea418532eb0ec961)                         | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add experimental dock-style magic zoom for recent document covers](https://github.com/PDFMathTranslate/PDFMathReader/commit/c66394ace22eb299ea7e191659534386140b0290)      | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [hide removed watermark text from the text layer and translation layout](https://github.com/PDFMathTranslate/PDFMathReader/commit/7bfb5c3b0faf571100348d36b74e335abc4c617f) | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add experimental watermark removal by abnormal font and image size](https://github.com/PDFMathTranslate/PDFMathReader/commit/848c53057ea801a7acb0f9025e65ef5f24cecc21)     | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                                         | Contributor                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-13 | [redesign kernel mode switcher with symbol icons and sliding selection ring](https://github.com/PDFMathTranslate/PDFMathReader/commit/09923cdc2fa91ac190c6f4e5204f85e58baf3500) | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [refine recents magic zoom with smoother easing and edge reveal](https://github.com/PDFMathTranslate/PDFMathReader/commit/a09bc6c07a3013d300cb82719c245087f9ab52f7)             | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [add experimental automatic table of contents generation](https://github.com/PDFMathTranslate/PDFMathReader/commit/3f33f3ab4066875db2699a78e9551613bdcd347a)                    | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [zoom nearby recent covers like the macOS Dock](https://github.com/PDFMathTranslate/PDFMathReader/commit/d6f4e904165446e06e485771f2bcff608f921eed)                              | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [remove translucent page-sized watermark images](https://github.com/PDFMathTranslate/PDFMathReader/commit/1aa136bcb4d093f4747ef63bea418532eb0ec961)                             | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [add experimental dock-style magic zoom for recent document covers](https://github.com/PDFMathTranslate/PDFMathReader/commit/c66394ace22eb299ea7e191659534386140b0290)          | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [hide removed watermark text from the text layer and translation layout](https://github.com/PDFMathTranslate/PDFMathReader/commit/7bfb5c3b0faf571100348d36b74e335abc4c617f)     | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
