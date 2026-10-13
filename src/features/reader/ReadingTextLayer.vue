@@ -407,7 +407,15 @@ onBeforeUnmount(() => {
   pointer-events: none;
   user-select: none;
 }
+/* `.page canvas` paints paper behind page bitmaps; ink layers must stay clear
+   or each one blanks the glyphs it thickens. */
 .reading-text-layer > div.bionic-ink > canvas {
   position: absolute;
+  z-index: auto;
+  display: block;
+  min-height: 0;
+  background: none;
+  border-radius: 0;
+  transition: none;
 }
 </style>
