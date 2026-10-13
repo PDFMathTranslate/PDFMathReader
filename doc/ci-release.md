@@ -61,8 +61,10 @@ fixes; bump the version again to release a fix.
 
 CI packages macOS builds unsigned, and the release gate only accepts macOS apps
 signed with the pinned local identity (`local.previewtranslate.reader`, team
-`XUG85B2S2L`). CI holds no signing credentials, so in practice the Release workflow
-fails at that check and releases are published from a Mac with the script below.
+`XUG85B2S2L`). CI holds no signing credentials, so when the macOS packages are not
+signed with that identity the Release workflow publishes nothing, exits successfully,
+and leaves a warning in the run summary telling you to run `bun run release` on a Mac
+with the script below.
 Builds are not notarized.
 
 ## Publishing from a Mac

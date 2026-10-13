@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { shouldRelease, parseVersion } from './release-version.mjs';
 import { previousRelease, releaseNotes } from './release-notes.mjs';
-import { verifyMacReleaseArchive } from './verify-macos-release.mjs';
+import { UnsignedMacReleaseError, verifyMacReleaseArchive } from './verify-macos-release.mjs';
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 const api = (path) => JSON.parse(gh('api', path));
 const repo = process.env.GH_REPO,
@@ -101,7 +101,20 @@ for (const target of targets) {
       path,
     ]);
   else execFileSync('tar', ['-tzf', path], { stdio: 'ignore' });
-  if (target.startsWith('darwin')) verifyMacReleaseArchive(path, version);
+  if (target.startsWith('darwin')) {
+    try {
+      verifyMacReleaseArchive(path, version);
+    } catch (error) {
+      if (!(error instanceof UnsignedMacReleaseError)) throw error;
+      // CI has no signing certificate; the signed release comes from a Mac.
+      console.log('::warning::' + error.message);
+      summary(
+        `macOS packages from CI are not signed with the pinned identity; nothing published. ` +
+          `Publish ${tag} from a Mac with the signing certificate: \`bun run release\``,
+      );
+      process.exit(0);
+    }
+  }
   assets.push(path);
 }
 // The release workflow serializes publication; recheck after artifact downloads.
