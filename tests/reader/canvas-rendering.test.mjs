@@ -350,3 +350,28 @@ test('a cached frame is not trusted once its canvas has been emptied', async () 
     f.restore();
   }
 });
+
+test('a settled frame replaces its scroll preview and serves later previews', async () => {
+  const f = fixture();
+  f.state.visiblePages = new Set([1]);
+  let renders = 0;
+  const render = f.pdfPages[0].render;
+  f.pdfPages[0].render = (...args) => {
+    renders++;
+    return render(...args);
+  };
+  try {
+    const target = f.state.canvasEls.get(1);
+    // At this zoom the preview budget cannot hold a 2x frame.
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10, true), true);
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10), true);
+    assert.equal(renders, 2);
+    assert.equal(f.state.bitmapFrames.size, 1);
+    f.renderer.releaseCanvas(target);
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10, true), true);
+    assert.equal(renders, 2);
+    assert.equal(target.width, 2000);
+  } finally {
+    f.restore();
+  }
+});

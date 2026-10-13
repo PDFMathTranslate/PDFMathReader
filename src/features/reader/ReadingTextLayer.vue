@@ -92,10 +92,6 @@ function drawEmphasis() {
     host.value.append(highlights);
   }
   if (!props.emphasizeTopicSentences) return;
-  const source = host.value.parentElement?.querySelector(':scope > canvas');
-  if (!source?.width || !source.height) return;
-  const bounds = host.value.getBoundingClientRect();
-  if (!bounds.width || !bounds.height) return;
   const rects = [];
   for (const strong of host.value.querySelectorAll('.pdf-topic-sentence')) {
     const range = window.document.createRange();
@@ -103,27 +99,29 @@ function drawEmphasis() {
     rects.push(...range.getClientRects());
   }
   if (!rects.length) return;
-  overlay = window.document.createElement('canvas');
+  // A translucent wash marks the sentence without changing the PDF glyphs.
+  // Boxes, not a page-sized bitmap, so emphasis costs no raster memory.
+  overlay = window.document.createElement('div');
   overlay.className = 'topic-sentence-overlay';
   overlay.setAttribute('aria-hidden', 'true');
-  overlay.width = source.width;
-  overlay.height = source.height;
-  const context = overlay.getContext('2d'),
-    sx = source.width / bounds.width,
-    sy = source.height / bounds.height;
-  // A translucent wash marks the sentence without changing the PDF glyphs.
-  const style = getComputedStyle(host.value);
-  context.fillStyle = style.getPropertyValue('--accent').trim() || '#007aff';
-  context.globalAlpha = 0.1;
   for (const r of mergeInformationRects(
     rects.map((r) => ({
-      x: r.left - bounds.left,
-      y: r.top - bounds.top,
+      x: r.left - pageBounds.left,
+      y: r.top - pageBounds.top,
       width: r.width,
       height: r.height,
     })),
-  ))
-    context.fillRect(r.x * sx, r.y * sy, r.width * sx, r.height * sy);
+  )) {
+    const rect = window.document.createElement('div');
+    rect.className = 'topic-sentence-rect';
+    Object.assign(rect.style, {
+      left: r.x + 'px',
+      top: r.y + 'px',
+      width: r.width + 'px',
+      height: r.height + 'px',
+    });
+    overlay.append(rect);
+  }
   host.value.append(overlay);
 }
 onMounted(() => {
@@ -350,6 +348,12 @@ onBeforeUnmount(() => {
   min-height: 0;
   border-radius: 0;
   mix-blend-mode: multiply;
+  user-select: none;
+}
+.topic-sentence-rect {
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent, #007aff) 10%, transparent);
 }
 .reading-text-layer .information-highlights {
   position: absolute;

@@ -58,3 +58,8 @@ test('cropping raises the bitmap DPR available under the 64 MiB visible-page bud
   assert.ok(bytes(full, fullDpr) <= budget * 1.000001);
   assert.ok(bytes(cropped, croppedDpr) <= budget * 1.000001);
 });
+
+test('a fit-width Retina page keeps its full ratio while scrolling', () => {
+  assert.equal(renderPixelRatio(990, 1111, 2, false), 2);
+  assert.equal(renderPixelRatio(990, 1111, 2, false), renderPixelRatio(990, 1111, 2, true));
+});

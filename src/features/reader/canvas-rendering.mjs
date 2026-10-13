@@ -210,19 +210,25 @@ export function createCanvasRendering({
       current.cancel();
     }
     if (!renderState.bitmapIds.has(page)) renderState.bitmapIds.set(page, ++renderState.bitmapId);
-    const key = renderState.bitmapIds.get(page) + ':' + scale + ':' + dpr + ':' + cropKey + filter,
-      reusable = renderState.bitmapFrames.get(key);
+    const frameKey = (ratio) =>
+        renderState.bitmapIds.get(page) + ':' + scale + ':' + ratio + ':' + cropKey + filter,
+      key = frameKey(dpr),
+      // A settled page's sharper frame also serves its scroll previews, and
+      // replaces the preview frame in the cache once it is drawn.
+      previewDpr = scrollPixelRatio(geometry.width, geometry.height, devicePixelRatio),
+      sharpDpr = number
+        ? renderPixelRatio(geometry.width, geometry.height, devicePixelRatio, true)
+        : dpr,
+      sharp = sharpDpr > dpr && renderState.bitmapFrames.get(frameKey(sharpDpr)),
+      reusable = sharp || renderState.bitmapFrames.get(key);
     if (reusable) {
       renderState.renderMetrics.cacheHits++;
       if (!number || renderState.visiblePages.has(number))
-        presentFrame(canvas, reusable, page, scale, dpr);
+        presentFrame(canvas, reusable, page, scale, sharp ? sharpDpr : dpr);
       return true;
     }
     if (number && renderState.visiblePages.has(number) && !canvas.width) {
-      const previewDpr = scrollPixelRatio(geometry.width, geometry.height, devicePixelRatio);
-      const fallback = renderState.bitmapFrames.get(
-        renderState.bitmapIds.get(page) + ':' + scale + ':' + previewDpr + ':' + cropKey + filter,
-      );
+      const fallback = renderState.bitmapFrames.get(frameKey(previewDpr));
       if (fallback) presentFrame(canvas, fallback, page, scale, previewDpr);
     }
     const viewport = page.getViewport({ scale }),
@@ -274,6 +280,7 @@ export function createCanvasRendering({
         if (!number || renderState.visiblePages.has(number))
           presentFrame(canvas, frame, page, scale, dpr);
         renderState.bitmapFrames.set(key, frame);
+        if (number && dpr > previewDpr) renderState.bitmapFrames.delete(frameKey(previewDpr));
         return true;
       } catch (e) {
         if (e.name !== 'RenderingCancelledException') throw e;
