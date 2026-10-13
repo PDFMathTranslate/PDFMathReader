@@ -2,6 +2,7 @@
 import { computed, inject, ref, watch } from 'vue';
 import { t } from '../../i18n/index.mjs';
 import SidebarNavigation from './SidebarNavigation.vue';
+import PageGallery from './PageGallery.vue';
 import { AppButton } from '../../ui/controls.mjs';
 import ReaderPage from './ReaderPage.vue';
 import { useRecentMagicZoom } from '../library/useRecentMagicZoom.mjs';
@@ -12,6 +13,10 @@ const magicZoomReady = computed(
   () => !!preferences?.recentMagicZoomEnabled.value && recentView.value === 'gallery',
 );
 const magicZoom = useRecentMagicZoom(recentGallery, magicZoomReady);
+const pageGallery = ref(null);
+function openPageGallery(number, event) {
+  pageGallery.value?.show(number, event.currentTarget.querySelector('canvas'));
+}
 try {
   if (localStorage.getItem('reader-recent-view') === 'list') recentView.value = 'list';
 } catch {}
@@ -103,6 +108,8 @@ defineProps([
   'returnFromReference',
   'searchOpen',
   'createQuickReturn',
+  'drawPage',
+  'releaseCanvas',
 ]);
 const sidebarLeaving = defineModel('sidebarLeaving');
 const sidebarMode = defineModel('sidebarMode');
@@ -181,7 +188,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
                 :class="{ selected: item.number === active }"
                 :aria-current="item.number === active ? 'page' : undefined"
                 :aria-label="t('sidebar.goToPage', { page: item.number })"
-                @click="navigateFromSidebar(item.number)"
+                @click="$event.detail < 2 && navigateFromSidebar(item.number)"
+                @dblclick="openPageGallery(item.number, $event)"
               >
                 <canvas
                   :ref="(el) => bindThumbnail(item.number, el)"
@@ -456,5 +464,16 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           </button></div
       ></Transition>
     </div>
+    <PageGallery
+      ref="pageGallery"
+      :pages="pages"
+      :active="active"
+      :pdf="pdf"
+      :foreground="foreground"
+      :reduce-motion="reduceMotion"
+      :draw-page="drawPage"
+      :release-canvas="releaseCanvas"
+      :navigate="navigateFromSidebar"
+    />
   </div>
 </template>
