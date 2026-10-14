@@ -290,6 +290,7 @@ export function createReaderFeatures({
   const translationVersions = createTranslationVersions({
     session,
     preferences,
+    provider,
     actions: createLazyPort({
       backendRequests: () => backendRequests,
       kernelSettings: () => kernelSettings,
@@ -494,6 +495,7 @@ export function createReaderFeatures({
     ...readerActivity,
     ...readerQuickLinks,
     ...translationHistory,
+    rememberDocumentTranslation: translationVersions.rememberDocumentTranslation,
     ...nativeMenuOptions,
     ...backendRequests,
   };

@@ -1047,6 +1047,7 @@ export function useReaderWindow() {
       informationCategorySettings,
       activeGlossary,
       currentTranslationService,
+      rememberDocumentTranslation: featureActions.rememberDocumentTranslation,
     },
   });
 

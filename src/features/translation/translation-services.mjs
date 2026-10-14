@@ -1,4 +1,5 @@
 import {
+  cloneTranslationServices,
   normalizeTranslationServiceSchema,
   validServiceId,
 } from '../../../shared/translation/service-schema.mjs';
@@ -50,4 +51,13 @@ export function clearTranslationServiceSchemaCache(engine, version) {
 }
 export function translationServiceSchemaCacheSize() {
   return schemaCache.size;
+}
+
+// Selects one kernel's service, carrying over that service's saved profile values.
+export function withSelectedService(services, kernel, id) {
+  const next = cloneTranslationServices(services),
+    config = next[kernel] || {},
+    values = config.profiles?.[id]?.values || (config.id === id ? config.values : {}) || {};
+  next[kernel] = { ...config, id, values: { ...values } };
+  return next;
 }

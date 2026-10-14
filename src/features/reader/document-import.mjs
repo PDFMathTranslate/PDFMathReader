@@ -183,11 +183,25 @@ export function createDocumentImport({
       activity.performanceRecorder.pages(session.pdf.numPages);
       session.bytes = undefined;
       if (session.pendingPDFTask === task) session.pendingPDFTask = undefined;
+      // The recent entry carries the document's own reading view, kernel and service.
+      let saved, remembered;
+      if (window.previewRecents)
+        try {
+          const result = await window.previewRecents.remember(file, ticket);
+          if (token !== session.epoch) return;
+          library.recentDocuments.value = result.entries;
+          session.currentRecentId = result.recentId;
+          saved = result.view;
+          remembered = result.translation;
+        } catch {
+          if (token === session.epoch) feedback.error.value = t('error.saveRecentHistory');
+        }
       // Any cached kernel and language version opens as is; the usual reading-scope
       // logic then translates the pages it lacks. Only an uncached document is new.
       const cachedVersion = await actions.translationVersions.openCachedVersion(
         registered.id,
         token,
+        remembered,
       );
       if (token !== session.epoch) return;
       view.showTranslations.value =
@@ -221,17 +235,6 @@ export function createDocumentImport({
         }
       }
       activity.performanceRecorder.mark('pageGeometry');
-      let saved;
-      if (window.previewRecents)
-        try {
-          const result = await window.previewRecents.remember(file, ticket);
-          if (token !== session.epoch) return;
-          library.recentDocuments.value = result.entries;
-          session.currentRecentId = result.recentId;
-          saved = result.view;
-        } catch {
-          if (token === session.epoch) feedback.error.value = t('error.saveRecentHistory');
-        }
       annotations.annotationKey.value = session.currentRecentId || session.pdf.fingerprints[0];
       try {
         const stored = window.previewAnnotations?.loadState
@@ -282,6 +285,7 @@ export function createDocumentImport({
       session.restoringView.value = false;
       session.loading.value = false;
       actions.preferencePersistence.saveView();
+      actions.translationVersions.rememberDocumentTranslation();
       await nextTick();
       if (origin && !actions.rootActions.documentMotionReduced()) {
         const host = renderState.pageEls.get(view.active.value),

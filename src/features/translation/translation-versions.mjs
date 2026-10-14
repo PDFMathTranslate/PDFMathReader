@@ -1,4 +1,6 @@
 import { nextTick } from 'vue';
+import { isCustomServiceId } from '../../../shared/translation/custom-services.mjs';
+import { withSelectedService } from './translation-services.mjs';
 
 export const sameVersion = (a, b) =>
   !!a && !!b && a.engine === b.engine && a.language === b.language;
@@ -25,7 +27,14 @@ export function openOrder(versions, current) {
   ];
 }
 
-export function createTranslationVersions({ session, preferences, actions }) {
+// A document reopens with the kernel and service it was last read with. Only that
+// kernel's cached versions open, so another kernel's cache cannot switch it.
+export function documentOpenOrder(versions, current, remembered) {
+  const order = openOrder(versions, current);
+  return remembered ? order.filter((v) => v.engine === current.engine) : order;
+}
+
+export function createTranslationVersions({ session, preferences, provider, actions }) {
   const current = () => ({
     engine: preferences.engine.value,
     language: preferences.language.value,
@@ -41,14 +50,31 @@ export function createTranslationVersions({ session, preferences, actions }) {
     }
   }
 
-  async function applyVersion(version) {
-    if (sameVersion(version, current())) return;
-    // The kernel and language observers reset translations and cancel the document
-    // that is opening. Setting both while preferences are loading skips them.
+  function knownService(service) {
+    return (
+      !isCustomServiceId(service) ||
+      preferences.customTranslationServices.value.some((item) => item.id === service)
+    );
+  }
+
+  async function applyVersion({ engine, language = preferences.language.value, service }) {
+    const serviceChanged =
+      typeof service === 'string' &&
+      knownService(service) &&
+      provider.selectedServiceId(engine) !== service;
+    if (sameVersion({ engine, language }, current()) && !serviceChanged) return;
+    // The kernel, language and service observers reset translations and cancel the
+    // document that is opening. Setting them while preferences are loading skips them.
     preferences.loadingPreferences = true;
     try {
-      preferences.engine.value = version.engine;
-      preferences.language.value = version.language;
+      if (serviceChanged)
+        preferences.translationServices.value = withSelectedService(
+          preferences.translationServices.value,
+          engine,
+          service,
+        );
+      preferences.engine.value = engine;
+      preferences.language.value = language;
       await nextTick();
     } finally {
       preferences.loadingPreferences = false;
@@ -56,8 +82,11 @@ export function createTranslationVersions({ session, preferences, actions }) {
     void actions.kernelSettings.checkEngine();
   }
 
-  // Selects the cached version a newly opened document should show, if any.
-  async function openCachedVersion(documentId, token) {
+  // Selects the kernel, service and cached version a newly opened document should show.
+  async function openCachedVersion(documentId, token, remembered) {
+    const restored = !!remembered && (await usable(remembered, token));
+    if (token !== session.epoch) return null;
+    if (restored) await applyVersion({ engine: remembered.engine, service: remembered.service });
     let versions;
     try {
       versions = (
@@ -66,7 +95,7 @@ export function createTranslationVersions({ session, preferences, actions }) {
     } catch {
       return null;
     }
-    for (const version of openOrder(versions, current())) {
+    for (const version of documentOpenOrder(versions, current(), restored)) {
       if (token !== session.epoch) return null;
       if (!(await usable(version, token))) continue;
       await applyVersion(version);
@@ -75,5 +104,19 @@ export function createTranslationVersions({ session, preferences, actions }) {
     return null;
   }
 
-  return { openCachedVersion, currentTranslationVersion: current };
+  // Records this document's kernel and service so they follow it, not the session.
+  function rememberDocumentTranslation() {
+    const id = session.currentRecentId;
+    if (!id || session.loading.value || !window.previewRecents?.setTranslation) return;
+    const engine = preferences.engine.value;
+    void window.previewRecents
+      .setTranslation(id, { engine, service: provider.selectedServiceId(engine) })
+      .catch(() => {});
+  }
+
+  return {
+    openCachedVersion,
+    rememberDocumentTranslation,
+    currentTranslationVersion: current,
+  };
 }

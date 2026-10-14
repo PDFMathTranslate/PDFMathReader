@@ -35,6 +35,7 @@ const translationStatusFields = [
   'updatedAt',
 ];
 const translationEngines = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']);
+const translationServiceId = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 function validateThumbnail(thumbnail) {
   if (
     typeof thumbnail !== 'string' ||
@@ -171,6 +172,30 @@ function storedTranslationStatus(status) {
 function cloneTranslationStatus(status) {
   return status === undefined ? undefined : { ...status };
 }
+// The kernel and service a document was last read with; it reopens with them.
+export function validateTranslationChoice(choice) {
+  if (
+    !choice ||
+    typeof choice !== 'object' ||
+    Array.isArray(choice) ||
+    Reflect.ownKeys(choice).length !== 2 ||
+    !translationEngines.has(choice.engine) ||
+    typeof choice.service !== 'string' ||
+    !translationServiceId.test(choice.service)
+  )
+    throw Error('Invalid recent document translation choice.');
+  return { engine: choice.engine, service: choice.service };
+}
+function storedTranslationChoice(choice) {
+  try {
+    return validateTranslationChoice(choice);
+  } catch {
+    return undefined;
+  }
+}
+function cloneTranslationChoice(choice) {
+  return choice === undefined ? undefined : { ...choice };
+}
 function normalizeEntries(entries) {
   const pinned = [],
     unpinned = [];
@@ -187,6 +212,8 @@ function listedEntry(entry) {
   if (entry.view !== undefined) result.view = cloneReadingView(entry.view);
   if (entry.translationStatus !== undefined)
     result.translationStatus = cloneTranslationStatus(entry.translationStatus);
+  if (entry.translation !== undefined)
+    result.translation = cloneTranslationChoice(entry.translation);
   return result;
 }
 export async function createRecents(path) {
@@ -200,11 +227,13 @@ export async function createRecents(path) {
           const entry = { id: e.id, path: e.path, pinned: e.pinned === true },
             thumbnail = storedThumbnail(e.thumbnail),
             view = storedReadingView(e.view),
-            translationStatus = storedTranslationStatus(e.translationStatus);
+            translationStatus = storedTranslationStatus(e.translationStatus),
+            translation = storedTranslationChoice(e.translation);
           if (contentHashPattern.test(e.contentHash)) entry.contentHash = e.contentHash;
           if (thumbnail !== undefined) entry.thumbnail = thumbnail;
           if (view !== undefined) entry.view = view;
           if (translationStatus !== undefined) entry.translationStatus = translationStatus;
+          if (translation !== undefined) entry.translation = translation;
           return entry;
         }),
     );
@@ -248,6 +277,8 @@ export async function createRecents(path) {
       if (cached?.view !== undefined) entry.view = cloneReadingView(cached.view);
       if (cached?.translationStatus !== undefined)
         entry.translationStatus = cloneTranslationStatus(cached.translationStatus);
+      if (cached?.translation !== undefined)
+        entry.translation = cloneTranslationChoice(cached.translation);
       entries = normalizeEntries([
         entry,
         ...entries.filter((e) => e.path !== file && e.id !== entry.id),
@@ -282,6 +313,19 @@ export async function createRecents(path) {
       const entry = entries.find((e) => e.id === id);
       if (!entry) return this.list();
       delete entry.translationStatus;
+      await persist();
+      return this.list();
+    },
+    async setTranslation(id, choice) {
+      const validated = validateTranslationChoice(choice),
+        entry = entries.find((e) => e.id === id);
+      if (!entry) return this.list();
+      if (
+        entry.translation?.engine === validated.engine &&
+        entry.translation?.service === validated.service
+      )
+        return this.list();
+      entry.translation = validated;
       await persist();
       return this.list();
     },

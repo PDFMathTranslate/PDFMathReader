@@ -115,6 +115,18 @@ export function installReaderPreferenceObservers({ bindings }) {
     () => bindings.saveView(),
     { deep: true },
   );
+  // The kernel and service follow the open document, which reopens with them.
+  watch(
+    () => {
+      const engine = bindings.preferences.engine.value;
+      return [engine, bindings.translationServices.value?.[engine]?.id];
+    },
+    (next, previous) => {
+      if (bindings.settingsWindowMode || (next[0] === previous[0] && next[1] === previous[1]))
+        return;
+      bindings.rememberDocumentTranslation();
+    },
+  );
   watch(
     () => JSON.stringify(bindings.currentTranslationService.value),
     () => {

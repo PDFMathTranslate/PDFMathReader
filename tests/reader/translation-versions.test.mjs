@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  documentOpenOrder,
   openOrder,
   ownsTranslationGeometry,
 } from '../../src/features/translation/translation-versions.mjs';
@@ -25,4 +26,11 @@ test('a cached current setting is opened before other cached versions', () => {
   assert.deepEqual(openOrder([inspector, fast, precise], precise), [precise, inspector, fast]);
   assert.deepEqual(openOrder([inspector, fast], precise), [inspector, fast]);
   assert.deepEqual(openOrder(undefined, fast), []);
+});
+
+test('a remembered kernel opens only its own cached versions', () => {
+  const japanese = { ...fast, language: 'Japanese' };
+  assert.deepEqual(documentOpenOrder([precise, japanese, fast], fast, true), [fast, japanese]);
+  assert.deepEqual(documentOpenOrder([precise, inspector], fast, true), []);
+  assert.deepEqual(documentOpenOrder([precise, fast], fast, false), [fast, precise]);
 });

@@ -5,15 +5,8 @@ import {
   effectiveShortcutBindings,
   validateShortcutBinding,
 } from '../../../shared/commands/shortcuts.mjs';
+import { WINDOW_LOCAL_PREFERENCES, mergeWindowPreferences } from './window-preferences.mjs';
 
-const WINDOW_LOCAL_PREFERENCES = [
-  'engine',
-  'direction',
-  'columns',
-  'fit',
-  'zoom',
-  'translationMode',
-];
 const SETTINGS_PREFERENCES = [
   'autoCheckUpdates',
   'reduceBackgroundFrameRate',
@@ -74,17 +67,6 @@ const preferenceSnapshot = (state) =>
   Object.fromEntries(APPEARANCE_PREFERENCES.map((key) => [key, state?.[key]]));
 const samePreferences = (left, right) =>
   APPEARANCE_PREFERENCES.every((key) => left[key] === right[key]);
-const mergeWindowPreferences = (next, current, value, isSender) => {
-  const result = { ...next };
-  for (const key of WINDOW_LOCAL_PREFERENCES)
-    if (current?.[key] !== undefined) result[key] = current[key];
-  if (isSender)
-    for (const key of WINDOW_LOCAL_PREFERENCES)
-      if (value && Object.prototype.hasOwnProperty.call(value, key) && value[key] !== undefined)
-        result[key] = next[key];
-  return result;
-};
-
 export function registerPreferencesIPC({
   handle,
   trustedWindow,
@@ -184,12 +166,15 @@ export function registerPreferencesIPC({
       nativeTheme.themeSource = next.appearance;
       if (previous.uiLanguage !== next.uiLanguage) rebuildMenu();
       if (previous.windowMode !== next.windowMode) setWindowMode?.(next.windowMode, target);
+      // A settings window edits the selections of the document that opened it.
+      const owner = registry.stateFor(target).settingsOwner || target;
       for (const [window, state] of registry.windows) {
         state.preferences = mergeWindowPreferences(
           next,
           state.preferences,
           value,
           window === target,
+          window === owner || state.settingsOwner === owner,
         );
         setWindowVibrancy(window, state.preferences.reduceTransparency);
         window.webContents.setBackgroundThrottling(state.preferences.reduceBackgroundFrameRate);
@@ -212,10 +197,11 @@ export function registerPreferencesIPC({
           if (other !== target)
             other.webContents.send(
               'preferences:changed',
-              Object.fromEntries(SETTINGS_PREFERENCES.map((key) => [key, next[key]])),
+              Object.fromEntries(
+                SETTINGS_PREFERENCES.map((key) => [key, registry.stateFor(other).preferences[key]]),
+              ),
             );
       const senderState = registry.stateFor(target);
-      const owner = senderState.settingsOwner || target;
       const localChanges = Object.fromEntries(
         WINDOW_LOCAL_PREFERENCES.filter(
           (key) =>

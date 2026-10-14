@@ -122,6 +122,7 @@ export function registerRecentsIPC({
     'setThumbnail',
     'setView',
     'setTranslationStatus',
+    'setTranslation',
   ])
     handle('recents:' + action, async (event, value) => {
       const target = trustedWindow(event);
@@ -262,6 +263,7 @@ export function registerRecentsIPC({
       if (action === 'setView') return recents.setView(value?.id, value?.view);
       if (action === 'setTranslationStatus')
         return recents.setTranslationStatus(value?.id, value?.status);
+      if (action === 'setTranslation') return recents.setTranslation(value?.id, value?.choice);
       const state = registry.stateFor(target);
       const path = value?.ticket ? state.tickets.get(value.ticket) : value?.path;
       if (!path) {
@@ -295,7 +297,12 @@ export function registerRecentsIPC({
       const restored = state.restoreView;
       state.restoreView = null;
       await documentSession.open(target.id, { path, view: restored || first?.view });
-      return { entries, recentId: first?.id ?? null, view: restored || first?.view };
+      return {
+        entries,
+        recentId: first?.id ?? null,
+        view: restored || first?.view,
+        translation: first?.translation,
+      };
     });
   handle('recents:statusDialog', async (event, value) => {
     const target = trustedWindow(event);

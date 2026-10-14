@@ -74,3 +74,32 @@ test('legacy path history is backfilled for identical copies without merging dif
   assert.notEqual(different.id, 'legacy');
   assert.equal(different.translationStatus, undefined);
 });
+
+test('a document keeps its own kernel and service across reopening and restart', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'recent-translation-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const storage = join(dir, 'recents.json'),
+    first = join(dir, 'first.pdf'),
+    second = join(dir, 'second.pdf');
+  await writeFile(first, '%PDF first');
+  await writeFile(second, '%PDF second');
+  let recents = await createRecents(storage);
+  const [{ id }] = await recents.remember(first);
+  const [{ id: otherId }] = await recents.remember(second);
+  const choice = { engine: 'pdf_math_precise', service: 'deepl' };
+  await recents.setTranslation(id, choice);
+  await recents.setTranslation(otherId, { engine: 'pdf_math_fast', service: 'openai' });
+  await assert.rejects(recents.setTranslation(id, { engine: 'unknown', service: 'deepl' }));
+  await assert.rejects(recents.setTranslation(id, { engine: 'pdf_math_fast', service: '../x' }));
+  await assert.rejects(
+    recents.setTranslation(id, { engine: 'pdf_math_fast', service: 'deepl', extra: 1 }),
+  );
+  recents = await createRecents(storage);
+  const [entry] = await recents.remember(first);
+  assert.equal(entry.id, id);
+  assert.deepEqual(entry.translation, choice);
+  assert.deepEqual(recents.list().find((e) => e.id === otherId).translation, {
+    engine: 'pdf_math_fast',
+    service: 'openai',
+  });
+});

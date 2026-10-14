@@ -222,6 +222,7 @@ contextBridge.exposeInMainWorld(
     setView: (id, view) => ipcRenderer.invoke('recents:setView', { id, view }),
     setTranslationStatus: (id, status) =>
       ipcRenderer.invoke('recents:setTranslationStatus', { id, status }),
+    setTranslation: (id, choice) => ipcRenderer.invoke('recents:setTranslation', { id, choice }),
     remember: (file, ticket, thumbnail) =>
       ipcRenderer.invoke(
         'recents:remember',

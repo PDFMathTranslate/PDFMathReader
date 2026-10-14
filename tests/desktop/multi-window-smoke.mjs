@@ -56,6 +56,18 @@ export async function verifyMultiWindow(first, windows, createWindow) {
     ),
     'horizontal',
   );
+  // A service chosen in one document must not switch the other document's service.
+  const serviceOf = (window) =>
+    window.webContents.executeJavaScript(
+      "window.previewPreferences.load().then(state=>state.translationServices?.pdf_math_fast?.id??'auto')",
+    );
+  const firstService = await serviceOf(first);
+  const otherService = firstService === 'deepl' ? 'google' : 'deepl';
+  await second.webContents.executeJavaScript(
+    `window.previewPreferences.load().then(state=>window.previewPreferences.save({translationServices:{...state.translationServices,pdf_math_fast:{...(state.translationServices?.pdf_math_fast||{}),id:${JSON.stringify(otherService)},values:{}}}}))`,
+  );
+  assert.equal(await serviceOf(second), otherService);
+  assert.equal(await serviceOf(first), firstService);
   // Each window's IPC must report its own activity.
   second.hide();
   first.show();
@@ -118,6 +130,11 @@ export async function verifyMultiWindow(first, windows, createWindow) {
     "window.previewRecents.list().then(entries=>entries.find(entry=>entry.name==='Portrait and landscape.pdf')?.id)",
   );
   assert.ok(recentId);
+  // The opened document records its own kernel and service for reopening.
+  await wait(
+    first,
+    `window.previewRecents.list().then(entries=>!!entries.find(entry=>entry.id===${JSON.stringify(recentId)})?.translation?.engine)`,
+  );
   const assertDelivered = async () => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     await wait(delivered, 'window.previewRenderDiagnostics?.().totalPages>0');
