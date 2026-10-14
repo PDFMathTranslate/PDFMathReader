@@ -7,6 +7,7 @@ import { createReaderZoom } from '../features/reader/reader-zoom.mjs';
 import { createReaderPinch } from '../features/reader/reader-pinch.mjs';
 import { createCanvasRendering } from '../features/reader/canvas-rendering.mjs';
 import { createWatermarkRemoval } from '../features/reader/watermark-removal.mjs';
+import { createTfidfWeighting } from '../features/reader/tfidf-weighting.mjs';
 import { loadPDFRuntime } from '../features/reader/pdf-runtime.mjs';
 import { createReaderViewport } from '../features/reader/reader-viewport.mjs';
 import { createThumbnails } from '../features/reader/reader-thumbnails.mjs';
@@ -152,12 +153,21 @@ export function createReaderFeatures({
       void canvasRendering.renderPages(false, true);
     },
   });
+  const tfidfWeighting = createTfidfWeighting({
+    session,
+    preferences,
+    onToggle: () => {
+      canvasRendering.resetBitmaps();
+      void canvasRendering.renderPages(false, true);
+    },
+  });
   const canvasRendering = createCanvasRendering({
     renderState,
     session,
     motion,
     preferences,
     watermarkRemoval,
+    tfidfWeighting,
     actions: createLazyPort({
       rootActions: () => rootActions,
       readerViewport: () => readerViewport,
@@ -315,6 +325,7 @@ export function createReaderFeatures({
       thumbnails: () => thumbnails,
       preferencePersistence: () => preferencePersistence,
       readerScroll: () => readerScroll,
+      tfidfWeighting: () => tfidfWeighting,
     }),
     feedback,
     annotations,

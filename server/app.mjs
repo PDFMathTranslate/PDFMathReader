@@ -34,6 +34,8 @@ import {
 } from './http/middleware.mjs';
 import { registerProxyRoutes } from './http/proxy-routes.mjs';
 import { registerCacheRoutes } from './http/cache-routes.mjs';
+import { registerTermCorpusRoutes } from './http/term-corpus-routes.mjs';
+import { createTermCorpus } from './documents/term-corpus.mjs';
 import {
   registerDeveloperRoutes,
   registerProviderPortRoute,
@@ -202,6 +204,10 @@ export async function startServer({
   registerFormulaOcrRoutes(app, { service: formulaOcr });
   registerProviderPortRoute(app, isProviderPortOpen);
   registerCacheRoutes(app, { cacheManager });
+  // Kept beside the translation cache, not in it, so cache limits never evict it.
+  registerTermCorpusRoutes(app, {
+    termCorpus: createTermCorpus({ directory: join(cacheDir, '..', 'term-corpus') }),
+  });
   registerDeveloperRoutes(app, {
     developerDiagnostics,
     recentDebugLogs: recentLogs,

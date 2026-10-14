@@ -178,6 +178,8 @@ export function createDocumentImport({
         return;
       }
       session.pdf = markRaw(loaded);
+      // Every opened document lends a few random pages to the TF-IDF corpus.
+      actions.tfidfWeighting.record(session.pdf);
       const outlineReady = actions.referenceNavigation.loadOutline(session.pdf, token);
       activity.performanceRecorder.mark('pdfReady');
       activity.performanceRecorder.pages(session.pdf.numPages);

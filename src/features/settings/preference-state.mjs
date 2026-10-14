@@ -13,6 +13,7 @@ export function createPreferenceState() {
   const translationCompareEnabled = ref(false);
   const watermarkRemovalEnabled = ref(false);
   const recentMagicZoomEnabled = ref(false);
+  const tfidfWeightingEnabled = ref(false);
   const paragraphContinuationDetection = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
@@ -90,6 +91,7 @@ export function createPreferenceState() {
     translationCompareEnabled,
     watermarkRemovalEnabled,
     recentMagicZoomEnabled,
+    tfidfWeightingEnabled,
     paragraphContinuationDetection,
     jevApiToken,
     remoteKernelEnabled,

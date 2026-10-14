@@ -32,6 +32,7 @@ const SETTINGS_PREFERENCES = [
   'translationCompareEnabled',
   'watermarkRemovalEnabled',
   'recentMagicZoomEnabled',
+  'tfidfWeightingEnabled',
   'paragraphContinuationDetection',
   'jevApiToken',
   'remoteKernelEnabled',

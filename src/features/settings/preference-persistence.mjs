@@ -39,6 +39,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.watermarkRemovalEnabled.value = saved.watermarkRemovalEnabled;
     if (typeof saved.recentMagicZoomEnabled === 'boolean')
       preferences.recentMagicZoomEnabled.value = saved.recentMagicZoomEnabled;
+    if (typeof saved.tfidfWeightingEnabled === 'boolean')
+      preferences.tfidfWeightingEnabled.value = saved.tfidfWeightingEnabled;
     if (typeof saved.paragraphContinuationDetection === 'boolean')
       preferences.paragraphContinuationDetection.value = saved.paragraphContinuationDetection;
     if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
@@ -191,6 +193,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         translationCompareEnabled: preferences.translationCompareEnabled.value,
         watermarkRemovalEnabled: preferences.watermarkRemovalEnabled.value,
         recentMagicZoomEnabled: preferences.recentMagicZoomEnabled.value,
+        tfidfWeightingEnabled: preferences.tfidfWeightingEnabled.value,
         paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
         jevApiToken: preferences.jevApiToken.value,
         remoteKernelEnabled: preferences.remoteKernelEnabled.value,

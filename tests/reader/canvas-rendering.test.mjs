@@ -24,12 +24,13 @@ const source = (await readFile(sourceURL, 'utf8'))
     };`,
   )
   .replace(
-    "import { bionicRenderOptions } from './bionic-rendering.mjs';",
+    "import { bionicRenderOptions, mergeGlyphPlans } from './bionic-rendering.mjs';",
     `const bionicRenderOptions = async (page, options) => {
       const key = options.mode === 'off' ? '' : 'bionic:' + options.mode + ':' + options.fixedLength;
       await page.bionicPlans?.get(key)?.promise;
       return { key, render: key ? { bionicGlyphs: key } : {} };
-    };`,
+    };
+    const mergeGlyphPlans = (...plans) => plans.filter(Boolean).join('|') || null;`,
   )
   .replace("'vue'", JSON.stringify(import.meta.resolve('vue')))
   .replace(
@@ -108,11 +109,19 @@ function fixture() {
     bionicFixedLength: { value: 3 },
     bionicOriginalOnly: { value: true },
   };
+  const tfidfWeighting = {
+    on: false,
+    enabled() {
+      return this.on;
+    },
+    renderOptions: async () => ({ key: 'tfidf', plan: 'tfidf-plan' }),
+  };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf, pages: { value: pages } },
     motion: { pinching: { value: false } },
     preferences,
+    tfidfWeighting,
     view,
     activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
     actions: {
@@ -127,6 +136,7 @@ function fixture() {
     pdfPages,
     pages,
     preferences,
+    tfidfWeighting,
     view,
     renderer,
     restore() {
@@ -405,6 +415,44 @@ test('bionic render keys separate canvas, task, and bitmap reuse', async () => {
     assert.equal(options.length, 3);
     assert.equal(options[2].bionicGlyphs, undefined);
     assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+  } finally {
+    f.restore();
+  }
+});
+
+test('TF-IDF weighting joins bionic glyphs on original pages only', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1),
+    translatedOptions = [],
+    translated = {
+      getViewport: f.pdfPages[0].getViewport,
+      render: (options) => {
+        translatedOptions.push(options);
+        return { promise: Promise.resolve(), cancel() {} };
+      },
+    };
+  f.pages[0].mathDocument = { getPage: async () => translated };
+  f.tfidfWeighting.on = true;
+  try {
+    await f.renderer.renderPages();
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'tfidf');
+    f.preferences.bionicReading.value = 'fixed';
+    await f.renderer.renderPages();
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:3+tfidf');
+    // Translated pages never get TF-IDF, even when bionic reading covers them.
+    f.preferences.bionicOriginalOnly.value = false;
+    f.view.showTranslations.value = true;
+    await f.renderer.renderPages();
+    assert.equal(translatedOptions.at(-1).bionicGlyphs, 'bionic:fixed:3');
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:3');
+    assert.equal(
+      f.state.canvasCache.get(f.state.canvasEls.get(2)).bionicKey,
+      'bionic:fixed:3+tfidf',
+    );
+    f.tfidfWeighting.on = false;
+    f.view.showTranslations.value = false;
+    await f.renderer.renderPages();
+    assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:3');
   } finally {
     f.restore();
   }

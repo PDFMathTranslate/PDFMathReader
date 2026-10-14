@@ -2,7 +2,7 @@ import { renderPixelRatio, scrollPixelRatio, renderFrame } from './render-resolu
 import { snapshot, revealPDF } from '../../ui/motion/text-reveal.mjs';
 import { nextTick } from 'vue';
 import { animateParagraphGaps } from './paragraph-gap-motion.mjs';
-import { bionicRenderOptions } from './bionic-rendering.mjs';
+import { bionicRenderOptions, mergeGlyphPlans } from './bionic-rendering.mjs';
 import { normalizeBionicReading } from '../translation/bionic-reading.mjs';
 
 // A visible page left empty after a pass is painted again, a few times and with a growing pause.
@@ -18,6 +18,7 @@ export function createCanvasRendering({
   activity,
   actions,
   watermarkRemoval,
+  tfidfWeighting,
 }) {
   let paintRetryTimer;
 
@@ -77,7 +78,7 @@ export function createCanvasRendering({
     };
   }
 
-  function bionicPreferenceKey(number, translated, normalized) {
+  function bionicOnlyKey(number, translated, normalized) {
     if (!number || (translated && preferences?.bionicOriginalOnly?.value !== false)) return '';
     const { mode, fixedLength } =
       normalized ||
@@ -86,6 +87,13 @@ export function createCanvasRendering({
         fixedLength: preferences?.bionicFixedLength?.value,
       });
     return mode === 'off' ? '' : `bionic:${mode}:${fixedLength}`;
+  }
+
+  // Key of every glyph weighting on a page: bionic reading, and TF-IDF weighting
+  // that only original pages receive.
+  function bionicPreferenceKey(number, translated, normalized) {
+    const tfidf = number && !translated && tfidfWeighting?.enabled() ? 'tfidf' : '';
+    return [bionicOnlyKey(number, translated, normalized), tfidf].filter(Boolean).join('+');
   }
 
   function presentFrame(canvas, frame, page, scale, dpr, geometry = frame.pdfFrame) {
@@ -185,19 +193,23 @@ export function createCanvasRendering({
         fixedLength: preferences?.bionicFixedLength?.value,
       }),
       plannedBionicKey = bionicPreferenceKey(number, translated, normalizedBionic);
-    // Pages with a watermark to hide or bionic glyphs are drawn, and cached,
-    // apart from the plain page. Thumbnails deliberately stay unmodified.
+    // Pages with a watermark to hide or weighted (bionic or TF-IDF) glyphs are
+    // drawn, and cached, apart from the plain page. Thumbnails stay unmodified.
     const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null;
     if (!activity.foreground.value || !canvas.isConnected) return false;
-    const bionic = plannedBionicKey
+    const plannedBionicOnly = bionicOnlyKey(number, translated, normalizedBionic),
+      plannedTfidf = plannedBionicKey.endsWith('tfidf');
+    const bionic = plannedBionicOnly
       ? await bionicRenderOptions(page, {
           mode: normalizedBionic.mode,
           fixedLength: normalizedBionic.fixedLength,
         })
       : { key: '', render: {} };
+    const tfidf = plannedTfidf ? await tfidfWeighting.renderOptions(page) : null;
     if (!activity.foreground.value || !canvas.isConnected) return false;
     const filter = removal?.key || '',
-      bionicKey = bionic?.key || '';
+      bionicKey = [bionic?.key, tfidf?.key].filter(Boolean).join('+'),
+      glyphs = mergeGlyphPlans(bionic?.render?.bionicGlyphs, tfidf?.plan);
     if (
       (number && !renderState.renderWindow.value.has(number)) ||
       bionicKey !== plannedBionicKey ||
@@ -290,7 +302,7 @@ export function createCanvasRendering({
       viewport,
       transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
       ...removal?.render,
-      ...bionic?.render,
+      ...(glyphs ? { bionicGlyphs: glyphs } : {}),
     });
     Object.assign(task, {
       previewPage: page,

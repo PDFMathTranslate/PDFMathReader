@@ -145,22 +145,42 @@ export function bionicGlyphRuns(list, OPS, fontFor, viewport) {
   return runs;
 }
 
-/** Which original glyphs to stroke while pdf.js paints them. */
-export function bionicGlyphPlan(runs, options) {
+/**
+ * Which original glyphs to stroke while pdf.js paints them: operator index to
+ * glyph index to stroke strength, where 1 is the bionic bold.
+ */
+export function glyphPlan(runs, ranges) {
   const plan = new Map();
-  for (const range of bionicRunRanges(runs, options)) {
+  for (const range of ranges) {
     const run = runs[range.index];
     if (!/\p{L}/u.test(run.text)) continue;
-    if (!plan.has(run.op)) plan.set(run.op, new Set());
-    plan.get(run.op).add(run.glyph);
+    if (!plan.has(run.op)) plan.set(run.op, new Map());
+    const glyphs = plan.get(run.op),
+      strength = range.strength ?? 1;
+    if (!(glyphs.get(run.glyph) >= strength)) glyphs.set(run.glyph, strength);
   }
   return plan;
 }
 
+export const bionicGlyphPlan = (runs, options) => glyphPlan(runs, bionicRunRanges(runs, options));
+
+/** One plan from several; a glyph in more than one keeps its strongest stroke. */
+export function mergeGlyphPlans(...plans) {
+  const present = plans.filter((plan) => plan?.size);
+  if (present.length < 2) return present[0] || null;
+  const merged = new Map();
+  for (const plan of present)
+    for (const [op, glyphs] of plan) {
+      if (!merged.has(op)) merged.set(op, new Map());
+      const target = merged.get(op);
+      for (const [glyph, strength] of glyphs)
+        if (!(target.get(glyph) >= strength)) target.set(glyph, strength);
+    }
+  return merged;
+}
+
 const pages = new WeakMap();
-export async function bionicRenderOptions(page, options) {
-  const normalized = normalizeBionicReading(options);
-  if (normalized.mode === 'off') return { key: '', render: {} };
+function pageEntry(page) {
   if (!pages.has(page)) {
     const pending = (async () => {
       const { loadPDFRuntime } = await import('./pdf-runtime.mjs');
@@ -176,7 +196,16 @@ export async function bionicRenderOptions(page, options) {
     pages.set(page, { runs: pending, plans: new Map() });
     pending.catch(() => pages.delete(page));
   }
-  const entry = pages.get(page),
+  return pages.get(page);
+}
+
+/** Native glyph runs of a page, read once and shared by every emphasis. */
+export const pageGlyphRuns = (page) => pageEntry(page).runs;
+
+export async function bionicRenderOptions(page, options) {
+  const normalized = normalizeBionicReading(options);
+  if (normalized.mode === 'off') return { key: '', render: {} };
+  const entry = pageEntry(page),
     key = `bionic:${normalized.mode}:${normalized.fixedLength}`;
   if (!entry.plans.has(key)) {
     // Keep only the current configuration; zoom reuses its glyph decisions.

@@ -26,7 +26,8 @@ export function extendPDFRuntime(source) {
   );
   replace(
     '      if (this.contentVisible && (glyph.isInFont || font.missingFile)) {',
-    `      const bionicPaint = bionic?.has(i) &&
+    `      const bionicStrength = bionic?.get(i) || 0;
+      const bionicPaint = bionicStrength > 0 &&
         (current.textRenderingMode & TextRenderingMode.FILL_STROKE_MASK) === TextRenderingMode.FILL &&
         !current.patternFill;
       const originalTextMode = current.textRenderingMode;
@@ -34,7 +35,7 @@ export function extendPDFRuntime(source) {
         ctx.save();
         current.textRenderingMode |= TextRenderingMode.FILL_STROKE;
         ctx.strokeStyle = ctx.fillStyle;
-        ctx.lineWidth = fontSize / fontSizeScale * 0.035;
+        ctx.lineWidth = fontSize / fontSizeScale * 0.035 * bionicStrength;
         ctx.lineJoin = "round";
         ctx.setLineDash([]);
       }
