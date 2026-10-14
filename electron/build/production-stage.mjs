@@ -1,4 +1,13 @@
-import { cp, mkdir, mkdtemp, readFile, writeFile, readdir, stat } from 'node:fs/promises';
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  writeFile,
+  readdir,
+  stat,
+  rm as removePath,
+} from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve, relative } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -103,9 +112,25 @@ export async function stageApplication({
   if (!names.includes('onnxruntime-node')) names.push('onnxruntime-node');
   if (test && !names.includes('pdf-lib')) names.push('pdf-lib');
   const fallback = !hasNativeInspector(platform, arch);
-  if (fallback && !names.includes('pdfjs-dist')) names.push('pdfjs-dist');
-  if (fallback && !names.includes('@thednp/dommatrix')) names.push('@thednp/dommatrix');
+  // PDF.js is the whole extractor on fallback platforms and recovers OCR text layers
+  // that the native inspector drops on scanned pages elsewhere.
+  if (!names.includes('pdfjs-dist')) names.push('pdfjs-dist');
+  if (!names.includes('@thednp/dommatrix')) names.push('@thednp/dommatrix');
   const copied = await copyDependencies(root, stage, names, fallback);
+  const pdfjsRoot = join(stage, 'node_modules/pdfjs-dist');
+  for (const entry of await readdir(pdfjsRoot))
+    if (
+      !['package.json', 'LICENSE', 'legacy', 'cmaps', 'standard_fonts', 'wasm', 'iccs'].includes(
+        entry,
+      )
+    )
+      await removePath(join(pdfjsRoot, entry), { recursive: true, force: true });
+  for (const entry of await readdir(join(pdfjsRoot, 'legacy')))
+    if (entry !== 'build')
+      await removePath(join(pdfjsRoot, 'legacy', entry), { recursive: true, force: true });
+  for (const entry of await readdir(join(pdfjsRoot, 'legacy/build')))
+    if (!['pdf.mjs', 'pdf.worker.mjs'].includes(entry))
+      await removePath(join(pdfjsRoot, 'legacy/build', entry), { force: true });
   // Ship only the target CPU runtime; other architectures multiply bundle size.
   const onnxBin = join(stage, 'node_modules/onnxruntime-node/bin/napi-v6');
   const { rm: removeRuntime } = await import('node:fs/promises');

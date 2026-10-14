@@ -16,6 +16,9 @@ test('production bundle serves and extracts PDFs without an external Express ins
       await access(join(stage, 'server/kernels/python', name));
     await access(join(stage, 'server/platform/macos/local-translation.swift'));
     await access(join(stage, 'server/formula/formula-ocr-worker.mjs'));
+    // Scanned pages recover their OCR text layer through PDF.js on every platform.
+    await access(join(stage, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'));
+    await access(join(stage, 'node_modules/pdfjs-dist/standard_fonts'));
     await access(
       join(stage, 'node_modules/onnxruntime-node/bin/napi-v6', process.platform, process.arch),
     );

@@ -39,9 +39,20 @@ export function paragraphs(items, height) {
       });
   }
   lines.sort((a, b) => a.top - b.top || a.x - b.x);
-  const bodySize =
-    runs.map((r) => r.fontSize || r.height).sort((a, b) => a - b)[Math.floor(runs.length / 2)] ||
-    12;
+  // Weight by characters so many short runs (footnotes, superscripts) cannot outvote the body.
+  const sizes = runs
+    .map((r) => [r.fontSize || r.height, r.text.trim().length])
+    .sort((a, b) => a[0] - b[0]);
+  let bodySize = 12;
+  for (
+    let i = 0, seen = 0, half = sizes.reduce((sum, [, n]) => sum + n, 0) / 2;
+    i < sizes.length;
+    i++
+  )
+    if ((seen += sizes[i][1]) >= half) {
+      bodySize = sizes[i][0];
+      break;
+    }
   // Learn normal leading from nearby lines of the same size, independently of columns.
   const gaps = new Map();
   for (let i = 0; i < lines.length; i++) {

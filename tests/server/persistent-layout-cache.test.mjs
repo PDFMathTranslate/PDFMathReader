@@ -82,7 +82,7 @@ async function layout(origin, documentId, height = 792) {
   });
 }
 
-async function cachePath(directory, height = 792, schema = 2) {
+async function cachePath(directory, height = 792, schema = 4) {
   const documentHash = createHash('sha256').update(PDF).digest('hex');
   const generation = (
     await readFile(join(directory, 'documents', `${documentHash}.generation`), 'utf8')

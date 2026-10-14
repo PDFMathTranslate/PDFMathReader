@@ -4,7 +4,9 @@ import { PDFDocument, StandardFonts, degrees } from 'pdf-lib';
 import {
   hasNativeInspector,
   extractPdfJsPositions,
+  recoverScannedPages,
 } from '../../../server/documents/pdf-extractor.mjs';
+import { paragraphs } from '../../../server/documents/layout.mjs';
 
 test('portable extraction preserves selected pages, display-frame positions and font sizes', async () => {
   const pdf = await PDFDocument.create(),
@@ -27,4 +29,83 @@ test('portable extraction preserves selected pages, display-frame positions and 
   const rotated = await extractPdfJsPositions(await pdf.save(), [1]);
   assert.ok(Math.abs(rotated[0].rotation) === 90);
   await assert.rejects(extractPdfJsPositions(bytes, [3]));
+});
+
+test('scanned pages recover the hidden OCR layer the native inspector drops', async () => {
+  const image = (page) => ({
+      page,
+      text: '[Image]',
+      itemType: 'Image',
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 600,
+    }),
+    footer = (page) => ({
+      page,
+      text: 'All use subject to terms',
+      itemType: 'Text',
+      x: 100,
+      y: 10,
+      width: 100,
+      height: 6,
+      fontSize: 6,
+    }),
+    native = [
+      image(1),
+      footer(1),
+      {
+        page: 2,
+        text: 'Born digital page',
+        itemType: 'Text',
+        x: 40,
+        y: 500,
+        width: 120,
+        height: 10,
+        fontSize: 10,
+      },
+    ],
+    word = (text, x, y, fontSize = 10) => ({
+      page: 1,
+      text,
+      itemType: 'Text',
+      x,
+      y,
+      width: text.length * 5,
+      height: fontSize,
+      fontSize,
+      isBold: false,
+      rotation: 0,
+    });
+  const ocr = [];
+  // Words jitter in baseline and size and sit just over a 1.2-em gap apart.
+  for (let line = 0; line < 8; line++)
+    for (let column = 0; column < 4; column++)
+      ocr.push(
+        word(
+          'sociology',
+          60 + column * 57.5,
+          500 - line * 12 + (column % 2) * 0.4,
+          column === 1 ? 8 : 10,
+        ),
+      );
+  ocr.push(footer(1));
+  const requested = [];
+  const items = await recoverScannedPages(new Uint8Array(), native, async (_bytes, pages) => {
+    requested.push(...pages);
+    return ocr;
+  });
+  assert.deepEqual(requested, [1]);
+  assert.equal(items.filter((item) => item.page === 2).length, 1);
+  assert.ok(items.some((item) => item.page === 1 && item.itemType === 'Image'));
+  const result = paragraphs(
+    items.filter((item) => item.page === 1),
+    600,
+  );
+  assert.equal(result[0].text, Array(32).fill('sociology').join(' '));
+  assert.equal(result.at(-1).text, 'All use subject to terms');
+  assert.equal(
+    await recoverScannedPages(new Uint8Array(), native, async () => [footer(1)]),
+    native,
+  );
 });
