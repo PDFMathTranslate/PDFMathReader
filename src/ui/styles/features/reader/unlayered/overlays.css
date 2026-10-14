@@ -323,13 +323,9 @@
   display: none;
 }
 
-/* Keep the kernel recovery surface anchored to its toolbar control. */
-
-.toolbar:has(.kernel-error-popover) {
-  overflow: visible;
-}
-
+/* The teleported kernel recovery popover anchors to this control. */
 .toolbar-kernel {
+  anchor-name: --kernel-error-anchor;
   position: relative;
   z-index: 12;
   display: inline-flex;

@@ -12,6 +12,7 @@ const emit = defineEmits(['ignore', 'retry']);
 <template>
   <section
     class="kernel-error-popover"
+    data-popover-trigger
     role="alert"
     aria-labelledby="kernel-error-title"
     aria-describedby="kernel-error-message"
@@ -48,10 +49,14 @@ const emit = defineEmits(['ignore', 'retry']);
 
 <style scoped>
 .kernel-error-popover {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  z-index: 60;
+  /* Teleported out of the toolbar so it stacks above the tab bar and its backdrop
+     blur samples the document, not the toolbar capsule. CSS anchoring keeps it
+     attached to the capsule while toolbar controls move. */
+  position: fixed;
+  position-anchor: --kernel-error-anchor;
+  top: calc(anchor(bottom) + 12px);
+  right: clamp(8px, anchor(right), calc(100vw - min(340px, 100vw - 28px) - 14px));
+  z-index: 25;
   width: min(340px, calc(100vw - 28px));
   max-height: calc(100dvh - var(--toolbar-height) - 32px);
   padding: 20px;
@@ -174,14 +179,8 @@ const emit = defineEmits(['ignore', 'retry']);
     color: var(--text);
   }
 }
-@media (max-width: 700px) {
-  .kernel-error-popover {
-    right: -4px;
-  }
-}
 @media (max-width: 420px) {
   .kernel-error-popover {
-    right: -8px;
     padding: 16px;
   }
 }

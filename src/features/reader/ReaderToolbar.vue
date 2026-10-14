@@ -168,15 +168,16 @@ const settings = defineModel('settings');
             t(option.labelKey)
           }}</AppPopUpButtonItem>
         </AppPopUpButton>
-        <Transition name="settings-motion"
-          ><KernelErrorPopover
-            v-if="kernelErrorVisible"
-            :message="kernelFailure.message"
-            :kernel-label="t(kernelOptions.find((option) => option.id === engine)?.labelKey)"
-            :busy="engineBusy"
-            @ignore="ignoreKernelFailure"
-            @retry="recoverKernel()"
-        /></Transition>
+        <Teleport defer to=".app"
+          ><Transition name="settings-motion"
+            ><KernelErrorPopover
+              v-if="kernelErrorVisible"
+              :message="kernelFailure.message"
+              :kernel-label="t(kernelOptions.find((option) => option.id === engine)?.labelKey)"
+              :busy="engineBusy"
+              @ignore="ignoreKernelFailure"
+              @retry="recoverKernel()" /></Transition
+        ></Teleport>
       </div>
       <AppButton
         v-if="pages.length"
