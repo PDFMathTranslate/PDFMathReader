@@ -48,6 +48,13 @@ const groups = computed(() =>
   })),
 );
 
+// Typical document fonts of each style; font names read the same in every language.
+const STYLE_EXAMPLES = {
+  sans: 'Helvetica, Arial, Calibri',
+  serif: 'Times, Georgia, Cambria',
+  mono: 'Courier, Menlo, Consolas',
+};
+
 const fontStyle = (item) => (item.family ? { fontFamily: `"${item.family}"` } : undefined);
 
 function choose(preference, value) {
@@ -71,38 +78,43 @@ function choose(preference, value) {
       <p v-if="status !== 'ready'" class="muted" role="status">
         {{ label(status === 'failed' ? 'failed' : 'loading') }}
       </p>
-      <div
-        v-for="group in groups"
-        :key="group.document"
-        class="document-font-group"
-        role="group"
-        :aria-labelledby="`document-font-${group.document}`"
-      >
-        <span :id="`document-font-${group.document}`" class="document-font-heading">
-          {{ label(group.document) }}
-        </span>
-        <div v-for="row in group.rows" :key="row.id" class="appearance-row">
-          <span :id="`${row.id}-label`">{{ label(row.style) }}</span
-          ><AppPopUpButton
-            teleport-to="body"
-            :model-value="row.preference.value || DOCUMENT_FONT_DEFAULT"
-            :disabled="status === 'loading' && !row.preference.value"
-            :aria-labelledby="`document-font-${group.document} ${row.id}-label`"
-            aria-describedby="document-font-hint"
-            @update:model-value="choose(row.preference, $event)"
-            ><AppPopUpButtonItem
-              v-for="item in row.items"
-              :key="item.value"
-              :value="item.value"
-              :text-value="item.label"
-              :disabled="item.header"
-              :class="{ 'document-font-section-label': item.header }"
-              :style="fontStyle(item)"
-              >{{ item.label }}</AppPopUpButtonItem
-            ></AppPopUpButton
-          >
+      <template v-for="group in groups" :key="group.document">
+        <div class="setting-row document-font-parent">
+          <span :id="`document-font-${group.document}`">{{ label(group.document) }}</span>
         </div>
-      </div>
+        <div
+          class="information-subcategories"
+          role="group"
+          :aria-labelledby="`document-font-${group.document}`"
+        >
+          <div v-for="row in group.rows" :key="row.id" class="setting-row">
+            <div>
+              <span :id="`${row.id}-label`">{{ label(row.style) }}</span>
+              <p :id="`${row.id}-examples`" class="muted document-font-examples">
+                {{ STYLE_EXAMPLES[row.style] }}
+              </p>
+            </div>
+            <AppPopUpButton
+              teleport-to="body"
+              :model-value="row.preference.value || DOCUMENT_FONT_DEFAULT"
+              :disabled="status === 'loading' && !row.preference.value"
+              :aria-labelledby="`document-font-${group.document} ${row.id}-label`"
+              :aria-describedby="`${row.id}-examples document-font-hint`"
+              @update:model-value="choose(row.preference, $event)"
+              ><AppPopUpButtonItem
+                v-for="item in row.items"
+                :key="item.value"
+                :value="item.value"
+                :text-value="item.label"
+                :disabled="item.header"
+                :class="{ 'document-font-section-label': item.header }"
+                :style="fontStyle(item)"
+                >{{ item.label }}</AppPopUpButtonItem
+              ></AppPopUpButton
+            >
+          </div>
+        </div>
+      </template>
     </div>
   </section>
 </template>
@@ -116,12 +128,12 @@ function choose(preference, value) {
   margin: 0;
   line-height: 1.45;
 }
-.document-font-group {
-  display: grid;
-  gap: 6px;
+.information-subcategories + .document-font-parent {
+  border-top: 1px solid var(--chrome-divider);
 }
-.document-font-heading {
-  font-weight: 600;
+.document-font-examples {
+  margin: 4px 0 0;
+  font-size: 12px;
 }
 .document-font-section-label {
   font-size: 11px;
