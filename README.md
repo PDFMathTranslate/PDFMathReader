@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                         | Contributor                        |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-14 | [add experimental TF-IDF font weighting for original pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/6252b05020e876b6819768a122bcaa45c679a37d)  | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [translate all pages for the current document from the menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/c680461864c0136a2cb3c9f1749e0bf395e31f6e) | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [add original-document-only bionic reading option](https://github.com/PDFMathTranslate/PDFMathReader/commit/7c50f2f98c05712df73363d007b2bdffe9c26601)           | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [add bionic reading with fixed-length and word-root modes](https://github.com/PDFMathTranslate/PDFMathReader/commit/d9e2d81e6bbb9d81db951db250650c7c5dc82c13)   | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [add experimental side-by-side translation compare view](https://github.com/PDFMathTranslate/PDFMathReader/commit/eb5c7bd08cf9c28c89d9383e726550835f62f719)     | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [offer Copy Email for addresses detected in selected text](https://github.com/PDFMathTranslate/PDFMathReader/commit/6aedde81476e28381999764e8d09096234e8df94)   | [@reycn](https://github.com/reycn) |
-| 2026-10-13 | [offer Open Link for URLs detected in selected text](https://github.com/PDFMathTranslate/PDFMathReader/commit/a1899494a02d8198ec3778a8301904c403b0107c)         | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                                | Contributor                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-14 | [experimental, force smooth scrolling even with jagged wheel input](https://github.com/PDFMathTranslate/PDFMathReader/commit/28203be085a26d6eff42a333ad88204be0f475d1) | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [add experimental TF-IDF font weighting for original pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/6252b05020e876b6819768a122bcaa45c679a37d)         | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [translate all pages for the current document from the menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/c680461864c0136a2cb3c9f1749e0bf395e31f6e)        | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [add original-document-only bionic reading option](https://github.com/PDFMathTranslate/PDFMathReader/commit/7c50f2f98c05712df73363d007b2bdffe9c26601)                  | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [add bionic reading with fixed-length and word-root modes](https://github.com/PDFMathTranslate/PDFMathReader/commit/d9e2d81e6bbb9d81db951db250650c7c5dc82c13)          | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [add experimental side-by-side translation compare view](https://github.com/PDFMathTranslate/PDFMathReader/commit/eb5c7bd08cf9c28c89d9383e726550835f62f719)            | [@reycn](https://github.com/reycn) |
+| 2026-10-13 | [offer Copy Email for addresses detected in selected text](https://github.com/PDFMathTranslate/PDFMathReader/commit/6aedde81476e28381999764e8d09096234e8df94)          | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
