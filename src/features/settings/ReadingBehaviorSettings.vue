@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { AppSegment, AppSegmentedControl, AppSwitch } from '../../ui/controls.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
+import SmoothScrollingSettings from './SmoothScrollingSettings.vue';
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const reducePadding = defineModel('reducePadding');
 const windowMode = defineModel('windowMode');
@@ -121,6 +122,7 @@ const title = computed(
         <span id="reduce-padding-label">{{ t('appearance.reducePadding') }}</span>
         <AppSwitch v-model="reducePadding" aria-labelledby="reduce-padding-label" />
       </div>
+      <SmoothScrollingSettings />
     </div>
   </section>
 </template>

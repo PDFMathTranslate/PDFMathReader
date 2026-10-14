@@ -1,6 +1,6 @@
 import { uiLanguage } from '../../i18n/index.mjs';
 
-// Experimental feature: English is the fallback for every other language.
+// English is the fallback for every other language.
 const labels = {
   en: {
     setting: 'Force smooth scrolling',

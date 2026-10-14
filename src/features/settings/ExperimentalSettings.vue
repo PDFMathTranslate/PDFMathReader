@@ -8,13 +8,10 @@ import TopicSentenceSettings from './TopicSentenceSettings.vue';
 import ParagraphContinuationSettings from './ParagraphContinuationSettings.vue';
 import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
-import EpubSettings from './EpubSettings.vue';
 import TocGenerationSettings from './TocGenerationSettings.vue';
 import TranslationCompareSettings from './TranslationCompareSettings.vue';
 import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
 import RecentMagicZoomSettings from './RecentMagicZoomSettings.vue';
-import TfidfWeightingSettings from './TfidfWeightingSettings.vue';
-import SmoothScrollingSettings from './SmoothScrollingSettings.vue';
 import ChatGPTSubscriptionSettings from './ChatGPTSubscriptionSettings.vue';
 defineProps({ titled: { type: Boolean, default: false } });
 const languagePreferences = inject('documentLanguagePreferences');
@@ -27,13 +24,10 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
     <section class="settings-section" aria-labelledby="settings-experimental-general">
       <h3 id="settings-experimental-general">{{ categoryLabels[0] }}</h3>
       <div class="settings-section-body">
-        <EpubSettings />
         <FormulaOcrSettings />
         <TocGenerationSettings v-if="languagePreferences" />
         <WatermarkRemovalSettings v-if="languagePreferences" />
         <RecentMagicZoomSettings v-if="languagePreferences" />
-        <TfidfWeightingSettings v-if="languagePreferences" />
-        <SmoothScrollingSettings v-if="languagePreferences" />
         <TopicSentenceSettings v-if="languagePreferences" />
       </div>
     </section>

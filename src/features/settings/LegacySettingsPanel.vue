@@ -1,5 +1,7 @@
 <script setup>
 import BionicReadingSettings from './BionicReadingSettings.vue';
+import TfidfWeightingSettings from './TfidfWeightingSettings.vue';
+import EpubSettings from './EpubSettings.vue';
 import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import {
@@ -405,6 +407,7 @@ const reducePadding = defineModel('reducePadding');
           v-model:fixed-length="bionicFixedLength"
           v-model:original-only="bionicOriginalOnly"
         />
+        <TfidfWeightingSettings />
         <div class="setting-row" data-setting="restore-documents">
           <span id="restore-documents-label">{{ t('settings.restoreDocuments') }}</span
           ><AppSwitch v-model="restoreDocuments" aria-labelledby="restore-documents-label" />
@@ -417,6 +420,7 @@ const reducePadding = defineModel('reducePadding');
             :aria-label="t('settings.autoHideHeader')"
           />
         </div>
+        <EpubSettings />
       </section>
       <ReadingBehaviorSettings
         v-model:window-mode="windowMode"

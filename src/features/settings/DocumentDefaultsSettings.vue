@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { AppSwitch, AppSlider } from '../../ui/controls.mjs';
 import { t } from '../../i18n/index.mjs';
+import EpubSettings from './EpubSettings.vue';
 const cropEnabled = defineModel('cropEnabled', { type: Boolean, default: false });
 const cropX = defineModel('cropX', { type: Number, default: 0 });
 const cropY = defineModel('cropY', { type: Number, default: 0 });
@@ -77,6 +78,7 @@ const horizontal = percentage(cropX),
           />
         </div>
       </div>
+      <EpubSettings />
     </div>
   </section>
 </template>

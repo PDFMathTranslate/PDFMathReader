@@ -1,5 +1,6 @@
 <script setup>
 import BionicReadingSettings from './BionicReadingSettings.vue';
+import TfidfWeightingSettings from './TfidfWeightingSettings.vue';
 import { informationExamples } from './information-examples.mjs';
 import { uiLanguage, uiLanguageChoice, t } from '../../i18n/index.mjs';
 import { dependencyProjects } from '../../../shared/dependency-projects.mjs';
@@ -275,6 +276,7 @@ const keyEntry = defineModel('keyEntry');
               v-model:fixed-length="bionicFixedLength"
               v-model:original-only="bionicOriginalOnly"
             />
+            <TfidfWeightingSettings />
           </div>
         </section>
         <DocumentDefaultsSettings
@@ -348,11 +350,6 @@ const keyEntry = defineModel('keyEntry');
         <section class="settings-section" aria-labelledby="settings-translation-behavior">
           <h3 id="settings-translation-behavior">{{ t('settings.behaviorSection') }}</h3>
           <div class="settings-section-body">
-            <div class="setting-row" data-setting="reuse-translations">
-              <span id="reuse-translations-label">{{ t('settings.reuseTranslations') }}</span>
-              <AppSwitch v-model="reuseTranslations" aria-labelledby="reuse-translations-label" />
-            </div>
-            <p class="muted">{{ t('settings.reuseTranslationsDescription') }}</p>
             <div class="kernel-setting">
               <div class="setting-row">
                 <span id="translation-mode-choice">{{ t('settings.translationMode') }}</span
@@ -380,6 +377,11 @@ const keyEntry = defineModel('keyEntry');
                 }}
               </p>
             </div>
+            <div class="setting-row" data-setting="reuse-translations">
+              <span id="reuse-translations-label">{{ t('settings.reuseTranslations') }}</span>
+              <AppSwitch v-model="reuseTranslations" aria-labelledby="reuse-translations-label" />
+            </div>
+            <p class="muted">{{ t('settings.reuseTranslationsDescription') }}</p>
           </div>
         </section>
         <section class="settings-section" aria-labelledby="settings-translation-parallel">
