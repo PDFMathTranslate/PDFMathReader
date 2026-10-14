@@ -90,6 +90,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
       }
     }
     bindings.reader.value?.addEventListener('wheel', bindings.pinchWheel, { passive: false });
+    bindings.reader.value?.addEventListener('wheel', bindings.smoothWheel, { passive: false });
     document.addEventListener('keydown', bindings.keyboard);
     document.addEventListener('pointerdown', bindings.outsidePopover);
     document.addEventListener('focusin', bindings.outsidePopover);
@@ -222,6 +223,8 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     stopFullscreen?.();
     stopMaximized?.();
     bindings.reader.value?.removeEventListener('wheel', bindings.pinchWheel);
+    bindings.reader.value?.removeEventListener('wheel', bindings.smoothWheel);
+    bindings.cancelSmoothWheel();
     cancelAnimationFrame(bindings.motion.pinchFrame);
     clearTimeout(bindings.motion.pinchTimer);
     document.removeEventListener('keydown', bindings.keyboard);

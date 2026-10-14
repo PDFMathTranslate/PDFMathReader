@@ -33,6 +33,7 @@ const SETTINGS_PREFERENCES = [
   'watermarkRemovalEnabled',
   'recentMagicZoomEnabled',
   'tfidfWeightingEnabled',
+  'forceSmoothScrolling',
   'paragraphContinuationDetection',
   'jevApiToken',
   'remoteKernelEnabled',

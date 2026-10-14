@@ -5,6 +5,7 @@ import { createPageNavigation } from '../features/reader/page-navigation.mjs';
 import { createReaderFit } from '../features/reader/reader-fit.mjs';
 import { createReaderZoom } from '../features/reader/reader-zoom.mjs';
 import { createReaderPinch } from '../features/reader/reader-pinch.mjs';
+import { createSmoothWheel } from '../features/reader/smooth-wheel.mjs';
 import { createCanvasRendering } from '../features/reader/canvas-rendering.mjs';
 import { createWatermarkRemoval } from '../features/reader/watermark-removal.mjs';
 import { createTfidfWeighting } from '../features/reader/tfidf-weighting.mjs';
@@ -143,6 +144,7 @@ export function createReaderFeatures({
     }),
     view,
   });
+  const smoothWheel = createSmoothWheel({ motion, preferences, view });
   const watermarkRemoval = createWatermarkRemoval({
     session,
     preferences,
@@ -484,6 +486,7 @@ export function createReaderFeatures({
     ...readerFit,
     ...readerZoom,
     ...readerPinch,
+    ...smoothWheel,
     ...canvasRendering,
     ...readerViewport,
     ...thumbnails,

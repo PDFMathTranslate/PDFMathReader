@@ -54,6 +54,7 @@ const DEFAULT_PREFERENCES = {
   watermarkRemovalEnabled: false,
   recentMagicZoomEnabled: false,
   tfidfWeightingEnabled: false,
+  forceSmoothScrolling: false,
   paragraphContinuationDetection: false,
   jevApiToken: '',
   remoteKernelEnabled: false,
@@ -134,6 +135,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         watermarkRemovalEnabled: true,
         recentMagicZoomEnabled: true,
         tfidfWeightingEnabled: true,
+        forceSmoothScrolling: true,
         paragraphContinuationDetection: true,
         jevApiToken: 'custom-test-token',
         remoteKernelEnabled: true,
@@ -166,6 +168,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ watermarkRemovalEnabled: 'true' }));
     assert.throws(() => preferences.save({ recentMagicZoomEnabled: 'true' }));
     assert.throws(() => preferences.save({ tfidfWeightingEnabled: 'true' }));
+    assert.throws(() => preferences.save({ forceSmoothScrolling: 'true' }));
     assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));

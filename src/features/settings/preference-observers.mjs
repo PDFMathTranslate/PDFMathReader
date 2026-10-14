@@ -85,6 +85,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.watermarkRemovalEnabled,
       bindings.preferences.recentMagicZoomEnabled,
       bindings.preferences.tfidfWeightingEnabled,
+      bindings.preferences.forceSmoothScrolling,
       bindings.preferences.paragraphContinuationDetection,
       bindings.preferences.jevApiToken,
       bindings.preferences.remoteKernelEnabled,

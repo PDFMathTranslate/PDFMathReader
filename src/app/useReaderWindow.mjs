@@ -1117,6 +1117,8 @@ export function useReaderWindow() {
       resizeFit: featureActions.resizeFit,
       finishZoomAnimation: featureActions.finishZoomAnimation,
       pinchWheel: featureActions.pinchWheel,
+      smoothWheel: featureActions.smoothWheel,
+      cancelSmoothWheel: featureActions.cancelSmoothWheel,
       resetBitmaps: featureActions.resetBitmaps,
       settle: featureActions.settle,
       receiveDocuments: featureActions.receiveDocuments,
