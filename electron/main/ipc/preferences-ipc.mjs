@@ -16,6 +16,8 @@ const SETTINGS_PREFERENCES = [
   'epubEnabled',
   'ultraFastSerif',
   'ultraFastFont',
+  'pdfSerifFont',
+  'pdfSansFont',
   'reduceResourceUsage',
   'restoreDocuments',
   'windowMode',

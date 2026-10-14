@@ -28,6 +28,8 @@ export function createPreferenceState() {
   const epubEnabled = ref(localStorage.getItem('epubEnabled') !== 'false');
   const ultraFastSerif = ref(false);
   const ultraFastFont = ref('');
+  const pdfSerifFont = ref('');
+  const pdfSansFont = ref('');
   const restoreDocuments = ref(true);
   const windowMode = ref('window');
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
@@ -107,6 +109,8 @@ export function createPreferenceState() {
     epubEnabled,
     ultraFastSerif,
     ultraFastFont,
+    pdfSerifFont,
+    pdfSansFont,
     restoreDocuments,
     windowMode,
     documentOpenMode,

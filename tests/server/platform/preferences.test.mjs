@@ -23,6 +23,8 @@ const DEFAULT_PREFERENCES = {
   epubEnabled: true,
   ultraFastSerif: false,
   ultraFastFont: '',
+  pdfSerifFont: '',
+  pdfSansFont: '',
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -144,6 +146,8 @@ test('partial saves keep every current setting and unknown key', async () => {
         layoutVisible: true,
         ultraFastSerif: true,
         ultraFastFont: 'Songti SC',
+        pdfSerifFont: 'Iowan Old Style',
+        pdfSansFont: 'Avenir Next',
         customTranslationServices: [
           {
             id: 'custom-0a1b2c3d4e5f',
@@ -180,6 +184,8 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ ultraFastSerif: 'true' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'Evil"; color: red' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'x'.repeat(101) }));
+    assert.throws(() => preferences.save({ pdfSerifFont: 'a"b' }));
+    assert.throws(() => preferences.save({ pdfSansFont: 'x'.repeat(101) }));
     assert.throws(() =>
       preferences.save({ customTranslationServices: [{ id: 'openai', name: 'x' }] }),
     );

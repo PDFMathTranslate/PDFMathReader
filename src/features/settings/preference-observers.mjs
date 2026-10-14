@@ -67,6 +67,8 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.epubEnabled,
       bindings.preferences.ultraFastSerif,
       bindings.preferences.ultraFastFont,
+      bindings.preferences.pdfSerifFont,
+      bindings.preferences.pdfSansFont,
       bindings.defaultPageCropEnabled,
       bindings.defaultPageCropX,
       bindings.defaultPageCropY,

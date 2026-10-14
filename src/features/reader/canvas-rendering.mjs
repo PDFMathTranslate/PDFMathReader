@@ -19,6 +19,7 @@ export function createCanvasRendering({
   actions,
   watermarkRemoval,
   tfidfWeighting,
+  fontSubstitution,
 }) {
   let paintRetryTimer;
 
@@ -207,7 +208,10 @@ export function createCanvasRendering({
       : { key: '', render: {} };
     const tfidf = plannedTfidf ? await tfidfWeighting.renderOptions(page) : null;
     if (!activity.foreground.value || !canvas.isConnected) return false;
-    const filter = removal?.key || '',
+    // Local fonts replace the original document's text faces, never a
+    // translation's or a thumbnail's.
+    const fonts = number && !translated ? fontSubstitution?.renderOptions() : null;
+    const filter = [removal?.key, fonts?.key].filter(Boolean).join('+'),
       bionicKey = [bionic?.key, tfidf?.key].filter(Boolean).join('+'),
       glyphs = mergeGlyphPlans(bionic?.render?.bionicGlyphs, tfidf?.plan);
     if (
@@ -302,6 +306,7 @@ export function createCanvasRendering({
       viewport,
       transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
       ...removal?.render,
+      ...fonts?.render,
       ...(glyphs ? { bionicGlyphs: glyphs } : {}),
     });
     Object.assign(task, {

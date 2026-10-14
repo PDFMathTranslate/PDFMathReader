@@ -116,12 +116,19 @@ function fixture() {
     },
     renderOptions: async () => ({ key: 'tfidf', plan: 'tfidf-plan' }),
   };
+  const fontSubstitution = {
+    options: null,
+    renderOptions() {
+      return this.options;
+    },
+  };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf, pages: { value: pages } },
     motion: { pinching: { value: false } },
     preferences,
     tfidfWeighting,
+    fontSubstitution,
     view,
     activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
     actions: {
@@ -137,6 +144,7 @@ function fixture() {
     pages,
     preferences,
     tfidfWeighting,
+    fontSubstitution,
     view,
     renderer,
     restore() {
@@ -610,6 +618,42 @@ test('a settled frame replaces its scroll preview and serves later previews', as
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10, true), true);
     assert.equal(renders, 2);
     assert.equal(target.width, 2000);
+  } finally {
+    f.restore();
+  }
+});
+
+test('local fonts render original pages only and refresh their warm frames', async () => {
+  const f = fixture(),
+    target = f.state.canvasEls.get(1),
+    originalOptions = [],
+    translatedOptions = [],
+    translated = {
+      getViewport: f.pdfPages[0].getViewport,
+      render: (options) => {
+        translatedOptions.push(options);
+        return { promise: Promise.resolve(), cancel() {} };
+      },
+    };
+  f.pdfPages[0].render = (options) => {
+    originalOptions.push(options);
+    return { promise: Promise.resolve(), cancel() {} };
+  };
+  f.pages[0].mathDocument = { getPage: async () => translated };
+  try {
+    await f.renderer.renderPages();
+    assert.equal(originalOptions.at(-1).fontSubstitution, undefined);
+    f.fontSubstitution.options = {
+      key: 'font:Iowan|',
+      render: { fontSubstitution: 'local-fonts' },
+    };
+    await f.renderer.renderPages();
+    assert.equal(originalOptions.at(-1).fontSubstitution, 'local-fonts');
+    assert.equal(f.state.canvasCache.get(target).filter, 'font:Iowan|');
+    f.view.showTranslations.value = true;
+    await f.renderer.renderPages();
+    assert.equal(translatedOptions.at(-1).fontSubstitution, undefined);
+    assert.equal(f.state.canvasCache.get(target).filter, '');
   } finally {
     f.restore();
   }
