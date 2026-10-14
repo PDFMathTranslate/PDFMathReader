@@ -208,9 +208,8 @@ export function createCanvasRendering({
       : { key: '', render: {} };
     const tfidf = plannedTfidf ? await tfidfWeighting.renderOptions(page) : null;
     if (!activity.foreground.value || !canvas.isConnected) return false;
-    // Local fonts replace the original document's text faces, never a
-    // translation's or a thumbnail's.
-    const fonts = number && !translated ? fontSubstitution?.renderOptions() : null;
+    // Local fonts replace the shown document's text faces, never a thumbnail's.
+    const fonts = number ? fontSubstitution?.renderOptions(translated) : null;
     const filter = [removal?.key, fonts?.key].filter(Boolean).join('+'),
       bionicKey = [bionic?.key, tfidf?.key].filter(Boolean).join('+'),
       glyphs = mergeGlyphPlans(bionic?.render?.bionicGlyphs, tfidf?.plan);

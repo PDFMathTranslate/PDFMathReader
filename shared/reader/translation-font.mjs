@@ -23,6 +23,15 @@ const SANS = [
 const GENERIC = new Set(['serif', 'sans-serif', '-apple-system', 'BlinkMacSystemFont']);
 
 export const MAX_TRANSLATION_FONT_LENGTH = 100;
+export const MAX_RECENT_DOCUMENT_FONTS = 8;
+export const DOCUMENT_FONT_KEYS = [
+  'originalSansFont',
+  'originalSerifFont',
+  'originalMonoFont',
+  'translatedSansFont',
+  'translatedSerifFont',
+  'translatedMonoFont',
+];
 
 // Quotes, backslashes and control characters cannot form a valid family name.
 // Inner and trailing spaces survive so multi-word names can be typed.

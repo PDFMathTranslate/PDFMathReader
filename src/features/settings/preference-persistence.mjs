@@ -3,6 +3,7 @@ import { cloneGlossaries } from '../../../shared/translation/glossary.mjs';
 import { uiLanguageChoice, t, setUILanguage } from '../../i18n/index.mjs';
 import { cloneTranslationServices } from '../translation/translation-services.mjs';
 import { cloneCustomServices } from '../../../shared/translation/custom-services.mjs';
+import { DOCUMENT_FONT_KEYS } from '../../../shared/reader/translation-font.mjs';
 import { nextTick } from 'vue';
 import { BIONIC_READING_MODES, normalizeBionicReading } from '../translation/bionic-reading.mjs';
 
@@ -66,8 +67,12 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.ultraFastSerif.value = saved.ultraFastSerif;
     if (typeof saved.ultraFastFont === 'string')
       preferences.ultraFastFont.value = saved.ultraFastFont;
-    if (typeof saved.pdfSerifFont === 'string') preferences.pdfSerifFont.value = saved.pdfSerifFont;
-    if (typeof saved.pdfSansFont === 'string') preferences.pdfSansFont.value = saved.pdfSansFont;
+    for (const key of DOCUMENT_FONT_KEYS)
+      if (typeof saved[key] === 'string') preferences[key].value = saved[key];
+    if (Array.isArray(saved.recentDocumentFonts))
+      preferences.recentDocumentFonts.value = saved.recentDocumentFonts.filter(
+        (name) => typeof name === 'string' && name,
+      );
     if (['default', 'liquid-glass'].includes(saved.interfaceStyle))
       preferences.interfaceStyle.value = saved.interfaceStyle;
     if (saved.engine) preferences.engine.value = saved.engine;
@@ -164,8 +169,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
         epubEnabled: preferences.epubEnabled.value,
         ultraFastSerif: preferences.ultraFastSerif.value,
         ultraFastFont: preferences.ultraFastFont.value,
-        pdfSerifFont: preferences.pdfSerifFont.value,
-        pdfSansFont: preferences.pdfSansFont.value,
+        ...Object.fromEntries(DOCUMENT_FONT_KEYS.map((key) => [key, preferences[key].value])),
+        recentDocumentFonts: [...preferences.recentDocumentFonts.value],
         defaultPageCropEnabled: preferences.defaultPageCropEnabled.value,
         defaultPageCropX: preferences.defaultPageCropX.value,
         defaultPageCropY: preferences.defaultPageCropY.value,

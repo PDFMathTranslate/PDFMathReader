@@ -118,8 +118,9 @@ function fixture() {
   };
   const fontSubstitution = {
     options: null,
-    renderOptions() {
-      return this.options;
+    translatedOptions: null,
+    renderOptions(translated) {
+      return translated ? this.translatedOptions : this.options;
     },
   };
   const renderer = createCanvasRendering({
@@ -623,7 +624,7 @@ test('a settled frame replaces its scroll preview and serves later previews', as
   }
 });
 
-test('local fonts render original pages only and refresh their warm frames', async () => {
+test('local fonts follow the shown document and refresh their warm frames', async () => {
   const f = fixture(),
     target = f.state.canvasEls.get(1),
     originalOptions = [],
@@ -654,6 +655,13 @@ test('local fonts render original pages only and refresh their warm frames', asy
     await f.renderer.renderPages();
     assert.equal(translatedOptions.at(-1).fontSubstitution, undefined);
     assert.equal(f.state.canvasCache.get(target).filter, '');
+    f.fontSubstitution.translatedOptions = {
+      key: 'font:|PingFang|',
+      render: { fontSubstitution: 'translated-fonts' },
+    };
+    await f.renderer.renderPages();
+    assert.equal(translatedOptions.at(-1).fontSubstitution, 'translated-fonts');
+    assert.equal(f.state.canvasCache.get(target).filter, 'font:|PingFang|');
   } finally {
     f.restore();
   }

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, watch } from 'vue';
 import InterfaceStyleSettings from './InterfaceStyleSettings.vue';
+import DocumentFontSettings from './DocumentFontSettings.vue';
 const interfaceStyle = defineModel('interfaceStyle', { default: 'default' });
 import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
 import { AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
@@ -170,6 +171,7 @@ function changeUILanguage(code) {
       </div>
     </div>
   </section>
+  <DocumentFontSettings v-if="!effectsOnly" />
   <section
     v-if="showEffects"
     class="settings-section effects-section"

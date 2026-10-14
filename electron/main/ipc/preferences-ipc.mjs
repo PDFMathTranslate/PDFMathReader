@@ -16,8 +16,13 @@ const SETTINGS_PREFERENCES = [
   'epubEnabled',
   'ultraFastSerif',
   'ultraFastFont',
-  'pdfSerifFont',
-  'pdfSansFont',
+  'originalSansFont',
+  'originalSerifFont',
+  'originalMonoFont',
+  'translatedSansFont',
+  'translatedSerifFont',
+  'translatedMonoFont',
+  'recentDocumentFonts',
   'reduceResourceUsage',
   'restoreDocuments',
   'windowMode',
@@ -189,6 +194,7 @@ export function registerPreferencesIPC({
         SETTINGS_PREFERENCES.some((key) =>
           [
             'kernelAdvancedOptions',
+            'recentDocumentFonts',
             'translationServices',
             'translationServiceHistory',
             'customTranslationServices',

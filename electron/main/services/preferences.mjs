@@ -5,7 +5,10 @@ import {
   isValidCustomServices,
 } from '../../../shared/translation/custom-services.mjs';
 import { validShortcutOverrides } from '../../../shared/commands/shortcuts.mjs';
-import { isValidTranslationFont } from '../../../shared/reader/translation-font.mjs';
+import {
+  isValidTranslationFont,
+  MAX_RECENT_DOCUMENT_FONTS,
+} from '../../../shared/reader/translation-font.mjs';
 import {
   cloneTranslationServiceHistory,
   isValidTranslationServiceHistory,
@@ -42,8 +45,13 @@ const DEFAULT_PREFERENCES = Object.freeze({
   epubEnabled: true,
   ultraFastSerif: false,
   ultraFastFont: '',
-  pdfSerifFont: '',
-  pdfSansFont: '',
+  originalSansFont: '',
+  originalSerifFont: '',
+  originalMonoFont: '',
+  translatedSansFont: '',
+  translatedSerifFont: '',
+  translatedMonoFont: '',
+  recentDocumentFonts: [],
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -272,8 +280,16 @@ const VALIDATORS = {
   epubEnabled: (value) => typeof value === 'boolean',
   ultraFastSerif: (value) => typeof value === 'boolean',
   ultraFastFont: isValidTranslationFont,
-  pdfSerifFont: isValidTranslationFont,
-  pdfSansFont: isValidTranslationFont,
+  originalSansFont: isValidTranslationFont,
+  originalSerifFont: isValidTranslationFont,
+  originalMonoFont: isValidTranslationFont,
+  translatedSansFont: isValidTranslationFont,
+  translatedSerifFont: isValidTranslationFont,
+  translatedMonoFont: isValidTranslationFont,
+  recentDocumentFonts: (value) =>
+    Array.isArray(value) &&
+    value.length <= MAX_RECENT_DOCUMENT_FONTS &&
+    value.every((name) => name && isValidTranslationFont(name)),
   translationErrorDismissals: (value) =>
     Array.isArray(value) && value.every((id) => typeof id === 'string' && id.length <= 1024),
   emphasizeTopicSentences: (value) => typeof value === 'boolean',
@@ -339,8 +355,13 @@ const VALIDATION_MESSAGES = {
   epubEnabled: 'Invalid EPUB support preference',
   ultraFastSerif: 'Invalid Ultra fast serif font preference',
   ultraFastFont: 'Invalid Ultra fast font preference',
-  pdfSerifFont: 'Invalid PDF serif font preference',
-  pdfSansFont: 'Invalid PDF sans-serif font preference',
+  originalSansFont: 'Invalid original sans-serif document font preference',
+  originalSerifFont: 'Invalid original serif document font preference',
+  originalMonoFont: 'Invalid original monospace document font preference',
+  translatedSansFont: 'Invalid translated sans-serif document font preference',
+  translatedSerifFont: 'Invalid translated serif document font preference',
+  translatedMonoFont: 'Invalid translated monospace document font preference',
+  recentDocumentFonts: 'Invalid recent document fonts',
   translationMode: 'Invalid translation mode',
   interactionMode: 'Invalid interaction mode',
   direction: 'Invalid layout direction',

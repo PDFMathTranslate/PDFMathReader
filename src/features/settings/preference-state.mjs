@@ -28,8 +28,13 @@ export function createPreferenceState() {
   const epubEnabled = ref(localStorage.getItem('epubEnabled') !== 'false');
   const ultraFastSerif = ref(false);
   const ultraFastFont = ref('');
-  const pdfSerifFont = ref('');
-  const pdfSansFont = ref('');
+  const originalSansFont = ref('');
+  const originalSerifFont = ref('');
+  const originalMonoFont = ref('');
+  const translatedSansFont = ref('');
+  const translatedSerifFont = ref('');
+  const translatedMonoFont = ref('');
+  const recentDocumentFonts = ref([]);
   const restoreDocuments = ref(true);
   const windowMode = ref('window');
   const documentOpenMode = ref(localStorage.getItem('documentOpenMode') || 'translation');
@@ -109,8 +114,13 @@ export function createPreferenceState() {
     epubEnabled,
     ultraFastSerif,
     ultraFastFont,
-    pdfSerifFont,
-    pdfSansFont,
+    originalSansFont,
+    originalSerifFont,
+    originalMonoFont,
+    translatedSansFont,
+    translatedSerifFont,
+    translatedMonoFont,
+    recentDocumentFonts,
     restoreDocuments,
     windowMode,
     documentOpenMode,

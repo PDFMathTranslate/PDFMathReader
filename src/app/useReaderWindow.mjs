@@ -104,7 +104,12 @@ export function useReaderWindow() {
     computed(() =>
       translationFontFamily({
         serif: preferences.ultraFastSerif.value,
-        font: preferences.ultraFastFont.value,
+        // Without an Ultra fast font, HTML translations follow the translated document's.
+        font:
+          preferences.ultraFastFont.value ||
+          (preferences.ultraFastSerif.value
+            ? preferences.translatedSerifFont.value
+            : preferences.translatedSansFont.value),
         language: preferences.language.value,
       }),
     ),

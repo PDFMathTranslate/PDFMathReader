@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { extendPDFRuntime } from '../../scripts/pdf-bionic-runtime.mjs';
 import {
+  createFontSubstitution,
   fontSubstitutionOptions,
   pdfFontRole,
   substitutableText,
 } from '../../src/features/reader/font-substitution.mjs';
 
-test('PDF fonts are sorted into serif, sans-serif and kept faces', () => {
+test('PDF fonts are sorted into serif, sans-serif, monospace and kept faces', () => {
   const role = (name, extra = {}) => pdfFontRole({ name, ...extra });
   assert.equal(role('ABCDEF+CMR10'), 'serif');
   assert.equal(role('CMBX12'), 'serif');
@@ -17,10 +18,12 @@ test('PDF fonts are sorted into serif, sans-serif and kept faces', () => {
   assert.equal(role('CMSS10'), 'sans');
   assert.equal(role('Arial-BoldMT'), 'sans');
   assert.equal(role('Helvetica'), 'sans');
-  // Math, symbol and monospaced faces keep the document's glyphs.
-  for (const name of ['CMMI10', 'CMSY10', 'CMEX10', 'MSBM10', 'Symbol', 'CMTT10', 'Courier'])
+  for (const name of ['CMTT10', 'Courier', 'Menlo-Regular', 'Inconsolata'])
+    assert.equal(role(name), 'mono', name);
+  assert.equal(role('Unknown', { fallbackName: 'monospace' }), 'mono');
+  // Math and symbol faces keep the document's glyphs.
+  for (const name of ['CMMI10', 'CMSY10', 'CMEX10', 'MSBM10', 'Symbol'])
     assert.equal(role(name), '', name);
-  assert.equal(role('Unknown', { fallbackName: 'monospace' }), '');
   assert.equal(role('Unknown', { fallbackName: 'serif' }), 'serif');
   assert.equal(role('Unknown', { fallbackName: 'sans-serif' }), 'sans');
   assert.equal(role('CMR10', { isType3Font: true }), '');
@@ -35,7 +38,7 @@ test('only text characters are drawn with a local face', () => {
 test('render options map PDF fonts to the chosen families with their weight and style', () => {
   assert.equal(fontSubstitutionOptions({ serif: ' ', sans: '' }), null);
   const options = fontSubstitutionOptions({ serif: 'Iowan Old Style', sans: '' });
-  assert.equal(options.key, 'font:Iowan Old Style|');
+  assert.equal(options.key, 'font:Iowan Old Style||');
   const { face, accepts } = options.render.fontSubstitution;
   assert.equal(accepts, substitutableText);
   assert.deepEqual(face({ name: 'CMBX10' }), {
@@ -56,6 +59,10 @@ test('render options map PDF fonts to the chosen families with their weight and 
     sans.render.fontSubstitution.face({ name: 'Arial-ItalicMT' }).family,
     '"Avenir Next", sans-serif',
   );
+  assert.equal(face({ name: 'CMTT10' }), null, 'an empty mono field keeps the PDF font');
+  const mono = fontSubstitutionOptions({ mono: 'Menlo' });
+  assert.equal(mono.key, 'font:||Menlo');
+  assert.equal(mono.render.fontSubstitution.face({ name: 'Courier' }).family, '"Menlo", monospace');
   assert.equal(
     fontSubstitutionOptions({ serif: 'Evil"; x', sans: '' }).render.fontSubstitution.face({
       name: 'CMR10',
@@ -63,6 +70,28 @@ test('render options map PDF fonts to the chosen families with their weight and 
     '"Evil x", serif',
     'family names cannot break out of the CSS font shorthand',
   );
+});
+
+test('original and translated documents keep separate font sets', async () => {
+  const { ref, nextTick } = await import('vue');
+  const preferences = {
+    originalSerifFont: ref('Iowan Old Style'),
+    originalSansFont: ref(''),
+    originalMonoFont: ref(''),
+    translatedSerifFont: ref(''),
+    translatedSansFont: ref('PingFang SC'),
+    translatedMonoFont: ref('Menlo'),
+  };
+  let toggles = 0;
+  const fonts = createFontSubstitution({ preferences, onToggle: () => toggles++ });
+  assert.equal(fonts.renderOptions().key, 'font:Iowan Old Style||');
+  assert.equal(fonts.renderOptions(true).key, 'font:|PingFang SC|Menlo');
+  assert.equal(fonts.renderOptions(true), fonts.renderOptions(true), 'options are reused');
+  preferences.translatedMonoFont.value = '';
+  await nextTick();
+  assert.equal(fonts.renderOptions(true).key, 'font:|PingFang SC|');
+  await new Promise((resolve) => setTimeout(resolve, 450));
+  assert.equal(toggles, 1);
 });
 
 test('PDF runtime extension wires font substitution into setFont and showText', async () => {
