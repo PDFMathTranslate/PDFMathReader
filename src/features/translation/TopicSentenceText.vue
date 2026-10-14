@@ -21,6 +21,7 @@ const topicEnd = computed(() =>
   props.topicEnd === undefined ? decision.topicEnd.value : props.topicEnd,
 );
 const bionicReading = inject('bionicReading', null);
+const bionicOriginalOnly = inject('bionicOriginalOnly', null);
 const parts = computed(() =>
   withBionicSegments(
     informationTextSegments(props.text || '', {
@@ -28,7 +29,9 @@ const parts = computed(() =>
       emphasizeInformation: props.information,
       categories: props.informationCategories,
     }),
-    bionicReadingRanges(props.text || '', bionicReading?.value),
+    bionicOriginalOnly?.value !== false
+      ? []
+      : bionicReadingRanges(props.text || '', bionicReading?.value),
   ),
 );
 const experimental = document.documentElement.dataset.experimentalTypography === 'true';

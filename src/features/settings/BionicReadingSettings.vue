@@ -1,9 +1,10 @@
 <script setup>
-import { AppPopUpButton, AppPopUpButtonItem, AppSlider } from '../../ui/controls.mjs';
+import { AppPopUpButton, AppPopUpButtonItem, AppSlider, AppSwitch } from '../../ui/controls.mjs';
 import { t } from '../../i18n/index.mjs';
 import { BIONIC_FIXED_LENGTH } from '../translation/bionic-reading.mjs';
 const mode = defineModel('mode', { type: String, default: 'off' });
 const fixedLength = defineModel('fixedLength', { type: Number, default: 3 });
+const originalOnly = defineModel('originalOnly', { type: Boolean, default: true });
 </script>
 
 <template>
@@ -26,6 +27,14 @@ const fixedLength = defineModel('fixedLength', { type: Number, default: 3 });
     <p id="bionic-reading-hint" class="muted bionic-reading-hint">
       {{ t('settings.bionicReadingHint') }}
     </p>
+    <div class="setting-row" data-setting="bionic-original-only">
+      <span id="bionic-original-only-label">{{ t('settings.bionicOriginalOnly') }}</span>
+      <AppSwitch
+        v-model="originalOnly"
+        :disabled="mode === 'off'"
+        aria-labelledby="bionic-original-only-label"
+      />
+    </div>
     <div class="bionic-length" data-setting="bionic-fixed-length">
       <div class="bionic-length-label">
         <span id="bionic-fixed-length-label">{{ t('settings.bionicFixedLength') }}</span

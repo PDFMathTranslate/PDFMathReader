@@ -81,6 +81,7 @@ const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
 const bionicReading = defineModel('bionicReading');
 const bionicFixedLength = defineModel('bionicFixedLength');
+const bionicOriginalOnly = defineModel('bionicOriginalOnly');
 const defaultPageCropEnabled = defineModel('defaultPageCropEnabled');
 const defaultPageCropX = defineModel('defaultPageCropX');
 const defaultPageCropY = defineModel('defaultPageCropY');
@@ -272,6 +273,7 @@ const keyEntry = defineModel('keyEntry');
             <BionicReadingSettings
               v-model:mode="bionicReading"
               v-model:fixed-length="bionicFixedLength"
+              v-model:original-only="bionicOriginalOnly"
             />
           </div>
         </section>

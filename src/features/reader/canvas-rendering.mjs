@@ -77,8 +77,8 @@ export function createCanvasRendering({
     };
   }
 
-  function bionicPreferenceKey(number, normalized) {
-    if (!number) return '';
+  function bionicPreferenceKey(number, translated, normalized) {
+    if (!number || (translated && preferences?.bionicOriginalOnly?.value !== false)) return '';
     const { mode, fixedLength } =
       normalized ||
       normalizeBionicReading({
@@ -176,7 +176,7 @@ export function createCanvasRendering({
     );
   }
 
-  async function draw(page, canvas, scale, preview = false) {
+  async function draw(page, canvas, scale, preview = false, translated = false) {
     if (!activity.foreground.value || !canvas || !canvas.isConnected) return false;
     const number = Number(canvas.closest('.page')?.dataset.page);
     if (number && !renderState.renderWindow.value.has(number)) return false;
@@ -184,7 +184,7 @@ export function createCanvasRendering({
         mode: preferences?.bionicReading?.value,
         fixedLength: preferences?.bionicFixedLength?.value,
       }),
-      plannedBionicKey = bionicPreferenceKey(number, normalizedBionic);
+      plannedBionicKey = bionicPreferenceKey(number, translated, normalizedBionic);
     // Pages with a watermark to hide or bionic glyphs are drawn, and cached,
     // apart from the plain page. Thumbnails deliberately stay unmodified.
     const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null;
@@ -201,7 +201,7 @@ export function createCanvasRendering({
     if (
       (number && !renderState.renderWindow.value.has(number)) ||
       bionicKey !== plannedBionicKey ||
-      bionicPreferenceKey(number) !== plannedBionicKey
+      bionicPreferenceKey(number, translated) !== plannedBionicKey
     )
       return false;
     const base = page.getViewport({ scale }),
@@ -325,7 +325,7 @@ export function createCanvasRendering({
           renderState.pageTasks.get(canvas) !== task ||
           !canvas.isConnected ||
           !activity.foreground.value ||
-          bionicPreferenceKey(number) !== bionicKey
+          bionicPreferenceKey(number, translated) !== bionicKey
         )
           return false;
         if (!number || renderState.visiblePages.has(number))
@@ -439,6 +439,7 @@ export function createCanvasRendering({
           renderState.canvasEls.get(p.number),
           view.zoom.value,
           renderState.previewScrolling && !force,
+          !!(p.mathDocument && translated),
         );
         if (token !== renderState.renderEpoch) return;
         if (previous && painted) {

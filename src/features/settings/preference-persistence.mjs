@@ -96,6 +96,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.bionicFixedLength.value = normalizeBionicReading({
         fixedLength: saved.bionicFixedLength,
       }).fixedLength;
+    if (typeof saved.bionicOriginalOnly === 'boolean')
+      preferences.bionicOriginalOnly.value = saved.bionicOriginalOnly;
     if (saved.documentOpenMode) preferences.documentOpenMode.value = saved.documentOpenMode;
     if (saved.windowMode) preferences.windowMode.value = saved.windowMode;
     if (saved.restoreDocuments !== undefined)
@@ -171,6 +173,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         emphasizeLogicalConnectives: preferences.emphasizeLogicalConnectives.value,
         bionicReading: preferences.bionicReading.value,
         bionicFixedLength: preferences.bionicFixedLength.value,
+        bionicOriginalOnly: preferences.bionicOriginalOnly.value,
         interactionMode: preferences.interactionMode.value,
         optimizeParagraphGaps: preferences.optimizeParagraphGaps.value,
         language: preferences.language.value,

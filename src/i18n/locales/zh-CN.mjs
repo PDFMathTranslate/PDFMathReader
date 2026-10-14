@@ -178,6 +178,7 @@ export default {
     bionicReadingFixed: '固定字符',
     bionicReadingRoot: '词根',
     bionicFixedLength: '加粗字符数',
+    bionicOriginalOnly: '仅原始文档',
     reduceResourceUsage: '降低资源占用',
     reduceResourceUsageHint: '窗口最小化或应用非前台时暂停绘制并释放页面位图；全文翻译继续执行。',
     optimizeParagraphGaps: '阅读模式段落间隙优化',

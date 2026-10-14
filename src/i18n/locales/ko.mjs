@@ -166,6 +166,7 @@ export default {
     bionicReadingFixed: '고정 글자 수',
     bionicReadingRoot: '어근',
     bionicFixedLength: '굵게 표시할 글자 수',
+    bionicOriginalOnly: '원본 문서만',
     reduceResourceUsage: '리소스 사용량 줄이기',
     reduceResourceUsageHint:
       '최소화하거나 비활성 상태일 때 렌더링을 멈추고 페이지 이미지를 해제합니다. 전체 문서 번역은 계속됩니다.',

@@ -180,6 +180,7 @@ export default {
     bionicReadingFixed: 'निश्चित अक्षर',
     bionicReadingRoot: 'शब्द-मूल',
     bionicFixedLength: 'बोल्ड अक्षर',
+    bionicOriginalOnly: 'केवल मूल दस्तावेज़',
     reduceResourceUsage: 'संसाधन उपयोग घटाएँ',
     reduceResourceUsageHint:
       'न्यूनतम या निष्क्रिय होने पर पृष्ठ चित्रों को छोड़कर पृष्ठभूमि रेंडरिंग रोकें। पूरे दस्तावेज़ का अनुवाद जारी रहता है।',

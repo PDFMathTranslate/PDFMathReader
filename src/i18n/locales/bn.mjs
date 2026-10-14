@@ -179,6 +179,7 @@ export default {
     bionicReadingFixed: 'নির্দিষ্ট অক্ষর',
     bionicReadingRoot: 'শব্দমূল',
     bionicFixedLength: 'বোল্ড অক্ষর',
+    bionicOriginalOnly: 'শুধু মূল নথি',
     reduceResourceUsage: 'সম্পদের ব্যবহার কমান',
     reduceResourceUsageHint:
       'ছোট করা বা নিষ্ক্রিয় অবস্থায় পেছনের রেন্ডারিং থামিয়ে পৃষ্ঠার বিটম্যাপ ছেড়ে দেয়। সম্পূর্ণ নথির অনুবাদ চলতে থাকে।',

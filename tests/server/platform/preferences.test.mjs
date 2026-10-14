@@ -35,6 +35,7 @@ const DEFAULT_PREFERENCES = {
   emphasizeLogicalConnectives: true,
   bionicReading: 'off',
   bionicFixedLength: 3,
+  bionicOriginalOnly: true,
   interfaceStyle: 'default',
   appearance: 'system',
   accentColor: 'system',
@@ -73,6 +74,27 @@ const withPreferences = (overrides = {}, unknown = {}) => ({
   ...DEFAULT_PREFERENCES,
   ...overrides,
   ...unknown,
+});
+
+test('original-only bionic reading defaults on for existing users and persists explicit opt-out', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bionic-preferences-'));
+  try {
+    const path = join(dir, 'reader.json');
+    await writeFile(path, JSON.stringify({ bionicReading: 'root' }));
+    let preferences = await createReaderPreferences(path);
+    assert.equal(preferences.load().bionicOriginalOnly, true);
+    await preferences.save({ bionicOriginalOnly: false });
+    preferences = await createReaderPreferences(path);
+    assert.equal(preferences.load().bionicOriginalOnly, false);
+    await preferences.save({ bionicReading: 'off' });
+    assert.throws(
+      () => preferences.save({ bionicReading: 'fixed', bionicOriginalOnly: 'true' }),
+      /Invalid reader preferences/,
+    );
+    assert.equal(preferences.load().bionicOriginalOnly, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test('partial saves keep every current setting and unknown key', async () => {

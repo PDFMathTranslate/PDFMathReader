@@ -179,6 +179,7 @@ export default {
     bionicReadingFixed: 'Fixed characters',
     bionicReadingRoot: 'Word roots',
     bionicFixedLength: 'Bold characters',
+    bionicOriginalOnly: 'Na only di original document',
     reduceResourceUsage: 'Use fewer resources',
     reduceResourceUsageHint:
       'Pause background drawing and free page pictures when app small or no dey active. Full document translation still dey go on.',

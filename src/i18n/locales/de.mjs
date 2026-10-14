@@ -182,6 +182,7 @@ export default {
     bionicReadingFixed: 'Feste Zeichenzahl',
     bionicReadingRoot: 'Wortstämme',
     bionicFixedLength: 'Fette Zeichen',
+    bionicOriginalOnly: 'Nur das Originaldokument',
     reduceResourceUsage: 'Ressourcenverbrauch reduzieren',
     reduceResourceUsageHint:
       'Hintergrunddarstellung pausieren und Seiten-Bitmaps bei minimiertem oder inaktivem Fenster freigeben. Die Übersetzung des gesamten Dokuments läuft weiter.',

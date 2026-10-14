@@ -179,6 +179,7 @@ export default {
     bionicReadingFixed: 'Фиксированное число букв',
     bionicReadingRoot: 'Корни слов',
     bionicFixedLength: 'Жирных символов',
+    bionicOriginalOnly: 'Только исходный документ',
     reduceResourceUsage: 'Снизить использование ресурсов',
     reduceResourceUsageHint:
       'Приостанавливать фоновую отрисовку и освобождать растровые изображения страниц, когда окно свёрнуто или неактивно. Перевод всего документа продолжается.',

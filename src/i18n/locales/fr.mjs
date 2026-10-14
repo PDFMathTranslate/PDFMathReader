@@ -165,6 +165,7 @@ export default {
     bionicReadingFixed: 'Caractères fixes',
     bionicReadingRoot: 'Racines des mots',
     bionicFixedLength: 'Caractères en gras',
+    bionicOriginalOnly: 'Document original uniquement',
     reduceResourceUsage: 'Réduire l’utilisation des ressources',
     reduceResourceUsageHint:
       'Suspendre le rendu et libérer les images en arrière-plan. La traduction intégrale continue.',

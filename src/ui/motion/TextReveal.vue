@@ -51,8 +51,11 @@ const informationRanges = computed(() =>
     : [],
 );
 const bionicReading = inject('bionicReading', null);
+const bionicOriginalOnly = inject('bionicOriginalOnly', null);
 const bionicRanges = computed(() =>
-  bionicReadingRanges(displayText.value || '', bionicReading?.value),
+  !props.original && bionicOriginalOnly?.value !== false
+    ? []
+    : bionicReadingRanges(displayText.value || '', bionicReading?.value),
 );
 const wordSegmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
 const words = computed(() => {

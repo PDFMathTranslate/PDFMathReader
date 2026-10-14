@@ -169,6 +169,7 @@ export default {
     bionicReadingFixed: '固定文字数',
     bionicReadingRoot: '語根',
     bionicFixedLength: '太字の文字数',
+    bionicOriginalOnly: '元の文書のみ',
     reduceResourceUsage: 'リソース使用量を削減',
     reduceResourceUsageHint:
       '最小化・非アクティブ時に描画を停止し、ページ画像を解放します。全文翻訳は継続します。',

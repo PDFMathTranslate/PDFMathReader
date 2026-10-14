@@ -179,6 +179,7 @@ export default {
     bionicReadingFixed: 'أحرف ثابتة',
     bionicReadingRoot: 'جذور الكلمات',
     bionicFixedLength: 'الأحرف الغامقة',
+    bionicOriginalOnly: 'المستند الأصلي فقط',
     reduceResourceUsage: 'تقليل استخدام الموارد',
     reduceResourceUsageHint:
       'يوقف العرض في الخلفية ويحرر الصور النقطية للصفحات عند التصغير أو عدم النشاط. تستمر ترجمة المستند بالكامل.',

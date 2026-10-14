@@ -47,6 +47,7 @@ export function createPreferenceState() {
   const emphasizeTopicSentences = ref(localStorage.getItem('emphasizeTopicSentences') === 'true');
   const bionicReading = ref(localStorage.getItem('bionicReading') || 'off');
   const bionicFixedLength = ref(Number(localStorage.getItem('bionicFixedLength')) || 3);
+  const bionicOriginalOnly = ref(localStorage.getItem('bionicOriginalOnly') !== 'false');
   const showKernelToolbarShortcut = ref(
     localStorage.getItem('showKernelToolbarShortcut') === 'true',
   );
@@ -119,6 +120,7 @@ export function createPreferenceState() {
     emphasizeTopicSentences,
     bionicReading,
     bionicFixedLength,
+    bionicOriginalOnly,
     showKernelToolbarShortcut,
     autoHideHeader,
     translationMode,

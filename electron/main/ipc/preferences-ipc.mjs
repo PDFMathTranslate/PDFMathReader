@@ -53,6 +53,7 @@ const SETTINGS_PREFERENCES = [
   'emphasizeLogicalConnectives',
   'bionicReading',
   'bionicFixedLength',
+  'bionicOriginalOnly',
   'autoHideHeader',
   'uiLanguage',
   'kernelAdvancedOptions',

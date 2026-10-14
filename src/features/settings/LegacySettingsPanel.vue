@@ -81,6 +81,7 @@ const emphasizeTopicSentences = defineModel('emphasizeTopicSentences');
 const emphasizeInformation = defineModel('emphasizeInformation');
 const bionicReading = defineModel('bionicReading');
 const bionicFixedLength = defineModel('bionicFixedLength');
+const bionicOriginalOnly = defineModel('bionicOriginalOnly');
 const restoreDocuments = defineModel('restoreDocuments');
 const windowMode = defineModel('windowMode');
 const autoHideHeader = defineModel('autoHideHeader');
@@ -402,6 +403,7 @@ const reducePadding = defineModel('reducePadding');
         <BionicReadingSettings
           v-model:mode="bionicReading"
           v-model:fixed-length="bionicFixedLength"
+          v-model:original-only="bionicOriginalOnly"
         />
         <div class="setting-row" data-setting="restore-documents">
           <span id="restore-documents-label">{{ t('settings.restoreDocuments') }}</span

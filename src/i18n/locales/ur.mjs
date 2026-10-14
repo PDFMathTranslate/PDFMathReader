@@ -179,6 +179,7 @@ export default {
     bionicReadingFixed: 'مقررہ حروف',
     bionicReadingRoot: 'لفظی جڑیں',
     bionicFixedLength: 'بولڈ حروف',
+    bionicOriginalOnly: 'صرف اصل دستاویز',
     reduceResourceUsage: 'وسائل کا استعمال کم کریں',
     reduceResourceUsageHint:
       'ونڈو چھوٹی یا غیر فعال ہونے پر پس منظر کی رینڈرنگ روک کر صفحے کی بٹ میپس آزاد کرتا ہے۔ مکمل دستاویز کا ترجمہ جاری رہتا ہے۔',

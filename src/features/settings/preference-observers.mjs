@@ -43,11 +43,21 @@ export function installReaderPreferenceObservers({ bindings }) {
   watch(bindings.preferences.bionicFixedLength, (value) =>
     localStorage.setItem('bionicFixedLength', String(value)),
   );
-  watch([bindings.preferences.bionicReading, bindings.preferences.bionicFixedLength], () => {
-    // The render key makes old frames harmless; repaint mounted pages without
-    // clearing the bounded bitmap cache or resetting reader geometry.
-    void bindings.renderPages(false, true);
-  });
+  watch(bindings.preferences.bionicOriginalOnly, (value) =>
+    localStorage.setItem('bionicOriginalOnly', String(value)),
+  );
+  watch(
+    [
+      bindings.preferences.bionicReading,
+      bindings.preferences.bionicFixedLength,
+      bindings.preferences.bionicOriginalOnly,
+    ],
+    () => {
+      // The render key makes old frames harmless; repaint mounted pages without
+      // clearing the bounded bitmap cache or resetting reader geometry.
+      void bindings.renderPages(false, true);
+    },
+  );
   watch(
     [
       bindings.documentOpenMode,
@@ -88,6 +98,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.emphasizeLogicalConnectives,
       bindings.preferences.bionicReading,
       bindings.preferences.bionicFixedLength,
+      bindings.preferences.bionicOriginalOnly,
       bindings.autoHideHeader,
       bindings.optimizeParagraphGaps,
       bindings.showKernelToolbarShortcut,

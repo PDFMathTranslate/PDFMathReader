@@ -74,6 +74,8 @@ export function createReaderPreview({
               page,
               renderState.canvasEls.get(number),
               view.zoom.value,
+              false,
+              !!(display.mathDocument && translated),
             )) &&
             changed &&
             previous &&

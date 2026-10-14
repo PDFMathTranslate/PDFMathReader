@@ -165,6 +165,7 @@ export default {
     bionicReadingFixed: 'Caracteres fijos',
     bionicReadingRoot: 'Raíces de palabras',
     bionicFixedLength: 'Caracteres en negrita',
+    bionicOriginalOnly: 'Solo el documento original',
     reduceResourceUsage: 'Reducir el uso de recursos',
     reduceResourceUsageHint:
       'Pausar el renderizado y liberar imágenes en segundo plano. La traducción completa continúa.',

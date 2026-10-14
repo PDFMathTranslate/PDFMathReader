@@ -109,6 +109,7 @@ export function useReaderWindow() {
       }),
     ),
   );
+  provide('bionicOriginalOnly', preferences.bionicOriginalOnly);
   provide(
     'bionicReading',
     computed(() =>
@@ -1221,6 +1222,7 @@ export function useReaderWindow() {
     epubEnabled: preferences.epubEnabled,
     bionicReading: preferences.bionicReading,
     bionicFixedLength: preferences.bionicFixedLength,
+    bionicOriginalOnly: preferences.bionicOriginalOnly,
     emphasizeInformation,
     emphasizeTopicSentences,
     engine,

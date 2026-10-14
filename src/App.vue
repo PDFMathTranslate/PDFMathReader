@@ -63,6 +63,7 @@ const {
   effectiveTranslationSummary,
   bionicReading,
   bionicFixedLength,
+  bionicOriginalOnly,
   emphasizeInformation,
   emphasizeTopicSentences,
   engine,
@@ -574,6 +575,7 @@ const copyToastDetail = computed(() =>
       v-model:emphasize-information="emphasizeInformation"
       v-model:bionic-reading="bionicReading"
       v-model:bionic-fixed-length="bionicFixedLength"
+      v-model:bionic-original-only="bionicOriginalOnly"
       v-model:default-page-crop-enabled="defaultPageCropEnabled"
       v-model:default-page-crop-x="defaultPageCropX"
       v-model:default-page-crop-y="defaultPageCropY"
@@ -658,6 +660,7 @@ const copyToastDetail = computed(() =>
       v-model:emphasize-information="emphasizeInformation"
       v-model:bionic-reading="bionicReading"
       v-model:bionic-fixed-length="bionicFixedLength"
+      v-model:bionic-original-only="bionicOriginalOnly"
       v-model:restore-documents="restoreDocuments"
       v-model:window-mode="windowMode"
       v-model:auto-hide-header="autoHideHeader"

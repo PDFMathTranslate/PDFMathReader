@@ -174,6 +174,7 @@ export default {
     bionicReadingFixed: '固定字元',
     bionicReadingRoot: '詞根',
     bionicFixedLength: '加粗字元數',
+    bionicOriginalOnly: '僅原始文件',
     reduceResourceUsage: '降低資源佔用',
     reduceResourceUsageHint:
       '視窗最小化或應用程式非前景時暫停繪製並釋放頁面點陣圖；全文翻譯繼續執行。',

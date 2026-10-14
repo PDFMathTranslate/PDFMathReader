@@ -106,6 +106,7 @@ function fixture() {
   const preferences = {
     bionicReading: { value: 'off' },
     bionicFixedLength: { value: 3 },
+    bionicOriginalOnly: { value: true },
   };
   const renderer = createCanvasRendering({
     renderState: state,
@@ -405,6 +406,75 @@ test('bionic render keys separate canvas, task, and bitmap reuse', async () => {
     assert.equal(options[2].bionicGlyphs, undefined);
     assert.equal(f.state.canvasCache.get(target).bionicKey, '');
   } finally {
+    f.restore();
+  }
+});
+
+for (const mode of ['fixed', 'root']) {
+  test(`original-only ${mode} reading follows the displayed document and refreshes warm frames`, async () => {
+    const f = fixture(),
+      target = f.state.canvasEls.get(1),
+      translatedOptions = [],
+      translated = {
+        getViewport: f.pdfPages[0].getViewport,
+        render: (options) => {
+          translatedOptions.push(options);
+          return { promise: Promise.resolve(), cancel() {} };
+        },
+      };
+    f.pages[0].mathDocument = { getPage: async () => translated };
+    f.preferences.bionicReading.value = mode;
+    try {
+      await f.renderer.renderPages();
+      assert.equal(f.state.canvasCache.get(target).bionicKey, `bionic:${mode}:3`);
+      f.view.showTranslations.value = true;
+      await f.renderer.renderPages();
+      assert.equal(translatedOptions.at(-1).bionicGlyphs, undefined);
+      assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+      assert.equal(
+        f.state.canvasCache.get(f.state.canvasEls.get(2)).bionicKey,
+        `bionic:${mode}:3`,
+        'untranslated pages still show original glyph emphasis',
+      );
+
+      f.preferences.bionicOriginalOnly.value = false;
+      await f.renderer.renderPages();
+      assert.equal(translatedOptions.at(-1).bionicGlyphs, `bionic:${mode}:3`);
+      f.preferences.bionicOriginalOnly.value = true;
+      await f.renderer.renderPages();
+      assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+      assert.equal(translatedOptions.length, 2, 'warm plain translation frame is reused');
+      f.view.showTranslations.value = false;
+      await f.renderer.renderPages();
+      assert.equal(f.state.canvasCache.get(target).bionicKey, `bionic:${mode}:3`);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+test('enabling original-only rejects an in-flight translated bionic frame', async () => {
+  const f = fixture(),
+    gate = deferred(),
+    target = f.state.canvasEls.get(1);
+  const translated = {
+    getViewport: f.pdfPages[0].getViewport,
+    render: () => ({ promise: gate.promise, cancel() {} }),
+  };
+  f.preferences.bionicReading.value = 'fixed';
+  f.preferences.bionicOriginalOnly.value = false;
+  try {
+    const drawing = f.renderer.draw(translated, target, 1, false, true);
+    await new Promise((resolve) => setImmediate(resolve));
+    f.preferences.bionicOriginalOnly.value = true;
+    gate.resolve();
+    assert.equal(await drawing, false);
+    assert.equal(target.width, 0);
+    assert.equal(f.state.bitmapFrames.size, 0);
+    assert.equal(await f.renderer.draw(translated, target, 1, false, true), true);
+    assert.equal(f.state.canvasCache.get(target).bionicKey, '');
+  } finally {
+    gate.resolve();
     f.restore();
   }
 });
