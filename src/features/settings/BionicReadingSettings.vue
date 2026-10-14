@@ -27,27 +27,29 @@ const originalOnly = defineModel('originalOnly', { type: Boolean, default: true 
     <p id="bionic-reading-hint" class="muted bionic-reading-hint">
       {{ t('settings.bionicReadingHint') }}
     </p>
-    <div class="setting-row" data-setting="bionic-original-only">
-      <span id="bionic-original-only-label">{{ t('settings.bionicOriginalOnly') }}</span>
-      <AppSwitch
-        v-model="originalOnly"
-        :disabled="mode === 'off'"
-        aria-labelledby="bionic-original-only-label"
-      />
-    </div>
-    <div class="bionic-length" data-setting="bionic-fixed-length">
-      <div class="bionic-length-label">
-        <span id="bionic-fixed-length-label">{{ t('settings.bionicFixedLength') }}</span
-        ><output>{{ fixedLength }}</output>
+    <div class="bionic-subsettings" role="group" aria-labelledby="bionic-reading-label">
+      <div class="setting-row" data-setting="bionic-original-only">
+        <span id="bionic-original-only-label">{{ t('settings.bionicOriginalOnly') }}</span>
+        <AppSwitch
+          v-model="originalOnly"
+          :disabled="mode === 'off'"
+          aria-labelledby="bionic-original-only-label"
+        />
       </div>
-      <AppSlider
-        v-model="fixedLength"
-        :min="BIONIC_FIXED_LENGTH.min"
-        :max="BIONIC_FIXED_LENGTH.max"
-        :step="1"
-        :disabled="mode !== 'fixed'"
-        aria-labelledby="bionic-fixed-length-label"
-      />
+      <div class="bionic-length" data-setting="bionic-fixed-length">
+        <div class="bionic-length-label">
+          <span id="bionic-fixed-length-label">{{ t('settings.bionicFixedLength') }}</span
+          ><output>{{ fixedLength }}</output>
+        </div>
+        <AppSlider
+          v-model="fixedLength"
+          :min="BIONIC_FIXED_LENGTH.min"
+          :max="BIONIC_FIXED_LENGTH.max"
+          :step="1"
+          :disabled="mode !== 'fixed'"
+          aria-labelledby="bionic-fixed-length-label"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -61,6 +63,11 @@ const originalOnly = defineModel('originalOnly', { type: Boolean, default: true 
   padding: 0 0 12px;
   font-size: 12px;
   line-height: 1.5;
+}
+.bionic-subsettings {
+  padding-inline-start: 20px;
+  border-inline-start: 1px solid var(--chrome-divider);
+  margin-inline-start: 4px;
 }
 .bionic-length {
   display: grid;
