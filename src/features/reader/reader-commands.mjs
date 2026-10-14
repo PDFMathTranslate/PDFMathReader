@@ -62,6 +62,12 @@ export function createReaderCommands({
       })();
       return;
     }
+    if (action === 'translate-all-pages') {
+      if (!session.pages.value.length || shell.settingsWindowMode) return;
+      view.showTranslations.value = true;
+      void actions.translationQueue.translateAllDocumentPages();
+      return;
+    }
     if (action === 'force-retranslate') {
       if (!session.pages.value.length || shell.settingsWindowMode) return;
       translationState.forceRetranslation = true;

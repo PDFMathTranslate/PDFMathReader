@@ -125,11 +125,14 @@ export function createApplicationMenu({
         if (entry) entry.enabled = enabled;
       }
     }
-    const state = registry.stateFor(target)?.preferences;
-    if (!state) return;
     const menu = applicationMenu || Menu.getApplicationMenu();
     if (!menu) return;
     const item = (id) => menu.getMenuItemById(id);
+    const translateAllPages = item('translation-all-pages');
+    if (translateAllPages)
+      translateAllPages.enabled = !!registry.stateFor(target)?.performance.hasDocument;
+    const state = registry.stateFor(target)?.preferences;
+    if (!state) return;
     const layout = item('layout-' + (state.direction || 'vertical'));
     const columns = item('columns-' + (state.columns || 1));
     if (layout) layout.checked = true;
@@ -526,6 +529,15 @@ export function createApplicationMenu({
         submenu: [
           ...optionMenu(),
           { type: 'separator' },
+          {
+            ...command(
+              'Translate All Pages for This Document',
+              undefined,
+              'translate-all-pages',
+              'translation-all-pages',
+            ),
+            enabled: false,
+          },
           command(
             'Force Retranslate',
             undefined,

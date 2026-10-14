@@ -286,9 +286,35 @@ export function createTranslationQueue({
     translationState.queue.push(job);
   }
 
+  function translateAllDocumentPages() {
+    if (!session.pages.value.length) return;
+    translationState.translateAllPages = true;
+    translationState.translationDeferred.value = false;
+    for (const page of session.pages.value) {
+      if (page.status === 'error') {
+        page.status =
+          preferences.engine.value === 'pdf_inspector' && pageBlocks(page).length
+            ? 'ready'
+            : 'idle';
+        page.message = '';
+      }
+      for (const block of pageBlocks(page)) {
+        if (block.status !== 'error' || block.translation) continue;
+        block.status = 'idle';
+        block.error = '';
+      }
+    }
+    return schedulePages();
+  }
+
   async function schedulePages() {
     const epoch = session.epoch;
-    if (!translationState.forceRetranslation && !(await allowAutomaticTranslation())) return;
+    if (
+      !translationState.translateAllPages &&
+      !translationState.forceRetranslation &&
+      !(await allowAutomaticTranslation())
+    )
+      return;
     if (epoch !== session.epoch) return;
     actions.translationScope.pruneTranslationQueue();
     const candidates = actions.translationScope
@@ -310,7 +336,12 @@ export function createTranslationQueue({
   }
 
   function pumpPages() {
-    if (!activity.foreground.value && preferences.translationMode.value !== 'full') return;
+    if (
+      !activity.foreground.value &&
+      preferences.translationMode.value !== 'full' &&
+      !translationState.translateAllPages
+    )
+      return;
     while (
       translationState.pageRunning < preferences.pageConcurrency.value &&
       translationState.pageQueue.length
@@ -318,7 +349,7 @@ export function createTranslationQueue({
       const job = translationState.pageQueue.shift();
       if (job.token !== session.epoch) continue;
       translationState.pageRunning++;
-      processPage(job.p).finally(() => {
+      processPage(job.p, translationState.translateAllPages === true).finally(() => {
         translationState.pageRunning--;
         if (job.token === session.epoch) schedulePages();
         else pumpPages();
@@ -403,7 +434,12 @@ export function createTranslationQueue({
   }
 
   function pump() {
-    if (!activity.foreground.value && preferences.translationMode.value !== 'full') return;
+    if (
+      !activity.foreground.value &&
+      preferences.translationMode.value !== 'full' &&
+      !translationState.translateAllPages
+    )
+      return;
     while (
       translationState.running < Number(preferences.concurrency.value) &&
       translationState.queue.length
@@ -579,6 +615,7 @@ export function createTranslationQueue({
   }
 
   return {
+    translateAllDocumentPages,
     schedulePages,
     pumpPages,
     processPage,

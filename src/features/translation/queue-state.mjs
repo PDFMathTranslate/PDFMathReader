@@ -12,6 +12,7 @@ export function createTranslationQueueState() {
   const pageRunning = 0;
   const controllers = new Set();
   const forceRetranslation = false;
+  const translateAllPages = false;
   const timer = undefined;
   return {
     translationDeferred,
@@ -25,6 +26,7 @@ export function createTranslationQueueState() {
     pageRunning,
     controllers,
     forceRetranslation,
+    translateAllPages,
     timer,
   };
 }

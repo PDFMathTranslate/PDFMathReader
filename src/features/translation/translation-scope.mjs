@@ -32,7 +32,7 @@ export function createTranslationScope({
       ).visible.map((item) => item.number);
     }
     return translationPages(
-      preferences.translationMode.value,
+      translationState.translateAllPages ? 'full' : preferences.translationMode.value,
       view.active.value,
       session.pages.value.length,
       {

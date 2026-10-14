@@ -50,6 +50,12 @@ const entries = [
     `go-percent-${(i + 1) * 10}`,
     `Shift+${(i + 1) % 10}`,
   ]),
+  [
+    'translate-all-pages',
+    'Translate All Pages for This Document',
+    'Translation',
+    'translation-all-pages',
+  ],
   ['force-retranslate', 'Force Retranslate', 'Translation', 'translation-force-retranslate'],
   ['language', 'Choose Language…', 'Translation', 'translation-language', 'L'],
   ['kernel', 'Choose Kernel…', 'Translation', 'translation-kernel', 'K'],

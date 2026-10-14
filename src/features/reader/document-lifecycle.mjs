@@ -66,6 +66,7 @@ export function createDocumentLifecycle({
   }
 
   function cancel() {
+    translationState.translateAllPages = false;
     ++motion.pageJumpGeneration;
     actions.pageNavigation.cancelPageScroll();
     motion.pageJumping = false;

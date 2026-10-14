@@ -361,6 +361,7 @@ export function createReaderFeatures({
     preferences,
     motion,
     actions: createLazyPort({
+      translationQueue: () => translationQueue,
       mathTranslation: () => mathTranslation,
       readerScroll: () => readerScroll,
       nativeMenuOptions: () => nativeMenuOptions,
