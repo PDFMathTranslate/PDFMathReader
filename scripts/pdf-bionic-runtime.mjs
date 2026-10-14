@@ -55,22 +55,23 @@ export function extendPDFRuntime(source) {
   // glyph's position, fitted to its width the way pdf.js fits missing fonts.
   replace(
     '    this.current.font = fontObj;\n    this.current.fontSize = size;',
-    '    this.current.font = fontObj;\n    this.current.fontSize = size;\n    this.current.substituteFont = null;',
+    '    this.current.font = fontObj;\n    this.current.fontSize = size;\n    this.current.substituteFonts = null;',
   );
   replace(
     '    this.ctx.font = `${italic} ${bold} ${browserFontSize}px ${typeface}`;\n  }',
     `    this.ctx.font = \`\${italic} \${bold} \${browserFontSize}px \${typeface}\`;
     const substitute = this.fontSubstitution?.face(fontObj);
     if (substitute) {
-      this.current.substituteFont = \`\${substitute.style} \${substitute.weight} \${browserFontSize}px \${substitute.family}\`;
+      const css = (family) => family ? \`\${substitute.style} \${substitute.weight} \${browserFontSize}px \${family}\` : null;
+      this.current.substituteFonts = { text: css(substitute.text), cjk: css(substitute.cjk) };
     }
   }`,
   );
   replace(
     '    let x = 0,\n      i;\n    for (i = 0; i < glyphsLength; ++i) {',
-    `    const substituteFont = !vertical && !font.disableFontFace && !current.patternFill && !current.patternStroke &&
+    `    const substituteFonts = !vertical && !font.disableFontFace && !current.patternFill && !current.patternStroke &&
       !(current.textRenderingMode & TextRenderingMode.ADD_TO_PATH_FLAG) &&
-      fillStrokeMode !== TextRenderingMode.INVISIBLE ? current.substituteFont : null;
+      fillStrokeMode !== TextRenderingMode.INVISIBLE ? current.substituteFonts : null;
     const originalFont = ctx.font;
     let activeFont = originalFont;
     let x = 0,
@@ -80,7 +81,8 @@ export function extendPDFRuntime(source) {
   replace(
     '      const character = glyph.fontChar;\n      const accent = glyph.accent;',
     `      const accent = glyph.accent;
-      const substituted = !!substituteFont && !accent && !!glyph.unicode && this.fontSubstitution.accepts(glyph.unicode);
+      const substituteFont = substituteFonts && !accent && glyph.unicode ? substituteFonts[this.fontSubstitution.kind(glyph.unicode)] : null;
+      const substituted = !!substituteFont;
       const character = substituted ? glyph.unicode : glyph.fontChar;
       const glyphFont = substituted ? substituteFont : originalFont;
       if (glyphFont !== activeFont) {

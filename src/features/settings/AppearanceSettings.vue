@@ -172,6 +172,7 @@ function changeUILanguage(code) {
     </div>
   </section>
   <DocumentFontSettings v-if="!effectsOnly" />
+  <DocumentFontSettings v-if="!effectsOnly" cjk />
   <section
     v-if="showEffects"
     class="settings-section effects-section"

@@ -121,7 +121,21 @@ export function classifyFace({ family = '', familyClass = 0, panose = [], fixedP
   return SERIF_NAME.test(family) ? 'serif' : 'sans';
 }
 
-/** Faces in one sfnt file or collection: [{ family, regular, style }]. */
+// OS/2 Unicode ranges for Hiragana, Hangul syllables and CJK ideographs, and the
+// Japanese, Chinese and Korean code pages.
+const CJK_UNICODE_RANGE2 = (1 << 17) | (1 << 24) | (1 << 27);
+const CJK_CODE_PAGES = 0x1f << 17;
+
+/** Whether an OS/2 table says the face covers Chinese, Japanese or Korean text. */
+export function coversCjk(os2) {
+  if (!os2 || os2.length < 50) return false;
+  if (os2.readUInt32BE(46) & CJK_UNICODE_RANGE2) return true;
+  return (
+    os2.length >= 82 && os2.readUInt16BE(0) >= 1 && (os2.readUInt32BE(78) & CJK_CODE_PAGES) !== 0
+  );
+}
+
+/** Faces in one sfnt file or collection: [{ family, regular, style, cjk }]. */
 export async function readFontFaces(path) {
   const file = await open(path, 'r');
   try {
@@ -156,7 +170,7 @@ export async function readFontFaces(path) {
         tables[name] ? read(tables[name].offset, Math.min(tables[name].length, max)) : null;
       const [names, os2, post] = await Promise.all([
         table('name', 1 << 20),
-        table('OS/2', 64),
+        table('OS/2', 86),
         table('post', 16),
       ]);
       const family = nameOf(names, [16, 1]);
@@ -171,6 +185,7 @@ export async function readFontFaces(path) {
           panose: os2?.length >= 42 ? [...os2.subarray(32, 42)] : [],
           fixedPitch: post?.length >= 16 ? post.readUInt32BE(12) !== 0 : false,
         }),
+        cjk: coversCjk(os2),
       });
     }
     return faces;
@@ -183,10 +198,11 @@ export async function readFontFaces(path) {
 const HIDDEN = (family) => family.startsWith('.') || /^(lastresort|system font)/i.test(family);
 const byName = (a, b) => a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true });
 
-/** Installed families by style, each list sorted by name. */
+/** Installed families by style, plus those covering CJK text, each list sorted by name. */
 export async function scanInstalledFonts(directories = fontDirectories()) {
   const files = await fontFiles(directories),
-    families = new Map();
+    families = new Map(),
+    cjk = new Set();
   let next = 0;
   const worker = async () => {
     while (next < files.length) {
@@ -199,6 +215,7 @@ export async function scanInstalledFonts(directories = fontDirectories()) {
       }
       for (const face of faces) {
         if (HIDDEN(face.family)) continue;
+        if (face.cjk) cjk.add(face.family);
         const known = families.get(face.family);
         // A family's regular face speaks for it; otherwise its first face does.
         if (!known || (face.regular && !known.regular)) families.set(face.family, face);
@@ -206,8 +223,12 @@ export async function scanInstalledFonts(directories = fontDirectories()) {
     }
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
-  const fonts = { sans: [], serif: [], mono: [] };
-  for (const { family, style } of families.values()) fonts[style]?.push(family);
+  const fonts = { sans: [], serif: [], mono: [], cjk: [] };
+  for (const { family, style } of families.values()) {
+    if (!fonts[style]) continue;
+    fonts[style].push(family);
+    if (cjk.has(family)) fonts.cjk.push(family);
+  }
   for (const list of Object.values(fonts)) list.sort(byName);
   return fonts;
 }

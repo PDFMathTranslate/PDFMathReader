@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import express from 'express';
 import {
   classifyFace,
+  coversCjk,
   createInstalledFonts,
   fontDirectories,
   readFontFaces,
@@ -36,10 +37,13 @@ function nameTable(names) {
   return Buffer.concat([header, ...entries.map(([, bytes]) => bytes)]);
 }
 
-function os2Table({ familyClass = 0, panose = [] }) {
-  const table = Buffer.alloc(78);
+function os2Table({ familyClass = 0, panose = [], unicodeRange2 = 0, codePages = 0 }) {
+  const table = Buffer.alloc(86);
+  table.writeUInt16BE(1, 0);
   table.writeInt16BE(familyClass, 30);
   Buffer.from(panose).copy(table, 32);
+  table.writeUInt32BE(unicodeRange2 >>> 0, 46);
+  table.writeUInt32BE(codePages >>> 0, 78);
   return table;
 }
 
@@ -50,9 +54,12 @@ function postTable(fixedPitch) {
 }
 
 // One sfnt face whose tables start at `base` within the file.
-function face({ family, style = 'Regular', familyClass, panose, fixedPitch = false }, base = 0) {
+function face(
+  { family, style = 'Regular', familyClass, panose, fixedPitch = false, unicodeRange2, codePages },
+  base = 0,
+) {
   const tables = [
-    ['OS/2', os2Table({ familyClass, panose })],
+    ['OS/2', os2Table({ familyClass, panose, unicodeRange2, codePages })],
     ['name', nameTable({ 1: family, 2: style })],
     ['post', postTable(fixedPitch)],
   ];
@@ -116,6 +123,15 @@ test('font faces are classified by name, OS/2 class, PANOSE and pitch', () => {
   assert.equal(classifyFace({ family: 'Unnamed', familyClass: 12 << 8 }), '');
 });
 
+test('CJK coverage is read from OS/2 Unicode ranges and code pages', () => {
+  assert.equal(coversCjk(os2Table({})), false);
+  assert.equal(coversCjk(os2Table({ unicodeRange2: 1 << 27 })), true, 'CJK ideographs');
+  assert.equal(coversCjk(os2Table({ unicodeRange2: 1 << 24 })), true, 'Hangul syllables');
+  assert.equal(coversCjk(os2Table({ codePages: 1 << 18 })), true, 'Simplified Chinese');
+  assert.equal(coversCjk(os2Table({ unicodeRange2: 1 << 16 })), false, 'CJK punctuation alone');
+  assert.equal(coversCjk(null), false);
+});
+
 test('faces are read from single fonts and collections', async () => {
   await withFonts(
     {
@@ -128,11 +144,11 @@ test('faces are read from single fonts and collections', async () => {
     },
     async (directory) => {
       assert.deepEqual(await readFontFaces(join(directory, 'serif.ttf')), [
-        { family: 'Test Serif Face', regular: true, style: 'serif' },
+        { family: 'Test Serif Face', regular: true, style: 'serif', cjk: false },
       ]);
       assert.deepEqual(await readFontFaces(join(directory, 'pair.ttc')), [
-        { family: 'Pair Gothic', regular: false, style: 'sans' },
-        { family: 'Pair Code', regular: true, style: 'mono' },
+        { family: 'Pair Gothic', regular: false, style: 'sans', cjk: false },
+        { family: 'Pair Code', regular: true, style: 'mono', cjk: false },
       ]);
       assert.deepEqual(await readFontFaces(join(directory, 'broken.otf')), []);
     },
@@ -147,6 +163,7 @@ test('installed families are grouped by style and sorted by name', async () => {
       'a10.ttf': face({ family: 'Alpha Sans 10' }),
       'a2.ttf': face({ family: 'Alpha Sans 2' }),
       'serif.otf': face({ family: 'Gamma', familyClass: 1 << 8 }),
+      'song.otf': face({ family: 'Song Test', unicodeRange2: 1 << 27 }),
       'mono.ttf': face({ family: 'Delta', fixedPitch: true }),
       'hidden.ttf': face({ family: '.SF NS' }),
       'emoji.ttf': face({ family: 'Color Emoji' }),
@@ -156,8 +173,9 @@ test('installed families are grouped by style and sorted by name', async () => {
     async (directory) => {
       assert.deepEqual(await scanInstalledFonts([directory, join(directory, 'missing')]), {
         sans: ['Alpha Sans', 'Alpha Sans 2', 'Alpha Sans 10', 'beta Sans', 'Charlie Sans'],
-        serif: ['Gamma'],
+        serif: ['Gamma', 'Song Test'],
         mono: ['Delta'],
+        cjk: ['Song Test'],
       });
     },
   );

@@ -12,7 +12,12 @@ import {
   rememberFont,
 } from './document-font-menu.mjs';
 
+// cjk: pick fonts used only for Chinese, Japanese and Korean characters.
+const props = defineProps({ cjk: { type: Boolean, default: false } });
+
 const preferences = inject('documentLanguagePreferences', null);
+const scope = props.cjk ? 'Cjk' : '';
+const prefix = props.cjk ? 'document-font-cjk' : 'document-font';
 const fonts = ref(null),
   status = ref('loading');
 const label = (key, values) => documentFontLabel(key, uiLanguage.value, values);
@@ -31,9 +36,9 @@ const groups = computed(() =>
   ['original', 'translated'].map((document) => ({
     document,
     rows: DOCUMENT_FONT_STYLES.map((style) => {
-      const preference = preferences[`${document}${capitalized(style)}Font`];
+      const preference = preferences[`${document}${scope}${capitalized(style)}Font`];
       return {
-        id: `document-font-${document}-${style}`,
+        id: `${prefix}-${document}-${style}`,
         style,
         preference,
         items: documentFontMenu({
@@ -42,6 +47,7 @@ const groups = computed(() =>
           value: preference.value,
           recent: preferences.recentDocumentFonts.value,
           label,
+          cjk: props.cjk,
         }),
       };
     }),
@@ -49,11 +55,17 @@ const groups = computed(() =>
 );
 
 // Typical document fonts of each style; font names read the same in every language.
-const STYLE_EXAMPLES = {
-  sans: 'Helvetica, Arial, Calibri',
-  serif: 'Times, Georgia, Cambria',
-  mono: 'Courier, Menlo, Consolas',
-};
+const STYLE_EXAMPLES = props.cjk
+  ? {
+      sans: 'PingFang SC, Microsoft YaHei, Noto Sans CJK',
+      serif: 'Songti SC, SimSun, Noto Serif CJK',
+      mono: 'Sarasa Mono, Noto Sans Mono CJK',
+    }
+  : {
+      sans: 'Helvetica, Arial, Calibri',
+      serif: 'Times, Georgia, Cambria',
+      mono: 'Courier, Menlo, Consolas',
+    };
 
 const fontStyle = (item) => (item.family ? { fontFamily: `"${item.family}"` } : undefined);
 
@@ -69,23 +81,23 @@ function choose(preference, value) {
   <section
     v-if="preferences"
     class="settings-section document-font-section"
-    aria-labelledby="settings-document-fonts"
-    data-setting="document-fonts"
+    :aria-labelledby="`settings-${prefix}s`"
+    :data-setting="cjk ? 'document-fonts-cjk' : 'document-fonts'"
   >
-    <h3 id="settings-document-fonts">{{ label('title') }}</h3>
+    <h3 :id="`settings-${prefix}s`">{{ label(cjk ? 'cjkTitle' : 'title') }}</h3>
     <div class="settings-section-body">
-      <p id="document-font-hint" class="muted">{{ label('hint') }}</p>
+      <p :id="`${prefix}-hint`" class="muted">{{ label(cjk ? 'cjkHint' : 'hint') }}</p>
       <p v-if="status !== 'ready'" class="muted" role="status">
         {{ label(status === 'failed' ? 'failed' : 'loading') }}
       </p>
       <template v-for="group in groups" :key="group.document">
         <div class="setting-row document-font-parent">
-          <span :id="`document-font-${group.document}`">{{ label(group.document) }}</span>
+          <span :id="`${prefix}-${group.document}`">{{ label(group.document) }}</span>
         </div>
         <div
           class="information-subcategories"
           role="group"
-          :aria-labelledby="`document-font-${group.document}`"
+          :aria-labelledby="`${prefix}-${group.document}`"
         >
           <div v-for="row in group.rows" :key="row.id" class="setting-row">
             <div>
@@ -98,8 +110,8 @@ function choose(preference, value) {
               teleport-to="body"
               :model-value="row.preference.value || DOCUMENT_FONT_DEFAULT"
               :disabled="status === 'loading' && !row.preference.value"
-              :aria-labelledby="`document-font-${group.document} ${row.id}-label`"
-              :aria-describedby="`${row.id}-examples document-font-hint`"
+              :aria-labelledby="`${prefix}-${group.document} ${row.id}-label`"
+              :aria-describedby="`${row.id}-examples ${prefix}-hint`"
               @update:model-value="choose(row.preference, $event)"
               ><AppPopUpButtonItem
                 v-for="item in row.items"

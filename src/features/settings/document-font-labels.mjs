@@ -4,6 +4,9 @@ const labels = {
   en: {
     title: 'Document fonts',
     hint: 'Redraws PDF text with installed fonts. Each letter keeps its place and is narrowed when the font is wider. Formulas, symbols and thumbnails keep the document’s own fonts.',
+    cjkTitle: 'CJK document fonts',
+    cjkHint:
+      'Redraws Chinese, Japanese and Korean characters with installed fonts. Other text follows the document fonts above. Only fonts that include CJK characters are listed.',
     original: 'Original document',
     translated: 'Translated document',
     sans: 'Sans-serif',
@@ -18,6 +21,9 @@ const labels = {
   'zh-CN': {
     title: '文档字体',
     hint: '用已安装的字体重绘 PDF 文字。每个字母保持原位，字体较宽时会收窄。公式、符号和缩略图保留文档自带字体。',
+    cjkTitle: '中日韩文档字体',
+    cjkHint:
+      '用已安装的字体重绘中文、日文和韩文字符，其他文字沿用上方的文档字体。列表只显示包含中日韩字符的字体。',
     original: '原文',
     translated: '译文',
     sans: '无衬线',
@@ -32,6 +38,9 @@ const labels = {
   'zh-TW': {
     title: '文件字型',
     hint: '以已安裝的字型重繪 PDF 文字。每個字母保持原位，字型較寬時會收窄。公式、符號與縮圖保留文件內嵌字型。',
+    cjkTitle: '中日韓文件字型',
+    cjkHint:
+      '以已安裝的字型重繪中文、日文與韓文字元，其他文字沿用上方的文件字型。清單只顯示包含中日韓字元的字型。',
     original: '原文',
     translated: '譯文',
     sans: '無襯線',
@@ -46,6 +55,9 @@ const labels = {
   ja: {
     title: 'ドキュメントのフォント',
     hint: 'インストール済みのフォントで PDF のテキストを描き直します。文字の位置は変わらず、フォントの幅が広い場合は縮められます。数式、記号、サムネイルはドキュメントのフォントのままです。',
+    cjkTitle: 'ドキュメントの CJK フォント',
+    cjkHint:
+      '中国語・日本語・韓国語の文字をインストール済みのフォントで描き直します。その他の文字は上のドキュメントのフォントに従います。CJK 文字を含むフォントのみ表示されます。',
     original: '原文',
     translated: '訳文',
     sans: 'サンセリフ',
@@ -60,6 +72,9 @@ const labels = {
   ko: {
     title: '문서 글꼴',
     hint: '설치된 글꼴로 PDF 텍스트를 다시 그립니다. 글자 위치는 그대로이며 글꼴이 더 넓으면 좁혀집니다. 수식, 기호, 미리보기 이미지는 문서 글꼴을 유지합니다.',
+    cjkTitle: '문서 CJK 글꼴',
+    cjkHint:
+      '설치된 글꼴로 중국어, 일본어, 한국어 문자를 다시 그립니다. 다른 텍스트는 위의 문서 글꼴을 따릅니다. CJK 문자가 포함된 글꼴만 표시됩니다.',
     original: '원문',
     translated: '번역문',
     sans: '산세리프',
@@ -74,6 +89,9 @@ const labels = {
   fr: {
     title: 'Polices du document',
     hint: 'Redessine le texte du PDF avec des polices installées. Chaque lettre garde sa place et se resserre si la police est plus large. Formules, symboles et vignettes gardent les polices du document.',
+    cjkTitle: 'Polices CJK du document',
+    cjkHint:
+      'Redessine les caractères chinois, japonais et coréens avec les polices installées. Le reste du texte suit les polices du document ci-dessus. Seules les polices contenant des caractères CJK sont proposées.',
     original: 'Document original',
     translated: 'Document traduit',
     sans: 'Sans empattement',
@@ -88,6 +106,9 @@ const labels = {
   es: {
     title: 'Fuentes del documento',
     hint: 'Vuelve a dibujar el texto del PDF con fuentes instaladas. Cada letra conserva su lugar y se estrecha si la fuente es más ancha. Fórmulas, símbolos y miniaturas conservan las fuentes del documento.',
+    cjkTitle: 'Fuentes CJK del documento',
+    cjkHint:
+      'Redibuja los caracteres chinos, japoneses y coreanos con fuentes instaladas. El resto del texto sigue las fuentes del documento de arriba. Solo se muestran las fuentes que incluyen caracteres CJK.',
     original: 'Documento original',
     translated: 'Documento traducido',
     sans: 'Sans serif',
@@ -102,6 +123,9 @@ const labels = {
   de: {
     title: 'Dokumentschriften',
     hint: 'Zeichnet PDF-Text mit installierten Schriften neu. Jeder Buchstabe bleibt an seinem Platz und wird schmaler, wenn die Schrift breiter ist. Formeln, Symbole und Miniaturen behalten die Schriften des Dokuments.',
+    cjkTitle: 'CJK-Schriften des Dokuments',
+    cjkHint:
+      'Zeichnet chinesische, japanische und koreanische Zeichen mit installierten Schriften neu. Übriger Text folgt den Dokumentschriften oben. Es werden nur Schriften mit CJK-Zeichen angezeigt.',
     original: 'Originaldokument',
     translated: 'Übersetztes Dokument',
     sans: 'Serifenlos',
@@ -116,6 +140,9 @@ const labels = {
   pt: {
     title: 'Fontes do documento',
     hint: 'Redesenha o texto do PDF com fontes instaladas. Cada letra mantém a posição e é estreitada se a fonte for mais larga. Fórmulas, símbolos e miniaturas mantêm as fontes do documento.',
+    cjkTitle: 'Fontes CJK do documento',
+    cjkHint:
+      'Redesenha caracteres chineses, japoneses e coreanos com fontes instaladas. O restante do texto segue as fontes do documento acima. Somente fontes com caracteres CJK são listadas.',
     original: 'Documento original',
     translated: 'Documento traduzido',
     sans: 'Sem serifa',
@@ -130,6 +157,9 @@ const labels = {
   ru: {
     title: 'Шрифты документа',
     hint: 'Перерисовывает текст PDF установленными шрифтами. Каждая буква остаётся на месте и сужается, если шрифт шире. Формулы, символы и миниатюры сохраняют шрифты документа.',
+    cjkTitle: 'Шрифты CJK в документе',
+    cjkHint:
+      'Перерисовывает китайские, японские и корейские символы установленными шрифтами. Остальной текст следует шрифтам документа выше. Показаны только шрифты с символами CJK.',
     original: 'Исходный документ',
     translated: 'Перевод',
     sans: 'Без засечек',
@@ -144,6 +174,9 @@ const labels = {
   ar: {
     title: 'خطوط المستند',
     hint: 'يعيد رسم نص PDF بالخطوط المثبتة. يبقى كل حرف في مكانه ويُضيَّق إذا كان الخط أعرض. تحتفظ المعادلات والرموز والصور المصغرة بخطوط المستند.',
+    cjkTitle: 'خطوط CJK للمستند',
+    cjkHint:
+      'يعيد رسم الأحرف الصينية واليابانية والكورية بالخطوط المثبتة. يتبع باقي النص خطوط المستند أعلاه. تُعرض فقط الخطوط التي تتضمن أحرف CJK.',
     original: 'المستند الأصلي',
     translated: 'المستند المترجم',
     sans: 'بلا تذييل',
@@ -158,6 +191,9 @@ const labels = {
   arz: {
     title: 'خطوط المستند',
     hint: 'بيرسم نص الـ PDF تاني بالخطوط المتسطبة. كل حرف بيفضل مكانه وبيضيق لو الخط أعرض. المعادلات والرموز والصور الصغيرة بتفضل بخطوط المستند.',
+    cjkTitle: 'خطوط CJK للمستند',
+    cjkHint:
+      'بيرسم الحروف الصيني والياباني والكوري تاني بالخطوط المتسطبة. باقي الكلام بيمشي على خطوط المستند اللي فوق. بتظهر بس الخطوط اللي فيها حروف CJK.',
     original: 'المستند الأصلي',
     translated: 'المستند المترجم',
     sans: 'من غير تذييل',
@@ -172,6 +208,9 @@ const labels = {
   hi: {
     title: 'दस्तावेज़ फ़ॉन्ट',
     hint: 'PDF के पाठ को इंस्टॉल किए गए फ़ॉन्ट से फिर से बनाता है। हर अक्षर अपनी जगह रहता है और फ़ॉन्ट चौड़ा होने पर संकरा किया जाता है। सूत्र, चिह्न और थंबनेल दस्तावेज़ के फ़ॉन्ट रखते हैं।',
+    cjkTitle: 'दस्तावेज़ के CJK फ़ॉन्ट',
+    cjkHint:
+      'चीनी, जापानी और कोरियाई अक्षरों को इंस्टॉल किए गए फ़ॉन्ट से फिर से बनाता है। बाकी पाठ ऊपर दिए दस्तावेज़ फ़ॉन्ट का पालन करता है। केवल CJK अक्षरों वाले फ़ॉन्ट दिखाए जाते हैं।',
     original: 'मूल दस्तावेज़',
     translated: 'अनुवादित दस्तावेज़',
     sans: 'सैंस-सेरिफ़',
@@ -186,6 +225,9 @@ const labels = {
   bn: {
     title: 'নথির ফন্ট',
     hint: 'ইনস্টল করা ফন্টে PDF-এর লেখা আবার আঁকে। প্রতিটি অক্ষর নিজের জায়গায় থাকে এবং ফন্ট চওড়া হলে সরু করা হয়। সূত্র, প্রতীক ও থাম্বনেইল নথির নিজস্ব ফন্ট রাখে।',
+    cjkTitle: 'ডকুমেন্টের CJK ফন্ট',
+    cjkHint:
+      'চীনা, জাপানি ও কোরিয়ান অক্ষর ইনস্টল করা ফন্টে আবার আঁকে। বাকি লেখা উপরের ডকুমেন্ট ফন্ট অনুসরণ করে। শুধু CJK অক্ষরযুক্ত ফন্ট দেখানো হয়।',
     original: 'মূল নথি',
     translated: 'অনূদিত নথি',
     sans: 'স্যান্স-সেরিফ',
@@ -200,6 +242,9 @@ const labels = {
   ur: {
     title: 'دستاویز کے فونٹ',
     hint: 'PDF کا متن انسٹال شدہ فونٹس سے دوبارہ بناتا ہے۔ ہر حرف اپنی جگہ رہتا ہے اور فونٹ چوڑا ہو تو تنگ کیا جاتا ہے۔ فارمولے، علامات اور تھمب نیل دستاویز کے فونٹ رکھتے ہیں۔',
+    cjkTitle: 'دستاویز کے CJK فونٹ',
+    cjkHint:
+      'چینی، جاپانی اور کوریائی حروف کو انسٹال شدہ فونٹس سے دوبارہ بناتا ہے۔ باقی متن اوپر والے دستاویز کے فونٹ اپناتا ہے۔ صرف CJK حروف والے فونٹ دکھائے جاتے ہیں۔',
     original: 'اصل دستاویز',
     translated: 'ترجمہ شدہ دستاویز',
     sans: 'سانس سیرف',
@@ -214,6 +259,9 @@ const labels = {
   pcm: {
     title: 'Document fonts',
     hint: 'E go draw PDF text again with fonts wey dey your computer. Every letter go stay for im place and e go narrow if the font wide pass. Formula, symbol and thumbnail go keep the document fonts.',
+    cjkTitle: 'CJK document fonts',
+    cjkHint:
+      'E go draw Chinese, Japanese and Korean letters again with fonts wey dey your computer. Other text go follow the document fonts for up. Na only fonts wey get CJK letters we go show.',
     original: 'Original document',
     translated: 'Translated document',
     sans: 'Sans-serif',

@@ -110,6 +110,9 @@ export function useReaderWindow() {
           (preferences.ultraFastSerif.value
             ? preferences.translatedSerifFont.value
             : preferences.translatedSansFont.value),
+        cjkFont: preferences.ultraFastSerif.value
+          ? preferences.translatedCjkSerifFont.value
+          : preferences.translatedCjkSansFont.value,
         language: preferences.language.value,
       }),
     ),

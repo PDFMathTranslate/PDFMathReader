@@ -34,6 +34,12 @@ export function createPreferenceState() {
   const translatedSansFont = ref('');
   const translatedSerifFont = ref('');
   const translatedMonoFont = ref('');
+  const originalCjkSansFont = ref('');
+  const originalCjkSerifFont = ref('');
+  const originalCjkMonoFont = ref('');
+  const translatedCjkSansFont = ref('');
+  const translatedCjkSerifFont = ref('');
+  const translatedCjkMonoFont = ref('');
   const recentDocumentFonts = ref([]);
   const restoreDocuments = ref(true);
   const windowMode = ref('window');
@@ -120,6 +126,12 @@ export function createPreferenceState() {
     translatedSansFont,
     translatedSerifFont,
     translatedMonoFont,
+    originalCjkSansFont,
+    originalCjkSerifFont,
+    originalCjkMonoFont,
+    translatedCjkSansFont,
+    translatedCjkSerifFont,
+    translatedCjkMonoFont,
     recentDocumentFonts,
     restoreDocuments,
     windowMode,

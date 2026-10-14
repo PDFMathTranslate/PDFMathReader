@@ -29,6 +29,12 @@ const DEFAULT_PREFERENCES = {
   translatedSansFont: '',
   translatedSerifFont: '',
   translatedMonoFont: '',
+  originalCjkSansFont: '',
+  originalCjkSerifFont: '',
+  originalCjkMonoFont: '',
+  translatedCjkSansFont: '',
+  translatedCjkSerifFont: '',
+  translatedCjkMonoFont: '',
   recentDocumentFonts: [],
   translationErrorDismissals: [],
   reduceResourceUsage: true,
@@ -154,6 +160,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         originalSerifFont: 'Iowan Old Style',
         originalSansFont: 'Avenir Next',
         translatedMonoFont: 'Menlo',
+        translatedCjkSerifFont: 'Songti SC',
         recentDocumentFonts: ['Menlo', 'Avenir Next'],
         customTranslationServices: [
           {
@@ -192,6 +199,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ ultraFastFont: 'Evil"; color: red' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'x'.repeat(101) }));
     assert.throws(() => preferences.save({ originalSerifFont: 'a"b' }));
+    assert.throws(() => preferences.save({ originalCjkSansFont: 'a"b' }));
     assert.throws(() => preferences.save({ translatedSansFont: 'x'.repeat(101) }));
     assert.throws(() => preferences.save({ recentDocumentFonts: [''] }));
     assert.throws(() => preferences.save({ recentDocumentFonts: Array(9).fill('Menlo') }));

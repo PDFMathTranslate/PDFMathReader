@@ -24,22 +24,32 @@ export function loadInstalledFonts(request = fetch) {
 
 /**
  * Popup items for one style: the document's own font, recently used fonts,
- * then installed families by style with the popup's style first.
+ * then installed families by style with the popup's style first. CJK popups
+ * list only the families that cover CJK text.
  */
-export function documentFontMenu({ fonts, style, value = '', recent = [], label }) {
-  const known = new Set(DOCUMENT_FONT_STYLES.flatMap((key) => fonts?.[key] || [])),
+export function documentFontMenu({ fonts, style, value = '', recent = [], label, cjk = false }) {
+  const only = cjk && fonts?.cjk?.length ? new Set(fonts.cjk) : null,
+    listed = (key) => (fonts?.[key] || []).filter((name) => !only || only.has(name)),
+    known = new Set(DOCUMENT_FONT_STYLES.flatMap(listed)),
     items = [{ value: DOCUMENT_FONT_DEFAULT, label: label('default') }];
-  if (value && fonts && !known.has(value))
-    items.push({ value, label: label('missing', { name: value }), family: value });
+  if (value && fonts && !known.has(value)) {
+    const installed = DOCUMENT_FONT_STYLES.some((key) => fonts[key]?.includes(value));
+    items.push({
+      value,
+      label: installed ? value : label('missing', { name: value }),
+      family: value,
+    });
+  }
   const used = recent.filter((name) => !fonts || known.has(name));
   if (used.length) {
     items.push({ value: 'section:recent', label: label('recent'), header: true });
     for (const name of used) items.push({ value: RECENT + name, label: name, family: name });
   }
   for (const key of [style, ...DOCUMENT_FONT_STYLES.filter((other) => other !== style)]) {
-    if (!fonts?.[key]?.length) continue;
+    const names = listed(key);
+    if (!names.length) continue;
     items.push({ value: `section:${key}`, label: label(key), header: true });
-    for (const name of fonts[key]) items.push({ value: name, label: name, family: name });
+    for (const name of names) items.push({ value: name, label: name, family: name });
   }
   return items;
 }

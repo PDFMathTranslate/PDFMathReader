@@ -52,6 +52,37 @@ test('a saved font that is no longer installed stays selectable', () => {
   ]);
 });
 
+test('CJK popups list only the families that cover CJK text', () => {
+  const withCjk = { ...fonts, serif: ['Georgia', 'Songti SC'], cjk: ['PingFang SC', 'Songti SC'] };
+  withCjk.sans = ['Avenir Next', 'PingFang SC'];
+  const items = documentFontMenu({
+    fonts: withCjk,
+    style: 'sans',
+    recent: ['Menlo', 'Songti SC'],
+    label,
+    cjk: true,
+  });
+  assert.deepEqual(values(items), [
+    DOCUMENT_FONT_DEFAULT,
+    'section:recent',
+    'recent:Songti SC',
+    'section:sans',
+    'PingFang SC',
+    'section:serif',
+    'Songti SC',
+  ]);
+  const latin = documentFontMenu({
+    fonts: withCjk,
+    style: 'sans',
+    value: 'Menlo',
+    label,
+    cjk: true,
+  });
+  assert.deepEqual(latin[1], { value: 'Menlo', label: 'Menlo', family: 'Menlo' });
+  // Without coverage data every installed family is offered.
+  assert.ok(values(documentFontMenu({ fonts, style: 'sans', label, cjk: true })).includes('Menlo'));
+});
+
 test('choices decode to font names and update the history', () => {
   assert.equal(chosenFont('recent:Menlo'), 'Menlo');
   assert.equal(chosenFont('Georgia'), 'Georgia');
