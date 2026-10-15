@@ -69,7 +69,13 @@ export function createReaderFeatures({
       readerFit: () => readerFit,
     }),
   });
-  const translationCompare = createTranslationCompare({ session, preferences, provider, kernel });
+  const translationCompare = createTranslationCompare({
+    session,
+    preferences,
+    provider,
+    kernel,
+    activity,
+  });
   const referenceNavigation = createReferenceNavigation({
     session,
     motion,

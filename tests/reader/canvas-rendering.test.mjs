@@ -116,6 +116,7 @@ function fixture() {
     },
     renderOptions: async () => ({ key: 'tfidf', plan: 'tfidf-plan' }),
   };
+  const activity = { foreground: { value: true }, performanceRecorder: { painted() {} } };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf, pages: { value: pages } },
@@ -123,7 +124,7 @@ function fixture() {
     preferences,
     tfidfWeighting,
     view,
-    activity: { foreground: { value: true }, performanceRecorder: { painted() {} } },
+    activity,
     actions: {
       readerViewport: { viewportPages: () => pages },
       rootActions: { displayedPage: (p) => p },
@@ -137,6 +138,7 @@ function fixture() {
     pages,
     preferences,
     tfidfWeighting,
+    activity,
     view,
     renderer,
     restore() {
@@ -169,6 +171,58 @@ test('translation toggles refocus mounted visible pages in both directions, incl
     assert.equal(f.state.pageEls.get(1).reveals.length, 3);
     assert.equal(f.state.revealControllers.size, 0);
   } finally {
+    f.restore();
+  }
+});
+
+test('inactive readers drop duplicate frames immediately and release PDF page caches on eviction', async () => {
+  const f = fixture();
+  const target = f.state.canvasEls.get(1);
+  let cleanups = 0;
+  f.pdfPages[0].cleanup = () => cleanups++;
+  try {
+    await f.renderer.draw(f.pdfPages[0], target, 1);
+    assert.ok(f.state.bitmapFrames.size > 0);
+    f.activity.foreground.value = false;
+    f.renderer.suspendRendering();
+    assert.equal(f.state.bitmapFrames.size, 0);
+    assert.ok(target.width > 0, 'the displayed frame survives a quick switch');
+    f.renderer.resetBitmaps();
+    assert.equal(target.width, 0);
+    assert.equal(cleanups, 1);
+    f.activity.foreground.value = true;
+    f.state.renderWindow.value = new Set([1]);
+    assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
+    assert.ok(target.width > 0);
+  } finally {
+    f.restore();
+  }
+});
+
+test('a render plan awaiting glyphs cannot restart after an inactive-active cycle', async () => {
+  const f = fixture();
+  const gate = deferred();
+  let renders = 0;
+  f.preferences.bionicReading.value = 'fixed';
+  f.pdfPages[0].bionicPlans.set('bionic:fixed:3', gate);
+  f.pdfPages[0].render = () => {
+    renders++;
+    return { promise: Promise.resolve(), cancel() {} };
+  };
+  try {
+    const drawing = f.renderer.draw(f.pdfPages[0], f.state.canvasEls.get(1), 1);
+    await Promise.resolve();
+    f.activity.foreground.value = false;
+    f.renderer.suspendRendering();
+    f.activity.foreground.value = true;
+    gate.resolve();
+    assert.equal(await drawing, false);
+    assert.equal(renders, 0);
+    assert.equal(f.state.bitmapFrames.size, 0);
+    assert.equal(await f.renderer.draw(f.pdfPages[0], f.state.canvasEls.get(1), 1), true);
+    assert.equal(renders, 1);
+  } finally {
+    gate.resolve();
     f.restore();
   }
 });

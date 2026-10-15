@@ -21,6 +21,23 @@ export function createCanvasRendering({
   tfidfWeighting,
 }) {
   let paintRetryTimer;
+  let bitmapEpoch = 0;
+  let trackedPages = new WeakSet();
+  const renderedPages = new Set();
+
+  function suspendRendering() {
+    ++bitmapEpoch;
+    ++renderState.renderEpoch;
+    ++renderState.thumbnailEpoch;
+    clearTimeout(paintRetryTimer);
+    renderState.pageTasks.forEach((task) => task.cancel());
+    renderState.pageTasks.clear();
+    renderState.revealControllers.forEach((controller) => controller.abort());
+    renderState.revealControllers.clear();
+    // Keep the displayed frame briefly for quick switches, but drop duplicate
+    // prefetch bitmaps immediately in every inactive reader.
+    renderState.bitmapFrames.clear();
+  }
 
   function releaseCanvas(canvas) {
     if (!canvas) return;
@@ -33,11 +50,14 @@ export function createCanvasRendering({
   }
 
   function resetBitmaps() {
-    clearTimeout(paintRetryTimer);
-    renderState.bitmapFrames.clear();
+    suspendRendering();
+    // Page cleanup drops PDF.js operator lists and decoded images without
+    // closing the document. PDF.js defers it while a render is still settling.
+    for (const reference of renderedPages) reference.deref()?.cleanup?.();
+    renderedPages.clear();
+    trackedPages = new WeakSet();
     // Bitmap eviction must retain the mounted sidebar window so foreground
     // resume can repaint it even when its scroll position has not changed.
-    renderState.thumbnailEpoch++;
     for (const canvas of [...renderState.canvasEls.values(), ...renderState.thumbEls.values()])
       releaseCanvas(canvas);
     renderState.renderWindow.value = new Set();
@@ -186,6 +206,14 @@ export function createCanvasRendering({
 
   async function draw(page, canvas, scale, preview = false, translated = false) {
     if (!activity.foreground.value || !canvas || !canvas.isConnected) return false;
+    const epoch = bitmapEpoch;
+    const currentDraw = () =>
+      epoch === bitmapEpoch && activity.foreground.value && canvas.isConnected;
+    // Tracking cleanup must not keep replaced translation documents alive.
+    if (!trackedPages.has(page)) {
+      trackedPages.add(page);
+      renderedPages.add(new WeakRef(page));
+    }
     const number = Number(canvas.closest('.page')?.dataset.page);
     if (number && !renderState.renderWindow.value.has(number)) return false;
     const normalizedBionic = normalizeBionicReading({
@@ -196,7 +224,7 @@ export function createCanvasRendering({
     // Pages with a watermark to hide or weighted (bionic or TF-IDF) glyphs are
     // drawn, and cached, apart from the plain page. Thumbnails stay unmodified.
     const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null;
-    if (!activity.foreground.value || !canvas.isConnected) return false;
+    if (!currentDraw()) return false;
     const plannedBionicOnly = bionicOnlyKey(number, translated, normalizedBionic),
       plannedTfidf = plannedBionicKey.endsWith('tfidf');
     const bionic = plannedBionicOnly
@@ -206,7 +234,7 @@ export function createCanvasRendering({
         })
       : { key: '', render: {} };
     const tfidf = plannedTfidf ? await tfidfWeighting.renderOptions(page) : null;
-    if (!activity.foreground.value || !canvas.isConnected) return false;
+    if (!currentDraw()) return false;
     const filter = removal?.key || '',
       bionicKey = [bionic?.key, tfidf?.key].filter(Boolean).join('+'),
       glyphs = mergeGlyphPlans(bionic?.render?.bionicGlyphs, tfidf?.plan);
@@ -316,6 +344,11 @@ export function createCanvasRendering({
     task.onContinue = (continuation) => {
       const resume = () => {
         if (renderState.pageTasks.get(canvas) !== task) return;
+        if (!currentDraw()) {
+          renderState.pageTasks.delete(canvas);
+          task.cancel();
+          return;
+        }
         if (
           renderState.previewScrolling &&
           !motion.pinching.value &&
@@ -335,8 +368,7 @@ export function createCanvasRendering({
         await task.promise;
         if (
           renderState.pageTasks.get(canvas) !== task ||
-          !canvas.isConnected ||
-          !activity.foreground.value ||
+          !currentDraw() ||
           bionicPreferenceKey(number, translated) !== bionicKey
         )
           return false;
@@ -361,6 +393,7 @@ export function createCanvasRendering({
 
   async function animatePDF(p, page, previous, translated = view.showTranslations.value) {
     try {
+      if (!activity.foreground.value) return;
       const host = renderState.pageEls.get(p.number);
       if (!host) return;
       const rect = host.getBoundingClientRect(),
@@ -415,6 +448,7 @@ export function createCanvasRendering({
           ? viewport.filter((p) => renderState.visiblePages.has(p.number))
           : viewport;
     await nextTick();
+    if (!activity.foreground.value || (!force && motion.fitResizing)) return;
     if (renderState.previewScrolling && !force) {
       for (const [canvas, task] of renderState.pageTasks) {
         if (!task.previewPage) continue;
@@ -516,6 +550,7 @@ export function createCanvasRendering({
       actions.readerFit.applyFit();
   }
   return {
+    suspendRendering,
     releaseCanvas,
     resetBitmaps,
     bindPage,

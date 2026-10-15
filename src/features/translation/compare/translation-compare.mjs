@@ -10,13 +10,22 @@ function plainObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
 }
 
+function suspendedError() {
+  const error = Error('Comparison rendering is suspended.');
+  error.name = 'AbortError';
+  return error;
+}
+
 /**
  * Experimental side-by-side comparison of two translation configurations. The
  * left lane starts from the reader's current kernel and service; the right lane
  * starts empty. Either side can be changed here without touching reader settings.
  */
-export function createTranslationCompare({ session, preferences, provider, kernel }) {
+export function createTranslationCompare({ session, preferences, provider, kernel, activity }) {
   const compareOpen = ref(false);
+  // The composition root passes a lazy activity port before its foreground ref
+  // exists, so resolve it only when the computed value is actually read.
+  const compareForeground = computed(() => activity?.foreground?.value ?? true);
   const left = shallowRef(null);
   const right = shallowRef(null);
   const leftSelection = ref(null);
@@ -33,6 +42,8 @@ export function createTranslationCompare({ session, preferences, provider, kerne
   let layoutController = new AbortController();
   const layouts = new Map();
   const originals = new Map();
+  const pendingOriginals = new Set();
+  let originalEpoch = 0;
 
   function remoteKernel(id) {
     const url = preferences.remoteKernelUrl.value.trim();
@@ -133,39 +144,96 @@ export function createTranslationCompare({ session, preferences, provider, kerne
     if (side.value) laneKeys.set(side.value, key);
   }
 
+  function cleanupOriginalPage(entry) {
+    if (!entry.page || entry.cleaned) return;
+    try {
+      entry.page.cleanup?.();
+    } catch {
+      // A PDF page can still be winding down after render cancellation.
+    }
+    entry.cleaned = true;
+  }
+
+  function cancelOriginal(entry) {
+    entry.cancelled = true;
+    try {
+      entry.renderTask?.cancel?.();
+    } catch {
+      // Cancellation is best effort; the epoch check still rejects late work.
+    }
+    if (!entry.renderTask) cleanupOriginalPage(entry);
+    if (entry.canvas) entry.canvas.width = entry.canvas.height = 0;
+  }
+
+  function clearOriginals() {
+    originalEpoch++;
+    for (const entry of new Set([...originals.values(), ...pendingOriginals]))
+      cancelOriginal(entry);
+    originals.clear();
+  }
+
   // Original pages are rendered once per width and drawn into both columns.
   function originalPage(number, pixelWidth) {
+    if (!compareForeground.value) return Promise.reject(suspendedError());
     const key = `${number}:${pixelWidth}`;
-    let task = originals.get(key);
-    if (task) {
+    let entry = originals.get(key);
+    if (entry && !entry.cancelled && entry.epoch === originalEpoch) {
       originals.delete(key);
-      originals.set(key, task);
-      return task;
+      originals.set(key, entry);
+      return entry.promise;
     }
     const pdf = session.pdf;
-    task = (async () => {
+    const epoch = originalEpoch;
+    entry = { epoch, page: null, canvas: null, renderTask: null, cancelled: false, cleaned: false };
+    pendingOriginals.add(entry);
+    entry.promise = (async () => {
       const page = await pdf.getPage(number);
+      entry.page = page;
+      if (entry.cancelled || epoch !== originalEpoch || !compareForeground.value) {
+        cleanupOriginalPage(entry);
+        throw suspendedError();
+      }
       const base = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: pixelWidth / base.width });
       const canvas = document.createElement('canvas');
+      entry.canvas = canvas;
       canvas.width = Math.round(viewport.width);
       canvas.height = Math.round(viewport.height);
-      await page.render({
-        canvasContext: canvas.getContext('2d'),
-        viewport,
-        background: '#ffffff',
-      }).promise;
-      return canvas;
+      try {
+        entry.renderTask = page.render({
+          canvasContext: canvas.getContext('2d'),
+          viewport,
+          background: '#ffffff',
+        });
+        await entry.renderTask.promise;
+        if (entry.cancelled || epoch !== originalEpoch || !compareForeground.value)
+          throw suspendedError();
+        return canvas;
+      } finally {
+        entry.renderTask = null;
+        if (entry.cancelled || epoch !== originalEpoch || !compareForeground.value) {
+          canvas.width = canvas.height = 0;
+          cleanupOriginalPage(entry);
+        }
+      }
     })();
-    originals.set(key, task);
-    task.catch(() => {
-      if (originals.get(key) === task) originals.delete(key);
+    originals.set(key, entry);
+    entry.promise.catch(() => {
+      if (originals.get(key) === entry) originals.delete(key);
+      if (entry.cancelled || epoch !== originalEpoch) {
+        entry.canvas && (entry.canvas.width = entry.canvas.height = 0);
+        cleanupOriginalPage(entry);
+      }
     });
+    entry.promise.then(
+      () => pendingOriginals.delete(entry),
+      () => pendingOriginals.delete(entry),
+    );
     while (originals.size > ORIGINAL_CACHE_SIZE) {
       const oldest = originals.keys().next().value;
       originals.delete(oldest);
     }
-    return task;
+    return entry.promise;
   }
 
   async function loadKernel(id) {
@@ -241,7 +309,7 @@ export function createTranslationCompare({ session, preferences, provider, kerne
     right.value = null;
     layoutController.abort();
     layouts.clear();
-    originals.clear();
+    clearOriginals();
     visible = [];
   }
 
@@ -283,9 +351,19 @@ export function createTranslationCompare({ session, preferences, provider, kerne
   watch(preferences.translationCompareEnabled, (enabled) => {
     if (!enabled) closeCompare();
   });
+  // Keep the lazy activity port untouched until comparison is open. This also
+  // avoids reading a foreground ref that the composition root has not created.
+  watch(
+    () => compareOpen.value && compareForeground.value,
+    (foreground) => {
+      if (!foreground) clearOriginals();
+    },
+    { flush: 'sync' },
+  );
 
   return {
     compareOpen,
+    compareForeground,
     compareLeft: left,
     compareRight: right,
     compareSelections: selections,

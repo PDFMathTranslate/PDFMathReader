@@ -10,6 +10,7 @@ export function createReaderActivity({
   runtime,
   actions,
 }) {
+  let lastForeground;
   function updateSessionTimer() {
     clearInterval(session.sessionTimer);
     if (activity.foreground.value)
@@ -28,7 +29,12 @@ export function createReaderActivity({
     const value =
       !preferences.reduceResourceUsage.value ||
       (activity.activityActive.value && !actions.rootActions.pageHidden());
+    // Native blur/hide and DOM visibility events often describe the same
+    // transition. Do not restart the eviction deadline or resume work twice.
+    if (lastForeground === value) return;
+    lastForeground = value;
     clearTimeout(runtime.resourceReleaseTimer);
+    runtime.resourceReleaseTimer = undefined;
     activity.foreground.value = value;
     activity.performanceRecorder.setActive(value);
     updateSessionTimer();
@@ -39,15 +45,14 @@ export function createReaderActivity({
       clearTimeout(translationState.timer);
       cancelAnimationFrame(renderState.viewportFrame);
       renderState.viewportFrame = 0;
-      ++renderState.renderEpoch;
-      ++renderState.thumbnailEpoch;
-      renderState.pageTasks.forEach((task) => task.cancel());
-      renderState.pageTasks.clear();
-      renderState.revealControllers.forEach((c) => c.abort());
-      renderState.revealControllers.clear();
+      renderState.scheduledViewport = null;
+      clearTimeout(renderState.previewTimer);
+      renderState.previewScrolling = false;
+      actions.canvasRendering.suspendRendering();
       feedback.reading.value = t('reading.paused');
       actions.rootActions.stopRecentPreviews();
       runtime.resourceReleaseTimer = setTimeout(() => {
+        runtime.resourceReleaseTimer = undefined;
         if (!activity.foreground.value && preferences.reduceResourceUsage.value)
           actions.canvasRendering.resetBitmaps();
       }, 1000);
@@ -57,12 +62,11 @@ export function createReaderActivity({
       actions.rootActions.scheduleRecentPreviews();
       actions.readerScroll.settle();
     }
+    return true;
   }
 
   function visibility() {
-    updateForeground();
-    if (activity.foreground.value) {
-      actions.readerScroll.settle();
+    if (updateForeground() && activity.foreground.value) {
       actions.translationQueue.pumpPages();
       actions.translationQueue.pump();
     }

@@ -57,12 +57,19 @@ const dimmed = computed(
 );
 
 let renderTask = null;
+let translatedPageProxy = null;
 let generation = 0;
+
+function releaseTranslatedPage() {
+  renderTask?.cancel?.();
+  renderTask = null;
+  translatedPageProxy?.cleanup?.();
+  translatedPageProxy = null;
+}
 
 function release() {
   generation++;
-  renderTask?.cancel?.();
-  renderTask = null;
+  releaseTranslatedPage();
   if (canvas.value) {
     canvas.value.width = 0;
     canvas.value.height = 0;
@@ -73,15 +80,18 @@ async function paint() {
   const target = canvas.value;
   if (!target || !props.visible || props.blank || props.width <= 0) return release();
   const current = ++generation;
-  renderTask?.cancel?.();
-  renderTask = null;
+  releaseTranslatedPage();
   const dpr = window.devicePixelRatio || 1;
   const pixelWidth = Math.max(1, Math.round(props.width * dpr));
   try {
     const translated = translatedPage.value;
     if (translated) {
       const page = await translated.getPage(1);
-      if (current !== generation) return;
+      if (current !== generation) {
+        page.cleanup?.();
+        return;
+      }
+      translatedPageProxy = page;
       const base = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: pixelWidth / base.width });
       target.width = Math.round(viewport.width);
@@ -100,7 +110,11 @@ async function paint() {
     target.height = source.height;
     target.getContext('2d').drawImage(source, 0, 0);
   } catch (error) {
-    if (error?.name !== 'RenderingCancelledException' && current === generation)
+    if (
+      error?.name !== 'RenderingCancelledException' &&
+      error?.name !== 'AbortError' &&
+      current === generation
+    )
       console.warn('Compare page render failed', error);
   }
 }

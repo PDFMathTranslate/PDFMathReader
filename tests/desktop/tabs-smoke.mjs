@@ -34,6 +34,11 @@ export async function verifyTabs(first, windows) {
     await pause(100);
     await run(window, `window.previewPreferences.save({windowMode:'${mode}'})`);
   };
+  const openSample = (window) =>
+    run(
+      window,
+      `(async()=>{const bytes=new Uint8Array(await (await fetch('/sample.pdf')).arrayBuffer());await window.previewDocuments.open(new File([bytes],'A quieter way to read.pdf',{type:'application/pdf'}));})()`,
+    );
   const readers = () => [...windows].filter(([, state]) => !state.settingsOwner).map(([w]) => w);
 
   await wait(first, "!!document.querySelector('.empty > button:not(.primary)')");
@@ -52,6 +57,9 @@ export async function verifyTabs(first, windows) {
   const second = readers().find((window) => window !== first);
   await until(() => second.isVisible() && !first.isVisible(), 'second tab visible alone');
   assert.deepEqual(second.getBounds(), first.getBounds());
+  await openSample(second);
+  await wait(second, 'window.previewRenderDiagnostics?.().totalPages>0');
+  await wait(second, 'window.previewRenderDiagnostics?.().residentBytes>0');
   const listed = await run(second, 'window.previewTabs.list()');
   assert.deepEqual(
     listed.map((tab) => [tab.id, tab.active]),
@@ -88,13 +96,32 @@ export async function verifyTabs(first, windows) {
   await pause(400);
   await capture(second, 'tabs-start-page.png');
 
-  // Selecting the first tab swaps visibility back.
+  // An inactive document releases its rendered canvases and cached frames, then
+  // repaints at the same page when selected again.
+  const secondActive = await run(second, 'window.previewRenderDiagnostics().active');
   await run(second, `window.previewTabs.select(${first.id})`);
   await until(() => first.isVisible() && !second.isVisible(), 'first tab selected');
+  await wait(
+    second,
+    'window.previewRenderDiagnostics().foreground===false && window.previewRenderDiagnostics().residentBytes===0 && window.previewRenderDiagnostics().cache.bytes===0',
+    'inactive tab resources released',
+  );
+  assert.equal(await run(second, 'window.previewRenderDiagnostics().active'), secondActive);
+  await run(first, `window.previewTabs.select(${second.id})`);
+  await until(() => second.isVisible() && !first.isVisible(), 'second tab resumed');
+  await wait(
+    second,
+    'window.previewRenderDiagnostics().foreground===true && window.previewRenderDiagnostics().residentBytes>0',
+    'second tab repainted',
+  );
+  assert.equal(await run(second, 'window.previewRenderDiagnostics().active'), secondActive);
+  await run(second, `window.previewTabs.select(${first.id})`);
+  await until(() => first.isVisible() && !second.isVisible(), 'first tab selected again');
   await wait(
     first,
     "document.querySelector('.window-tab.active')?.getAttribute('aria-selected')==='true'",
   );
+  await wait(first, 'window.previewRenderDiagnostics().foreground===true');
   await wait(first, "document.querySelector('.app').classList.contains('has-tabs')");
   await pause(400);
   const firstGeometry = await geometry(first);
@@ -136,12 +163,38 @@ export async function verifyTabs(first, windows) {
   await run(fourth, `window.previewTabs.close(${fourth.id})`);
   await until(() => readers().length === 2 && third.isVisible(), 'fourth tab closed');
 
+  await openSample(third);
+  await wait(third, 'window.previewRenderDiagnostics?.().totalPages>0');
+  await wait(third, 'window.previewRenderDiagnostics?.().residentBytes>0');
+  const thirdActive = await run(third, 'window.previewRenderDiagnostics().active');
+
   // Returning to window mode turns hidden tabs back into separate windows.
   await setMode(third, 'window');
   await until(() => first.isVisible() && third.isVisible(), 'windows shown');
   await wait(first, "!document.querySelector('[data-window-tab-bar]')");
   await wait(third, "!document.querySelector('[data-window-tab-bar]')");
   assert.notDeepEqual(first.getBounds(), third.getBounds());
+  first.show();
+  first.focus();
+  await wait(
+    third,
+    'window.previewRenderDiagnostics().foreground===false && window.previewRenderDiagnostics().residentBytes===0 && window.previewRenderDiagnostics().cache.bytes===0',
+    'unfocused window resources released',
+  );
+  assert.equal(await run(third, 'window.previewRenderDiagnostics().active'), thirdActive);
+  await wait(
+    first,
+    'window.previewRenderDiagnostics().foreground===true && window.previewRenderDiagnostics().residentBytes>0',
+    'focused window repainted',
+  );
+  third.show();
+  third.focus();
+  await wait(
+    third,
+    'window.previewRenderDiagnostics().foreground===true && window.previewRenderDiagnostics().residentBytes>0',
+    'window focus restored',
+  );
+  assert.equal(await run(third, 'window.previewRenderDiagnostics().active'), thirdActive);
   // In window mode New Window stays a separate, visible window.
   first.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'N', modifiers: ['meta'] });
   await until(() => readers().length === 3, 'separate window');

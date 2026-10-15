@@ -27,6 +27,7 @@ const label = (key, params) => compareLabel(key, params, uiLanguage.value);
 
 const left = computed(() => props.compare.compareLeft.value);
 const right = computed(() => props.compare.compareRight.value);
+const compareForeground = computed(() => props.compare.compareForeground?.value ?? true);
 const catalog = props.compare.compareKernels;
 
 const columnWidth = computed(() =>
@@ -241,7 +242,7 @@ onBeforeUnmount(() => {
             :page-height="row.height"
             :width="columnWidth"
             :lane="left"
-            :visible="visiblePages.has(row.number)"
+            :visible="compareForeground && visiblePages.has(row.number)"
             :original-page="compare.compareOriginalPage"
           />
           <ComparePage
@@ -251,7 +252,7 @@ onBeforeUnmount(() => {
             :width="columnWidth"
             :lane="right"
             :blank="!right"
-            :visible="visiblePages.has(row.number)"
+            :visible="compareForeground && visiblePages.has(row.number)"
             :original-page="compare.compareOriginalPage"
           />
           <span class="compare-page-number" aria-hidden="true">{{ row.number }}</span>

@@ -44,7 +44,12 @@ export function createReaderPreview({
     try {
       const token = session.epoch;
       for (const [number, p] of renderState.pendingPreview) {
-        if (renderState.previewScrolling || motion.pinching.value || token !== session.epoch)
+        if (
+          !activity.foreground.value ||
+          renderState.previewScrolling ||
+          motion.pinching.value ||
+          token !== session.epoch
+        )
           return;
         renderState.pendingPreview.delete(number);
         const host = renderState.pageEls.get(number);
@@ -63,7 +68,7 @@ export function createReaderPreview({
         const page = await (display.mathDocument && translated
           ? display.mathDocument.getPage(1)
           : session.pdf.getPage(number));
-        if (token !== session.epoch) return;
+        if (!activity.foreground.value || token !== session.epoch) return;
         const changed =
           renderState.canvasCache.get(renderState.canvasEls.get(number))?.page !== page;
         let previous =
@@ -92,6 +97,7 @@ export function createReaderPreview({
       renderState.previewFlushing = false;
       if (
         renderState.pendingPreview.size &&
+        activity.foreground.value &&
         !renderState.previewScrolling &&
         !motion.pinching.value
       )

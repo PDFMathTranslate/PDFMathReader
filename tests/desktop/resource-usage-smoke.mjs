@@ -7,7 +7,17 @@ export async function verifyResourceUsage(window) {
       if (await evaluate(predicate)) return;
       await new Promise((r) => setTimeout(r, 100));
     }
-    throw Error('Resource usage state timed out: ' + predicate);
+    throw Error(
+      'Resource usage state timed out: ' +
+        predicate +
+        ' ' +
+        JSON.stringify({
+          focused: window.isFocused(),
+          visible: window.isVisible(),
+          minimized: window.isMinimized(),
+          diagnostics: await evaluate('window.previewRenderDiagnostics()'),
+        }),
+    );
   };
   await wait('window.previewReady===true');
   assert.equal(
@@ -34,7 +44,9 @@ export async function verifyResourceUsage(window) {
   await wait(
     'window.previewRenderDiagnostics().foreground===true && window.previewRenderDiagnostics().residentBytes>0',
   );
-  window.blur();
+  // A lone macOS window can immediately regain focus after blur(). Hiding it
+  // gives this preference check a stable inactive state; tabs smoke covers blur.
+  window.hide();
   await wait('window.previewRenderDiagnostics().foreground===false');
   await evaluate('window.previewPreferences.save({reduceResourceUsage:false})');
   // The sender owns its reactive setting; emulate another window's settings broadcast.
@@ -42,6 +54,7 @@ export async function verifyResourceUsage(window) {
   await wait('window.previewRenderDiagnostics().foreground===true');
   window.webContents.send('preferences:changed', { reduceResourceUsage: true });
   await wait('window.previewRenderDiagnostics().foreground===false');
+  window.show();
   window.focus();
   await wait(
     'window.previewRenderDiagnostics().foreground===true && window.previewRenderDiagnostics().residentBytes>0',
