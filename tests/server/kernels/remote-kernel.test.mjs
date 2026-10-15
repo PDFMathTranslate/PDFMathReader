@@ -134,6 +134,7 @@ test('translatePage uploads one page, never sends credentials, and returns one p
   assert.equal(upload.targetLang, 'zh-CN');
   assert.equal(upload.noDual, true);
   assert.equal(upload.asyncJob, true);
+  assert.equal(upload.disableRichTextTranslate, true);
   assert.equal(upload.next_service, 'siliconflowfree');
   assert.equal('llm_api' in upload, false);
   const uploaded = await PDFDocument.load(Buffer.from(upload.fileContent, 'base64'));

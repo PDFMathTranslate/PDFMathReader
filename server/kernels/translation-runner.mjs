@@ -231,7 +231,8 @@ export function createTranslationRunner({
           .copy()
           .update(
             JSON.stringify({
-              remote: 1,
+              // 2: rich-text placeholders disabled; earlier pages may show literal <样式> tags.
+              remote: 2,
               id,
               url: remoteUrl,
               service: remoteService,

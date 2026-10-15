@@ -242,6 +242,10 @@ export function createRemoteKernel({
       noMono: false,
       noDual: true,
       asyncJob: true,
+      // The local Precise kernel rewrites translated rich-text tags (<样式 id='1'>) to the
+      // <style id='1'> BabelDOC parses. A remote server runs unpatched BabelDOC, which
+      // typesets such tags literally, so it must not send style placeholders to the LLM.
+      disableRichTextTranslate: true,
       ...(service ? { service, next_service: service } : {}),
     };
     const deadline = now() + jobTimeoutMs;
