@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                | Contributor                        |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)  | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                        | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [experimental, force smooth scrolling even with jagged wheel input](https://github.com/PDFMathTranslate/PDFMathReader/commit/28203be085a26d6eff42a333ad88204be0f475d1) | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [add experimental TF-IDF font weighting for original pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/6252b05020e876b6819768a122bcaa45c679a37d)         | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [translate all pages for the current document from the menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/c680461864c0136a2cb3c9f1749e0bf395e31f6e)        | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [add original-document-only bionic reading option](https://github.com/PDFMathTranslate/PDFMathReader/commit/7c50f2f98c05712df73363d007b2bdffe9c26601)                  | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [add bionic reading with fixed-length and word-root modes](https://github.com/PDFMathTranslate/PDFMathReader/commit/d9e2d81e6bbb9d81db951db250650c7c5dc82c13)          | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                                                  | Contributor                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)                    | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                                          | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [choose separate local fonts for CJK characters in original and translated documents](https://github.com/PDFMathTranslate/PDFMathReader/commit/1c13247863cec538d15c04a93dd3af99efe3efa3) | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [pick installed fonts for original and translated documents in Appearance](https://github.com/PDFMathTranslate/PDFMathReader/commit/48a16bbbb2ea2a4c5f61b25fde764944436eb54f)            | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [experimental, force smooth scrolling even with jagged wheel input](https://github.com/PDFMathTranslate/PDFMathReader/commit/28203be085a26d6eff42a333ad88204be0f475d1)                   | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [draw original PDF serif and sans-serif text with chosen local fonts](https://github.com/PDFMathTranslate/PDFMathReader/commit/f6e3421bab578cb9293a67be982e04faf08c7fb3)                 | [@reycn](https://github.com/reycn) |
+| 2026-10-14 | [add experimental TF-IDF font weighting for original pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/6252b05020e876b6819768a122bcaa45c679a37d)                           | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
