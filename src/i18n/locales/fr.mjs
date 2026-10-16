@@ -101,6 +101,7 @@ export default {
   copy: {
     paragraphCopied: 'Paragraphe copié',
     emailCopied: 'Adresse e-mail copiée',
+    copied: 'Copié',
     failed: 'Échec de la copie. Réessayez.',
   },
   paragraph: {

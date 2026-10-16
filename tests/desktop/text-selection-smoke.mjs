@@ -289,6 +289,12 @@ export async function verifyTextSelection(window, recents) {
         `${direction} native Cmd/Ctrl+C copied the target lines in reading order`,
       );
       assert.ok(!copied.includes('RIGHT UNRELATED'));
+      await waitFor(
+        `document.querySelector('.copy-toast-detail')?.textContent.replace(/\\s+/g,' ').includes(${JSON.stringify(
+          expected.slice(0, 20),
+        )})`,
+        `${direction} copy toast`,
+      );
       return {
         selection: normalize(selection.text),
         copied: normalize(copied),

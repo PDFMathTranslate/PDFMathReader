@@ -115,6 +115,7 @@ export default {
   copy: {
     paragraphCopied: 'Paragraph don copy',
     emailCopied: 'Email don copy',
+    copied: 'Don copy',
     failed: 'Copy no work. Try again.',
   },
   paragraph: {

@@ -115,6 +115,7 @@ export default {
   copy: {
     paragraphCopied: 'الفقرة اتنسخت',
     emailCopied: 'الإيميل اتنسخ',
+    copied: 'اتنسخ',
     failed: 'النسخ فشل. جرّب تاني.',
   },
   paragraph: {

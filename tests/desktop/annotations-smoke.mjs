@@ -206,6 +206,26 @@ export async function verifyAnnotations(window, recents) {
   await wait(
     `(async()=> (await window.previewAnnotations.load(window.previewRenderDiagnostics().annotationKey)).length===1)()`,
   );
+  // The new highlight stays focused, so Cmd/Ctrl+C copies its passage and confirms it.
+  const highlightText = await run(
+    `document.querySelector('.annotation-highlight').getAttribute('aria-label')`,
+  );
+  await clipboard.writeText('annotation-copy-pending');
+  const copyModifiers = process.platform === 'darwin' ? ['meta'] : ['control'];
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'C', modifiers: copyModifiers });
+  window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'C', modifiers: copyModifiers });
+  for (let i = 0; i < 80 && (await clipboard.readText()) === 'annotation-copy-pending'; i++)
+    await pause(25);
+  assert.equal(
+    (await clipboard.readText()).trim(),
+    highlightText.trim(),
+    'Cmd+C copies the highlight',
+  );
+  await wait(
+    `document.querySelector('.copy-toast-detail')?.textContent.includes(${JSON.stringify(
+      highlightText.replace(/\s+/g, ' ').trim().slice(0, 20),
+    )})`,
+  );
   await select();
   await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'6',bubbles:true}))`);
   await wait(`!!document.querySelector('.annotation-editor textarea')`);

@@ -10,6 +10,20 @@ export function useReaderFeedback(interactionMode) {
     copyToast.value = message;
     copyToastTimer = setTimeout(() => (copyToast.value = ''), duration);
   }
+  // Confirms each copy from the reader (selected text, or a focused highlight or comment
+  // whose text the annotation layer supplied) with a toast showing what was copied.
+  function confirmCopy(event) {
+    if (event.target?.closest?.('input,textarea,[contenteditable="true"]')) return;
+    const text = event.defaultPrevented
+      ? event.clipboardData?.getData('text/plain')
+      : String(window.getSelection() || '');
+    const preview = String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!preview) return;
+    notifyCopy(`${t('copy.copied')}\n${preview.slice(0, 160)}`);
+  }
+  window.addEventListener('copy', confirmCopy);
   let fallbackToastShown = false;
   function noteTranslationService(response) {
     if (
@@ -38,7 +52,8 @@ export function useReaderFeedback(interactionMode) {
       interactionMode.value === 'reading' ||
       !hoveredParagraph.value ||
       focused?.matches('input,textarea,[contenteditable="true"]') ||
-      String(window.getSelection() || '').trim()
+      String(window.getSelection() || '').trim() ||
+      document.querySelector('.annotation-focused')
     ) {
       document.execCommand('copy');
       return;
@@ -58,6 +73,9 @@ export function useReaderFeedback(interactionMode) {
     }
   }
 
-  onBeforeUnmount(() => clearTimeout(copyToastTimer));
+  onBeforeUnmount(() => {
+    clearTimeout(copyToastTimer);
+    window.removeEventListener('copy', confirmCopy);
+  });
   return { hoveredParagraph, copyToast, notifyCopy, noteTranslationService, copyHoveredParagraph };
 }

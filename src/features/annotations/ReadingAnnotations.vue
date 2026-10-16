@@ -524,6 +524,17 @@ function outside(e) {
   opened.value = null;
   focused.value = null;
 }
+// Cmd/Ctrl+C with a highlight or comment focused and no text selected copies its passage.
+function copyFocused(e) {
+  if (e.defaultPrevented || !focused.value || editor.value || !e.clipboardData) return;
+  if (e.target?.closest?.('input,textarea,[contenteditable]')) return;
+  if (String(window.getSelection() || '').trim()) return;
+  const a = props.annotations.find((b) => b.id === focused.value.id);
+  const text = (a?.text || a?.comment || '').trim();
+  if (!text) return;
+  e.clipboardData.setData('text/plain', text);
+  e.preventDefault();
+}
 async function openContextMenu(a, event) {
   if (erasing.value.has(a.id)) return;
   pointer.value = { x: event.clientX, y: event.clientY };
@@ -670,6 +681,7 @@ onMounted(() => {
   document.addEventListener('pointerup', capture);
   document.addEventListener('pointerdown', outside);
   document.addEventListener('keydown', key);
+  document.addEventListener('copy', copyFocused);
   document.addEventListener('pointermove', gestureController.observePointer);
 });
 onBeforeUnmount(() => {
@@ -686,6 +698,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerup', capture);
   document.removeEventListener('pointerdown', outside);
   document.removeEventListener('keydown', key);
+  document.removeEventListener('copy', copyFocused);
   document.removeEventListener('pointermove', gestureController.observePointer);
 });
 watch(
@@ -724,6 +737,7 @@ watch(
           'annotation-erasing': erasing.has(a.id),
           'annotation-new-highlight': isNew(a),
           'annotation-comment-highlight': a.kind === 'comment',
+          'annotation-focused': focused?.id === a.id,
         }"
         :style="{
           ...highlightPosition(r, a),

@@ -117,6 +117,7 @@ export default {
   copy: {
     paragraphCopied: 'Absatz kopiert',
     emailCopied: 'E-Mail-Adresse kopiert',
+    copied: 'Kopiert',
     failed: 'Kopieren fehlgeschlagen. Versuchen Sie es erneut.',
   },
   paragraph: {

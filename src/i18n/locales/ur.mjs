@@ -115,6 +115,7 @@ export default {
   copy: {
     paragraphCopied: 'پیراگراف نقل ہو گیا',
     emailCopied: 'ای میل نقل ہو گئی',
+    copied: 'نقل ہو گیا',
     failed: 'نقل ناکام ہوئی۔ دوبارہ کوشش کریں۔',
   },
   paragraph: {
