@@ -535,9 +535,9 @@ else {
         smoke,
         diagnostics: !!smoke,
         credentials: { getKey: credentialStore.getKey, status: credentialStore.status },
-        getCompanionTranslationSettings: () => ({
+        getCompanionTranslationSettings: async () => ({
           preferences: preferences.load(),
-          credentials: serviceCredentialStore.load(),
+          credentials: await serviceCredentialStore.load(),
         }),
         chatGPTSubscription,
         onCrash: handleBackendFailure,
