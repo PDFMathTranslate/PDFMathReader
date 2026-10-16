@@ -22,7 +22,10 @@ export function registerDocumentIPC({
     const document = state.documents.shift();
     if (!document) return null;
     if (typeof document !== 'string') {
-      state.unkeyedAnnotationSource = registry.annotationSourceForDocument(document);
+      const path = document.ticket && state.tickets.get(document.ticket);
+      state.unkeyedAnnotationSource = path
+        ? { ...documentSource(path), bytes: Buffer.from(document.bytes) }
+        : registry.annotationSourceForDocument(document);
       return document;
     }
     try {

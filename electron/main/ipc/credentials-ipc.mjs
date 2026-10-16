@@ -11,7 +11,8 @@ export function registerCredentialsIPC({
       if (action === 'status') return credentials.status();
       const result = await (action === 'save' ? credentials.save(value) : credentials.clear());
       for (const target of registry.windows.keys())
-        if (!target.isDestroyed()) target.webContents.send('credentials:changed');
+        if (!target.isDestroyed() && !target.webContents.isCrashed?.())
+          target.webContents.send('credentials:changed');
       return result;
     });
   for (const action of ['status', 'load', 'save', 'clear'])
@@ -23,7 +24,8 @@ export function registerCredentialsIPC({
         ? serviceCredentialStore.save(value)
         : serviceCredentialStore.clear(value));
       for (const target of registry.windows.keys())
-        if (!target.isDestroyed()) target.webContents.send('serviceCredentials:changed');
+        if (!target.isDestroyed() && !target.webContents.isCrashed?.())
+          target.webContents.send('serviceCredentials:changed');
       return result;
     });
 }

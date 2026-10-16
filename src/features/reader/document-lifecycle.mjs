@@ -56,6 +56,12 @@ export function createDocumentLifecycle({
         await actions.documentImport.importFile(
           new File([document.bytes], document.name, { type: 'application/pdf' }),
           document.ticket,
+          undefined,
+          {
+            resumeView: document.resumeView,
+            resumeDocumentId: document.resumeDocumentId,
+            resumeTranslation: document.resumeTranslation,
+          },
         );
       }
     } catch {
@@ -66,6 +72,7 @@ export function createDocumentLifecycle({
   }
 
   function cancel() {
+    actions.rootActions.cancelReaderTasks?.();
     translationState.translateAllPages = false;
     ++motion.pageJumpGeneration;
     actions.pageNavigation.cancelPageScroll();
@@ -208,6 +215,7 @@ export function createDocumentLifecycle({
     const closeResult = await closed;
     if (documentToken !== session.epoch) return;
     session.currentRecentId = null;
+    session.lastReadingView = null;
     cancel();
     actions.rootActions.closeSearch();
     void releaseDocument();

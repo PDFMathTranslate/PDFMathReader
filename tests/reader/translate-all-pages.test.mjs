@@ -122,6 +122,65 @@ for (const engine of ['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']) {
   });
 }
 
+test('hidden renderer leaves queued backend-task pages untouched until foreground restore', async () => {
+  const page = { number: 1, status: 'queued', blocks: [] };
+  const translationState = {
+    pageQueue: [{ p: page, token: 1 }],
+    queue: [],
+    pageRunning: 0,
+    running: 0,
+    translateAllPages: true,
+    forceRetranslation: false,
+    translationRequests: new Map(),
+    controllers: new Set(),
+  };
+  let readerTasksEnabled = true;
+  let mathCalls = 0;
+  const queue = createTranslationQueue({
+    session: { epoch: 1, documentId: 'document', pages: { value: [page] } },
+    preferences: {
+      engine: { value: 'pdf_math_fast' },
+      pageConcurrency: { value: 1 },
+      concurrency: { value: 1 },
+      translationMode: { value: 'full' },
+      automatic: { value: true },
+      documentLanguageDetection: { value: false },
+      language: { value: 'English' },
+      sourceLanguage: { value: 'Chinese' },
+      jevApiToken: { value: '' },
+      reuseTranslations: { value: true },
+    },
+    translationState,
+    activity: { foreground: { value: false } },
+    provider: { activeGlossary: { value: [] }, currentTranslationService: { value: {} } },
+    view: { showTranslations: { value: true } },
+    actions: {
+      readerTasks: { enabled: () => readerTasksEnabled },
+      translationScope: { readingTranslationPages: () => [1], pruneTranslationQueue() {} },
+      mathTranslation: {
+        async mathPage() {
+          mathCalls++;
+          page.status = 'ready';
+        },
+      },
+    },
+  });
+
+  queue.pumpPages();
+  assert.equal(translationState.pageRunning, 0);
+  assert.equal(translationState.pageQueue.length, 1);
+  assert.equal(mathCalls, 0);
+
+  // The control path demonstrates the same queued page is runnable once the
+  // backend task is no longer responsible for hidden-window progress.
+  readerTasksEnabled = false;
+  queue.pumpPages();
+  assert.equal(translationState.pageRunning, 1);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(translationState.pageRunning, 0);
+  assert.equal(mathCalls, 1);
+});
+
 test('the menu command starts current-document translation and ignores empty/settings windows', () => {
   const oldWindow = globalThis.window;
   globalThis.window = {};

@@ -310,6 +310,8 @@ export function useReaderWindow() {
       translationSnapshot: () => translationSnapshot,
       pageHidden: () => pageHidden,
       stopRecentPreviews: () => stopRecentPreviews,
+      restoreServiceMode: () => featureActions.restoreServiceMode,
+      cancelReaderTasks: () => featureActions.cancelReaderTasks,
     }),
   };
 
@@ -648,6 +650,35 @@ export function useReaderWindow() {
   window.previewSaveReadingView = async () => {
     await flushAnnotations();
     await featureActions.saveReadingView();
+  };
+  window.previewPrepareServiceMode = async () => {
+    const busy = () =>
+      !window.previewReady ||
+      session.loading.value ||
+      session.restoringView.value ||
+      session.receivingDocuments ||
+      session.closingDocument ||
+      pageEditing.value;
+    if (busy()) return null;
+    const epoch = session.epoch;
+    await flushAnnotations();
+    await featureActions.saveReadingView({ strict: true, fallbackView: session.lastReadingView });
+    const resumeTranslation = await featureActions.prepareServiceMode();
+    const document = session.pdf
+      ? {
+          name: session.title.value.replace(/^TEST — /, ''),
+          bytes: await session.pdf.getData(),
+          resumeView: featureActions.readingView() || session.lastReadingView,
+          resumeDocumentId: session.documentId,
+          resumeTranslation,
+        }
+      : null;
+    if (busy() || epoch !== session.epoch || (document && !document.resumeView)) return null;
+    return {
+      document,
+      documentId: session.documentId,
+      ...(settingsWindowMode ? { settingsSection: settingsSection.value } : {}),
+    };
   };
 
   const fitMode = ref(

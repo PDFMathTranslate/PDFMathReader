@@ -2,6 +2,15 @@
 export function installRenderDiagnostics({ bindings }) {
   if (bindings.testMode)
     window.previewRenderDiagnostics = () => ({
+      readerTask: bindings.translationState.readerTaskState,
+      translateAllPages: bindings.translationState.translateAllPages,
+      deferred: bindings.translationState.translationDeferred.value,
+      pageStates: bindings.pages.value.map((p) => ({
+        number: p.number,
+        status: p.status,
+        message: p.message,
+        blocks: p.blocks.length,
+      })),
       translationOrder: bindings.readingTranslationPages(),
       translationMoving: bindings.translationState.translationMoving,
       readingDirection: bindings.translationState.readingDirection,

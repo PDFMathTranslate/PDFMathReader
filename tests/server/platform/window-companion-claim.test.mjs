@@ -11,6 +11,7 @@ const controllerSource = await readFile(
   'utf8',
 );
 const controllerModule = [
+  `import { createWindowServiceMode } from ${JSON.stringify(new URL('../../../electron/main/windows/window-service-mode.mjs', import.meta.url).href)};`,
   `
 const popupGlassMenu = () => false;
 const createTabGroups = () => ({

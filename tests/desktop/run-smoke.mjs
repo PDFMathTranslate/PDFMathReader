@@ -44,6 +44,10 @@ export async function runDesktopSmoke({
     await (await import('./resource-benchmark.mjs')).verifyResourceBenchmark(window);
   else if (smoke === 'resource-usage')
     await (await import('./resource-usage-smoke.mjs')).verifyResourceUsage(window);
+  else if (smoke === 'service-mode')
+    await (
+      await import('./service-mode-smoke.mjs')
+    ).verifyServiceMode(window, backend, token, windows, createWindow);
   else if (smoke === 'information-categories')
     await (
       await import('./information-categories-smoke.mjs')

@@ -35,7 +35,8 @@ export function createTabGroups({ registry, isTabMode, backgroundRenderSmoke = f
     for (const target of group.windows) {
       if (target.isDestroyed()) continue;
       target.excludedFromShownWindowsMenu = tabs.length > 1 && target !== group.active;
-      if (!target.webContents.isDestroyed()) target.webContents.send('tabs:changed', { tabs });
+      if (!target.webContents.isDestroyed() && !target.webContents.isCrashed?.())
+        target.webContents.send('tabs:changed', { tabs });
     }
   };
   const detach = (target) => {
@@ -228,7 +229,11 @@ export function createTabGroups({ registry, isTabMode, backgroundRenderSmoke = f
         groupOf.delete(target);
         if (target.isDestroyed()) continue;
         target.excludedFromShownWindowsMenu = false;
-        if (target.webContents && !target.webContents.isDestroyed())
+        if (
+          target.webContents &&
+          !target.webContents.isDestroyed() &&
+          !target.webContents.isCrashed?.()
+        )
           target.webContents.send('tabs:changed', { tabs: [] });
         if (target === anchor || !bounds) continue;
         offset += CASCADE_OFFSET;

@@ -50,7 +50,9 @@ import { registerCompanionRoutes } from './http/companion-routes.mjs';
 import { registerTranslationRoutes } from './http/translation-routes.mjs';
 import { registerFormulaOcrRoutes } from './http/formula-ocr-routes.mjs';
 import { registerProviderModelRoutes } from './http/provider-model-routes.mjs';
+import { registerReaderTaskRoutes } from './http/reader-task-routes.mjs';
 import { createFormulaOcrService } from './formula/formula-ocr-service.mjs';
+import { createReaderTasks } from './translation/reader-tasks.mjs';
 
 export async function startServer({
   port = 5173,
@@ -99,6 +101,7 @@ export async function startServer({
   const sessionId = randomBytes(16).toString('hex');
   let origin;
   let engines;
+  let readerTasks;
   const localTranslator =
     localTranslationImpl ||
     createLocalTranslation({
@@ -156,6 +159,12 @@ export async function startServer({
     onNativeExtraction: (elapsed) => performanceTracker.recordNativeExtraction(elapsed),
     now: () => performanceTracker.now(),
   });
+  readerTasks = createReaderTasks({
+    documents,
+    origin: () => origin,
+    token,
+    tempRoot: join(cacheDir, '..', 'reader-tasks'),
+  });
   const cacheManager = createCacheManager({
     directory: cacheDir,
     documentCache,
@@ -164,7 +173,8 @@ export async function startServer({
       proxyJobs.size > 0 ||
       providerLimiter.snapshot().tasks.length > 0 ||
       pageLimiter.snapshot().tasks.length > 0 ||
-      (engines.tasks?.().length || 0) > 0,
+      (engines.tasks?.().length || 0) > 0 ||
+      (readerTasks?.active?.() || 0) > 0,
   });
   await cacheManager.start({ deferSweep: true });
   const developerTests = createDeveloperTests({
@@ -181,6 +191,7 @@ export async function startServer({
   const diagnosticTasks = () => {
     const tasks = [...(engines.tasks?.() || [])];
     for (const queue of diagnosticQueues()) tasks.push(...queue.tasks);
+    tasks.push(...readerTasks.tasks());
     for (const job of proxyJobs.values())
       tasks.push({
         id: job.id,
@@ -239,6 +250,7 @@ export async function startServer({
     cacheManager,
     maxDocumentBytes: MAX_DOCUMENT_BYTES,
     translationVersions,
+    onDocumentDelete: (id) => readerTasks.cancelForDocument(id),
   });
   registerKernelRoutes(app, {
     engines,
@@ -276,6 +288,7 @@ export async function startServer({
     getApiKey,
     translationVersions,
   });
+  registerReaderTaskRoutes(app, { readerTasks });
 
   registerErrorMiddleware(app);
   let vite;
@@ -357,6 +370,7 @@ export async function startServer({
     } catch (error) {
       if (companionServer) await new Promise((resolve) => companionServer.close(resolve));
       companionRoutes?.cancelAll();
+      await readerTasks.close();
       server.closeAllConnections();
       await companionDocuments?.flush?.();
       await engines.close();
@@ -380,6 +394,7 @@ export async function startServer({
       closed = true;
       if (companionServer) await new Promise((resolve) => companionServer.close(resolve));
       companionRoutes?.cancelAll();
+      await readerTasks.close();
       await companionDocuments?.flush?.();
       for (const entry of layoutEntries.values()) layoutExtraction.cleanup(entry);
       layoutEntries.clear();

@@ -12,6 +12,71 @@ export function createMathTranslation({
   shell,
   actions,
 }) {
+  async function mathPageFromReaderTask(p, token, manual) {
+    const readerTasks = actions.readerTasks;
+    const historyRequest = provider.historyTracker?.begin({
+      kernel: preferences.engine.value,
+      service: provider.currentTranslationService.value.id || 'auto',
+      epoch: token,
+    });
+    await readerTasks.submitScope({
+      pages: [p.number],
+      manual,
+      translateAllPages: translationState.translateAllPages === true,
+    });
+    if (token !== session.epoch) return;
+    p.kernelProgress = null;
+    p.translationActivity = 'cache';
+    p.status = 'detecting';
+    p.message = t('pageStatus.loadingTranslationPage');
+    const result = await readerTasks.waitForPage(p.number, {
+      token,
+      onProgress: (progress) => {
+        if (token === session.epoch && p.status === 'detecting') p.kernelProgress = progress;
+      },
+    });
+    if (token !== session.epoch) return;
+    if (!result) {
+      p.status = 'idle';
+      p.translationActivity = '';
+      return;
+    }
+    if (result.kind === 'empty') {
+      p.blocks = [];
+      p.status = 'ready';
+      p.translationActivity = '';
+      p.message = t('pageStatus.noReadableText');
+      return;
+    }
+    if (result.kind !== 'math') throw Error('Reader translation task returned an unexpected page');
+    actions.rootActions.noteTranslationService?.(result.response);
+    if (historyRequest)
+      actions.translationHistory?.recordServiceOutcome(result.response, historyRequest);
+    const layout = await actions.backendRequests.api(
+      '/api/math-layout/' + encodeURIComponent(result.layoutKey),
+    );
+    if (token !== session.epoch) return;
+    p.cached = result.cached === true;
+    p.translationModel = result.model || '';
+    p.blocks = layout.paragraphs.map((b) =>
+      reactive({
+        ...restoreFormulaPlaceholders(b),
+        math: true,
+        status: 'ready',
+        translated: true,
+        cached: p.cached,
+        translationModel: p.translationModel,
+        error: '',
+      }),
+    );
+    p.mathDocument = markRaw(await session.getDocument({ data: result.data }).promise);
+    p.status = 'ready';
+    p.translationActivity = '';
+    p.kernelProgress = null;
+    p.message = '';
+    actions.readerPreview.queuePreview(p);
+  }
+
   async function mathPage(p, token, manual = false) {
     // Experimental: the server only uses the remote kernel after its health check passes.
     const remoteUrl = preferences.remoteKernelUrl.value.trim();
@@ -25,6 +90,10 @@ export function createMathTranslation({
     p.status = 'detecting';
     p.message = t('pageStatus.loadingTranslationPage');
     try {
+      if (actions.readerTasks?.enabled?.()) {
+        await mathPageFromReaderTask(p, token, manual);
+        return;
+      }
       const controller = new AbortController();
       translationState.controllers.add(controller);
       translationState.translationRequests.set(controller, { page: p.number, manual });

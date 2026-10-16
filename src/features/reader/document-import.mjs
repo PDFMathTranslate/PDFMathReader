@@ -60,7 +60,12 @@ export function createDocumentImport({
     }
   }
 
-  async function importFile(file, ticket, origin, { skipAutoAlign = false } = {}) {
+  async function importFile(
+    file,
+    ticket,
+    origin,
+    { skipAutoAlign = false, resumeView, resumeDocumentId, resumeTranslation } = {},
+  ) {
     // EPUB files are converted to PDF by the desktop process before they reach the reader.
     const epub = /\.epub$/i.test(file?.name || '');
     if (
@@ -120,6 +125,7 @@ export function createDocumentImport({
     activity.performanceRecorder.start(file.size);
     const runtimeReady = ensurePDF();
     session.currentRecentId = null;
+    session.lastReadingView = null;
     session.restoringView.value = true;
     shell.selectedParagraph.value = null;
     actions.documentLifecycle.cancel();
@@ -157,14 +163,16 @@ export function createDocumentImport({
       await session.pdf?.loadingTask.destroy();
       if (token !== session.epoch) return;
       activity.performanceRecorder.beginTransport?.();
-      const registered = await actions.backendRequests.api('/api/documents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/pdf',
-          'X-Document-Name': encodeURIComponent(file.name || ''),
-        },
-        body: session.bytes,
-      });
+      const registered = resumeDocumentId
+        ? { id: resumeDocumentId }
+        : await actions.backendRequests.api('/api/documents', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/pdf',
+              'X-Document-Name': encodeURIComponent(file.name || ''),
+            },
+            body: session.bytes,
+          });
       if (token !== session.epoch) {
         await actions.backendRequests.api('/api/documents/' + registered.id, { method: 'DELETE' });
         return;
@@ -209,11 +217,9 @@ export function createDocumentImport({
         }
       // Any cached kernel and language version opens as is; the usual reading-scope
       // logic then translates the pages it lacks. Only an uncached document is new.
-      const cachedVersion = await actions.translationVersions.openCachedVersion(
-        registered.id,
-        token,
-        remembered,
-      );
+      const cachedVersion = resumeDocumentId
+        ? null
+        : await actions.translationVersions.openCachedVersion(registered.id, token, remembered);
       if (token !== session.epoch) return;
       view.showTranslations.value =
         !!cachedVersion || preferences.documentOpenMode.value === 'translation';
@@ -279,12 +285,14 @@ export function createDocumentImport({
       await outlineReady;
       if (token !== session.epoch) return;
       session.pages.value = list;
+      if (resumeTranslation) await actions.rootActions.restoreServiceMode?.(resumeTranslation);
       await actions.readingPosition.restoreReadingView(
-        cachedVersion && saved
-          ? { ...saved, showTranslations: true }
-          : saved && preferences.documentOpenMode.value === 'manual'
-            ? { ...saved, showTranslations: false }
-            : saved,
+        resumeView ||
+          (cachedVersion && saved
+            ? { ...saved, showTranslations: true }
+            : saved && preferences.documentOpenMode.value === 'manual'
+              ? { ...saved, showTranslations: false }
+              : saved),
       );
       if (view.showTranslations.value) translationState.translationDeferred.value = false;
       activity.performanceRecorder.mark('restoreView');
@@ -331,6 +339,7 @@ export function createDocumentImport({
       // Reloads after manual edits bypass defaults; already aligned PDFs stay untouched.
       if (
         !skipAutoAlign &&
+        !resumeView &&
         preferences.autoAlignDocumentWidth.value &&
         window.previewDocuments?.editPages &&
         new Set(list.map((p) => Math.round((p.width + Number.EPSILON) * 10))).size > 1

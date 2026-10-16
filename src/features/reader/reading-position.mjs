@@ -65,7 +65,7 @@ export function createReadingPosition({
     const bounds = el.getBoundingClientRect(),
       box = visiblePageHost(host).getBoundingClientRect(),
       style = getComputedStyle(el);
-    return {
+    const view = {
       page: p.number,
       offsetX: Math.max(
         -16,
@@ -85,12 +85,14 @@ export function createReadingPosition({
       cropX: readerView.pageCrop.value.x,
       cropY: readerView.pageCrop.value.y,
     };
+    session.lastReadingView = view;
+    return view;
   }
 
-  async function saveReadingView() {
+  async function saveReadingView({ strict = false, fallbackView } = {}) {
     clearTimeout(session.readingSaveTimer);
     if (session.restoringView.value || session.loading.value) return;
-    const view = readingView();
+    const view = readingView() || fallbackView;
     if (view)
       try {
         if (session.currentRecentId) {
@@ -100,8 +102,9 @@ export function createReadingPosition({
           await window.previewRecents?.setTranslationStatus?.(id, status);
         }
         await window.previewDocuments?.saveView(view);
-      } catch {
+      } catch (error) {
         feedback.error.value = t('error.saveReadingPosition');
+        if (strict) throw error;
       }
   }
 

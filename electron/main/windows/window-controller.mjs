@@ -1,5 +1,6 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createTabGroups } from './tab-groups.mjs';
+import { createWindowServiceMode } from './window-service-mode.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 import { activeAppIcon, appIconPath } from '../services/app-icon.mjs';
 import { detectEmails, detectLinks, linkLabel } from '../../../shared/reader/link-detection.mjs';
@@ -49,6 +50,41 @@ export function createWindowController({
     backgroundRenderSmoke,
   });
   registry.setActiveTabResolver?.(tabs.activeFor);
+  const serviceMode = createWindowServiceMode({
+    registry,
+    activeFor: tabs.activeFor,
+    enabled: (!smoke || smoke === 'service-mode') && !ciLaunchCheck && !backgroundRenderSmoke,
+    prepare: (target, state) =>
+      state.documents.length
+        ? null
+        : target.webContents.executeJavaScript('window.previewPrepareServiceMode?.()'),
+    suspend: (target, snapshot, state) => {
+      if (snapshot.document) {
+        const document = snapshot.document;
+        const path = state.unkeyedAnnotationSource?.path;
+        if (path) {
+          document.ticket = randomBytes(16).toString('hex');
+          state.tickets.set(document.ticket, path);
+        }
+        state.documents.unshift(document);
+      }
+      windowPerformance.stop(target);
+      // Each window has its own partition, so no other window shares this process.
+      try {
+        target.webContents.forcefullyCrashRenderer();
+      } catch (error) {
+        const index = state.documents.indexOf(snapshot.document);
+        if (index >= 0) state.documents.splice(index, 1);
+        if (snapshot.document?.ticket) state.tickets.delete(snapshot.document.ticket);
+        throw error;
+      }
+    },
+    resume: (target, snapshot) => {
+      const url = new URL(target.webContents.getURL());
+      if (snapshot.settingsSection) url.searchParams.set('section', snapshot.settingsSection);
+      return target.loadURL(url.href);
+    },
+  });
   const setWindowVibrancy = (target, reduceTransparency) => {
     if (process.platform === 'win32' && windowsBuild >= 22621) {
       target.setBackgroundMaterial(reduceTransparency ? 'none' : 'acrylic');
@@ -87,6 +123,9 @@ export function createWindowController({
   };
   const saveWindowReadingView = async (target) => {
     if (!target || target.isDestroyed()) return;
+    const state = registry.stateFor(target);
+    await state?.serviceMode?.pending;
+    if (state?.serviceMode?.phase === 'suspended' || target.isDestroyed()) return;
     await target.webContents.executeJavaScript('window.previewSaveReadingView?.()');
   };
   const documentIdentity = async (path) => {
@@ -294,6 +333,12 @@ export function createWindowController({
     };
     const activityChanged = () => {
       if (!target || target.isDestroyed()) return;
+      serviceMode.update();
+      if (
+        registry.stateFor(target)?.serviceMode?.phase === 'suspended' ||
+        target.webContents.isCrashed()
+      )
+        return;
       target.webContents.send('activity:changed', windowPerformance.windowActive(target));
       windowPerformance.update(target);
     };
@@ -571,6 +616,7 @@ export function createWindowController({
       windowPerformance.stop(target);
       registry.stateFor(target)?.performance.peaks.clear();
       registry.windows.delete(target);
+      serviceMode.update();
       if (!settingsOwner) {
         const closingBackend = backend.close();
         registry.closingBackends.add(closingBackend);
@@ -704,7 +750,9 @@ export function createWindowController({
       registry.settingsWindows.delete(owner);
       return openSettingsWindow(owner, section);
     }
-    target.webContents.send('settings:section', section);
+    const suspended = registry.stateFor(target)?.serviceMode;
+    if (suspended?.phase === 'suspended') suspended.snapshot.settingsSection = section;
+    else target.webContents.send('settings:section', section);
     if (target.isMinimized()) target.restore();
     target.show();
     target.focus();
@@ -723,6 +771,8 @@ export function createWindowController({
   const getRuntime = () => runtime;
   const setRuntime = (next) => {
     runtime = next;
+    if (next.quitting) serviceMode.stop();
+    else serviceMode.start();
   };
   return {
     createWindow,

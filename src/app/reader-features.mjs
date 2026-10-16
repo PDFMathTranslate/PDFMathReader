@@ -16,6 +16,7 @@ import { createThumbnails } from '../features/reader/reader-thumbnails.mjs';
 import { createReaderPreview } from '../features/reader/reader-preview.mjs';
 import { createReaderScroll } from '../features/reader/reader-scroll.mjs';
 import { createTranslationScope } from '../features/translation/translation-scope.mjs';
+import { createReaderTasks } from '../features/translation/reader-tasks.mjs';
 import { createTranslationQueue } from '../features/translation/translation-queue.mjs';
 import { createMathTranslation } from '../features/translation/math-translation.mjs';
 import { createTranslationVersions } from '../features/translation/translation-versions.mjs';
@@ -253,12 +254,25 @@ export function createReaderFeatures({
     session,
     view,
   });
+  const readerTasks = createReaderTasks({
+    session,
+    preferences,
+    translationState,
+    provider,
+    activity,
+    actions: createLazyPort({
+      backendRequests: () => backendRequests,
+      preferencePersistence: () => preferencePersistence,
+      translationScope: () => translationScope,
+    }),
+  });
   const translationQueue = createTranslationQueue({
     session,
     preferences,
     translationState,
     actions: createLazyPort({
       translationScope: () => translationScope,
+      readerTasks: () => readerTasks,
       kernelSettings: () => kernelSettings,
       mathTranslation: () => mathTranslation,
       backendRequests: () => backendRequests,
@@ -279,6 +293,7 @@ export function createReaderFeatures({
       rootActions: () => rootActions,
       translationHistory: () => translationHistory,
       backendRequests: () => backendRequests,
+      readerTasks: () => readerTasks,
       readerPreview: () => readerPreview,
       kernelSettings: () => kernelSettings,
       documentLifecycle: () => documentLifecycle,
@@ -508,6 +523,7 @@ export function createReaderFeatures({
     ...readerPreview,
     ...readerScroll,
     ...translationScope,
+    ...readerTasks,
     ...translationQueue,
     ...mathTranslation,
     ...documentLifecycle,

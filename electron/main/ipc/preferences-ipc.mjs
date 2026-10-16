@@ -110,7 +110,7 @@ export function registerPreferencesIPC({
     const snapshot = shortcutSnapshot();
     for (const [window, state] of registry.windows) {
       state.preferences.shortcutBindings = { ...snapshot.overrides };
-      window.webContents.send('shortcuts:changed', snapshot);
+      if (!window.webContents.isCrashed?.()) window.webContents.send('shortcuts:changed', snapshot);
     }
     rebuildMenu();
     return snapshot;
@@ -214,7 +214,7 @@ export function registerPreferencesIPC({
         )
       )
         for (const other of registry.windows.keys())
-          if (other !== target)
+          if (other !== target && !other.webContents.isCrashed?.())
             other.webContents.send(
               'preferences:changed',
               Object.fromEntries(
@@ -233,7 +233,8 @@ export function registerPreferencesIPC({
         for (const [other, state] of registry.windows) {
           if (other !== target && (other === owner || state.settingsOwner === owner)) {
             Object.assign(state.preferences, localChanges);
-            other.webContents.send('preferences:changed', localChanges);
+            if (!other.webContents.isCrashed?.())
+              other.webContents.send('preferences:changed', localChanges);
           }
         }
       if (target === registry.focusedWindow()) updateMenu(target);

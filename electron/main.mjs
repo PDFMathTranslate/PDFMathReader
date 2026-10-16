@@ -180,7 +180,8 @@ else {
   };
   const updateAppearance = () => {
     for (const target of windows.keys())
-      if (!target.isDestroyed()) target.webContents.send('appearance:changed', appearance());
+      if (!target.isDestroyed() && !target.webContents.isCrashed())
+        target.webContents.send('appearance:changed', appearance());
   };
   const handleBackendFailure = async (error) => {
     if (quitting || backendFailureHandled) return;
@@ -441,6 +442,7 @@ else {
           'advanced',
           'advanced-cache',
           'developer',
+          'service-mode',
         ].includes(smoke)
       )
         credentialOptions.environment = () => 'local-smoke-placeholder';
@@ -473,7 +475,8 @@ else {
         openExternal: (url) => shell.openExternal(url),
         onChange: () => {
           for (const target of windows.keys())
-            if (!target.isDestroyed()) target.webContents.send('chatgptSubscription:changed');
+            if (!target.isDestroyed() && !target.webContents.isCrashed())
+              target.webContents.send('chatgptSubscription:changed');
         },
       });
       preferences = readerPreferences;
@@ -514,7 +517,8 @@ else {
         path: join(app.getPath('userData'), 'app-updates.json'),
         onChange: (state) => {
           for (const target of windows.keys())
-            if (!target.isDestroyed()) target.webContents.send('updates:changed', state);
+            if (!target.isDestroyed() && !target.webContents.isCrashed())
+              target.webContents.send('updates:changed', state);
         },
       });
       app.on('will-quit', () => {
@@ -693,7 +697,8 @@ else {
           const result = await chatGPTSubscription[action](value);
           if (action === 'signIn' && result?.signedIn)
             for (const window of windows.keys())
-              if (!window.isDestroyed()) window.webContents.send('chatgptSubscription:signedIn');
+              if (!window.isDestroyed() && !window.webContents.isCrashed())
+                window.webContents.send('chatgptSubscription:signedIn');
           return result;
         });
       registerUpdatesIPC({

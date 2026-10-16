@@ -70,6 +70,7 @@ function setCredentialState(key, status) {
 
 export function makeProviderFetch(mode) {
   const upstream = globalThis.fetch;
+  let serviceModeProviderCalls = 0;
   if (!mode) return upstream;
   return async (url, options) => {
     if (!String(url).startsWith('https://api.openai.com/')) return upstream(url, options);
@@ -81,20 +82,24 @@ export function makeProviderFetch(mode) {
           headers: { 'Content-Type': 'application/json' },
         });
     }
+    if (mode === 'service-mode') await new Promise((resolve) => setTimeout(resolve, 5000));
+    const content =
+      mode === 'service-mode'
+        ? `Mock translated paragraph (service-mode call ${++serviceModeProviderCalls})`
+        : mode === 'animation'
+          ? '示例译文：新的文字逐个跳跃上来，段落保持自然换行。'.repeat(3) + ' 👩🏽‍💻 é'
+          : mode === 'information-emphasis'
+            ? '首先，结果表明支持研究假设。然而，发现高于原先预期。普通内容保持不变。'
+            : mode === 'topic-sentences'
+              ? '译文第一句。第二句保持普通字重。' +
+                '后续段落提供具体证据并说明研究背景。'.repeat(10)
+              : 'Mock translated paragraph';
     return new Response(
       JSON.stringify({
         choices: [
           {
             message: {
-              content:
-                mode === 'animation'
-                  ? '示例译文：新的文字逐个跳跃上来，段落保持自然换行。'.repeat(3) + ' 👩🏽‍💻 é'
-                  : mode === 'information-emphasis'
-                    ? '首先，结果表明支持研究假设。然而，发现高于原先预期。普通内容保持不变。'
-                    : mode === 'topic-sentences'
-                      ? '译文第一句。第二句保持普通字重。' +
-                        '后续段落提供具体证据并说明研究背景。'.repeat(10)
-                      : 'Mock translated paragraph',
+              content,
             },
           },
         ],

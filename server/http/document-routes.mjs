@@ -63,6 +63,7 @@ export function registerDocumentRoutes(
     cacheManager,
     maxDocumentBytes,
     translationVersions,
+    onDocumentDelete,
   },
 ) {
   app.post(
@@ -87,6 +88,7 @@ export function registerDocumentRoutes(
   app.delete('/api/documents/:id', (req, res) => {
     if (!isDocumentId(req.params.id) || !documents.delete(req.params.id))
       return res.status(404).json({ error: 'Document not found.' });
+    onDocumentDelete?.(req.params.id);
     const entry = layoutEntries.get(req.params.id);
     if (entry) {
       layoutExtraction.cleanup(entry);

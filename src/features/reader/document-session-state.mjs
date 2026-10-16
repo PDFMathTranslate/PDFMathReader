@@ -40,6 +40,7 @@ export function createDocumentSessionState() {
     closingDocument,
     documentMotionController,
     currentRecentId,
+    lastReadingView: null,
     readingSaveTimer,
     sessionTimer,
   };

@@ -50,6 +50,40 @@ export function createTranslationQueue({
     );
   }
 
+  function createTranslatedBlocks(paragraphs) {
+    return (Array.isArray(paragraphs) ? paragraphs : []).map((block) =>
+      reactive({
+        ...block,
+        status: block.translation ? 'ready' : block.status || 'idle',
+        translation: block.translation || '',
+        translated: block.translated ?? view.showTranslations.value,
+        cached: block.cached === true,
+        error: block.error || '',
+      }),
+    );
+  }
+
+  function applyReaderTaskPage(page, result, token) {
+    if (token !== session.epoch) return false;
+    if (result?.kind === 'empty') {
+      page.cached = false;
+      page.translationModel = '';
+      page.translationActivity = '';
+      page.blocks = [];
+      page.status = 'ready';
+      page.message = t('pageStatus.noReadableText');
+      return true;
+    }
+    if (result?.kind !== 'inspector') return false;
+    page.cached = result.cached === true;
+    page.translationModel = result.model || result.translationModel || '';
+    page.translationActivity = '';
+    page.blocks = createTranslatedBlocks(result.paragraphs);
+    page.status = 'ready';
+    page.message = page.blocks.length ? '' : t('pageStatus.noReadableText');
+    return true;
+  }
+
   // Leaves out the paragraphs that only hold the text of a removed watermark, so they are
   // neither covered by a translation nor sent to be translated.
   async function withoutWatermarks(page, result) {
@@ -320,6 +354,25 @@ export function createTranslationQueue({
     const candidates = actions.translationScope
       .readingTranslationPages()
       .map((n) => session.pages.value[n - 1]);
+    const readerTasks = actions.readerTasks;
+    if (readerTasks?.enabled?.() && candidates.length) {
+      try {
+        await readerTasks.submitScope({
+          pages: candidates.map((page) => page.number),
+          translateAllPages: translationState.translateAllPages === true,
+        });
+      } catch (e) {
+        if (epoch === session.epoch) {
+          for (const page of candidates) {
+            if (page.status === 'idle' || page.status === 'queued') page.status = 'error';
+            page.message = e.message;
+          }
+          actions.kernelSettings.reportKernelFailure?.(e.message);
+        }
+        return;
+      }
+    }
+    if (epoch !== session.epoch) return;
     for (const p of candidates)
       if (
         p.status === 'idle' ||
@@ -336,6 +389,9 @@ export function createTranslationQueue({
   }
 
   function pumpPages() {
+    // Backend tasks keep running while hidden. Polling a parked renderer would
+    // return immediately and endlessly requeue the same unfinished page.
+    if (!activity.foreground.value && actions.readerTasks?.enabled?.()) return;
     if (
       !activity.foreground.value &&
       preferences.translationMode.value !== 'full' &&
@@ -366,6 +422,39 @@ export function createTranslationQueue({
       return;
     }
     if (token !== session.epoch) return;
+    const readerTasks = actions.readerTasks;
+    if (readerTasks?.enabled?.() && preferences.engine.value === 'pdf_inspector') {
+      try {
+        // schedulePages normally submits the complete scope first. A direct
+        // manual page command still needs to attach its page before waiting.
+        await readerTasks.submitScope({
+          pages: [p.number],
+          manual,
+          translateAllPages: translationState.translateAllPages === true,
+        });
+        if (token !== session.epoch) return;
+        p.status = 'detecting';
+        p.translationActivity = 'cache';
+        p.message = t('pageStatus.loadingTranslationPage');
+        const result = await readerTasks.waitForPage(p.number, { token });
+        if (token !== session.epoch) return;
+        if (!result) {
+          p.status = 'idle';
+          p.translationActivity = '';
+          return;
+        }
+        if (!applyReaderTaskPage(p, result, token))
+          throw Error('Reader translation task returned an unexpected page');
+        return;
+      } catch (e) {
+        if (token === session.epoch) {
+          p.status = e.name === 'AbortError' ? 'idle' : 'error';
+          p.message = e.name === 'AbortError' ? '' : e.message;
+          if (e.name !== 'AbortError') actions.kernelSettings.reportKernelFailure?.(e.message);
+        }
+        return;
+      }
+    }
     if (preferences.engine.value !== 'pdf_inspector')
       return actions.mathTranslation.mathPage(p, token, manual);
     try {
@@ -434,6 +523,7 @@ export function createTranslationQueue({
   }
 
   function pump() {
+    if (!activity.foreground.value && actions.readerTasks?.enabled?.()) return;
     if (
       !activity.foreground.value &&
       preferences.translationMode.value !== 'full' &&
