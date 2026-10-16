@@ -269,6 +269,7 @@ const copyToastDetail = computed(() =>
       'immersive-header-hidden': immersiveHeaderHidden,
       'horizontal-immersive': pages.length && direction === 'horizontal' && autoHideHeader,
       'vertical-immersive': pages.length && direction === 'vertical' && autoHideHeader,
+      'vertical-reading': pages.length && direction === 'vertical',
       'reading-interaction': interactionMode === 'reading',
     }"
     @pointermove="immersivePointer"

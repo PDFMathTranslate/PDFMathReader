@@ -696,6 +696,14 @@
   scroll-padding: 0;
 }
 
+/* Liquid Glass draws the header over the document, so vertical reading still starts
+   the first page below it; horizontal pages already fill the full height. */
+
+:root[data-reduce-padding='true'] .app.content-glass.vertical-reading:not(.startup-page) .reader {
+  padding-top: var(--toolbar-height);
+  scroll-padding-top: var(--toolbar-height);
+}
+
 :root[data-reduce-padding='true'] .page {
   border: 0;
 }
