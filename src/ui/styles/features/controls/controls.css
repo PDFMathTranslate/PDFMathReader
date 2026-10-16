@@ -160,7 +160,8 @@
   width: 94px;
   height: 64px;
   border-radius: 8px;
-  border: 1px solid var(--chrome-border);
+  /* Borderless like macOS Settings; the shadow alone separates it from the card. */
+  border: 0;
   background: linear-gradient(135deg, #b8d9ef 10%, #087cbc 45%, #34459c 65%, #9bd4df);
   overflow: hidden;
   box-shadow: 0 2px 5px #0002;

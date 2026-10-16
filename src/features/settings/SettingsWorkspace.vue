@@ -379,6 +379,8 @@ section.settings.settings-workspace.native-settings-window[data-section] {
 }
 .settings-categories nav {
   display: grid;
+  /* Keep rows at the sidebar width so long labels ellipsize instead of clipping the row. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 3px;
   overflow: auto;
   overflow-x: hidden;
