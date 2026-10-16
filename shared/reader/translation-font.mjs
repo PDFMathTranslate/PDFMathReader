@@ -23,6 +23,21 @@ const SANS = [
 const GENERIC = new Set(['serif', 'sans-serif', '-apple-system', 'BlinkMacSystemFont']);
 
 export const MAX_TRANSLATION_FONT_LENGTH = 100;
+export const MAX_RECENT_DOCUMENT_FONTS = 8;
+export const DOCUMENT_FONT_KEYS = [
+  'originalSansFont',
+  'originalSerifFont',
+  'originalMonoFont',
+  'translatedSansFont',
+  'translatedSerifFont',
+  'translatedMonoFont',
+  'originalCjkSansFont',
+  'originalCjkSerifFont',
+  'originalCjkMonoFont',
+  'translatedCjkSansFont',
+  'translatedCjkSerifFont',
+  'translatedCjkMonoFont',
+];
 
 // Quotes, backslashes and control characters cannot form a valid family name.
 // Inner and trailing spaces survive so multi-word names can be typed.
@@ -36,11 +51,17 @@ export function isValidTranslationFont(value) {
   return typeof value === 'string' && stripTranslationFont(value) === value;
 }
 
-// Returns '' when the reader should keep its default font.
-export function translationFontFamily({ serif = false, font = '', language = '' } = {}) {
-  const name = stripTranslationFont(font).trim();
-  if (!serif && !name) return '';
-  return [...(name ? [name] : []), ...(serif ? SERIF(language) : SANS)]
+// Returns '' when the reader should keep its default font. A CJK font follows the
+// Latin one, so it draws only the characters the Latin font lacks.
+export function translationFontFamily({
+  serif = false,
+  font = '',
+  cjkFont = '',
+  language = '',
+} = {}) {
+  const names = [font, cjkFont].map((name) => stripTranslationFont(name).trim()).filter(Boolean);
+  if (!serif && !names.length) return '';
+  return [...new Set([...names, ...(serif ? SERIF(language) : SANS)])]
     .map((family) => (GENERIC.has(family) ? family : `"${family}"`))
     .join(', ');
 }

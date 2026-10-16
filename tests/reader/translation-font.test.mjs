@@ -27,6 +27,14 @@ test('a specified font leads the stack and falls back by serif choice', () => {
   assert.match(translationFontFamily({ font: 'Kaiti SC', serif: true }), /^"Kaiti SC", .*serif$/);
 });
 
+test('a CJK font follows the Latin font', () => {
+  assert.match(
+    translationFontFamily({ font: 'Avenir Next', cjkFont: 'PingFang SC' }),
+    /^"Avenir Next", "PingFang SC", -apple-system,/,
+  );
+  assert.match(translationFontFamily({ cjkFont: 'Songti SC', serif: true }), /^"Songti SC", /);
+});
+
 test('font names cannot escape the CSS declaration', () => {
   assert.equal(stripTranslationFont('A"; color: red}'), 'A color: red');
   assert.equal(stripTranslationFont('Songti '), 'Songti ');

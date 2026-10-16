@@ -36,6 +36,8 @@ import { registerProxyRoutes } from './http/proxy-routes.mjs';
 import { registerCacheRoutes } from './http/cache-routes.mjs';
 import { registerTermCorpusRoutes } from './http/term-corpus-routes.mjs';
 import { createTermCorpus } from './documents/term-corpus.mjs';
+import { registerFontRoutes } from './http/font-routes.mjs';
+import { createInstalledFonts } from './fonts/installed-fonts.mjs';
 import {
   registerDeveloperRoutes,
   registerProviderPortRoute,
@@ -208,6 +210,7 @@ export async function startServer({
   registerTermCorpusRoutes(app, {
     termCorpus: createTermCorpus({ directory: join(cacheDir, '..', 'term-corpus') }),
   });
+  registerFontRoutes(app, { installedFonts: createInstalledFonts() });
   registerDeveloperRoutes(app, {
     developerDiagnostics,
     recentDebugLogs: recentLogs,

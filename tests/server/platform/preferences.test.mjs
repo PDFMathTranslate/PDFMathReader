@@ -23,6 +23,19 @@ const DEFAULT_PREFERENCES = {
   epubEnabled: true,
   ultraFastSerif: false,
   ultraFastFont: '',
+  originalSansFont: '',
+  originalSerifFont: '',
+  originalMonoFont: '',
+  translatedSansFont: '',
+  translatedSerifFont: '',
+  translatedMonoFont: '',
+  originalCjkSansFont: '',
+  originalCjkSerifFont: '',
+  originalCjkMonoFont: '',
+  translatedCjkSansFont: '',
+  translatedCjkSerifFont: '',
+  translatedCjkMonoFont: '',
+  recentDocumentFonts: [],
   translationErrorDismissals: [],
   reduceResourceUsage: true,
   reduceBackgroundFrameRate: true,
@@ -145,6 +158,11 @@ test('partial saves keep every current setting and unknown key', async () => {
         layoutVisible: true,
         ultraFastSerif: true,
         ultraFastFont: 'Songti SC',
+        originalSerifFont: 'Iowan Old Style',
+        originalSansFont: 'Avenir Next',
+        translatedMonoFont: 'Menlo',
+        translatedCjkSerifFont: 'Songti SC',
+        recentDocumentFonts: ['Menlo', 'Avenir Next'],
         customTranslationServices: [
           {
             id: 'custom-0a1b2c3d4e5f',
@@ -181,6 +199,11 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ ultraFastSerif: 'true' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'Evil"; color: red' }));
     assert.throws(() => preferences.save({ ultraFastFont: 'x'.repeat(101) }));
+    assert.throws(() => preferences.save({ originalSerifFont: 'a"b' }));
+    assert.throws(() => preferences.save({ originalCjkSansFont: 'a"b' }));
+    assert.throws(() => preferences.save({ translatedSansFont: 'x'.repeat(101) }));
+    assert.throws(() => preferences.save({ recentDocumentFonts: [''] }));
+    assert.throws(() => preferences.save({ recentDocumentFonts: Array(9).fill('Menlo') }));
     assert.throws(() =>
       preferences.save({ customTranslationServices: [{ id: 'openai', name: 'x' }] }),
     );
