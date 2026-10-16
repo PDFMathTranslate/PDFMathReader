@@ -256,9 +256,11 @@ export function registerCompanionRoutes(
           };
           connections.set(address, connection);
         }
+        const deviceName = clientText(req.headers['x-pdfmathreader-device-name'], 128);
+        connection.name = deviceName || connection.name;
         connection.lastSeenAt = now();
         // Older clients supply identity when acquiring a document session.
-        if (req.method === 'POST' && /\/documents\/[^/]+\/session$/.test(req.path))
+        if (!deviceName && req.method === 'POST' && /\/documents\/[^/]+\/session$/.test(req.path))
           connection.name = clientText(req.body?.deviceName, 128) || connection.name;
       });
     next();

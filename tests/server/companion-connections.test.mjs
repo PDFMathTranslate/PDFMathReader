@@ -224,3 +224,30 @@ test('a running translation keeps an idle connection present until the job compl
     await close();
   }
 });
+
+test('iPad identifies itself on the initial health connection', async () => {
+  const { request, routes, close } = await serve();
+  try {
+    const response = await request('/health', {
+      headers: { 'X-PDFMathReader-Device-Name': 'iPad' },
+    });
+    assert.equal(response.status, 200);
+    await finish(response);
+    assert.equal(routes.connections()[0].name, 'iPad');
+
+    const acquired = await request('/documents/document-1/session', {
+      method: 'POST',
+      headers: { 'X-PDFMathReader-Device-Name': 'iPad' },
+      body: JSON.stringify({
+        deviceID: 'ios-device-1',
+        deviceName: 'Custom name',
+        sessionID: 'session-1',
+      }),
+    });
+    assert.equal(acquired.status, 200);
+    await finish(acquired);
+    assert.equal(routes.connections()[0].name, 'iPad');
+  } finally {
+    await close();
+  }
+});
