@@ -19,6 +19,8 @@ const REVEAL_MAX_MS = 900;
 // The pointer must travel this far (px) before another reveal can start, so the scroll
 // itself (which slides new covers under a still pointer) cannot chain into more scrolls.
 const REVEAL_RETRIGGER_PX = 4;
+// Space (px) a revealed cover keeps from the gallery edge, so it has room to zoom.
+const REVEAL_MARGIN = 112;
 export function useRecentMagicZoom(gallery, active) {
   const magnifying = ref(false);
   // Pointer target and the smoothed position/amount that chase it. `amount` fades the
@@ -35,6 +37,7 @@ export function useRecentMagicZoom(gallery, active) {
   let boxes = [];
   let origin = 0;
   let scrollLeft = 0;
+  let viewWidth = 0;
   let measured = false;
   // What each item currently shows, so unchanged items are not rewritten.
   let applied = [];
@@ -49,6 +52,7 @@ export function useRecentMagicZoom(gallery, active) {
     }));
     origin = element.getBoundingClientRect().left + element.clientLeft;
     scrollLeft = element.scrollLeft;
+    viewWidth = element.clientWidth;
     applied = items.map(() => '');
     measured = true;
   }
@@ -66,7 +70,15 @@ export function useRecentMagicZoom(gallery, active) {
     const x = currentX - origin + scrollLeft;
     // Smoothstep so the fade starts and ends gently instead of at full speed.
     const fade = amount * amount * (3 - 2 * amount);
-    magicZoomLayout(boxes, x).forEach(({ scale, shift }, index) => {
+    const first = boxes[0];
+    const lastBox = boxes.at(-1);
+    const room = first
+      ? {
+          leftRoom: Math.max(0, first.center - first.width / 2 - scrollLeft),
+          rightRoom: Math.max(0, scrollLeft + viewWidth - lastBox.center - lastBox.width / 2),
+        }
+      : {};
+    magicZoomLayout(boxes, x, room).forEach(({ scale, shift }, index) => {
       const eased = 1 + (scale - 1) * fade;
       // Covers that are not scaled get a translate-only 3D transform, so they slide on
       // the compositor; only the few magnified covers are re-rasterised.
@@ -150,7 +162,7 @@ export function useRecentMagicZoom(gallery, active) {
       scrollLeft: element.scrollLeft,
       viewWidth: element.clientWidth,
       scrollWidth: element.scrollWidth,
-      margin: parseFloat(getComputedStyle(element).paddingLeft) || 0,
+      margin: REVEAL_MARGIN,
     });
   }
 

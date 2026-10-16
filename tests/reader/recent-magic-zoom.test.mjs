@@ -64,6 +64,23 @@ test('empty and single-item galleries are handled', () => {
   assert.ok(only.scale > 2.39 && Math.abs(only.shift) < 1e-9);
 });
 
+test('end covers grow into the row instead of past the gallery edge', () => {
+  const items = row(8);
+  const room = { leftRoom: 4, rightRoom: 4 };
+  const edges = (layout, index) => {
+    const { center, width } = items[index];
+    const half = (layout[index].scale * width) / 2;
+    return [center + layout[index].shift - half, center + layout[index].shift + half];
+  };
+  const first = magicZoomLayout(items, items[0].center, room);
+  assert.ok(edges(first, 0)[0] >= items[0].center - 70 - 4 - 1e-9);
+  const last = magicZoomLayout(items, items[7].center, room);
+  assert.ok(edges(last, 7)[1] <= items[7].center + 70 + 4 + 1e-9);
+  // Away from the ends the room does not matter.
+  const middle = items[4].center;
+  assert.deepEqual(magicZoomLayout(items, middle, room), magicZoomLayout(items, middle));
+});
+
 test('covers cut off at either edge scroll into view, with room for the zoom', () => {
   const view = { viewWidth: 800, scrollWidth: 2000, margin: 100 };
   // Cut off on the left: bring it back with the margin on its left.

@@ -392,12 +392,14 @@
 
 /* Experimental magic zoom: the gallery becomes a click-through overlay with headroom
    above the covers, so a magnified cover can rise over the Open PDF button and heading
-   instead of being clipped by the gallery's scroll container. The transform is driven
-   frame by frame from script (see useRecentMagicZoom), so it has no CSS transition. */
+   instead of being clipped by the gallery's scroll container. Sideways, the script keeps
+   end covers growing into the row, so the row stays aligned with the heading. The
+   transform is driven frame by frame from script (see useRecentMagicZoom), so it has no
+   CSS transition. */
 .recent-gallery.recent-magic {
   position: relative;
   z-index: 5;
-  padding: 296px 112px 14px;
+  padding: 296px 4px 14px;
   margin-top: -292px;
   pointer-events: none;
   /* Snapping would fight the scripted slide that reveals cut-off covers. */

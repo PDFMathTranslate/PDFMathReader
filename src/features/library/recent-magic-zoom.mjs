@@ -9,11 +9,16 @@ export const MAGIC_ZOOM_SPREAD = 0.7;
 // Covers this many pitches from the pointer are back at their raw size.
 export const MAGIC_ZOOM_REACH = 2;
 
+// `leftRoom` / `rightRoom` (optional) are the visible space beyond the first and last
+// covers. When an end cover is magnified, the anchor is pulled so it grows into the row
+// instead of past the gallery edge; the pull fades with that cover's scale.
 export function magicZoomLayout(items, pointerX, options = {}) {
   const {
     maxScale = MAGIC_ZOOM_MAX_SCALE,
     spread = MAGIC_ZOOM_SPREAD,
     reach = MAGIC_ZOOM_REACH,
+    leftRoom = Infinity,
+    rightRoom = Infinity,
   } = options;
   const sigma = spread * pitchOf(items);
   const cutoff = reach / spread;
@@ -32,7 +37,12 @@ export function magicZoomLayout(items, pointerX, options = {}) {
     grown += extra;
     return shift;
   });
-  const anchor = interpolate(items, fromLeft, pointerX);
+  let anchor = interpolate(items, fromLeft, pointerX);
+  if (items.length && maxScale > 1) {
+    const weight = (scale) => 1 - (1 - (scale - 1) / (maxScale - 1)) ** 2;
+    anchor -= weight(scales[0]) * Math.max(0, anchor - leftRoom);
+    anchor += weight(scales.at(-1)) * Math.max(0, grown - rightRoom - anchor);
+  }
   return items.map((_, index) => ({ scale: scales[index], shift: fromLeft[index] - anchor }));
 }
 
