@@ -277,7 +277,8 @@ export function createWindowController({
       performance: { peaks: new Map(), timer: null, samples: 0, hasDocument: !!document },
     });
     try {
-      await claimCompanionDocument?.(document, target, lockNotificationTarget || target);
+      if (document && !settingsOwner)
+        await claimCompanionDocument?.(document, target, lockNotificationTarget || target);
     } catch (error) {
       registry.windows.delete(target);
       target.destroy();

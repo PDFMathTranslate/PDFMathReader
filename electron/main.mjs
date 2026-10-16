@@ -299,6 +299,7 @@ else {
     }
   };
   const claimCompanionPath = async (path, target, notificationTarget = target) => {
+    if (typeof path !== 'string' || !path) return { available: false };
     let id = recentIDForPath(path);
     let prepared;
     if (!id && companion?.claimDesktopDocument && recents?.prepare) {
