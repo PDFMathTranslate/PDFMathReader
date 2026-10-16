@@ -121,6 +121,39 @@ export async function verifyNativeSettings(reader, windows) {
     'language row has balanced top and bottom spacing',
   );
   assert(interfaceSpacing.height <= 42, 'language row remains compact');
+  assert.deepEqual(
+    await evaluate(
+      settings,
+      `[...document.querySelectorAll('.app-icon-row .appearance-choice')].map(b=>[b.textContent.trim(),b.getAttribute('aria-pressed'),b.querySelector('img').naturalWidth])`,
+    ),
+    [
+      ['Default', 'true', 96],
+      ['Warm', 'false', 96],
+      ['Spring', 'false', 96],
+      ['Classic', 'false', 96],
+      ['Blueprint', 'false', 96],
+      ['Moonlight', 'false', 96],
+      ['Modern', 'false', 96],
+    ],
+    'app icon picker lists every icon with the default selected',
+  );
+  await evaluate(
+    settings,
+    `document.querySelectorAll('.app-icon-row .appearance-choice')[1].click()`,
+  );
+  await wait(
+    settings,
+    `(async()=>(await window.previewAppIcon.load()).selected==='warm'&&document.querySelectorAll('.app-icon-row .appearance-choice')[1].getAttribute('aria-pressed')==='true')()`,
+  );
+  await writeFile(
+    '/tmp/pdfmathreader-app-icon-settings.png',
+    (await settings.webContents.capturePage()).toPNG(),
+  );
+  await assert.rejects(
+    evaluate(settings, `window.previewAppIcon.select('missing')`),
+    /Invalid app icon/,
+  );
+  await evaluate(settings, `window.previewAppIcon.select('base')`);
   await evaluate(
     settings,
     `document.querySelector('[data-settings-category="translation"]').click()`,

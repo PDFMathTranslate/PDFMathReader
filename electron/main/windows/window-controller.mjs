@@ -1,6 +1,7 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createTabGroups } from './tab-groups.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
+import { activeAppIcon, appIconPath } from '../services/app-icon.mjs';
 import { detectEmails, detectLinks, linkLabel } from '../../../shared/reader/link-detection.mjs';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { randomBytes } from 'node:crypto';
@@ -194,7 +195,7 @@ export function createWindowController({
             modal: false,
           }
         : {}),
-      icon: applicationPath('electron', 'AppIcon.png'),
+      icon: appIconPath(activeAppIcon(getPreferences()?.load().appIcon)),
       ...chromeOptions(),
       show: false,
       webPreferences: {

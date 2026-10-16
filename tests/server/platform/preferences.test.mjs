@@ -39,6 +39,7 @@ const DEFAULT_PREFERENCES = {
   interfaceStyle: 'default',
   appearance: 'system',
   accentColor: 'system',
+  appIcon: 'base',
   reduceMotion: false,
   reduceTransparency: false,
   reducePadding: false,

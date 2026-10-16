@@ -100,6 +100,14 @@ contextBridge.exposeInMainWorld(
 contextBridge.exposeInMainWorld('previewTestMode', process.argv.includes('--preview-test-mode'));
 
 contextBridge.exposeInMainWorld(
+  'previewAppIcon',
+  Object.freeze({
+    load: () => ipcRenderer.invoke('appIcon:load'),
+    select: (id) => ipcRenderer.invoke('appIcon:select', id),
+  }),
+);
+
+contextBridge.exposeInMainWorld(
   'previewAnnotations',
   Object.freeze({
     search: (provider, text) => ipcRenderer.invoke('previewAnnotations:search', { provider, text }),

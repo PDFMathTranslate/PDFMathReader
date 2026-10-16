@@ -1,4 +1,5 @@
 import { SUPPORTED_UI_LANGUAGES } from '../../../shared/i18n/ui-language.mjs';
+import { DEFAULT_APP_ICON, isValidAppIcon } from '../../../shared/app-icons.mjs';
 import { cloneGlossaries, validGlossaries } from '../../../shared/translation/glossary.mjs';
 import {
   cloneCustomServices,
@@ -58,6 +59,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   interfaceStyle: 'default',
   appearance: 'system',
   accentColor: 'system',
+  appIcon: DEFAULT_APP_ICON,
   reduceMotion: false,
   reduceTransparency: false,
   reducePadding: false,
@@ -291,6 +293,7 @@ const VALIDATORS = {
   interfaceStyle: (value) => ['default', 'liquid-glass'].includes(value),
   appearance: (value) => ['light', 'dark', 'system'].includes(value),
   accentColor: isValidAccentColor,
+  appIcon: isValidAppIcon,
   reduceMotion: (value) => typeof value === 'boolean',
   reduceTransparency: (value) => typeof value === 'boolean',
   reducePadding: (value) => typeof value === 'boolean',
@@ -343,6 +346,7 @@ const VALIDATION_MESSAGES = {
   interfaceStyle: 'Invalid interface style',
   appearance: 'Invalid appearance',
   accentColor: 'Invalid accent color',
+  appIcon: 'Invalid app icon',
   reduceMotion: 'Invalid reduce motion preference',
   reduceTransparency: 'Invalid reduce transparency preference',
   reducePadding: 'Invalid reduce padding preference',

@@ -1,10 +1,35 @@
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { APP_ICON_IDS, DEFAULT_APP_ICON } from '../../shared/app-icons.mjs';
 
-const source = fileURLToPath(new URL('../../doc/icon.png', import.meta.url));
 const iconset = fileURLToPath(new URL('../AppIcon.iconset', import.meta.url));
+const runtimeIcons = fileURLToPath(new URL('../app-icons', import.meta.url));
 mkdirSync(iconset, { recursive: true });
+mkdirSync(runtimeIcons, { recursive: true });
+const sips = (...args) => execFileSync('/usr/bin/sips', args, { stdio: 'ignore' });
+// Normalize optical size once, then derive every platform/scale from that master.
+const normalized = APP_ICON_IDS.flatMap((id) => [
+  fileURLToPath(new URL(`../../doc/icons/app-${id}.png`, import.meta.url)),
+  `${iconset}/square_${id}.png`,
+]);
+execFileSync(
+  '/usr/bin/swift',
+  [
+    '-module-cache-path',
+    fileURLToPath(new URL('../../.cache/swift-modules', import.meta.url)),
+    fileURLToPath(new URL('./normalize-icon.swift', import.meta.url)),
+    ...normalized,
+  ],
+  { stdio: 'inherit' },
+);
+// Runtime copies back the Settings icon picker and the Dock or window icon.
+for (const id of APP_ICON_IDS) {
+  const square = `${iconset}/square_${id}.png`;
+  sips('-z', '512', '512', square, '--out', `${runtimeIcons}/${id}.png`);
+  if (id !== DEFAULT_APP_ICON) rmSync(square);
+}
+const source = `${iconset}/square_${DEFAULT_APP_ICON}.png`;
 for (const size of [16, 32, 128, 256, 512]) {
   for (const scale of [1, 2]) {
     const pixels = String(size * scale);
@@ -82,4 +107,7 @@ copyFileSync(
   `${iconset}/icon_512x512.png`,
   fileURLToPath(new URL('../AppIcon.png', import.meta.url)),
 );
-console.log('Generated macOS ICNS, Windows ICO, and runtime PNG from doc/icon.png');
+rmSync(source);
+console.log(
+  `Generated macOS ICNS, Windows ICO, and runtime PNGs from doc/icons (default: ${DEFAULT_APP_ICON})`,
+);

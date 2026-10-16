@@ -92,6 +92,9 @@ export async function stageApplication({
   await mkdir(join(stage, 'server'), { recursive: true });
   await cp(join(root, 'dist'), join(stage, 'dist'), { recursive: true });
   await cp(join(root, 'electron/AppIcon.png'), join(stage, 'electron/AppIcon.png'));
+  await cp(join(root, 'electron/app-icons'), join(stage, 'electron/app-icons'), {
+    recursive: true,
+  });
   await cp(join(root, 'electron/preload.cjs'), join(stage, 'electron/preload.cjs'));
   await cp(join(root, 'electron/main.mjs'), join(stage, 'electron/main.mjs'));
   for (const directory of runtimeDirectories)

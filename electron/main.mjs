@@ -15,7 +15,6 @@ import { join } from 'node:path';
 import { mkdtempSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
-import { fileURLToPath } from 'node:url';
 import { tmpdir, release } from 'node:os';
 import { startBackendService } from './main/backend/backend-service.mjs';
 import { createHaptics } from './platform/macos/haptics.mjs';
@@ -34,6 +33,7 @@ import { createChatGPTSubscription } from './main/services/chatgpt-subscription.
 import { createDocumentSession } from './main/services/document-session.mjs';
 import { createRecents } from './main/services/recents.mjs';
 import { createReaderPreferences } from './main/services/preferences.mjs';
+import { createAppIcon } from './main/services/app-icon.mjs';
 import {
   configureEPUBSupport,
   readSystemPDF,
@@ -265,8 +265,6 @@ else {
       void registerWindowsPDF({ packaged: app.isPackaged, smoke: !!smoke || ciLaunchCheck }).catch(
         (error) => console.error('Windows PDF menu registration failed:', error.message),
       );
-      if (process.platform === 'darwin' && !app.isPackaged && !smoke)
-        app.dock.setIcon(fileURLToPath(new URL('../doc/icon.png', import.meta.url)));
 
       const credentialOptions = {
         path: join(app.getPath('userData'), 'openai-key.enc'),
@@ -319,6 +317,20 @@ else {
         },
       });
       preferences = readerPreferences;
+      const appIcon = createAppIcon({ app, preferences, windows: () => windows.keys() });
+      if (!smoke) {
+        appIcon.apply();
+        // Covers both the system switching modes and the in-app Light/Dark/Auto choice.
+        nativeTheme.on('updated', appIcon.apply);
+      }
+      handleMeasuredIPC('appIcon:load', (event) => {
+        registry.trustedWindow(event);
+        return appIcon.options();
+      });
+      handleMeasuredIPC('appIcon:select', (event, id) => {
+        registry.trustedWindow(event);
+        return appIcon.select(id);
+      });
       configureEPUBSupport({
         enabled: () => preferences.load().epubEnabled !== false,
         convert: createEPUBConverter({ directory: join(app.getPath('userData'), 'epub-documents') })
@@ -578,6 +590,7 @@ else {
         );
       }
       nativeTheme.themeSource = preferences.load().appearance;
+      if (!smoke) appIcon.apply();
       menuController.rebuild();
 
       let externalLaunch = false;

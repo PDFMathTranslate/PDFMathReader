@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import InterfaceStyleSettings from './InterfaceStyleSettings.vue';
 const interfaceStyle = defineModel('interfaceStyle', { default: 'default' });
 import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
@@ -66,6 +66,33 @@ const uiLanguages = computed(() => [
   { value: 'system', label: t('appearance.systemLanguage') },
   ...UI_LANGUAGE_OPTIONS,
 ]);
+// The app icon is a desktop-wide choice owned by the main process, not a window preference.
+const appIconLabels = {
+  base: 'appearance.iconDefault',
+  warm: 'appearance.iconWarm',
+  spring: 'appearance.iconSpring',
+  hist: 'appearance.iconClassic',
+  tech: 'appearance.iconBlueprint',
+  moon: 'appearance.iconMoon',
+  modern: 'appearance.iconModern',
+};
+const appIcons = ref([]);
+const appIcon = ref('');
+onMounted(async () => {
+  const state = await globalThis.previewAppIcon?.load().catch(() => null);
+  if (!state) return;
+  appIcons.value = state.options;
+  appIcon.value = state.selected;
+});
+async function changeAppIcon(id) {
+  const previous = appIcon.value;
+  appIcon.value = id;
+  try {
+    appIcon.value = (await globalThis.previewAppIcon.select(id)).selected;
+  } catch {
+    appIcon.value = previous;
+  }
+}
 watch(
   () => props.uiLanguage,
   (code) => setUILanguage(code),
@@ -97,6 +124,22 @@ function changeUILanguage(code) {
               ><i class="preview-window"><i></i><b></b><b></b></i
               ><i class="preview-panel"><b></b><b></b><b></b></i></span
             ><span>{{ t(label) }}</span>
+          </button>
+        </div>
+      </div>
+      <div v-if="appIcons.length" class="appearance-row app-icon-row">
+        <span>{{ t('appearance.appIcon') }}</span>
+        <div class="appearance-options" role="group" :aria-label="t('appearance.appIcon')">
+          <button
+            v-for="{ id, preview } in appIcons"
+            :key="id"
+            class="appearance-choice"
+            :aria-pressed="appIcon === id"
+            @click="changeAppIcon(id)"
+          >
+            <img class="app-icon-preview" :src="preview" alt="" draggable="false" /><span>{{
+              t(appIconLabels[id])
+            }}</span>
           </button>
         </div>
       </div>
@@ -205,5 +248,32 @@ function changeUILanguage(code) {
 .settings-section-body {
   display: grid;
   gap: 10px;
+}
+.app-icon-row .appearance-options {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+.app-icon-preview {
+  display: block;
+  /* Previews are cropped to the icon body; round to the macOS icon corner (22.5%). */
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  margin: 5px;
+}
+.appearance-choice[aria-pressed='true'] .app-icon-preview {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Like System Settings, focus rings hug the icon rather than the whole tile. */
+.app-icon-row .appearance-choice:focus-visible {
+  outline: none;
+}
+.app-icon-row .appearance-choice:focus-visible .app-icon-preview {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+}
+.app-icon-row .appearance-choice[aria-pressed='true']:focus-visible .app-icon-preview {
+  outline-color: var(--accent);
 }
 </style>
