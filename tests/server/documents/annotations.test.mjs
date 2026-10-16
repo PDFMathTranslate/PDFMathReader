@@ -10,6 +10,7 @@ import {
   stripManagedAnnotations,
   validateAnnotation,
 } from '../../../electron/main/services/annotations.mjs';
+import { createQuickLinkStore } from '../../../electron/main/services/quick-links.mjs';
 
 const createdAt = '2026-10-04T00:00:00.000Z';
 const rect = (x, y, width, height) => ({ x, y, width, height });
@@ -225,6 +226,60 @@ test('opening an unannotated or link-only PDF preserves its exact bytes', async 
       prepared = await importPDFAnnotations(bytes, { prepare: true });
     assert.deepEqual(prepared.bytes, bytes);
     assert.deepEqual(prepared.annotations, []);
+  }
+});
+
+test('transfer metadata imports validated quick links from document info and the hidden fallback', async () => {
+  const { importPDFAnnotations } =
+    await import('../../../electron/main/services/annotation-import.mjs');
+  const link = {
+    id: 'transfer-link',
+    origin: { page: 1, blockId: 'source', box: rect(20, 30, 60, 20) },
+    result: { page: 2, blockId: 'result', box: rect(40, 50, 80, 24) },
+  };
+  for (const fallback of [false, true]) {
+    const pdf = await PDFDocument.create();
+    pdf.addPage([300, 400]);
+    pdf.addPage([300, 400]);
+    const value = JSON.stringify({
+      version: 1,
+      annotations: [],
+      quickLinks: [link],
+      readingState: { page: 2 },
+    });
+    if (fallback) {
+      const annotation = pdf.context.obj({
+        Type: 'Annot',
+        Subtype: 'Stamp',
+        Rect: pdf.context.obj([0, 0, 1, 1]),
+        F: 2,
+      });
+      annotation.set(
+        PDFName.of('PDFMathReaderTransferMetadata'),
+        PDFHexString.fromText('PDFMathReaderTransferMetadata:v1'),
+      );
+      annotation.set(PDFName.of('PDFMathReaderTransfer'), PDFHexString.fromText(value));
+      pdf.getPage(0).node.set(PDFName.Annots, pdf.context.obj([pdf.context.register(annotation)]));
+    } else {
+      const info = pdf.context.obj({});
+      info.set(PDFName.of('PDFMathReaderTransfer'), PDFHexString.fromText(value));
+      pdf.context.trailerInfo.Info = pdf.context.register(info);
+    }
+    const imported = await importPDFAnnotations(await pdf.save());
+    assert.deepEqual(imported.transferQuickLinks, [link]);
+  }
+});
+
+test('quick-link sidecar existence distinguishes missing data from an authoritative empty list', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'quick-link-store-'));
+  try {
+    const store = createQuickLinkStore(root);
+    assert.equal(await store.has('document'), false);
+    await store.save('document', []);
+    assert.equal(await store.has('document'), true);
+    assert.deepEqual(await store.load('document'), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

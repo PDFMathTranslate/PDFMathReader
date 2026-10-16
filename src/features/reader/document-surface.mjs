@@ -2,6 +2,7 @@ import { ref, watch } from 'vue';
 import { chaptersAtPage } from './sidebar-outline.mjs';
 import { useAnnotationPersistence } from '../annotations/useAnnotationPersistence.mjs';
 import { useReaderFeedback } from './useReaderFeedback.mjs';
+import { validateQuickLinks } from '../../../shared/quick-links.mjs';
 import { useDocumentSearch } from '../search/useDocumentSearch.mjs';
 import { useRecentDocuments } from '../library/useRecentDocuments.mjs';
 
@@ -122,6 +123,23 @@ export function createReaderDocumentSurface({
     flushAnnotations,
   } = useAnnotationPersistence((...args) => feedback.notifyCopy(...args));
   const readChapters = ref(new Set());
+  async function transferQuickLinks() {
+    if (Array.isArray(session.transferQuickLinks)) return session.transferQuickLinks;
+    try {
+      const info = (await session.pdf?.getMetadata())?.info,
+        custom = info?.Custom,
+        value =
+          custom instanceof Map
+            ? custom.get('PDFMathReaderTransfer')
+            : custom?.PDFMathReaderTransfer;
+      if (typeof value !== 'string') return undefined;
+      const payload = JSON.parse(value);
+      if (payload?.version !== 1) return undefined;
+      return validateQuickLinks(payload.quickLinks);
+    } catch {
+      return undefined;
+    }
+  }
   watch(
     annotationKey,
     (key) => {
@@ -139,9 +157,27 @@ export function createReaderDocumentSurface({
     quickLinks.value = [];
     if (!key) return;
     try {
-      const stored = window.previewQuickLinks
-        ? await window.previewQuickLinks.load(key)
-        : JSON.parse(localStorage.getItem('quick-links:' + key) || '[]');
+      const localKey = 'quick-links:' + key,
+        store = window.previewQuickLinks,
+        hasLocal = store?.has
+          ? await store.has(key)
+          : store
+            ? true
+            : localStorage.getItem(localKey) !== null;
+      let stored;
+      if (hasLocal)
+        stored = store ? await store.load(key) : JSON.parse(localStorage.getItem(localKey) || '[]');
+      else {
+        const transferred = await transferQuickLinks();
+        stored = Array.isArray(transferred) ? transferred : [];
+        if (Array.isArray(transferred))
+          try {
+            if (store) await store.save(key, transferred);
+            else localStorage.setItem(localKey, JSON.stringify(transferred));
+          } catch {
+            feedback.notifyCopy('快捷链接保存失败');
+          }
+      }
       if (key === annotationKey.value) quickLinks.value = Array.isArray(stored) ? stored : [];
     } catch {
       feedback.notifyCopy('快捷链接读取失败');

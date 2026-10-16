@@ -104,6 +104,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.remoteKernelEnabled,
       bindings.preferences.remoteKernelUrl,
       bindings.preferences.remoteKernelService,
+      bindings.preferences.companionDiscoveryEnabled,
       bindings.layoutVisible,
       bindings.emphasizeTopicSentences,
       bindings.emphasizeInformation,

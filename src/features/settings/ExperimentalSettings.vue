@@ -7,6 +7,7 @@ import DocumentLanguageSettings from './DocumentLanguageSettings.vue';
 import TopicSentenceSettings from './TopicSentenceSettings.vue';
 import ParagraphContinuationSettings from './ParagraphContinuationSettings.vue';
 import RemoteKernelSettings from './RemoteKernelSettings.vue';
+import CompanionDiscoverySettings from './CompanionDiscoverySettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import TocGenerationSettings from './TocGenerationSettings.vue';
 import TranslationCompareSettings from './TranslationCompareSettings.vue';
@@ -53,6 +54,7 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
     <section class="settings-section" aria-labelledby="settings-experimental-advanced">
       <h3 id="settings-experimental-advanced">{{ t('settings.advancedCategory') }}</h3>
       <div class="settings-section-body">
+        <CompanionDiscoverySettings v-if="languagePreferences" />
         <RemoteKernelSettings v-if="languagePreferences" />
       </div>
     </section>

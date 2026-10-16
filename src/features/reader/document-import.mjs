@@ -141,6 +141,7 @@ export function createDocumentImport({
     try {
       await scheduleAfterPaint(() => {}, { afterCommit: nextTick });
       if (token !== session.epoch) return;
+      session.transferQuickLinks = undefined;
       session.bytes = new Uint8Array(await file.arrayBuffer());
       let imported = { annotations: [], nativeRefs: [] };
       if (window.previewAnnotations?.prepare) {
@@ -148,6 +149,7 @@ export function createDocumentImport({
         session.bytes = imported.bytes;
       } else if (window.previewAnnotations?.clean)
         session.bytes = await window.previewAnnotations.clean(session.bytes);
+      session.transferQuickLinks = imported.transferQuickLinks;
       activity.performanceRecorder.mark('fileRead');
       if (token !== session.epoch) return;
       await release;
@@ -195,7 +197,14 @@ export function createDocumentImport({
           session.currentRecentId = result.recentId;
           saved = result.view;
           remembered = result.translation;
-        } catch {
+        } catch (error) {
+          if (error?.companionLock || error?.code === 'DOCUMENT_LOCKED') {
+            if (token === session.epoch) {
+              await actions.documentLifecycle.closeDocumentNow().catch(() => {});
+              feedback.error.value = error.message || 'This document is open on another device.';
+            }
+            return;
+          }
           if (token === session.epoch) feedback.error.value = t('error.saveRecentHistory');
         }
       // Any cached kernel and language version opens as is; the usual reading-scope

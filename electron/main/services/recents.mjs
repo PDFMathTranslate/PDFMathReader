@@ -239,6 +239,7 @@ export async function createRecents(path) {
     );
   } catch {}
   let writes = Promise.resolve();
+  const prepared = new Set();
   function persist() {
     const data = JSON.stringify(entries);
     writes = writes
@@ -253,6 +254,30 @@ export async function createRecents(path) {
   return {
     list: () => entries.map(listedEntry),
     path: (id) => entries.find((e) => e.id === id)?.path,
+    prepare(file) {
+      if (typeof file !== 'string' || !file) throw Error('Invalid recent document path.');
+      const existing = entries.find((entry) => entry.path === file);
+      if (existing) return { id: existing.id, created: false };
+      const id = randomUUID();
+      entries = normalizeEntries([{ id, path: file, pinned: false }, ...entries]);
+      prepared.add(id);
+      return { id, created: true };
+    },
+    async persistPrepared(id) {
+      if (!prepared.has(id)) return this.list();
+      await persist();
+      return this.list();
+    },
+    discardPrepared(id) {
+      if (!prepared.delete(id)) return this.list();
+      entries = entries.filter((entry) => entry.id !== id);
+      return this.list();
+    },
+    async discardPreparedAndPersist(id) {
+      const result = this.discardPrepared(id);
+      await persist();
+      return result;
+    },
     async remember(file, thumbnail) {
       const contentHash = await fileHash(file);
       // Backfill old path-only history while the original file is accessible.
@@ -283,6 +308,7 @@ export async function createRecents(path) {
         entry,
         ...entries.filter((e) => e.path !== file && e.id !== entry.id),
       ]);
+      prepared.delete(entry.id);
       await persist();
       return this.list();
     },

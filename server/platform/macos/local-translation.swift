@@ -2,13 +2,18 @@ import Foundation
 import Translation
 
 private struct TranslationRequest: Decodable {
-    let text: String
-    let source: String
-    let target: String
+    let action: String?
+    let text: String?
+    let source: String?
+    let target: String?
 }
 
 private struct TranslationResponse: Encodable {
     let translation: String
+}
+
+private struct SupportedLanguagesResponse: Encodable {
+    let languages: [String]
 }
 
 private struct ErrorResponse: Encodable {
@@ -70,16 +75,28 @@ private func languageIdentifier(_ value: String) -> String {
 }
 
 @available(macOS 26.0, *)
+private func supportedLanguages() async -> [String] {
+    let availability = LanguageAvailability()
+    return await availability.supportedLanguages.map(\.minimalIdentifier).sorted()
+}
+
+@available(macOS 26.0, *)
 private func translate(_ request: TranslationRequest) async throws -> String {
-    let source = languageIdentifier(request.source)
-    let target = languageIdentifier(request.target)
+    guard let text = request.text, let sourceValue = request.source,
+        let targetValue = request.target
+    else {
+        throw LocalTranslationError.invalidRequest(
+            "text, source and target are required for translation.")
+    }
+    let source = languageIdentifier(sourceValue)
+    let target = languageIdentifier(targetValue)
     guard !source.isEmpty, !target.isEmpty else {
         throw LocalTranslationError.invalidRequest(
             "source and target must be non-empty BCP-47 language identifiers.")
     }
 
     if source.caseInsensitiveCompare(target) == .orderedSame {
-        return request.text
+        return text
     }
 
     let sourceLanguage = Locale.Language(identifier: source)
@@ -90,7 +107,7 @@ private func translate(_ request: TranslationRequest) async throws -> String {
     }
 
     do {
-        let response = try await session.translate(request.text)
+        let response = try await session.translate(text)
         return response.targetText
     } catch {
         let detail = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -122,8 +139,13 @@ private struct LocalTranslationMain {
             do {
                 let request = try JSONDecoder().decode(
                     TranslationRequest.self, from: Data(line.utf8))
-                let translation = try await translate(request)
-                writeJSON(TranslationResponse(translation: translation))
+                if request.action == "capabilities" {
+                    writeJSON(
+                        SupportedLanguagesResponse(languages: await supportedLanguages()))
+                } else {
+                    let translation = try await translate(request)
+                    writeJSON(TranslationResponse(translation: translation))
+                }
             } catch let error as LocalTranslationError {
                 writeJSON(
                     ErrorResponse(

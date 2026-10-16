@@ -11,6 +11,10 @@ export function registerDocumentIPC({
   validateSystemPDF,
   documentIdentity,
   focusDocumentWindow,
+  claimCompanionPath,
+  releaseCompanionDocument,
+  companionOwnership,
+  flushCompanionPersistence,
 }) {
   handle('documents:next', async (event) => {
     const target = trustedWindow(event);
@@ -22,6 +26,7 @@ export function registerDocumentIPC({
       return document;
     }
     try {
+      await claimCompanionPath?.(document, target);
       const loaded = await readSystemPDF(document);
       const source = { ...documentSource(document), bytes: Buffer.from(loaded.bytes) };
       state.unkeyedAnnotationSource = source;
@@ -30,6 +35,7 @@ export function registerDocumentIPC({
       state.tickets.set(ticket, document);
       return { ...loaded, ticket };
     } catch {
+      await releaseCompanionDocument?.(target, companionOwnership?.(target)).catch(() => {});
       state.documentIdentity = null;
       state.performance.hasDocument = false;
       return {
@@ -55,6 +61,7 @@ export function registerDocumentIPC({
   handle('documents:closed', async (event) => {
     const target = trustedWindow(event);
     const state = registry.stateFor(target);
+    const ownership = companionOwnership?.(target);
     const hadDocument = !!(
       state.documentIdentity ||
       state.performance.hasDocument ||
@@ -77,6 +84,8 @@ export function registerDocumentIPC({
             candidate.documents.length),
       );
     await documentSession.close(target.id);
+    await flushCompanionPersistence?.();
+    await releaseCompanionDocument?.(target, ownership);
     // Let the renderer finish releasing its document before closing its window.
     return { closeWindow };
   });
@@ -94,6 +103,7 @@ export function registerDocumentIPC({
       focusDocumentWindow(existing);
       return false;
     }
+    await claimCompanionPath?.(path, target);
     registry.stateFor(target).documentIdentity = identity;
     return true;
   });

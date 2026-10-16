@@ -1,4 +1,5 @@
 import { validateAnnotation, embedAnnotationDocument } from './annotations.mjs';
+import { validateQuickLinks } from '../../../shared/quick-links.mjs';
 import {
   PDFDocument,
   PDFDict,
@@ -8,8 +9,50 @@ import {
   PDFArray,
   PDFNumber,
 } from 'pdf-lib';
+const transferKey = 'PDFMathReaderTransfer';
+const transferMarkerKey = 'PDFMathReaderTransferMetadata';
+const transferMarker = 'PDFMathReaderTransferMetadata:v1';
+
 function text(dict, key) {
-  return dict.lookupMaybe(PDFName.of(key), PDFString, PDFHexString)?.decodeText() || '';
+  return dict?.lookupMaybe(PDFName.of(key), PDFString, PDFHexString)?.decodeText() || '';
+}
+
+function transferText(pdf) {
+  const info = pdf.context.lookupMaybe(pdf.context.trailerInfo.Info, PDFDict),
+    infoValue = info?.lookupMaybe(PDFName.of(transferKey), PDFString, PDFHexString);
+  if (infoValue) return infoValue.decodeText();
+  const values = [];
+  for (const page of pdf.getPages()) {
+    const array = page.node.Annots();
+    if (!array) continue;
+    for (let i = 0; i < array.size(); i++) {
+      const dict = array.lookupMaybe(i, PDFDict);
+      if (text(dict, transferMarkerKey) !== transferMarker) continue;
+      const value = text(dict, transferKey);
+      if (value) values.push(value);
+    }
+  }
+  return values.length && values.every((value) => value === values[0]) ? values[0] : undefined;
+}
+
+function transferQuickLinks(pdf) {
+  const value = transferText(pdf);
+  if (value === undefined || Buffer.byteLength(value, 'utf8') > 4 * 1024 * 1024) return undefined;
+  try {
+    const payload = JSON.parse(value);
+    if (payload?.version !== 1) return undefined;
+    const links = validateQuickLinks(payload.quickLinks);
+    if (
+      links.some(
+        (link) => link.origin.page > pdf.getPageCount() || link.result.page > pdf.getPageCount(),
+      )
+    ) {
+      return undefined;
+    }
+    return links;
+  } catch {
+    return undefined;
+  }
 }
 function numbers(dict, key) {
   const array = dict.lookupMaybe(PDFName.of(key), PDFArray);
@@ -61,7 +104,8 @@ function bounds(points, g) {
 export async function importPDFAnnotations(bytes, { prepare = false } = {}) {
   const pdf = await PDFDocument.load(bytes, { updateMetadata: false }),
     annotations = [],
-    nativeRefs = [];
+    nativeRefs = [],
+    quickLinks = transferQuickLinks(pdf);
   for (const [index, page] of pdf.getPages().entries()) {
     const array = page.node.Annots();
     if (!array) continue;
@@ -145,6 +189,7 @@ export async function importPDFAnnotations(bytes, { prepare = false } = {}) {
   return {
     annotations,
     nativeRefs,
+    ...(quickLinks === undefined ? {} : { transferQuickLinks: quickLinks }),
     ...(prepare
       ? { bytes: new Uint8Array(await embedAnnotationDocument(pdf, [], nativeRefs, bytes)) }
       : {}),

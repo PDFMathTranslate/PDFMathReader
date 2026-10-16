@@ -22,8 +22,13 @@ export async function startBackendService(options = {}) {
     keyStatus: _keyStatus,
     providerFetch: _providerFetch,
     chatGPTSubscription,
+    getCompanionTranslationSettings: _getCompanionTranslationSettings,
     ...serverOptions
   } = options;
+  const getCompanionTranslationSettings =
+    typeof _getCompanionTranslationSettings === 'function'
+      ? _getCompanionTranslationSettings
+      : undefined;
   const state = credentials || initialCredentials || {};
   const initial = {
     key:
@@ -52,6 +57,7 @@ export async function startBackendService(options = {}) {
   let closing = false;
   let crashReported = false;
   let activeKey = initial.key;
+  let companionPort;
   const subscriptionRequests = new Map();
   let startupResolve, startupReject;
   let startupTimer;
@@ -114,9 +120,33 @@ export async function startBackendService(options = {}) {
       })();
       return;
     }
+    if (value.type === 'companion-translation-settings-request') {
+      void (async () => {
+        try {
+          if (!getCompanionTranslationSettings)
+            throw Error('Companion translation settings are unavailable.');
+          const settings = await getCompanionTranslationSettings();
+          if (!closing)
+            child.postMessage({
+              type: 'companion-translation-settings-result',
+              id: value.id,
+              settings,
+            });
+        } catch (error) {
+          if (!closing)
+            child.postMessage({
+              type: 'companion-translation-settings-result',
+              id: value.id,
+              error: error?.message || 'Companion translation settings failed.',
+            });
+        }
+      })();
+      return;
+    }
     if (value.type === 'ready') {
       ready = true;
       clearTimeout(startupTimer);
+      companionPort = value.companionPort;
       startupResolve(value.origin);
       return;
     }
@@ -133,6 +163,14 @@ export async function startBackendService(options = {}) {
       if (waiter) {
         pending.delete(value.id);
         waiter.resolve();
+      }
+      return;
+    }
+    if (value.type === 'companion-connections') {
+      const waiter = pending.get(value.id);
+      if (waiter) {
+        pending.delete(value.id);
+        waiter.resolve(value.connections);
       }
       return;
     }
@@ -191,6 +229,7 @@ export async function startBackendService(options = {}) {
         options: serverOptions,
         credentials: initial,
         subscriptionAvailable: !!chatGPTSubscription,
+        companionTranslationSettingsAvailable: !!getCompanionTranslationSettings,
       });
     } catch (error) {
       failStartup(error);
@@ -244,5 +283,13 @@ export async function startBackendService(options = {}) {
       status: status && typeof status === 'object' ? { ...status } : undefined,
     });
   };
-  return { origin, close, setCredentials, processId: child.pid };
+  return {
+    origin,
+    companionPort,
+    close,
+    setCredentials,
+    companionConnections: () =>
+      closing || crashReported ? Promise.resolve([]) : request('companion-connections'),
+    processId: child.pid,
+  };
 }

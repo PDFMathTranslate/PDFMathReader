@@ -3,6 +3,7 @@ import { uiLanguage, t } from '../../i18n/index.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { AppButton, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
 import KernelErrorPopover from '../settings/KernelErrorPopover.vue';
+import CompanionConnections from './CompanionConnections.vue';
 import { defineAsyncComponent } from 'vue';
 const WindowsMenu = defineAsyncComponent(() => import('../../platform/windows/WindowsMenu.vue'));
 defineProps([
@@ -236,7 +237,7 @@ const settings = defineModel('settings');
           data-symbol="magnifyingglass"
           style="--symbol: url('/symbols/magnifyingglass.png')"
         ></span></AppButton
-      ><AppButton
+      ><CompanionConnections /><AppButton
         class="icon-button"
         data-popover-trigger
         :aria-label="t('toolbar.translationSettings')"

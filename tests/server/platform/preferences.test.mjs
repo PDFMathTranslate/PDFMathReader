@@ -74,6 +74,7 @@ const DEFAULT_PREFERENCES = {
   remoteKernelEnabled: false,
   remoteKernelUrl: '',
   remoteKernelService: '',
+  companionDiscoveryEnabled: false,
   layoutVisible: false,
   defaultPageCropEnabled: false,
   defaultPageCropX: 0,

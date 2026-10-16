@@ -20,6 +20,7 @@ export function createPreferenceState() {
   const remoteKernelEnabled = ref(false);
   const remoteKernelUrl = ref('');
   const remoteKernelService = ref('');
+  const companionDiscoveryEnabled = ref(false);
   const layoutVisible = ref(false);
   const reuseTranslations = ref(localStorage.getItem('reuseTranslations') === 'true');
   const interactionMode = ref('reading');
@@ -112,6 +113,7 @@ export function createPreferenceState() {
     remoteKernelEnabled,
     remoteKernelUrl,
     remoteKernelService,
+    companionDiscoveryEnabled,
     layoutVisible,
     reuseTranslations,
     interactionMode,

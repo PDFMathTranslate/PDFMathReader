@@ -12,6 +12,7 @@ export function createDocumentSessionState() {
   const pdf = undefined;
   const pendingPDFTask = undefined;
   const bytes = undefined;
+  const transferQuickLinks = undefined;
   const documentId = undefined;
   const epoch = 0;
   const receivingDocuments = false;
@@ -32,6 +33,7 @@ export function createDocumentSessionState() {
     pdf,
     pendingPDFTask,
     bytes,
+    transferQuickLinks,
     documentId,
     epoch,
     receivingDocuments,

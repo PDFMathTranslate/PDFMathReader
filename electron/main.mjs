@@ -9,7 +9,7 @@ import {
   shell,
   systemPreferences,
 } from 'electron';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { mkdtempSync } from 'node:fs';
@@ -34,6 +34,7 @@ import { createDocumentSession } from './main/services/document-session.mjs';
 import { createRecents } from './main/services/recents.mjs';
 import { createReaderPreferences } from './main/services/preferences.mjs';
 import { createAppIcon } from './main/services/app-icon.mjs';
+import { createCompanionServer } from './main/services/companion-server.mjs';
 import {
   configureEPUBSupport,
   readSystemPDF,
@@ -141,9 +142,11 @@ else {
   let preferences;
   let recents;
   let annotations;
+  let quickLinks;
   let documentSession;
   let appUpdates;
   let backendOptions;
+  let companion;
   let documentsReady = false;
   let quitting = false;
   let backendFailureHandled = false;
@@ -213,6 +216,157 @@ else {
     operationMetrics: developerOperationMetrics,
     loadServiceCredentials: () => serviceCredentialStore?.load?.() || {},
   });
+  const desktopSessionID = () => `desktop-${randomUUID()}`;
+  const desktopClaimsInFlight = new Map();
+  const recentIDForPath = (path) => {
+    const entries = recents?.list?.();
+    return typeof path === 'string' && Array.isArray(entries)
+      ? entries.find((entry) => recents.path(entry.id) === path)?.id
+      : undefined;
+  };
+  const notifyCompanionLock = (target, error) => {
+    if (!target || target.isDestroyed?.()) return;
+    const device =
+      typeof error?.deviceName === 'string' && error.deviceName.trim()
+        ? error.deviceName.trim()
+        : 'another device';
+    try {
+      target.webContents.send(
+        'reader:action',
+        'companion-lock',
+        `This document is open on ${device}. Close it there before opening it here.`,
+      );
+    } catch {}
+  };
+  const companionLockError = (message, deviceName) => {
+    const error = Error(message || 'This document is open on another device.');
+    error.code = 'DOCUMENT_LOCKED';
+    if (deviceName) error.deviceName = deviceName;
+    return error;
+  };
+  const claimCompanionID = async (id, target, notificationTarget = target) => {
+    if (!id || !companion?.claimDesktopDocument) return { available: false };
+    const state = registry.stateFor(target);
+    if (state?.companionDocumentId === id && state.companionSessionID)
+      return { claimed: true, resumed: true, sessionID: state.companionSessionID };
+    for (const [other, otherState] of windows) {
+      if (
+        other !== target &&
+        !other.isDestroyed?.() &&
+        otherState?.companionDocumentId === id &&
+        otherState.companionSessionID
+      ) {
+        const error = companionLockError(
+          'This document is already open in another desktop window.',
+          'This Mac',
+        );
+        notifyCompanionLock(notificationTarget, error);
+        throw error;
+      }
+    }
+    const existing = desktopClaimsInFlight.get(id);
+    if (existing) {
+      if (existing.target === target) return existing.promise;
+      const error = companionLockError(
+        'This document is already opening in another desktop window.',
+        'This Mac',
+      );
+      notifyCompanionLock(notificationTarget, error);
+      throw error;
+    }
+    const sessionID = desktopSessionID();
+    const promise = (async () => {
+      try {
+        const result = await companion.claimDesktopDocument(id, sessionID, 'This Mac');
+        if (result?.available === false) return result;
+        const current = registry.stateFor(target);
+        if (current) {
+          current.companionDocumentId = id;
+          current.companionSessionID = sessionID;
+        }
+        return result;
+      } catch (error) {
+        error.companionLock = true;
+        notifyCompanionLock(notificationTarget, error);
+        throw error;
+      }
+    })();
+    desktopClaimsInFlight.set(id, { target, promise });
+    try {
+      return await promise;
+    } finally {
+      if (desktopClaimsInFlight.get(id)?.promise === promise) desktopClaimsInFlight.delete(id);
+    }
+  };
+  const claimCompanionPath = async (path, target, notificationTarget = target) => {
+    let id = recentIDForPath(path);
+    let prepared;
+    if (!id && companion?.claimDesktopDocument && recents?.prepare) {
+      prepared = recents.prepare(path);
+      id = prepared.id;
+    }
+    if (!id) return { available: false };
+    try {
+      if (prepared?.created) await recents.persistPrepared?.(id);
+      const result = await claimCompanionID(id, target, notificationTarget);
+      if (result?.available === false && prepared?.created)
+        await recents.discardPreparedAndPersist?.(id);
+      return result;
+    } catch (error) {
+      if (prepared?.created) await recents.discardPreparedAndPersist?.(id).catch(() => {});
+      throw error;
+    }
+  };
+  const companionOwnership = (target) => {
+    const state = registry.stateFor(target);
+    return state?.companionDocumentId && state?.companionSessionID
+      ? { id: state.companionDocumentId, sessionID: state.companionSessionID }
+      : undefined;
+  };
+  const releaseCompanionDocument = async (target, expected) => {
+    const state = registry.stateFor(target);
+    const ownership = companionOwnership(target);
+    if (expected && (ownership?.id !== expected.id || ownership?.sessionID !== expected.sessionID))
+      return { available: false, stale: true };
+    const id = ownership?.id;
+    const sessionID = ownership?.sessionID;
+    if (!id || !sessionID || !companion?.releaseDesktopDocument) return { available: false };
+    const result = await companion.releaseDesktopDocument(id, sessionID);
+    if (
+      result?.available !== false &&
+      state?.companionDocumentId === id &&
+      state.companionSessionID === sessionID
+    ) {
+      delete state.companionDocumentId;
+      delete state.companionSessionID;
+    }
+    return result;
+  };
+  const desktopClaims = () => {
+    const claims = new Map();
+    for (const [target, state] of windows) {
+      if (state?.settingsOwner || target.isDestroyed?.()) continue;
+      const queuedPath = state.documents?.find((document) => typeof document === 'string');
+      const active =
+        state.companionDocumentId ||
+        state.documentIdentity ||
+        state.performance?.hasDocument ||
+        queuedPath;
+      if (!active) continue;
+      const path = state.unkeyedAnnotationSource?.path || queuedPath;
+      const id = state.companionDocumentId || recentIDForPath(path);
+      if (id) {
+        const sessionID =
+          state.companionDocumentId === id && state.companionSessionID
+            ? state.companionSessionID
+            : desktopSessionID();
+        state.companionDocumentId ||= id;
+        state.companionSessionID ||= sessionID;
+        claims.set(id, { id, sessionID, deviceName: 'This Mac' });
+      }
+    }
+    return [...claims.values()];
+  };
   let menuController;
   const windowController = createWindowController({
     app,
@@ -240,6 +394,11 @@ else {
     getRebuildMenu: () => menuController?.rebuild || (() => {}),
     getUpdateMenu: () => menuController?.updateMenu || (() => {}),
     updateAppearance,
+    claimCompanionDocument: claimCompanionPath,
+    releaseCompanionDocument,
+    companionOwnership,
+    flushCompanionPersistence: () =>
+      Promise.all([annotations?.flush?.(), quickLinks?.flush?.(), recents?.flush?.()]),
   });
   const deliverPendingFiles = async () => {
     while (pendingFiles.length) await windowController.openExternalDocument(pendingFiles.shift());
@@ -375,6 +534,10 @@ else {
         smoke,
         diagnostics: !!smoke,
         credentials: { getKey: credentialStore.getKey, status: credentialStore.status },
+        getCompanionTranslationSettings: () => ({
+          preferences: preferences.load(),
+          credentials: serviceCredentialStore.load(),
+        }),
         chatGPTSubscription,
         onCrash: handleBackendFailure,
         ...([
@@ -402,6 +565,7 @@ else {
               state.backend.setCredentials(credentialStore.getKey(), status),
             ),
           );
+          await companion?.setCredentials(credentialStore.getKey(), status);
           return status;
         },
         clear: async () => {
@@ -411,10 +575,36 @@ else {
               state.backend.setCredentials(credentialStore.getKey(), status),
             ),
           );
+          await companion?.setCredentials(credentialStore.getKey(), status);
           return status;
         },
       };
-      const quickLinks = createQuickLinkStore(join(app.getPath('userData'), 'quick-links'));
+      if (!smoke && !ciLaunchCheck) {
+        companion = await createCompanionServer({
+          path: join(app.getPath('userData'), 'companion.json'),
+          startBackend: startBackendService,
+          backendOptions: () => backendOptions,
+          documents: {
+            recentsPath: join(app.getPath('userData'), 'recent-documents.json'),
+            annotationsRoot: join(app.getPath('userData'), 'annotations'),
+            quickLinksRoot: join(app.getPath('userData'), 'quick-links'),
+            statePath: join(app.getPath('userData'), 'companion-documents.json'),
+          },
+          dialog,
+          discoveryEnabled: preferences.load().companionDiscoveryEnabled,
+          getDesktopClaims: desktopClaims,
+          label: (text) =>
+            menuLabel(
+              text,
+              resolveUILanguage(
+                preferences.load().uiLanguage || 'en',
+                app.getPreferredSystemLanguages()[0] || app.getLocale(),
+              ),
+            ),
+        });
+        void companion.launch();
+      }
+      quickLinks = createQuickLinkStore(join(app.getPath('userData'), 'quick-links'));
 
       menuController = createApplicationMenu({
         app,
@@ -429,6 +619,7 @@ else {
         tabs: windowController.tabs,
         newTab: windowController.newTab,
         handleBackendFailure,
+        shareKernels: companion ? (target) => companion.showDialog(target) : undefined,
         hideNativeMenuBar: windowController.hideNativeMenuBar,
         resolveUILanguage,
         menuLabel,
@@ -453,6 +644,9 @@ else {
         token,
         smoke,
         rebuildMenu: menuController.rebuild,
+        claimCompanionDocument: claimCompanionID,
+        notifyCompanionLock,
+        releaseCompanionDocument,
       });
       registerAnnotationIPC({
         handle: handleMeasuredIPC,
@@ -509,6 +703,10 @@ else {
         registry,
         releaseLink,
       });
+      handleMeasuredIPC('companion:connections', (event) => {
+        registry.trustedWindow(event);
+        return companion?.connections() || [];
+      });
       registerPreferencesIPC({
         handle: handleMeasuredIPC,
         trustedWindow: registry.trustedWindow,
@@ -517,6 +715,7 @@ else {
         appUpdates,
         backendOptions,
         token,
+        setCompanionDiscoveryEnabled: (enabled) => companion?.setDiscoveryEnabled(enabled),
         setWindowVibrancy: windowController.setWindowVibrancy,
         updateAppearance,
         rebuildMenu: menuController.rebuild,
@@ -551,6 +750,13 @@ else {
         validateSystemPDF,
         documentIdentity: windowController.documentIdentity,
         focusDocumentWindow: windowController.focusDocumentWindow,
+        claimCompanionDocument: claimCompanionID,
+        claimCompanionPath: claimCompanionPath,
+        notifyCompanionLock,
+        releaseCompanionDocument,
+        companionOwnership,
+        flushCompanionPersistence: () =>
+          Promise.all([annotations?.flush?.(), quickLinks?.flush?.(), recents?.flush?.()]),
       });
       registerWindowIPC({
         handle: handleMeasuredIPC,
@@ -678,22 +884,42 @@ else {
     event.preventDefault();
     quitting = true;
     windowController.setRuntime({ quitting: true });
-    void Promise.allSettled(
-      [...windows.keys()].map(windowController.saveWindowReadingView),
-    ).finally(() =>
-      Promise.allSettled(
-        [...windows.values()]
-          .map((state) => state.backend.close())
-          .concat([
-            ...closingBackends,
-            subscriptionClosing,
-            preferences?.flush(),
-            serviceCredentialStore?.flush(),
-            recents?.flush(),
-            documentSession?.saveOnQuit(),
-            annotations?.flush(),
-          ]),
-      ).finally(() => app.quit()),
-    );
+    const quittingWindows = [...windows.keys()];
+    void Promise.all(
+      quittingWindows.map((target) => windowController.saveWindowReadingView(target)),
+    )
+      .then(() => Promise.all([documentSession?.saveOnQuit(), annotations?.flush()]))
+      .then(() => Promise.all([quickLinks?.flush?.(), recents?.flush?.()]))
+      .then(() => Promise.all(quittingWindows.map((target) => releaseCompanionDocument(target))))
+      .then(() =>
+        Promise.all(
+          [...windows.values()]
+            .map((state) => state.backend.close())
+            .concat([
+              ...closingBackends,
+              companion?.close(),
+              subscriptionClosing,
+              preferences?.flush(),
+              serviceCredentialStore?.flush(),
+            ]),
+        ),
+      )
+      .then(() => app.quit())
+      .catch((error) => {
+        quitting = false;
+        windowController.setRuntime({ quitting: false });
+        for (const target of quittingWindows) {
+          if (!target || target.isDestroyed?.()) continue;
+          try {
+            target.show();
+            target.focus();
+            target.webContents.send(
+              'reader:action',
+              'companion-save-failed',
+              error?.message || 'Could not save this document. It remains open here; try again.',
+            );
+          } catch {}
+        }
+      });
   });
 }

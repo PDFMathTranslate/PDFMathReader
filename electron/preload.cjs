@@ -297,6 +297,7 @@ contextBridge.exposeInMainWorld(
   'previewQuickLinks',
   Object.freeze({
     load: (key) => ipcRenderer.invoke('quickLinks:load', key),
+    has: (key) => ipcRenderer.invoke('quickLinks:has', key),
     save: (key, links) => ipcRenderer.invoke('quickLinks:save', { key, links }),
   }),
 );
@@ -367,4 +368,9 @@ contextBridge.exposeInMainWorld(
   Object.freeze({
     choose: () => ipcRenderer.invoke('preferences:choosePromptFile'),
   }),
+);
+
+contextBridge.exposeInMainWorld(
+  'previewCompanion',
+  Object.freeze({ connections: () => ipcRenderer.invoke('companion:connections') }),
 );

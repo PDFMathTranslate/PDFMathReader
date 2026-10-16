@@ -6,6 +6,8 @@ let credentialKey = '';
 let credentialStatus = { configured: false, keySource: 'none' };
 const subscriptionPending = new Map();
 let subscriptionRequestId = 0;
+const companionTranslationSettingsPending = new Map();
+let companionTranslationSettingsRequestId = 0;
 
 function subscriptionRequest(action, body, signal, options = {}) {
   signal?.throwIfAborted();
@@ -29,6 +31,19 @@ function subscriptionRequest(action, body, signal, options = {}) {
     subscriptionPending.set(id, finish);
     signal?.addEventListener('abort', cancel, { once: true });
     send({ type: 'subscription-request', id, action, body, clientId: options.clientId });
+  });
+}
+
+function companionTranslationSettingsRequest() {
+  const id = ++companionTranslationSettingsRequestId;
+  return new Promise((resolve, reject) => {
+    companionTranslationSettingsPending.set(id, { resolve, reject });
+    try {
+      send({ type: 'companion-translation-settings-request', id });
+    } catch (error) {
+      companionTranslationSettingsPending.delete(id);
+      reject(error);
+    }
   });
 }
 
@@ -106,6 +121,8 @@ async function start(message) {
   serverOptions.providerFetch = makeProviderFetch(smoke);
   serverOptions.getApiKey = () => credentialKey;
   serverOptions.keyStatus = () => ({ ...credentialStatus });
+  if (message.companionTranslationSettingsAvailable)
+    serverOptions.getCompanionTranslationSettings = companionTranslationSettingsRequest;
   if (message.subscriptionAvailable)
     serverOptions.chatGPTSubscription = {
       status: () => subscriptionRequest('status'),
@@ -121,7 +138,7 @@ async function start(message) {
           : String(message),
       });
   backend = await startServer(serverOptions);
-  send({ type: 'ready', origin: backend.origin });
+  send({ type: 'ready', origin: backend.origin, companionPort: backend.companionPort });
 }
 
 async function close(message) {
@@ -145,6 +162,14 @@ async function handle(message) {
     send({ type: 'credentials', id: value.id, status: { ...credentialStatus } });
     return;
   }
+  if (value.type === 'companion-connections') {
+    send({
+      type: 'companion-connections',
+      id: value.id,
+      connections: backend?.companionConnections() || [],
+    });
+    return;
+  }
   if (value.type === 'close') return close(value);
 }
 
@@ -154,6 +179,14 @@ if (parentPort) {
     const value = messageData(event) || {};
     if (value.type === 'subscription-result') {
       subscriptionPending.get(value.id)?.(value.error ? Error(value.error) : null, value.result);
+      return;
+    }
+    if (value.type === 'companion-translation-settings-result') {
+      const waiter = companionTranslationSettingsPending.get(value.id);
+      if (!waiter) return;
+      companionTranslationSettingsPending.delete(value.id);
+      if (value.error) waiter.reject(Error(value.error));
+      else waiter.resolve(value.settings);
       return;
     }
     queue = queue

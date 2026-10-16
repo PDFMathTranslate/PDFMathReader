@@ -38,6 +38,10 @@ export function createWindowController({
   getRebuildMenu,
   getUpdateMenu,
   updateAppearance,
+  claimCompanionDocument,
+  releaseCompanionDocument,
+  companionOwnership,
+  flushCompanionPersistence,
 }) {
   const tabs = createTabGroups({
     registry,
@@ -83,9 +87,7 @@ export function createWindowController({
   };
   const saveWindowReadingView = async (target) => {
     if (!target || target.isDestroyed()) return;
-    try {
-      await target.webContents.executeJavaScript('window.previewSaveReadingView?.()');
-    } catch {}
+    await target.webContents.executeJavaScript('window.previewSaveReadingView?.()');
   };
   const documentIdentity = async (path) => {
     const canonical = await realpath(path);
@@ -121,7 +123,18 @@ export function createWindowController({
     const operation = (async () => {
       const candidates = [preferredWindow, registry.focusedWindow(), ...registry.windows.keys()];
       const target = candidates.find(registry.isBlankStartPage);
-      if (!target) return createWindow(document, restoreView, null, 'general', activate, identity);
+      if (!target)
+        return createWindow(
+          document,
+          restoreView,
+          null,
+          'general',
+          activate,
+          identity,
+          undefined,
+          preferredWindow || registry.focusedWindow(),
+        );
+      await claimCompanionDocument?.(document, target, target);
       const state = registry.stateFor(target);
       state.documentIdentity = identity;
       state.restoreView = restoreView;
@@ -154,6 +167,7 @@ export function createWindowController({
     activate = true,
     knownIdentity,
     placement,
+    lockNotificationTarget,
   ) => {
     const identity =
       typeof document === 'string' ? (knownIdentity ?? (await documentIdentity(document))) : null;
@@ -262,6 +276,14 @@ export function createWindowController({
         : preferences.load(),
       performance: { peaks: new Map(), timer: null, samples: 0, hasDocument: !!document },
     });
+    try {
+      await claimCompanionDocument?.(document, target, lockNotificationTarget || target);
+    } catch (error) {
+      registry.windows.delete(target);
+      target.destroy();
+      await backend.close().catch(() => {});
+      throw error;
+    }
     if (!settingsOwner) tabs.adopt(target, tabAnchor);
     const fullscreenChanged = () => {
       if (!target || target.isDestroyed()) return;
@@ -508,15 +530,39 @@ export function createWindowController({
       if (closing || getRuntime().quitting) return;
       event.preventDefault();
       closing = true;
-      registry.stateFor(target).closing = true;
+      const state = registry.stateFor(target);
+      const ownership = companionOwnership?.(target);
+      state.closing = true;
       // A native close responds immediately; keep the renderer alive only long
       // enough to save its reading position and persist the document session.
       // A closing active tab stays up until its neighbor has painted over it.
       if (!tabs.beforeClose(target)) target.hide();
       void saveWindowReadingView(target)
-        .then(() => getDocumentSession()?.close(target.id))
-        .finally(() => {
-          if (target && !target.isDestroyed()) target.close();
+        .then(async () => {
+          await getDocumentSession()?.close(target.id);
+          await flushCompanionPersistence?.();
+          await releaseCompanionDocument?.(target, ownership);
+          return true;
+        })
+        .catch((error) => {
+          closing = false;
+          state.closing = false;
+          if (target && !target.isDestroyed()) {
+            target.show();
+            target.focus();
+            try {
+              target.webContents.send(
+                'reader:action',
+                'companion-save-failed',
+                error?.message ||
+                  'Could not save this document. It remains open here; try closing again.',
+              );
+            } catch {}
+          }
+          return false;
+        })
+        .then((closed) => {
+          if (closed && target && !target.isDestroyed()) target.close();
         });
     });
     target.on('closed', () => {

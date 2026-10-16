@@ -102,6 +102,10 @@ export function registerRecentsIPC({
   token,
   smoke,
   rebuildMenu,
+  claimCompanionDocument,
+  releaseCompanionDocument,
+  companionOwnership,
+  flushCompanionPersistence,
 }) {
   for (const action of ['remember', 'setPinned', 'remove', 'clear']) {
     const mutate = recents[action].bind(recents);
@@ -236,11 +240,13 @@ export function registerRecentsIPC({
           focusDocumentWindow(existing);
           return null;
         }
+        await claimCompanionDocument?.(value, target);
         registry.stateFor(target).documentIdentity = identity;
         let document;
         try {
           document = await readSystemPDF(path);
         } catch (error) {
+          await releaseCompanionDocument?.(target, companionOwnership?.(target)).catch(() => {});
           registry.stateFor(target).documentIdentity = null;
           throw error;
         }
@@ -265,10 +271,13 @@ export function registerRecentsIPC({
         return recents.setTranslationStatus(value?.id, value?.status);
       if (action === 'setTranslation') return recents.setTranslation(value?.id, value?.choice);
       const state = registry.stateFor(target);
+      const ownership = companionOwnership?.(target);
       const path = value?.ticket ? state.tickets.get(value.ticket) : value?.path;
       if (!path) {
         state.documentIdentity = null;
         await documentSession.close(target.id);
+        await flushCompanionPersistence?.();
+        await releaseCompanionDocument?.(target, ownership);
         if (!state.unkeyedAnnotationSource?.preserveWithoutPath) {
           state.unkeyedAnnotationSource = null;
           state.annotationSources.clear();
@@ -285,7 +294,29 @@ export function registerRecentsIPC({
       await validateSystemPDF(path);
       if (value?.ticket) state.tickets.delete(value.ticket);
       if (!smoke) app.addRecentDocument(path);
-      const entries = await recents.remember(path, value?.thumbnail);
+      const prepared = recents.prepare?.(path);
+      const companionID =
+        prepared?.id || recents.list().find((entry) => recents.path(entry.id) === path)?.id;
+      let claimed;
+      try {
+        if (prepared?.created) await recents.persistPrepared?.(companionID);
+        claimed = await claimCompanionDocument?.(companionID, target);
+        if (claimed?.available === false && prepared?.created)
+          await recents.discardPreparedAndPersist?.(companionID);
+      } catch (error) {
+        if (prepared?.created)
+          await recents.discardPreparedAndPersist?.(companionID).catch(() => {});
+        throw error;
+      }
+      let entries;
+      try {
+        entries = await recents.remember(path, value?.thumbnail);
+      } catch (error) {
+        await releaseCompanionDocument?.(target, companionOwnership?.(target)).catch(() => {});
+        if (prepared?.created)
+          await recents.discardPreparedAndPersist?.(companionID).catch(() => {});
+        throw error;
+      }
       const first = entries.find((item) => recents.path(item.id) === path);
       const previous = state.unkeyedAnnotationSource;
       // An EPUB's converted PDF exists only in memory and the app cache; keep it.
@@ -296,7 +327,12 @@ export function registerRecentsIPC({
       state.unkeyedAnnotationSource = source;
       const restored = state.restoreView;
       state.restoreView = null;
-      await documentSession.open(target.id, { path, view: restored || first?.view });
+      try {
+        await documentSession.open(target.id, { path, view: restored || first?.view });
+      } catch (error) {
+        await releaseCompanionDocument?.(target, companionOwnership?.(target)).catch(() => {});
+        throw error;
+      }
       return {
         entries,
         recentId: first?.id ?? null,

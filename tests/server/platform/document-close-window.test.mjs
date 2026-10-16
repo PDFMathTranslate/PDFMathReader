@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerDocumentIPC } from '../../../electron/main/ipc/document-ipc.mjs';
-function fixture(otherStates) {
+function fixture(otherStates, options = {}) {
   const handlers = new Map(),
     current = { id: 1, isDestroyed: () => false };
   const state = {
@@ -21,7 +21,13 @@ function fixture(otherStates) {
     handle: (name, fn) => handlers.set(name, fn),
     trustedWindow: () => current,
     registry: { windows, stateFor: () => state },
-    documentSession: { close: async (id) => closed.push(id) },
+    documentSession: {
+      close: async (id) => {
+        closed.push(id);
+        options.order?.push('session');
+      },
+    },
+    releaseCompanionDocument: async () => options.order?.push('release'),
   });
   return { close: () => handlers.get('documents:closed')({}), closed, state };
 }
@@ -43,4 +49,11 @@ test('blank, settings, closing and destroyed windows do not remove the last docu
   ]);
   assert.deepEqual(await f.close(), { closeWindow: false });
   assert.deepEqual(f.closed, [1]);
+});
+
+test('desktop ownership releases after the persisted document session closes', async () => {
+  const order = [];
+  const f = fixture([], { order });
+  await f.close();
+  assert.deepEqual(order, ['session', 'release']);
 });

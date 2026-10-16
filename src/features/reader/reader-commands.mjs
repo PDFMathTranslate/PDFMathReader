@@ -25,6 +25,24 @@ export function createReaderCommands({
 }) {
   initializeShortcutState();
   function readerAction(action, selectionText) {
+    if (action === 'companion-lock') {
+      actions.rootActions.notifyCopy(
+        typeof selectionText === 'string' && selectionText.trim()
+          ? selectionText
+          : 'This document is open on another device.',
+        5000,
+      );
+      return;
+    }
+    if (action === 'companion-save-failed') {
+      actions.rootActions.notifyCopy(
+        typeof selectionText === 'string' && selectionText.trim()
+          ? selectionText
+          : 'Could not save this document. It remains open here; try closing again.',
+        6000,
+      );
+      return;
+    }
     if (action === 'chat-selection') {
       const text = typeof selectionText === 'string' ? selectionText.trim() : '';
       if (!text) return;

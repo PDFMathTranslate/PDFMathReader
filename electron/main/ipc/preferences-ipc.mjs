@@ -52,6 +52,7 @@ const SETTINGS_PREFERENCES = [
   'remoteKernelEnabled',
   'remoteKernelUrl',
   'remoteKernelService',
+  'companionDiscoveryEnabled',
   'layoutVisible',
   'emphasizeTopicSentences',
   'emphasizeInformation',
@@ -95,6 +96,7 @@ export function registerPreferencesIPC({
   rebuildMenu,
   updateMenu,
   setWindowMode,
+  setCompanionDiscoveryEnabled,
 }) {
   const shortcutSnapshot = () => {
     const overrides = preferences.load().shortcutBindings || {};
@@ -165,6 +167,8 @@ export function registerPreferencesIPC({
         syncShortcuts();
       if (previous.autoCheckUpdates !== next.autoCheckUpdates)
         appUpdates.setAutomatic(next.autoCheckUpdates);
+      if (previous.companionDiscoveryEnabled !== next.companionDiscoveryEnabled)
+        await setCompanionDiscoveryEnabled?.(next.companionDiscoveryEnabled);
       if (previous.cacheLimitMB !== next.cacheLimitMB) {
         backendOptions.cacheLimitMB = next.cacheLimitMB;
         await Promise.all(

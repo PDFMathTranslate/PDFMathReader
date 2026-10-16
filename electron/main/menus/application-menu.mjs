@@ -19,6 +19,7 @@ export function createApplicationMenu({
   tabs,
   newTab,
   handleBackendFailure,
+  shareKernels,
   hideNativeMenuBar,
   resolveUILanguage,
   menuLabel,
@@ -546,6 +547,18 @@ export function createApplicationMenu({
           ),
           command('Choose Language…', accelerator('L'), 'language', 'translation-language'),
           command('Choose Kernel…', accelerator('K'), 'kernel', 'translation-kernel'),
+          ...(shareKernels
+            ? [
+                {
+                  id: 'translation-share-kernels',
+                  label: 'Share Kernels with iPhone and iPad…',
+                  click: (_item, target) => {
+                    const window = target || focusedWindow();
+                    void shareKernels(window && !window.isDestroyed?.() ? window : undefined);
+                  },
+                },
+              ]
+            : []),
           { type: 'separator' },
           {
             ...command('Compare…', undefined, 'compare-translations', 'translation-compare'),

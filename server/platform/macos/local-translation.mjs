@@ -121,6 +121,7 @@ export function createLocalTranslation({
   const active = new Set();
   let closed = false;
   let helperPromise;
+  let supportedLanguagesPromise;
   let availabilityError;
   let closePromise;
   const version = typeof systemVersion === 'string' ? systemVersion : detectSystemVersion(platform);
@@ -219,6 +220,99 @@ export function createLocalTranslation({
         childTermination(child).finally(() => terminations.delete(child)),
       );
     return terminations.get(child);
+  }
+
+  function querySupportedLanguages(executablePath) {
+    return new Promise((resolveLanguages, rejectLanguages) => {
+      let settled = false;
+      let output = '';
+      let stderr = '';
+      let timeout;
+      let child;
+      const finish = (error, value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        if (error) rejectLanguages(error);
+        else resolveLanguages(value);
+      };
+      const parseLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        let result;
+        try {
+          result = JSON.parse(trimmed);
+        } catch {
+          finish(Error('Apple on-device translation returned invalid JSON.'));
+          void terminate(child);
+          return;
+        }
+        if (Array.isArray(result.languages)) {
+          finish(null, result.languages);
+          void terminate(child);
+          return;
+        }
+        const detail = typeof result.error === 'string' ? result.error : result.error?.message;
+        finish(Error(detail || 'Apple on-device translation capabilities failed.'));
+        void terminate(child);
+      };
+      try {
+        child = spawnImpl(executablePath, [], {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          windowsHide: true,
+          detached: process.platform !== 'win32',
+        });
+      } catch (error) {
+        finish(error);
+        return;
+      }
+      active.add(child);
+      try {
+        onProcess?.(child, executablePath);
+      } catch {}
+      child.once?.('error', (error) => {
+        finish(Error(`Apple on-device translation helper failed to start: ${error.message}`));
+        void terminate(child);
+      });
+      child.once?.('close', (code, signalCode) => {
+        active.delete(child);
+        if (settled) return;
+        if (output.trim()) parseLine(output);
+        if (settled) return;
+        const detail = stderr.trim();
+        finish(
+          Error(
+            detail ||
+              `Apple on-device translation helper exited before returning capabilities${code === null && signalCode ? ` (${signalCode})` : code === null ? '' : ` (code ${code})`}.`,
+          ),
+        );
+      });
+      child.stdout?.on('data', (chunk) => {
+        output += String(chunk);
+        const lines = output.split(/\r?\n/);
+        output = lines.pop() || '';
+        for (const line of lines) parseLine(line);
+      });
+      child.stderr?.on('data', (chunk) => {
+        stderr += String(chunk);
+      });
+      const limit = Number(timeoutMs);
+      if (Number.isFinite(limit) && limit > 0)
+        timeout = setTimeout(() => {
+          finish(
+            Error(
+              `Apple on-device translation capabilities timed out after ${Math.ceil(limit / 1000)} seconds.`,
+            ),
+          );
+          void terminate(child);
+        }, limit);
+      try {
+        child.stdin?.end(JSON.stringify({ action: 'capabilities' }) + '\n');
+      } catch (error) {
+        finish(error);
+        void terminate(child);
+      }
+    });
   }
 
   async function translate({ text, source: sourceLanguage, target: targetLanguage, signal } = {}) {
@@ -349,6 +443,29 @@ export function createLocalTranslation({
     }
   }
 
+  async function supportedLanguages() {
+    assertSupported();
+    if (closed) return [];
+    if (!supportedLanguagesPromise) {
+      supportedLanguagesPromise = helper()
+        .then((executablePath) => querySupportedLanguages(executablePath))
+        .then((languages) =>
+          [
+            ...new Set(
+              (Array.isArray(languages) ? languages : [])
+                .map((value) => normalizeLanguage(value))
+                .filter(Boolean),
+            ),
+          ].sort(),
+        )
+        .catch((error) => {
+          supportedLanguagesPromise = undefined;
+          throw error;
+        });
+    }
+    return supportedLanguagesPromise;
+  }
+
   async function close() {
     if (closePromise) return closePromise;
     closed = true;
@@ -361,6 +478,7 @@ export function createLocalTranslation({
 
   return {
     available,
+    supportedLanguages,
     translate: async (request) => {
       try {
         return await translate(request);

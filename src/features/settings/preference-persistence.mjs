@@ -53,6 +53,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.remoteKernelUrl.value = saved.remoteKernelUrl;
     if (typeof saved.remoteKernelService === 'string')
       preferences.remoteKernelService.value = saved.remoteKernelService;
+    if (typeof saved.companionDiscoveryEnabled === 'boolean')
+      preferences.companionDiscoveryEnabled.value = saved.companionDiscoveryEnabled;
     for (const [key, target] of Object.entries({
       defaultPageCropEnabled: preferences.defaultPageCropEnabled,
       defaultPageCropX: preferences.defaultPageCropX,
@@ -211,6 +213,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         remoteKernelEnabled: preferences.remoteKernelEnabled.value,
         remoteKernelUrl: preferences.remoteKernelUrl.value,
         remoteKernelService: preferences.remoteKernelService.value,
+        companionDiscoveryEnabled: preferences.companionDiscoveryEnabled.value,
         layoutVisible: preferences.layoutVisible.value,
         kernelAdvancedOptions: cloneKernelAdvancedOptions(preferences.kernelAdvancedOptions.value),
         translationServices: cloneTranslationServices(preferences.translationServices.value),

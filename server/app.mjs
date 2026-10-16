@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDocumentCache } from './documents/document-cache.mjs';
 import { createDocumentStore, isDocumentId, MAX_DOCUMENT_BYTES } from './documents/documents.mjs';
+import { createCompanionDocumentStore } from './documents/companion-document-store.mjs';
 import { createLayoutExtraction } from './documents/layout-extraction.mjs';
 import { extractTextWithPositionsAsync } from './documents/pdf-extractor.mjs';
 import { createPerformanceTracker } from './diagnostics/performance.mjs';
@@ -45,6 +46,7 @@ import {
 } from './http/diagnostic-routes.mjs';
 import { registerDocumentRoutes } from './http/document-routes.mjs';
 import { registerKernelRoutes } from './http/kernel-routes.mjs';
+import { registerCompanionRoutes } from './http/companion-routes.mjs';
 import { registerTranslationRoutes } from './http/translation-routes.mjs';
 import { registerFormulaOcrRoutes } from './http/formula-ocr-routes.mjs';
 import { registerProviderModelRoutes } from './http/provider-model-routes.mjs';
@@ -70,6 +72,10 @@ export async function startServer({
   execImpl,
   getApiKey = () => process.env.OPENAI_API_KEY,
   keyStatus = () => ({ keySource: process.env.OPENAI_API_KEY ? 'environment' : 'none' }),
+  getCompanionTranslationSettings,
+  // { port, token, host }: also serve the companion kernel API for iPhone and
+  // iPad on the local network. Only the dedicated companion backend sets this.
+  companion,
 } = {}) {
   const app = express();
   const developerDiagnostics = createDeveloperDiagnostics({
@@ -139,6 +145,7 @@ export async function startServer({
     cacheDirectory: join(cacheDir, 'text'),
     appVersion,
     getApiKey,
+    getCompanionTranslationSettings,
     sessionId,
     developerMockCompletion,
   });
@@ -294,16 +301,86 @@ export async function startServer({
     listener.on('error', reject);
   });
   origin = `http://127.0.0.1:${server.address().port}`;
+  let companionServer;
+  let companionRoutes;
+  let companionDocuments;
+  if (companion?.token) {
+    const companionApp = express();
+    companionApp.disable('x-powered-by');
+    try {
+      if (companion.documents)
+        companionDocuments = await createCompanionDocumentStore({
+          ...companion.documents,
+          maxDocumentBytes: MAX_DOCUMENT_BYTES,
+        });
+      if (companion.desktopClaims !== undefined) {
+        if (!Array.isArray(companion.desktopClaims))
+          throw Error('Invalid companion desktop claims.');
+        if (companion.desktopClaims.length && !companionDocuments)
+          throw Error('Companion desktop claims require document storage.');
+        for (const claim of companion.desktopClaims) {
+          if (!claim || typeof claim !== 'object') throw Error('Invalid companion desktop claim.');
+          await companionDocuments?.claimDesktop(
+            claim.id,
+            claim.sessionID,
+            claim.deviceName || 'This Mac',
+          );
+        }
+      }
+      companionRoutes = registerCompanionRoutes(companionApp, {
+        token: companion.token,
+        engines,
+        providerRuntime,
+        pageLimiter,
+        proxyJobs,
+        origin: () => origin,
+        appVersion,
+        maxDocumentBytes: MAX_DOCUMENT_BYTES,
+        computer: companion.computer,
+        documents: companionDocuments,
+      });
+      companionApp.use((_req, res) => res.status(404).json({ error: 'Not found' }));
+      const listenCompanion = (host) =>
+        new Promise((accept, reject) => {
+          const listener = companionApp.listen(companion.port ?? 8891, host);
+          listener.once('listening', () => accept(listener));
+          listener.once('error', reject);
+        });
+      const host = companion.host || '::';
+      try {
+        companionServer = await listenCompanion(host);
+      } catch (error) {
+        if (host !== '::' || !['EAFNOSUPPORT', 'EADDRNOTAVAIL', 'EINVAL'].includes(error?.code))
+          throw error;
+        companionServer = await listenCompanion('0.0.0.0');
+      }
+    } catch (error) {
+      if (companionServer) await new Promise((resolve) => companionServer.close(resolve));
+      companionRoutes?.cancelAll();
+      server.closeAllConnections();
+      await companionDocuments?.flush?.();
+      await engines.close();
+      await new Promise((r) => server.close(r));
+      await vite?.close();
+      await cacheManager.close();
+      throw error;
+    }
+  }
   const cacheReady = cacheManager.sweep();
   cacheReady.catch(() => {});
   let closed = false;
   return {
     origin,
+    companionPort: companionServer?.address().port,
+    companionConnections: () => companionRoutes?.connections() || [],
     ready: cacheReady,
     documentStats: documents.stats,
     close: async () => {
       if (closed) return;
       closed = true;
+      if (companionServer) await new Promise((resolve) => companionServer.close(resolve));
+      companionRoutes?.cancelAll();
+      await companionDocuments?.flush?.();
       for (const entry of layoutEntries.values()) layoutExtraction.cleanup(entry);
       layoutEntries.clear();
       documents.clear();
