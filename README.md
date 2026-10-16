@@ -30,13 +30,13 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 | Date       | Feature                                                                                                                                                                                  | Contributor                        |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-17 | [continue translations in service mode while windows are minimized](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b)                   | [@reycn](https://github.com/reycn) |
 | 2026-10-16 | [share kernels with remote devices and show connected clients](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)                        | [@reycn](https://github.com/reycn) |
 | 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)                    | [@reycn](https://github.com/reycn) |
 | 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                                          | [@reycn](https://github.com/reycn) |
 | 2026-10-14 | [choose separate local fonts for CJK characters in original and translated documents](https://github.com/PDFMathTranslate/PDFMathReader/commit/1c13247863cec538d15c04a93dd3af99efe3efa3) | [@reycn](https://github.com/reycn) |
 | 2026-10-14 | [pick installed fonts for original and translated documents in Appearance](https://github.com/PDFMathTranslate/PDFMathReader/commit/48a16bbbb2ea2a4c5f61b25fde764944436eb54f)            | [@reycn](https://github.com/reycn) |
 | 2026-10-14 | [experimental, force smooth scrolling even with jagged wheel input](https://github.com/PDFMathTranslate/PDFMathReader/commit/28203be085a26d6eff42a333ad88204be0f475d1)                   | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [draw original PDF serif and sans-serif text with chosen local fonts](https://github.com/PDFMathTranslate/PDFMathReader/commit/f6e3421bab578cb9293a67be982e04faf08c7fb3)                 | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
