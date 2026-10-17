@@ -6,6 +6,25 @@ const TIME_CONSTANT_MS = 70;
 // something else (scrollbar, keyboard, page jump, zoom) moved the view.
 const DRIFT_PX = 2;
 
+// A notched wheel reports whole-line or 120-unit steps on one axis; trackpads
+// stream small, fractional or two-axis deltas. Once a trackpad is seen, its
+// momentum tail stays classified as trackpad.
+let lastTrackpad = 0;
+export function isMouseWheel(e, now = performance.now()) {
+  const notched =
+    e.deltaMode !== 0 ||
+    (!e.deltaX &&
+      Number.isInteger(e.deltaY) &&
+      e.wheelDeltaY !== undefined &&
+      Math.abs(e.wheelDeltaY) >= 120 &&
+      e.wheelDeltaY % 120 === 0);
+  if (!notched) {
+    lastTrackpad = now;
+    return false;
+  }
+  return now - lastTrackpad > 250;
+}
+
 export function wheelPixels(event, el) {
   const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? null : 1;
   return {
@@ -84,6 +103,7 @@ export function createSmoothWheel({ motion, preferences, view }) {
 
   function smoothWheel(e) {
     if (!preferences.forceSmoothScrolling.value || e.ctrlKey || e.defaultPrevented) return;
+    if (preferences.smoothScrollingMouseOnly?.value && !isMouseWheel(e)) return;
     const el = view.reader.value;
     if (!el || motion.pinching.value || reduced()) return;
     const delta = wheelPixels(e, el);

@@ -8,6 +8,7 @@ const preferences = inject('documentLanguagePreferences');
 const text = computed(() => [
   smoothScrollingLabel('setting', uiLanguage.value),
   smoothScrollingLabel('hint', uiLanguage.value),
+  smoothScrollingLabel('mouseOnly', uiLanguage.value),
 ]);
 </script>
 
@@ -22,6 +23,13 @@ const text = computed(() => [
       />
     </div>
     <p id="force-smooth-scrolling-hint" class="muted">{{ text[1] }}</p>
+    <div v-if="preferences.forceSmoothScrolling.value" class="setting-row sub-option">
+      <span id="smooth-scrolling-mouse-only-label">{{ text[2] }}</span>
+      <AppSwitch
+        v-model="preferences.smoothScrollingMouseOnly.value"
+        aria-labelledby="smooth-scrolling-mouse-only-label"
+      />
+    </div>
   </div>
 </template>
 
@@ -33,5 +41,8 @@ const text = computed(() => [
 .smooth-scrolling-settings > .muted {
   margin: 0;
   line-height: 1.45;
+}
+.sub-option {
+  padding-left: 16px;
 }
 </style>

@@ -47,6 +47,7 @@ const SETTINGS_PREFERENCES = [
   'recentMagicZoomEnabled',
   'tfidfWeightingEnabled',
   'forceSmoothScrolling',
+  'smoothScrollingMouseOnly',
   'paragraphContinuationDetection',
   'jevApiToken',
   'remoteKernelEnabled',

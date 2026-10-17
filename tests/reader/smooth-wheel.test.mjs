@@ -124,3 +124,15 @@ test('a glide stops when something else moves the view', () => {
   assert.equal(el.scrollTop, 2000);
   assert.equal(frames.length, 0);
 });
+
+test('mouse-wheel detection ignores trackpad streams', async () => {
+  const { isMouseWheel } = await import('../../src/features/reader/smooth-wheel.mjs');
+  const notch = { deltaMode: 0, deltaX: 0, deltaY: 100, wheelDeltaY: -120 };
+  assert.equal(isMouseWheel(notch, 10000), true);
+  assert.equal(
+    isMouseWheel({ deltaMode: 0, deltaX: 2, deltaY: 7.5, wheelDeltaY: -22 }, 20000),
+    false,
+  );
+  assert.equal(isMouseWheel(notch, 20100), false);
+  assert.equal(isMouseWheel(notch, 20500), true);
+});

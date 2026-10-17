@@ -99,6 +99,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.recentMagicZoomEnabled,
       bindings.preferences.tfidfWeightingEnabled,
       bindings.preferences.forceSmoothScrolling,
+      bindings.preferences.smoothScrollingMouseOnly,
       bindings.preferences.paragraphContinuationDetection,
       bindings.preferences.jevApiToken,
       bindings.preferences.remoteKernelEnabled,

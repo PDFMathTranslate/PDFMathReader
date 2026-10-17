@@ -15,6 +15,7 @@ export function createPreferenceState() {
   const recentMagicZoomEnabled = ref(false);
   const tfidfWeightingEnabled = ref(false);
   const forceSmoothScrolling = ref(false);
+  const smoothScrollingMouseOnly = ref(false);
   const paragraphContinuationDetection = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
@@ -108,6 +109,7 @@ export function createPreferenceState() {
     recentMagicZoomEnabled,
     tfidfWeightingEnabled,
     forceSmoothScrolling,
+    smoothScrollingMouseOnly,
     paragraphContinuationDetection,
     jevApiToken,
     remoteKernelEnabled,
