@@ -64,6 +64,10 @@ class FakeWebContents extends EventEmitter {
     return false;
   }
 
+  isCrashed() {
+    return false;
+  }
+
   send(...message) {
     this.messages.push(message);
   }
