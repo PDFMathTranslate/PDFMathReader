@@ -147,7 +147,7 @@ export function registerCompanionRoutes(
   },
 ) {
   const expected = digest(normalizePairingCode(token));
-  const configured = normalizePairingCode(token).length >= 16;
+  const configured = normalizePairingCode(token).length >= PAIRING_CODE_BYTES;
   const failures = new Map();
   const jobs = new Map();
   const connections = new Map();

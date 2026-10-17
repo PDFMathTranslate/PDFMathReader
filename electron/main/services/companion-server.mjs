@@ -45,7 +45,9 @@ export async function createCompanionServer({
     const saved = JSON.parse(await readFile(path, 'utf8'));
     config = {
       enabled: saved.enabled === true,
-      token: normalizePairingCode(saved.token).length === 16 ? saved.token : '',
+      token: [PAIRING_CODE_BYTES, 16].includes(normalizePairingCode(saved.token).length)
+        ? saved.token
+        : '',
       port:
         Number.isInteger(saved.port) && saved.port > 0 && saved.port < 65536
           ? saved.port

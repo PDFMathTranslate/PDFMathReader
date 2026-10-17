@@ -62,7 +62,7 @@ test('kernel sharing persists its pairing code and runs one LAN backend', async 
 
   await companion.setEnabled(true);
   assert.equal(companion.running(), true);
-  assert.match(companion.pairingCode(), /^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  assert.match(companion.pairingCode(), /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
   assert.deepEqual(started[0].companion, {
     port: 8891,
     token: companion.pairingCode(),
@@ -92,6 +92,23 @@ test('kernel sharing persists its pairing code and runs one LAN backend', async 
   await companion.setEnabled(false);
   assert.equal(companion.running(), false);
   assert.equal(JSON.parse(await readFile(path, 'utf8')).enabled, false);
+});
+
+test('saved legacy pairing codes remain valid until regenerated', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'companion-legacy-'));
+  const path = join(directory, 'companion.json');
+  try {
+    const token = 'ABCD-EFGH-JKMN-PQRS';
+    await writeFile(path, JSON.stringify({ enabled: false, token, port: 8891 }));
+    const companion = await createCompanionServer({ path, dialog: {} });
+    assert.equal(companion.pairingCode(), token);
+    await companion.regenerate();
+    assert.match(companion.pairingCode(), /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    const restored = await createCompanionServer({ path, dialog: {} });
+    assert.equal(restored.pairingCode(), companion.pairingCode());
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test('connection snapshots come from the active backend only', async () => {

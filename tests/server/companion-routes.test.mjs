@@ -10,13 +10,13 @@ import {
 const PDF = Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n');
 
 async function serve({
+  token = createPairingCode(),
   translate,
   check,
   computer,
   companionTranslationOptions,
   providerFor,
 } = {}) {
-  const token = createPairingCode();
   const calls = [];
   const proxyJobs = new Map();
   const app = express();
@@ -95,7 +95,7 @@ async function settle(request, id) {
 
 test('pairing codes are readable and normalize loosely', () => {
   const code = createPairingCode();
-  assert.match(code, /^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  assert.match(code, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
   assert.doesNotMatch(code, /[01IOL]/);
   assert.equal(
     normalizePairingCode(code.toLowerCase().replaceAll('-', ' ')),
@@ -113,6 +113,16 @@ test('companion routes require the pairing code and lock out guessing', async ()
     assert.equal((await request('/health', { code: loose })).status, 200);
     for (let attempt = 0; attempt < 10; attempt++) await request('/health', { code: 'nope' });
     assert.equal((await request('/health')).status, 429);
+  } finally {
+    await close();
+  }
+});
+
+test('legacy pairing codes still authenticate without accepting a shortened prefix', async () => {
+  const { request, close } = await serve({ token: 'ABCD-EFGH-JKMN-PQRS' });
+  try {
+    assert.equal((await request('/health')).status, 200);
+    assert.equal((await request('/health', { code: 'ABCD-EFGH' })).status, 401);
   } finally {
     await close();
   }

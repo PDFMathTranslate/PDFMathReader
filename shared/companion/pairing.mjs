@@ -1,9 +1,9 @@
 // Pairing codes are shown to people and typed on a phone, so they use an
-// unambiguous alphabet in dashed groups: 16 symbols of 32 is 80 bits.
+// unambiguous alphabet in two groups of four symbols.
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 export const COMPANION_DEFAULT_PORT = 8891;
-export const PAIRING_CODE_BYTES = 16;
+export const PAIRING_CODE_BYTES = 8;
 
 export function pairingCodeFromBytes(bytes) {
   const symbols = [...bytes]
