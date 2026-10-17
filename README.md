@@ -28,15 +28,15 @@ Read scientific documents in any language, with realtime translation, on any pla
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                                  | Contributor                        |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-17 | [add an only-for-mouse option to force smooth scrolling](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)                              | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [add art and zotero app icons and refresh the modern icon](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76)                            | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [continue translations in service mode while windows are minimized](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b)                   | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [share kernels with remote devices and show connected clients](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)                        | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)                    | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                                          | [@reycn](https://github.com/reycn) |
-| 2026-10-14 | [choose separate local fonts for CJK characters in original and translated documents](https://github.com/PDFMathTranslate/PDFMathReader/commit/1c13247863cec538d15c04a93dd3af99efe3efa3) | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                                | Contributor                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-17 | [shorten companion pairing codes to eight characters](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52)               | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [add an only-for-mouse option to force smooth scrolling](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)            | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [add art and zotero app icons and refresh the modern icon](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76)          | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [continue translations in service mode while windows are minimized](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b) | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [share kernels with remote devices and show connected clients](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)      | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)  | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                        | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
