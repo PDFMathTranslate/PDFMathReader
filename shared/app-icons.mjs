@@ -8,6 +8,8 @@ export const APP_ICON_IDS = Object.freeze([
   'tech',
   'moon',
   'modern',
+  'art',
+  'zotero',
 ]);
 export const DEFAULT_APP_ICON = 'base';
 // Dark Mode always shows this icon; the chosen icon returns in Light Mode.

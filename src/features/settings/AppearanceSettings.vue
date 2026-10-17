@@ -76,6 +76,8 @@ const appIconLabels = {
   tech: 'appearance.iconBlueprint',
   moon: 'appearance.iconMoon',
   modern: 'appearance.iconModern',
+  art: 'appearance.iconArt',
+  zotero: 'appearance.iconZotero',
 };
 const appIcons = ref([]);
 const appIcon = ref('');

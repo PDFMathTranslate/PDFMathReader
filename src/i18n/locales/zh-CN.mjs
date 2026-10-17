@@ -427,6 +427,8 @@ export default {
     iconSpring: '春日',
     iconMoon: '月光',
     iconModern: '现代',
+    iconArt: '艺术',
+    iconZotero: 'Zotero',
     custom: '自定义',
     effects: '效果',
     reduceMotion: '减少动态效果',

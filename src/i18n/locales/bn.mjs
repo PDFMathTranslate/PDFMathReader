@@ -431,6 +431,8 @@ export default {
     iconSpring: 'বসন্ত',
     iconMoon: 'জ্যোৎস্না',
     iconModern: 'আধুনিক',
+    iconArt: 'শিল্প',
+    iconZotero: 'Zotero',
     custom: 'কাস্টম',
     effects: 'প্রভাব',
     reduceMotion: 'গতি কমান',

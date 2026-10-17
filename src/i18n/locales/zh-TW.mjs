@@ -64,6 +64,9 @@ export default {
     previewUnavailable: '預覽無法使用',
   },
   navigator: {
+    followReference: '跳至 PDF 參照',
+    returnToPosition: '返回先前位置',
+    returnToPage: '返回第 {page} 頁',
     pageNavigator: '頁面導覽',
     previousPage: '上一頁',
     pageNumber: '頁碼',
@@ -371,6 +374,7 @@ export default {
     uvUnavailable: 'uv 無法使用',
   },
   translation: {
+    pdfIncomplete: '文件翻譯尚未完成，目前顯示的檔案僅部分已翻譯。',
     full: '翻譯整份文件',
     fullDescription: '開啟文件時翻譯整份文件',
     reading: '減少翻譯請求',
@@ -422,6 +426,8 @@ export default {
     iconSpring: '春日',
     iconMoon: '月光',
     iconModern: '現代',
+    iconArt: '藝術',
+    iconZotero: 'Zotero',
     custom: '自訂',
     effects: '效果',
     reduceMotion: '減少動態效果',

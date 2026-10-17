@@ -431,6 +431,8 @@ export default {
     iconSpring: 'Весна',
     iconMoon: 'Лунный свет',
     iconModern: 'Модерн',
+    iconArt: 'Арт',
+    iconZotero: 'Zotero',
     custom: 'Пользовательская',
     effects: 'Эффекты',
     reduceMotion: 'Уменьшить движение',

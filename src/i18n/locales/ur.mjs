@@ -431,6 +431,8 @@ export default {
     iconSpring: 'بہار',
     iconMoon: 'چاندنی',
     iconModern: 'جدید',
+    iconArt: 'آرٹ',
+    iconZotero: 'Zotero',
     custom: 'مخصوص',
     effects: 'اثرات',
     reduceMotion: 'حرکت کم کریں',

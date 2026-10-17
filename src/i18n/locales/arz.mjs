@@ -430,6 +430,8 @@ export default {
     iconSpring: 'ربيعي',
     iconMoon: 'نور القمر',
     iconModern: 'مودرن',
+    iconArt: 'فن',
+    iconZotero: 'Zotero',
     custom: 'مخصّص',
     effects: 'التأثيرات',
     reduceMotion: 'قلّل الحركة',

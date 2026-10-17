@@ -432,6 +432,8 @@ export default {
     iconSpring: 'वसंत',
     iconMoon: 'चांदनी',
     iconModern: 'आधुनिक',
+    iconArt: 'कला',
+    iconZotero: 'Zotero',
     custom: 'कस्टम',
     effects: 'प्रभाव',
     reduceMotion: 'गति कम करें',

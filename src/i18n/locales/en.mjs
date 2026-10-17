@@ -431,6 +431,8 @@ export default {
     iconSpring: 'Spring',
     iconMoon: 'Moonlight',
     iconModern: 'Modern',
+    iconArt: 'Art',
+    iconZotero: 'Zotero',
     custom: 'Custom',
     effects: 'Effects',
     reduceMotion: 'Reduce motion',
