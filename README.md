@@ -13,6 +13,8 @@
 Read scientific documents in your language, in realtime, on any platform.  
 Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) with frontier artificial intelligence.
 
+See [PDFMathReader-iOS](https://github.com/PDFMathTranslate/PDFMathReader-iOS) for the mobile companion.
+
 ## Features
 
 - **Read translated documents with layouts preserved**: Keep formulas, tables, and other essential content intact.
