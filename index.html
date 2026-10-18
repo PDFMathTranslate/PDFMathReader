@@ -315,12 +315,15 @@
       <section id="reader" class="demo-section wrap">
         <div class="section-intro">
           <h2>Read a page.<br /><span>Get a feel for it.</span></h2>
-          <p>Try scrolling, switching translations, and adjusting settings.</p>
+          <p>
+            Choose a prepared translation, click a paragraph to see the
+            original, or adjust the zoom.
+          </p>
         </div>
         <div class="reader-frame">
           <iframe
             id="reader-demo"
-            src="./reader.html"
+            src="./reader.html?locale=en"
             title="Interactive PDFMathReader sample with prepared translations"
             allow="clipboard-write"
             loading="lazy"
@@ -328,13 +331,12 @@
         </div>
         <div class="demo-footer">
           <p>The demo uses prepared translations. No API key needed.</p>
-          <button type="button" id="replay">Replay translation</button>
+          <button type="button" id="replay">Reset demo</button>
         </div>
         <p class="note">
-          This interactive sample retains an earlier reader interface to
-          demonstrate basic reading. See the screenshots and latest app for
-          current features and appearance. Use the app for personal documents
-          and full translation services.
+          This sample uses the PDF bundled with the application and a static
+          translation file. No kernel or translation service runs here. Download
+          the app to translate your own documents.
         </p>
       </section>
       <section id="download" class="download-section">

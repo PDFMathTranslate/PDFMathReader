@@ -288,12 +288,12 @@
       <section id="reader" class="demo-section wrap">
         <div class="section-intro">
           <h2>先读一页，<br /><span>感受一下。</span></h2>
-          <p>试试滚动、切换译文和调整设置。</p>
+          <p>选择预置译文，点击段落查看原文，或调整缩放。</p>
         </div>
         <div class="reader-frame">
           <iframe
             id="reader-demo"
-            src="./reader.html"
+            src="./reader.html?locale=zh-CN"
             title="PDFMathReader 交互阅读示例，使用预置译文"
             allow="clipboard-write"
             loading="lazy"
@@ -301,10 +301,11 @@
         </div>
         <div class="demo-footer">
           <p>示例使用预置译文，无需 API 密钥。</p>
-          <button type="button" id="replay">重播翻译</button>
+          <button type="button" id="replay">重置示例</button>
         </div>
         <p class="note">
-          此交互示例保留早期阅读界面，仅用于体验基本阅读方式。当前功能与界面请以上方截图及最新应用为准；个人文档与完整翻译服务请使用应用。
+          此示例使用应用内置的新版 PDF
+          和静态译文文件，不运行内核或翻译服务。翻译个人文档请下载应用。
         </p>
       </section>
       <section id="download" class="download-section">

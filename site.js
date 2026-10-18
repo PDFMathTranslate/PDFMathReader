@@ -33,7 +33,7 @@ for (const button of document.querySelectorAll("[data-icon]")) {
 }
 document.querySelector("#replay").addEventListener("click", () => {
   document.querySelector("#reader-demo").src =
-    `./reader.html?replay=${Date.now()}`;
+    `./reader.html?locale=${document.documentElement.lang}&replay=${Date.now()}`;
 });
 
 const languages = new Set(["en", "zh-CN", "ja", "ko", "fr", "es", "hi", "bn"]);
