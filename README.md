@@ -8,23 +8,36 @@
 <a href="./LICENSE">
 <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
-Read scientific documents in any language, with realtime translation, on any platform. Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate).
+Read scientific documents in your language, in realtime, on any platform.  
+Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) with frontier artificial intelligence.
 
 <img src="doc/demo.gif" alt="Demo" width="100%">
 
 ## Features
 
-- **Layout preservation**: Preserve formulas, tables, and key information while keeping translated pages close to the original layout.
-- **Realtime translation**: Detect layouts and translate as you read, without waiting for the entire document to finish.
-- **Interface languages**: 16 languages, ordered by English country name, with English as the default. Includes Arabic, Egyptian Arabic, Hindi, Bengali, Russian, Portuguese, Urdu, German, and Nigerian Pidgin.
-- **Translation options**: Choose translation engines, services, languages, and full-document or nearby-page translation.
-- **ChatGPT Subscription (experimental)**: In the desktop app, sign in through your default browser under Experimental Features or Providers. Select **ChatGPT Subscription** and an account-specific model in Providers to translate with Ultra Fast, Fast, or Precise. Uses the [official ChatGPT plan usage flow](https://developers.openai.com/siwc/token-sharing-open-source); account permissions and shared plan limits apply. Manage access in [ChatGPT Settings → Usage](https://chatgpt.com/settings/usage).
-- **Bilingual reading**: Click detected paragraphs to switch between original text and translation.
-- **Flexible navigation**: Read with thumbnails, zoom, vertical or horizontal scrolling, and one-, two-, or four-page layouts.
-- **Multiple documents**: Open PDFs in independent windows and restore reading positions and display settings when reopening them.
-- **Reading links**: Save bidirectional links between search results and their reading origins for easy reference.
-- **Highlights and comments**: Highlight key passages and add comments to record your reading notes.
-- **File actions**: Reveal original or translated PDFs in Finder and send them with AirDrop on macOS; reveal them in File Explorer and open the native Windows sharing panel on Windows. Translated exports include available translated pages and retain the original pages where translation is not yet available.
+- **Read translated document with preserved layouts**: Preserve formulas, tables, and key information after translation.
+- **Browse translation without waiting**: Detect layouts and translate as you read, without waiting.
+- **Use this application on any platform**: Familar user-interface across macOS, Windows, Linux, and iOS
+- **Choose the translation service you prefer**:
+  - All mainstream AI-providers
+  - Customizable OpenAI-alike protocols
+  - Free service from our cooperation with frontier commercial entities to provide for inclusive use.
+- **Set language you wanna read**: For both interface and translation (source, target), the tool supports a lot of languages and can be customized.
+- **Leave your valuable thoughts across documents**: Highlight key passages and add comments to record your reading notes in either original and translated document
+- **Find information in an inclusive way**
+  - ADHD-friendly information emphsis through TF-IDF calculation
+  - Bionic reading using either fixt chars or word roots
+- **Optimized for your productivity**:
+  - Flexible navigation through thumbnails, quick links, searches, outlines, page numbers, gallery, and multiple layouts
+  - Multiple windows / tabs for different puerposes
+- **Customize reading preferences on your will**: Rich features are provided to customize your own way of reading:
+  - Automatically emphasize key information (topic sentences, scientific findings, logical connections)
+  - Different mode of translation behaviors
+  - Fonts, icons, accent colors and dark mode
+  - Layout detection mode control, from ultrafast to quality preferred
+  - Smooth scrolling
+  - A lot more...
+- **Open ecosystem for any workflow**: Files are sharable, editable, and always ready for other applications and devices (e.g., AirDrop and continue reading on mobile device)
 
 ## Recent updates
 
@@ -39,6 +52,8 @@ Read scientific documents in any language, with realtime translation, on any pla
 | 2026-10-16 | [add app icon picker to Appearance settings](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                        | [@reycn](https://github.com/reycn) |
 
 ## Quick start
+
+### Desktop
 
 <table width="100%">
   <thead>
@@ -77,6 +92,11 @@ Read scientific documents in any language, with realtime translation, on any pla
   </tbody>
 </table>
   *Due to the limited devices for testing, the compatibility checks on Windows and Linux are done periodically.*
+
+### Mobile
+
+- **iOS**: [Provided in this repository](https://github.com/PDFMathTranslate/PDFMathReader-iOS) with familar design to desktop clients
+- **Android**: (contribution welcome)
 
 ## Development
 

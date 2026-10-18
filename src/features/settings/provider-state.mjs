@@ -1,6 +1,7 @@
 import { UI_LANGUAGE_OPTIONS } from '../../../shared/i18n/ui-language.mjs';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import {
+  isCustomLanguageCode,
   translationLanguagesForKernel,
   translationLanguageLabel,
   normalizeTranslationLanguage,
@@ -44,6 +45,10 @@ export function createProviderState({ preferences, engine, configured }) {
   const sourceLanguageOptions = computed(() =>
     translationLanguagesForKernel(engine.value, 'source'),
   );
+  const menuLanguageOptions = (options, selected) =>
+    isCustomLanguageCode(selected) && !options.includes(selected)
+      ? [...options, selected]
+      : options;
 
   function languageLabel(name) {
     const keys = [
@@ -155,11 +160,16 @@ export function createProviderState({ preferences, engine, configured }) {
     },
     sourceLanguage: {
       selected: sourceLanguage.value,
-      options: sourceLanguageOptions.value.map((value) => ({ value, label: languageLabel(value) })),
+      options: menuLanguageOptions(sourceLanguageOptions.value, sourceLanguage.value).map(
+        (value) => ({ value, label: languageLabel(value) }),
+      ),
     },
     language: {
       selected: language.value,
-      options: languageOptions.value.map((value) => ({ value, label: languageLabel(value) })),
+      options: menuLanguageOptions(languageOptions.value, language.value).map((value) => ({
+        value,
+        label: languageLabel(value),
+      })),
     },
     provider: {
       selected: translationServiceId.value,

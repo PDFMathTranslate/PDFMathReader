@@ -71,10 +71,10 @@ export function translationLanguageCode(value) {
       : undefined;
 }
 const all = Object.freeze(entries.map(([name]) => name));
-const fast = Object.freeze(all.slice(0, 10));
-// These scripts need shaping / right-to-left layout that the PDF kernels do not provide.
+const fast = Object.freeze([...all.slice(0, 10), 'Hindi']);
+// These scripts need right-to-left layout that the PDF kernels do not provide.
 const precise = Object.freeze(
-  all.filter((name) => !['Arabic', 'Hebrew', 'Hindi', 'Persian'].includes(name)),
+  all.filter((name) => !['Arabic', 'Hebrew', 'Persian'].includes(name)),
 );
 const targets = Object.freeze({
   pdf_inspector: all,
