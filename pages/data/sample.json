@@ -1,0 +1,46 @@
+{
+  "pdf": "./sample.pdf",
+  "width": 595,
+  "height": 842,
+  "paragraphs": [
+    {
+      "id": "quote",
+      "text": "The grass-blade is worthy of the great world where it grows.",
+      "x": 76.405,
+      "y": 499.107,
+      "width": 397.348,
+      "height": 22,
+      "fontSize": 16,
+      "translations": {
+        "en": "The grass-blade is worthy of the great world where it grows.",
+        "zh-CN": "小草也配得上它生长的伟大世界。",
+        "ja": "一本の草の葉も、それが育つ偉大な世界にふさわしい。",
+        "ko": "풀잎도 자신이 자라는 위대한 세상에 걸맞다.",
+        "fr": "Le brin d’herbe est digne du vaste monde où il pousse.",
+        "es": "La brizna de hierba es digna del gran mundo en el que crece.",
+        "hi": "घास की पत्ती उस महान संसार के योग्य है जिसमें वह उगती है।",
+        "bn": "ঘাসের পাতাটিও যে বিশাল পৃথিবীতে জন্মায়, তার যোগ্য।"
+      }
+    },
+    {
+      "id": "attribution",
+      "text": "Rabindranath Tagore, Stray Birds",
+      "x": 76.381,
+      "y": 536.867,
+      "width": 397.348,
+      "height": 24,
+      "fontSize": 16,
+      "translations": {
+        "en": "Rabindranath Tagore, Stray Birds",
+        "zh-CN": "拉宾德拉纳特·泰戈尔，《飞鸟集》",
+        "ja": "ラビンドラナート・タゴール『迷い鳥』",
+        "ko": "라빈드라나트 타고르, 『길 잃은 새』",
+        "fr": "Rabindranath Tagore, Oiseaux de passage",
+        "es": "Rabindranath Tagore, Pájaros perdidos",
+        "hi": "रवीन्द्रनाथ टैगोर, स्ट्रे बर्ड्स",
+        "bn": "রবীন্দ্রনাথ ঠাকুর, স্ট্রে বার্ডস"
+      }
+    }
+  ],
+  "title": "Stray Birds · Rabindranath Tagore"
+}
