@@ -618,3 +618,37 @@ footer nav {
     transition: none !important;
   }
 }
+
+.language-picker select {
+  font: inherit;
+  font-size: 14px;
+  color: #1d1d1f;
+  background: #f5f6f8;
+  border: 1px solid #dcdce1;
+  border-radius: 8px;
+  min-height: 44px;
+  max-width: 150px;
+  padding: 8px 28px 8px 12px;
+  cursor: pointer;
+}
+.language-picker select:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 4px;
+}
+@media (max-width: 1000px) {
+  .site-header nav {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .site-header .download-link {
+    display: none;
+  }
+  .language-picker select {
+    max-width: 128px;
+    font-size: 13px;
+  }
+  h1 {
+    font-size: clamp(38px, 10vw, 48px);
+  }
+}

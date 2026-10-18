@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="PDFMathReader：保留公式与版面的科学文献翻译阅读器。支持多种 AI 服务、批注、标签页、阅读辅助和跨设备内核共享。适用于 macOS、Windows、Linux 和 iOS。"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>PDFMathReader · 跨越语言，专注阅读</title>
+    <link rel="icon" type="image/png" href="./media/base.png" />
+    <link rel="stylesheet" href="./site.css" />
+    <script type="module" src="./site.js"></script>
+    <link rel="alternate" hreflang="en" href="./index.html" />
+    <link rel="alternate" hreflang="zh-CN" href="./index.zh-CN.html" />
+    <link rel="alternate" hreflang="ja" href="./index.ja.html" />
+    <link rel="alternate" hreflang="ko" href="./index.ko.html" />
+    <link rel="alternate" hreflang="fr" href="./index.fr.html" />
+    <link rel="alternate" hreflang="es" href="./index.es.html" />
+    <link rel="alternate" hreflang="hi" href="./index.hi.html" />
+    <link rel="alternate" hreflang="bn" href="./index.bn.html" />
+    <link rel="alternate" hreflang="x-default" href="./index.html" />
+  </head>
+  <body
+    data-preview-template="正在预览：{name}。此选择仅改变网页预览。"
+    data-reader-template="PDFMathReader {platform} 阅读器界面"
+  >
+    <a class="skip-link" href="#main">跳至正文</a>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="PDFMathReader 首页"
+        ><img
+          class="brand-icon"
+          src="./media/base.png"
+          alt=""
+          width="36"
+          height="36"
+        />PDFMathReader</a
+      >
+      <nav aria-label="官网导航">
+        <a href="#features">功能</a><a href="#reader">体验</a
+        ><a href="#appearance">外观</a><a href="#download">下载</a>
+      </nav>
+      <label class="language-picker"
+        ><span class="sr-only">语言</span
+        ><select id="site-language" aria-label="语言">
+          <option value="en">English</option>
+          <option value="zh-CN" selected>简体中文</option>
+          <option value="ja">日本語</option>
+          <option value="ko">한국어</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="hi">हिन्दी</option>
+          <option value="bn">বাংলা</option>
+        </select></label
+      >
+      <a
+        class="download-link"
+        href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+        >获取应用</a
+      >
+    </header>
+    <main id="main">
+      <section class="hero wrap">
+        <img
+          class="hero-icon brand-icon"
+          src="./media/base.png"
+          alt="PDFMathReader 应用图标"
+          width="104"
+          height="104"
+        />
+        <h1>跨越语言。<br /><span>专注阅读。</span></h1>
+        <p class="intro">
+          用你的语言，读懂科学。<br />译文随阅读呈现，公式与版面尽可能保持原样。
+        </p>
+        <div class="actions">
+          <a class="primary" href="#download">下载 PDFMathReader</a
+          ><a class="secondary" href="#reader"
+            >体验阅读器 <span aria-hidden="true">↓</span></a
+          >
+        </div>
+        <p class="platforms">
+          macOS · Windows · Linux ·
+          <a href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+            >iOS</a
+          >
+        </p>
+        <a
+          class="release-link"
+          href="https://github.com/PDFMathTranslate/PDFMathReader/releases/tag/v0.1.13"
+          >v0.1.13 现已发布 <span aria-hidden="true">↗</span></a
+        >
+      </section>
+      <section class="showcase wrap" aria-labelledby="showcase-title">
+        <h2 id="showcase-title" class="sr-only">在你熟悉的平台上阅读</h2>
+        <div class="platform-switch" role="group" aria-label="选择平台截图">
+          <button type="button" data-platform="mac" aria-pressed="true">
+            macOS</button
+          ><button type="button" data-platform="windows" aria-pressed="false">
+            Windows</button
+          ><button type="button" data-platform="linux" aria-pressed="false">
+            Linux
+          </button>
+        </div>
+        <figure>
+          <img
+            id="app-preview"
+            src="./media/preview.png"
+            alt="PDFMathReader macOS 阅读器界面"
+            width="1081"
+            height="1123"
+            fetchpriority="high"
+          />
+          <figcaption id="preview-caption">
+            熟悉的界面，让注意力回到文献本身。
+          </figcaption>
+        </figure>
+      </section>
+      <section id="features" class="feature-section wrap">
+        <div class="section-intro">
+          <h2>阅读不等待。<br /><span>思考不打断。</span></h2>
+          <p>从第一段译文到最后一条批注，围绕真实的文献阅读流程而设计。</p>
+        </div>
+        <div class="feature-rows">
+          <article>
+            <h3>译文与原文，各就其位。</h3>
+            <p>
+              按需分析版面并翻译正在阅读的内容。选择段落覆盖或保留公式的翻译页面，在速度与精细排版之间找到适合你的方式。
+            </p>
+            <ul>
+              <li>Ultra fast · PDF Inspector 段落覆盖</li>
+              <li>Fast · PDFMathTranslate</li>
+              <li>Precise · PDFMathTranslate-next</li>
+            </ul>
+          </article>
+          <article>
+            <h3>服务与语言，由你选择。</h3>
+            <p>
+              连接主流 AI 服务，或接入 OpenAI
+              兼容的自定义服务。分别设置界面、原文与译文语言，也支持自定义语言代码。
+            </p>
+            <p>
+              相同服务与模型的重复翻译可复用本地缓存；合作提供的免费服务以应用内可用情况为准。
+            </p>
+          </article>
+          <article>
+            <h3>让重要的内容，更容易看见。</h3>
+            <p>
+              自动强调主题句、科学发现和逻辑连接；通过 TF-IDF
+              突出特色词汇，或选择固定字符、词根加粗的仿生阅读。
+            </p>
+            <p>
+              可调字体、CJK
+              字体与平滑滚动，让长时间阅读更合心意。鼠标滚轮可单独启用强制平滑滚动。
+            </p>
+          </article>
+          <article>
+            <h3>读过，留下自己的思考。</h3>
+            <p>
+              在原文与译文上高亮、批注。用缩略图、目录、搜索、快速链接与画廊定位内容，在多个窗口或标签页间切换。
+            </p>
+            <p>支持多种阅读布局，以及贴合阅读方向的适宽、适高和缩放方式。</p>
+          </article>
+        </div>
+      </section>
+      <section class="continuity-section">
+        <div class="wrap continuity-grid">
+          <div class="section-intro">
+            <h2>换个设备。<br /><span>继续读下去。</span></h2>
+            <p>桌面与移动端延续熟悉的阅读体验。</p>
+            <a
+              class="secondary"
+              href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+              >了解 iOS 应用 <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="continuity-copy">
+            <h3>让桌面计算，为其他设备所用。</h3>
+            <p>
+              共享电脑上的翻译内核，配对远程设备并查看已连接的客户端。配对码缩短至八位，连接更方便。
+            </p>
+            <h3>窗口收起，翻译仍可继续。</h3>
+            <p>
+              服务模式下，窗口最小化后仍可继续提供翻译服务。也可以通过 AirDrop
+              等方式，在应用与设备之间分享文档。
+            </p>
+            <p class="note">
+              远程共享需要可连接的电脑与网络；iOS 应用在独立仓库提供。
+            </p>
+          </div>
+        </div>
+      </section>
+      <section id="appearance" class="appearance-section wrap">
+        <div class="section-intro">
+          <h2>你的阅读。<br /><span>你的风格。</span></h2>
+          <p>
+            字体、强调色、深色模式，还有一整套可选的应用图标。<br />点选图标，预览属于你的
+            PDFMathReader。
+          </p>
+        </div>
+        <div class="icon-options" role="group" aria-label="应用图标预览">
+          <button type="button" data-icon="base" aria-pressed="true">
+            <img
+              src="./media/base.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>默认</span>
+          </button>
+          <button type="button" data-icon="warm" aria-pressed="false">
+            <img
+              src="./media/warm.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>暖色</span>
+          </button>
+          <button type="button" data-icon="spring" aria-pressed="false">
+            <img
+              src="./media/spring.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>春日</span>
+          </button>
+          <button type="button" data-icon="hist" aria-pressed="false">
+            <img
+              src="./media/hist.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>典藏</span>
+          </button>
+          <button type="button" data-icon="tech" aria-pressed="false">
+            <img
+              src="./media/tech.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>蓝图</span>
+          </button>
+          <button type="button" data-icon="moon" aria-pressed="false">
+            <img
+              src="./media/moon.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>月光</span>
+          </button>
+          <button type="button" data-icon="modern" aria-pressed="false">
+            <img
+              src="./media/modern.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>现代</span>
+          </button>
+          <button type="button" data-icon="art" aria-pressed="false">
+            <img
+              src="./media/art.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>艺术</span>
+          </button>
+          <button type="button" data-icon="zotero" aria-pressed="false">
+            <img
+              src="./media/zotero.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Zotero</span>
+          </button>
+        </div>
+        <p class="icon-status note" role="status">
+          正在预览：默认。此选择仅改变网页预览。
+        </p>
+      </section>
+      <section id="reader" class="demo-section wrap">
+        <div class="section-intro">
+          <h2>先读一页，<br /><span>感受一下。</span></h2>
+          <p>试试滚动、切换译文和调整设置。</p>
+        </div>
+        <div class="reader-frame">
+          <iframe
+            id="reader-demo"
+            src="./reader.html"
+            title="PDFMathReader 交互阅读示例，使用预置译文"
+            allow="clipboard-write"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <div class="demo-footer">
+          <p>示例使用预置译文，无需 API 密钥。</p>
+          <button type="button" id="replay">重播翻译</button>
+        </div>
+        <p class="note">
+          此交互示例保留早期阅读界面，仅用于体验基本阅读方式。当前功能与界面请以上方截图及最新应用为准；个人文档与完整翻译服务请使用应用。
+        </p>
+      </section>
+      <section id="download" class="download-section">
+        <div class="wrap">
+          <div class="section-intro">
+            <h2>下一篇文献，<br /><span>用你的语言读。</span></h2>
+            <p>开源，持续更新。选择适合你的平台。</p>
+          </div>
+          <div class="download-grid">
+            <article>
+              <h3>macOS</h3>
+              <p>Apple Silicon 与 Intel</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >下载 Mac 版</a
+              >
+              <p class="note">解压后移至「应用程序」。</p>
+            </article>
+            <article>
+              <h3>Windows</h3>
+              <p>64 位与 32 位便携版</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >下载 Windows 版</a
+              >
+              <p class="note">下载对应的 .exe 后运行。</p>
+            </article>
+            <article>
+              <h3>Linux</h3>
+              <p>x64 与 ARMv7</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >下载 Linux 版</a
+              >
+              <p class="note">解压 .tar.gz 后运行。</p>
+            </article>
+            <article>
+              <h3>iOS</h3>
+              <p>iPhone 与 iPad</p>
+              <a
+                class="secondary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+                >查看安装说明 <span aria-hidden="true">↗</span></a
+              >
+              <p class="note">独立应用，延续桌面设计。</p>
+            </article>
+          </div>
+          <details class="requirements">
+            <summary>使用要求与实验功能</summary>
+            <p>
+              翻译需要可用的服务及网络；部分服务可能产生 API 费用。Fast 与
+              Precise 需要通过 uv
+              安装相应内核。复杂版面可能影响排版还原效果，平台与服务的支持情况请参阅项目文档。
+            </p>
+            <p>
+              实验功能包括段落续接检测、本地生成目录，以及可选的远程
+              zotero-pdf2zh 服务。远程 Precise
+              服务需要自行部署，不随应用提供；没有文本层的扫描文档需要相应 OCR
+              支持。
+            </p>
+            <a
+              href="https://github.com/PDFMathTranslate/PDFMathReader#quick-start"
+              >完整安装与使用说明 <span aria-hidden="true">↗</span></a
+            >
+          </details>
+        </div>
+      </section>
+    </main>
+    <footer class="wrap">
+      <div>
+        <a class="brand" href="#"
+          ><img
+            class="brand-icon"
+            src="./media/base.png"
+            alt=""
+            width="32"
+            height="32"
+          />PDFMathReader</a
+        >
+        <p>由 PDFMathTranslate 驱动 · AGPL-3.0 开源</p>
+      </div>
+      <nav aria-label="更多信息">
+        <a href="https://github.com/PDFMathTranslate/PDFMathReader">GitHub</a
+        ><a href="https://github.com/PDFMathTranslate/PDFMathReader/releases"
+          >更新日志</a
+        ><a
+          href="https://github.com/PDFMathTranslate/PDFMathReader/blob/main/LICENSE"
+          >许可证</a
+        ><a href="https://aclanthology.org/2025.emnlp-demos.71/">论文</a>
+      </nav>
+    </footer>
+  </body>
+</html>

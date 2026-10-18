@@ -2,7 +2,11 @@
 
 This branch publishes directly from its root through GitHub Pages. The landing
 page is maintained as readable static source in `index.html`, `site.css`, and
-`site.js`; no build step is required. Keep all asset URLs relative so the site
+`site.js`; no build step is required. English is the default at `index.html`.
+Localized pages use `index.<locale>.html` for `zh-CN`, `ja`, `ko`, `fr`,
+`es`, `hi`, and `bn`. The language selector preserves the current section;
+it never automatically redirects based on browser language. Keep page structure,
+assets, links, and the two localized body templates synchronized across locales. Keep all asset URLs relative so the site
 works under `/PDFMathReader/`.
 
 `media/` contains screenshots from `main:doc/preview*.png` and 256-pixel exports

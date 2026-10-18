@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Lee y traduce documentos científicos con PDFMathReader. Conserva las fórmulas y la maquetación, añade anotaciones, usa pestañas y ayudas de lectura, y comparte motores entre dispositivos. Para macOS, Windows, Linux e iOS."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>PDFMathReader · Lee más allá del idioma</title>
+    <link rel="icon" type="image/png" href="./media/base.png" />
+    <link rel="stylesheet" href="./site.css" />
+    <script type="module" src="./site.js"></script>
+    <link rel="alternate" hreflang="en" href="./index.html" />
+    <link rel="alternate" hreflang="zh-CN" href="./index.zh-CN.html" />
+    <link rel="alternate" hreflang="ja" href="./index.ja.html" />
+    <link rel="alternate" hreflang="ko" href="./index.ko.html" />
+    <link rel="alternate" hreflang="fr" href="./index.fr.html" />
+    <link rel="alternate" hreflang="es" href="./index.es.html" />
+    <link rel="alternate" hreflang="hi" href="./index.hi.html" />
+    <link rel="alternate" hreflang="bn" href="./index.bn.html" />
+    <link rel="alternate" hreflang="x-default" href="./index.html" />
+  </head>
+  <body
+    data-preview-template="Previsualizando {name}. Esta selección solo cambia la vista previa del sitio web."
+    data-reader-template="Lector de PDFMathReader en {platform}"
+  >
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Página de inicio de PDFMathReader"
+        ><img
+          class="brand-icon"
+          src="./media/base.png"
+          alt=""
+          width="36"
+          height="36"
+        />PDFMathReader</a
+      >
+      <nav aria-label="Navegación del sitio">
+        <a href="#features">Funciones</a><a href="#reader">Probarlo</a
+        ><a href="#appearance">Apariencia</a><a href="#download">Descargar</a>
+      </nav>
+      <label class="language-picker"
+        ><span class="sr-only">Idioma</span
+        ><select id="site-language" aria-label="Idioma">
+          <option value="en">English</option>
+          <option value="zh-CN">简体中文</option>
+          <option value="ja">日本語</option>
+          <option value="ko">한국어</option>
+          <option value="fr">Français</option>
+          <option value="es" selected>Español</option>
+          <option value="hi">हिन्दी</option>
+          <option value="bn">বাংলা</option>
+        </select></label
+      >
+      <a
+        class="download-link"
+        href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+        >Obtener la aplicación</a
+      >
+    </header>
+    <main id="main">
+      <section class="hero wrap">
+        <img
+          class="hero-icon brand-icon"
+          src="./media/base.png"
+          alt="Icono de la aplicación PDFMathReader"
+          width="104"
+          height="104"
+        />
+        <h1>
+          Lee más allá del idioma.<br /><span>Quédate con las ideas.</span>
+        </h1>
+        <p class="intro">
+          Lee ciencia en tu idioma.<br />La traducción aparece mientras lees y
+          mantiene las fórmulas y la maquetación tan cerca del original como es
+          posible.
+        </p>
+        <div class="actions">
+          <a class="primary" href="#download">Descargar PDFMathReader</a
+          ><a class="secondary" href="#reader"
+            >Probar el lector <span aria-hidden="true">↓</span></a
+          >
+        </div>
+        <p class="platforms">
+          macOS · Windows · Linux ·
+          <a href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+            >iOS</a
+          >
+        </p>
+        <a
+          class="release-link"
+          href="https://github.com/PDFMathTranslate/PDFMathReader/releases/tag/v0.1.13"
+          >Ya está disponible la versión v0.1.13
+          <span aria-hidden="true">↗</span></a
+        >
+      </section>
+      <section class="showcase wrap" aria-labelledby="showcase-title">
+        <h2 id="showcase-title" class="sr-only">
+          Lee en tu plataforma favorita
+        </h2>
+        <div
+          class="platform-switch"
+          role="group"
+          aria-label="Capturas de las plataformas"
+        >
+          <button type="button" data-platform="mac" aria-pressed="true">
+            macOS</button
+          ><button type="button" data-platform="windows" aria-pressed="false">
+            Windows</button
+          ><button type="button" data-platform="linux" aria-pressed="false">
+            Linux
+          </button>
+        </div>
+        <figure>
+          <img
+            id="app-preview"
+            src="./media/preview.png"
+            alt="Lector de PDFMathReader en macOS"
+            width="1081"
+            height="1123"
+            fetchpriority="high"
+          />
+          <figcaption id="preview-caption">
+            Una interfaz familiar. Más espacio para el artículo.
+          </figcaption>
+        </figure>
+      </section>
+      <section id="features" class="feature-section wrap">
+        <div class="section-intro">
+          <h2>
+            La lectura sigue avanzando.<br /><span
+              >Y también tu forma de pensar.</span
+            >
+          </h2>
+          <p>
+            Desde el primer párrafo traducido hasta tu última anotación, pensado
+            para la forma en que lees investigaciones.
+          </p>
+        </div>
+        <div class="feature-rows">
+          <article>
+            <h3>Original y traducción, en su sitio.</h3>
+            <p>
+              Analiza la maquetación y traduce mientras lees. Elige
+              superposiciones de párrafos o páginas traducidas con preservación
+              de fórmulas, equilibrando rapidez y composición tipográfica
+              detallada.
+            </p>
+            <ul>
+              <li>
+                Ultrarrápido · Superposiciones de párrafos de PDF Inspector
+              </li>
+              <li>Rápido · PDFMathTranslate</li>
+              <li>Preciso · PDFMathTranslate-next</li>
+            </ul>
+          </article>
+          <article>
+            <h3>Tu servicio. Tu idioma.</h3>
+            <p>
+              Conecta los principales proveedores de IA o servicios
+              personalizados mediante API compatibles con OpenAI. Configura por
+              separado los idiomas de la interfaz, de origen y de destino,
+              incluidos códigos de idioma personalizados.
+            </p>
+            <p>
+              Reutiliza las traducciones almacenadas en caché para el mismo
+              servicio y modelo. Los servicios gratuitos proporcionados por
+              colaboradores dependen de su disponibilidad en la aplicación.
+            </p>
+          </article>
+          <article>
+            <h3>Haz que lo importante destaque.</h3>
+            <p>
+              Da énfasis a las frases temáticas, los hallazgos científicos y las
+              conexiones lógicas. Resalta términos distintivos con TF-IDF o
+              prueba la lectura biónica con énfasis de longitud fija o de raíces
+              de palabras.
+            </p>
+            <p>
+              Ajusta las fuentes, la tipografía CJK y el desplazamiento suave
+              para sesiones de lectura prolongadas. Activa por separado el
+              desplazamiento suave forzado para las ruedas del ratón.
+            </p>
+          </article>
+          <article>
+            <h3>Conserva tus ideas junto al texto.</h3>
+            <p>
+              Resalta y anota los originales y las traducciones. Navega mediante
+              miniaturas, esquemas, búsquedas, enlaces rápidos y vistas de
+              galería. Cambia entre ventanas o pestañas.
+            </p>
+            <p>
+              Elige diseños de lectura, ajuste al ancho, ajuste a la altura y
+              niveles de zoom que se adapten a tu forma de leer.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="continuity-section">
+        <div class="wrap continuity-grid">
+          <div class="section-intro">
+            <h2>Otro dispositivo.<br /><span>La misma concentración.</span></h2>
+            <p>
+              Una experiencia de lectura familiar, en el ordenador y el móvil.
+            </p>
+            <a
+              class="secondary"
+              href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+              >Explora la aplicación para iOS
+              <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="continuity-copy">
+            <h3>Deja que el ordenador haga el trabajo.</h3>
+            <p>
+              Comparte los motores de traducción de tu ordenador, empareja
+              dispositivos remotos y consulta los clientes conectados. Los
+              códigos de emparejamiento de ocho caracteres facilitan la
+              conexión.
+            </p>
+            <h3>Minimiza la ventana. Sigue traduciendo.</h3>
+            <p>
+              El modo de servicio mantiene disponibles los servicios de
+              traducción mientras las ventanas están minimizadas. Comparte
+              documentos entre aplicaciones y dispositivos con herramientas como
+              AirDrop.
+            </p>
+            <p class="note">
+              El uso compartido remoto requiere un ordenador y una red
+              accesibles. La aplicación para iOS se ofrece en un repositorio
+              independiente.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section id="appearance" class="appearance-section wrap">
+        <div class="section-intro">
+          <h2>Tu lectura.<br /><span>Tu estilo.</span></h2>
+          <p>
+            Fuentes, colores de acento, modo oscuro y toda una colección de
+            iconos para la aplicación.<br />Elige un icono para previsualizar tu
+            PDFMathReader.
+          </p>
+        </div>
+        <div
+          class="icon-options"
+          role="group"
+          aria-label="Vista previa de iconos de la aplicación"
+        >
+          <button type="button" data-icon="base" aria-pressed="true">
+            <img
+              src="./media/base.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Predeterminado</span>
+          </button>
+          <button type="button" data-icon="warm" aria-pressed="false">
+            <img
+              src="./media/warm.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Cálido</span>
+          </button>
+          <button type="button" data-icon="spring" aria-pressed="false">
+            <img
+              src="./media/spring.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Primavera</span>
+          </button>
+          <button type="button" data-icon="hist" aria-pressed="false">
+            <img
+              src="./media/hist.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Clásico</span>
+          </button>
+          <button type="button" data-icon="tech" aria-pressed="false">
+            <img
+              src="./media/tech.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Plano</span>
+          </button>
+          <button type="button" data-icon="moon" aria-pressed="false">
+            <img
+              src="./media/moon.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Luz de luna</span>
+          </button>
+          <button type="button" data-icon="modern" aria-pressed="false">
+            <img
+              src="./media/modern.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Moderno</span>
+          </button>
+          <button type="button" data-icon="art" aria-pressed="false">
+            <img
+              src="./media/art.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Arte</span>
+          </button>
+          <button type="button" data-icon="zotero" aria-pressed="false">
+            <img
+              src="./media/zotero.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Zotero</span>
+          </button>
+        </div>
+        <p class="icon-status note" role="status">
+          Previsualizando Predeterminado. Esta selección solo cambia la vista
+          previa del sitio web.
+        </p>
+      </section>
+      <section id="reader" class="demo-section wrap">
+        <div class="section-intro">
+          <h2>Lee una página.<br /><span>Descubre cómo se siente.</span></h2>
+          <p>
+            Prueba a desplazarte, cambiar de traducción y ajustar la
+            configuración.
+          </p>
+        </div>
+        <div class="reader-frame">
+          <iframe
+            id="reader-demo"
+            src="./reader.html"
+            title="Ejemplo interactivo de PDFMathReader con traducciones preparadas"
+            allow="clipboard-write"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <div class="demo-footer">
+          <p>
+            La demostración usa traducciones preparadas. No necesitas una clave
+            de API.
+          </p>
+          <button type="button" id="replay">Repetir traducción</button>
+        </div>
+        <p class="note">
+          Este ejemplo interactivo conserva una interfaz de lector anterior para
+          mostrar la lectura básica. Consulta las capturas y la aplicación más
+          reciente para conocer las funciones y el aspecto actuales. Usa la
+          aplicación para tus documentos personales y los servicios de
+          traducción completos.
+        </p>
+      </section>
+      <section id="download" class="download-section">
+        <div class="wrap">
+          <div class="section-intro">
+            <h2>Tu próximo artículo.<br /><span>En tu idioma.</span></h2>
+            <p>Código abierto y en mejora constante. Elige tu plataforma.</p>
+          </div>
+          <div class="download-grid">
+            <article>
+              <h3>macOS</h3>
+              <p>Apple Silicon e Intel</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Descargar para Mac</a
+              >
+              <p class="note">
+                Descomprime y mueve la aplicación a Aplicaciones.
+              </p>
+            </article>
+            <article>
+              <h3>Windows</h3>
+              <p>Ediciones portátiles de 64 y 32 bits</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Descargar para Windows</a
+              >
+              <p class="note">Descarga y ejecuta el .exe correspondiente.</p>
+            </article>
+            <article>
+              <h3>Linux</h3>
+              <p>x64 y ARMv7</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Descargar para Linux</a
+              >
+              <p class="note">Extrae el .tar.gz y ejecuta la aplicación.</p>
+            </article>
+            <article>
+              <h3>iOS</h3>
+              <p>iPhone y iPad</p>
+              <a
+                class="secondary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+                >Guía de instalación <span aria-hidden="true">↗</span></a
+              >
+              <p class="note">
+                Una aplicación independiente con un diseño familiar inspirado en
+                el escritorio.
+              </p>
+            </article>
+          </div>
+          <details class="requirements">
+            <summary>Requisitos y funciones experimentales</summary>
+            <p>
+              La traducción necesita un servicio disponible y acceso a la red;
+              algunos proveedores pueden cobrar tarifas de API. Fast y Precise
+              requieren instalar sus motores mediante uv. Las maquetaciones
+              complejas pueden afectar la fidelidad tipográfica. Consulta la
+              documentación del proyecto para conocer la compatibilidad de
+              plataformas y servicios.
+            </p>
+            <p>
+              Las funciones experimentales incluyen la detección de continuación
+              de párrafos, la generación local de índices y un servidor remoto
+              opcional zotero-pdf2zh. El servidor remoto Precise debe
+              desplegarse por separado y no se incluye. Los documentos
+              escaneados sin capa de texto necesitan compatibilidad OCR
+              adecuada.
+            </p>
+            <a
+              href="https://github.com/PDFMathTranslate/PDFMathReader#quick-start"
+              >Guía completa de instalación y uso
+              <span aria-hidden="true">↗</span></a
+            >
+          </details>
+        </div>
+      </section>
+    </main>
+    <footer class="wrap">
+      <div>
+        <a class="brand" href="#"
+          ><img
+            class="brand-icon"
+            src="./media/base.png"
+            alt=""
+            width="32"
+            height="32"
+          />PDFMathReader</a
+        >
+        <p>Desarrollado con PDFMathTranslate · Código abierto AGPL-3.0</p>
+      </div>
+      <nav aria-label="Más información">
+        <a href="https://github.com/PDFMathTranslate/PDFMathReader">GitHub</a
+        ><a href="https://github.com/PDFMathTranslate/PDFMathReader/releases"
+          >Registro de cambios</a
+        ><a
+          href="https://github.com/PDFMathTranslate/PDFMathReader/blob/main/LICENSE"
+          >Licencia</a
+        ><a href="https://aclanthology.org/2025.emnlp-demos.71/">Artículo</a>
+      </nav>
+    </footer>
+  </body>
+</html>

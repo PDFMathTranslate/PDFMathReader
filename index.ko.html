@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="PDFMathReader: 수식과 레이아웃을 보존하면서 과학 문헌을 읽고 번역하세요. 주석, 탭, 읽기 도구를 사용하고 여러 기기에서 번역 커널을 공유할 수 있습니다. macOS, Windows, Linux, iOS를 지원합니다."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>PDFMathReader · 언어의 장벽을 넘어 읽기</title>
+    <link rel="icon" type="image/png" href="./media/base.png" />
+    <link rel="stylesheet" href="./site.css" />
+    <script type="module" src="./site.js"></script>
+    <link rel="alternate" hreflang="en" href="./index.html" />
+    <link rel="alternate" hreflang="zh-CN" href="./index.zh-CN.html" />
+    <link rel="alternate" hreflang="ja" href="./index.ja.html" />
+    <link rel="alternate" hreflang="ko" href="./index.ko.html" />
+    <link rel="alternate" hreflang="fr" href="./index.fr.html" />
+    <link rel="alternate" hreflang="es" href="./index.es.html" />
+    <link rel="alternate" hreflang="hi" href="./index.hi.html" />
+    <link rel="alternate" hreflang="bn" href="./index.bn.html" />
+    <link rel="alternate" hreflang="x-default" href="./index.html" />
+  </head>
+  <body
+    data-preview-template="미리보기: {name}. 이 선택은 웹사이트 미리보기만 변경합니다."
+    data-reader-template="PDFMathReader {platform} 리더"
+  >
+    <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="PDFMathReader 홈"
+        ><img
+          class="brand-icon"
+          src="./media/base.png"
+          alt=""
+          width="36"
+          height="36"
+        />PDFMathReader</a
+      >
+      <nav aria-label="사이트 탐색">
+        <a href="#features">기능</a><a href="#reader">사용해 보기</a
+        ><a href="#appearance">화면</a><a href="#download">다운로드</a>
+      </nav>
+      <label class="language-picker"
+        ><span class="sr-only">언어</span
+        ><select id="site-language" aria-label="언어">
+          <option value="en">English</option>
+          <option value="zh-CN">简体中文</option>
+          <option value="ja">日本語</option>
+          <option value="ko" selected>한국어</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="hi">हिन्दी</option>
+          <option value="bn">বাংলা</option>
+        </select></label
+      >
+      <a
+        class="download-link"
+        href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+        >앱 받기</a
+      >
+    </header>
+    <main id="main">
+      <section class="hero wrap">
+        <img
+          class="hero-icon brand-icon"
+          src="./media/base.png"
+          alt="PDFMathReader 앱 아이콘"
+          width="104"
+          height="104"
+        />
+        <h1>언어의 장벽을 넘어.<br /><span>아이디어와 함께 읽으세요.</span></h1>
+        <p class="intro">
+          내 언어로 과학을 읽으세요.<br />읽는 동안 번역이 나타나며, 수식과
+          레이아웃을 가능한 한 원본에 가깝게 유지합니다.
+        </p>
+        <div class="actions">
+          <a class="primary" href="#download">PDFMathReader 다운로드</a
+          ><a class="secondary" href="#reader"
+            >리더 사용해 보기 <span aria-hidden="true">↓</span></a
+          >
+        </div>
+        <p class="platforms">
+          macOS · Windows · Linux ·
+          <a href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+            >iOS</a
+          >
+        </p>
+        <a
+          class="release-link"
+          href="https://github.com/PDFMathTranslate/PDFMathReader/releases/tag/v0.1.13"
+          >v0.1.13 출시 <span aria-hidden="true">↗</span></a
+        >
+      </section>
+      <section class="showcase wrap" aria-labelledby="showcase-title">
+        <h2 id="showcase-title" class="sr-only">좋아하는 플랫폼에서 읽기</h2>
+        <div class="platform-switch" role="group" aria-label="플랫폼 스크린샷">
+          <button type="button" data-platform="mac" aria-pressed="true">
+            macOS</button
+          ><button type="button" data-platform="windows" aria-pressed="false">
+            Windows</button
+          ><button type="button" data-platform="linux" aria-pressed="false">
+            Linux
+          </button>
+        </div>
+        <figure>
+          <img
+            id="app-preview"
+            src="./media/preview.png"
+            alt="macOS에서 실행 중인 PDFMathReader 리더"
+            width="1081"
+            height="1123"
+            fetchpriority="high"
+          />
+          <figcaption id="preview-caption">
+            익숙한 인터페이스. 논문에 더 집중할 공간.
+          </figcaption>
+        </figure>
+      </section>
+      <section id="features" class="feature-section wrap">
+        <div class="section-intro">
+          <h2>
+            읽기는 멈추지 않습니다.<br /><span>생각도 멈추지 않습니다.</span>
+          </h2>
+          <p>
+            첫 번역 문단부터 마지막 주석까지, 연구 자료를 읽는 방식에 맞춰
+            설계했습니다.
+          </p>
+        </div>
+        <div class="feature-rows">
+          <article>
+            <h3>원문과 번역문을 제자리에서.</h3>
+            <p>
+              레이아웃을 분석하고 읽는 동안 번역하세요. 문단 오버레이 또는 수식
+              보존 번역 페이지를 선택해 속도와 세밀한 조판 사이의 균형을 맞출 수
+              있습니다.
+            </p>
+            <ul>
+              <li>초고속 · PDF Inspector 문단 오버레이</li>
+              <li>빠름 · PDFMathTranslate</li>
+              <li>정밀 · PDFMathTranslate-next</li>
+            </ul>
+          </article>
+          <article>
+            <h3>서비스도, 언어도 내 마음대로.</h3>
+            <p>
+              OpenAI 호환 API를 통해 주요 AI 제공업체나 맞춤 서비스를
+              연결하세요. 인터페이스, 원문, 대상 언어를 각각 설정하고 맞춤 언어
+              코드도 사용할 수 있습니다.
+            </p>
+            <p>
+              같은 서비스와 모델의 번역은 캐시된 결과를 재사용하세요. 파트너가
+              제공하는 무료 서비스는 앱에서 이용 가능한 경우에 한해 사용할 수
+              있습니다.
+            </p>
+          </article>
+          <article>
+            <h3>중요한 부분을 돋보이게.</h3>
+            <p>
+              주제 문장, 과학적 발견, 논리적 연결을 강조하세요. TF-IDF로 고유한
+              용어를 강조하거나, 고정 길이 또는 어근 강조를 사용하는 바이오닉
+              리딩을 시도할 수 있습니다.
+            </p>
+            <p>
+              긴 독서 세션을 위해 글꼴, CJK 타이포그래피, 부드러운 스크롤을
+              조정하세요. 마우스 휠에 대한 강제 부드러운 스크롤도 별도로 설정할
+              수 있습니다.
+            </p>
+          </article>
+          <article>
+            <h3>생각을 글과 함께 남기세요.</h3>
+            <p>
+              원문과 번역문을 하이라이트하고 주석을 추가하세요. 썸네일, 개요,
+              검색, 빠른 링크, 갤러리 보기로 탐색하고 창이나 탭 사이를
+              전환하세요.
+            </p>
+            <p>
+              읽는 방식에 맞는 읽기 레이아웃, 너비 맞춤, 높이 맞춤, 확대/축소
+              설정을 선택하세요.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="continuity-section">
+        <div class="wrap continuity-grid">
+          <div class="section-intro">
+            <h2>기기가 달라도.<br /><span>집중은 그대로.</span></h2>
+            <p>데스크톱과 모바일에서 익숙한 읽기 경험을 이어가세요.</p>
+            <a
+              class="secondary"
+              href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+              >iOS 앱 살펴보기 <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="continuity-copy">
+            <h3>데스크톱에서 작업을 맡기세요.</h3>
+            <p>
+              컴퓨터의 번역 커널을 공유하고 원격 기기를 연결해 접속한
+              클라이언트를 확인하세요. 8자리 페어링 코드로 더 쉽게 연결할 수
+              있습니다.
+            </p>
+            <h3>창을 최소화해도 번역은 계속됩니다.</h3>
+            <p>
+              서비스 모드는 창을 최소화한 상태에서도 번역 서비스를 사용할 수
+              있게 합니다. AirDrop 같은 도구로 앱과 기기 사이에서 문서를
+              공유하세요.
+            </p>
+            <p class="note">
+              원격 공유에는 연결 가능한 컴퓨터와 네트워크가 필요합니다. iOS 앱은
+              별도 저장소에서 제공합니다.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section id="appearance" class="appearance-section wrap">
+        <div class="section-intro">
+          <h2>나의 독서.<br /><span>나의 스타일.</span></h2>
+          <p>
+            글꼴, 강조 색상, 다크 모드, 그리고 다양한 앱 아이콘을 만나보세요.<br />아이콘을
+            선택해 나만의 PDFMathReader를 미리 보세요.
+          </p>
+        </div>
+        <div class="icon-options" role="group" aria-label="앱 아이콘 미리보기">
+          <button type="button" data-icon="base" aria-pressed="true">
+            <img
+              src="./media/base.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>기본</span>
+          </button>
+          <button type="button" data-icon="warm" aria-pressed="false">
+            <img
+              src="./media/warm.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>따뜻한 색</span>
+          </button>
+          <button type="button" data-icon="spring" aria-pressed="false">
+            <img
+              src="./media/spring.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>봄</span>
+          </button>
+          <button type="button" data-icon="hist" aria-pressed="false">
+            <img
+              src="./media/hist.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>클래식</span>
+          </button>
+          <button type="button" data-icon="tech" aria-pressed="false">
+            <img
+              src="./media/tech.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>청사진</span>
+          </button>
+          <button type="button" data-icon="moon" aria-pressed="false">
+            <img
+              src="./media/moon.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>달빛</span>
+          </button>
+          <button type="button" data-icon="modern" aria-pressed="false">
+            <img
+              src="./media/modern.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>모던</span>
+          </button>
+          <button type="button" data-icon="art" aria-pressed="false">
+            <img
+              src="./media/art.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>아트</span>
+          </button>
+          <button type="button" data-icon="zotero" aria-pressed="false">
+            <img
+              src="./media/zotero.png"
+              alt=""
+              width="80"
+              height="80"
+              loading="lazy"
+            /><span>Zotero</span>
+          </button>
+        </div>
+        <p class="icon-status note" role="status">
+          기본 미리보기 중입니다. 이 선택은 웹사이트 미리보기만 변경합니다.
+        </p>
+      </section>
+      <section id="reader" class="demo-section wrap">
+        <div class="section-intro">
+          <h2>한 페이지를 읽어 보세요.<br /><span>직접 느껴 보세요.</span></h2>
+          <p>스크롤하고, 번역을 전환하고, 설정을 조정해 보세요.</p>
+        </div>
+        <div class="reader-frame">
+          <iframe
+            id="reader-demo"
+            src="./reader.html"
+            title="준비된 번역이 포함된 PDFMathReader 대화형 샘플"
+            allow="clipboard-write"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <div class="demo-footer">
+          <p>이 데모는 준비된 번역을 사용합니다. API 키가 필요하지 않습니다.</p>
+          <button type="button" id="replay">번역 다시 재생</button>
+        </div>
+        <p class="note">
+          이 대화형 샘플은 기본적인 읽기를 보여주기 위해 이전 리더 인터페이스를
+          유지합니다. 현재 기능과 화면은 스크린샷과 최신 앱에서 확인하세요. 개인
+          문서와 전체 번역 서비스에는 앱을 사용하세요.
+        </p>
+      </section>
+      <section id="download" class="download-section">
+        <div class="wrap">
+          <div class="section-intro">
+            <h2>다음 논문도.<br /><span>내 언어로.</span></h2>
+            <p>오픈 소스이며 계속 발전하고 있습니다. 플랫폼을 선택하세요.</p>
+          </div>
+          <div class="download-grid">
+            <article>
+              <h3>macOS</h3>
+              <p>Apple Silicon 및 Intel</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Mac용 다운로드</a
+              >
+              <p class="note">압축을 풀고 응용 프로그램 폴더로 이동하세요.</p>
+            </article>
+            <article>
+              <h3>Windows</h3>
+              <p>64비트 및 32비트 포터블 에디션</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Windows용 다운로드</a
+              >
+              <p class="note">맞는 .exe 파일을 다운로드해 실행하세요.</p>
+            </article>
+            <article>
+              <h3>Linux</h3>
+              <p>x64 및 ARMv7</p>
+              <a
+                class="primary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+                >Linux용 다운로드</a
+              >
+              <p class="note">.tar.gz의 압축을 풀고 앱을 실행하세요.</p>
+            </article>
+            <article>
+              <h3>iOS</h3>
+              <p>iPhone 및 iPad</p>
+              <a
+                class="secondary"
+                href="https://github.com/PDFMathTranslate/PDFMathReader-iOS"
+                >설치 안내 <span aria-hidden="true">↗</span></a
+              >
+              <p class="note">익숙한 데스크톱 스타일로 설계된 별도 앱입니다.</p>
+            </article>
+          </div>
+          <details class="requirements">
+            <summary>요구 사항 및 실험적 기능</summary>
+            <p>
+              번역에는 이용 가능한 서비스와 네트워크 연결이 필요하며 일부
+              제공업체는 API 요금을 부과할 수 있습니다. Fast 및 Precise는 uv를
+              통해 해당 커널을 설치해야 합니다. 복잡한 레이아웃은 조판 충실도에
+              영향을 줄 수 있습니다. 플랫폼 및 서비스 지원 정보는 프로젝트
+              문서를 참조하세요.
+            </p>
+            <p>
+              실험적 기능으로는 문단 이어 붙이기 감지, 로컬 목차 생성, 선택
+              가능한 원격 zotero-pdf2zh 서버가 있습니다. 원격 Precise 서버는
+              별도로 배포해야 하며 앱에 포함되어 있지 않습니다. 텍스트 레이어가
+              없는 스캔 문서는 적절한 OCR 지원이 필요합니다.
+            </p>
+            <a
+              href="https://github.com/PDFMathTranslate/PDFMathReader#quick-start"
+              >전체 설치 및 사용 안내 <span aria-hidden="true">↗</span></a
+            >
+          </details>
+        </div>
+      </section>
+    </main>
+    <footer class="wrap">
+      <div>
+        <a class="brand" href="#"
+          ><img
+            class="brand-icon"
+            src="./media/base.png"
+            alt=""
+            width="32"
+            height="32"
+          />PDFMathReader</a
+        >
+        <p>PDFMathTranslate로 구동 · AGPL-3.0 오픈 소스</p>
+      </div>
+      <nav aria-label="추가 정보">
+        <a href="https://github.com/PDFMathTranslate/PDFMathReader">GitHub</a
+        ><a href="https://github.com/PDFMathTranslate/PDFMathReader/releases"
+          >변경 로그</a
+        ><a
+          href="https://github.com/PDFMathTranslate/PDFMathReader/blob/main/LICENSE"
+          >라이선스</a
+        ><a href="https://aclanthology.org/2025.emnlp-demos.71/">논문</a>
+      </nav>
+    </footer>
+  </body>
+</html>
