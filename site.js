@@ -5,9 +5,11 @@ const previews = {
 };
 for (const button of document.querySelectorAll("[data-platform]")) {
   button.addEventListener("click", () => {
-    const [file, label] = previews[button.dataset.platform];
+    const [file, label, width, height] = previews[button.dataset.platform];
     const image = document.querySelector("#app-preview");
     image.src = `./media/${file}`;
+    image.width = width;
+    image.height = height;
     image.alt = `PDFMathReader ${label} 阅读器界面`;
     for (const choice of document.querySelectorAll("[data-platform]"))
       choice.setAttribute("aria-pressed", String(choice === button));
