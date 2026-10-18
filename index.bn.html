@@ -41,24 +41,40 @@
         <a href="#features">ফিচার</a><a href="#reader">চেষ্টা করুন</a
         ><a href="#appearance">চেহারা</a><a href="#download">ডাউনলোড</a>
       </nav>
-      <label class="language-picker"
-        ><span class="sr-only">ভাষা</span
-        ><select id="site-language" aria-label="ভাষা">
-          <option value="en">English</option>
-          <option value="zh-CN">简体中文</option>
-          <option value="ja">日本語</option>
-          <option value="ko">한국어</option>
-          <option value="fr">Français</option>
-          <option value="es">Español</option>
-          <option value="hi">हिन्दी</option>
-          <option value="bn" selected>বাংলা</option>
-        </select></label
-      >
-      <a
-        class="download-link"
-        href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
-        >অ্যাপটি নিন</a
-      >
+      <div class="header-actions">
+        <a
+          class="download-link"
+          href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+          >অ্যাপটি নিন</a
+        >
+        <label class="language-picker"
+          ><svg
+            class="language-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path
+              d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z"
+            /></svg
+          ><span class="sr-only">ভাষা</span
+          ><select id="site-language" aria-label="ভাষা">
+            <option value="en">English</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="hi">हिन्दी</option>
+            <option value="bn" selected>বাংলা</option>
+          </select></label
+        >
+      </div>
     </header>
     <main id="main">
       <section class="hero wrap">

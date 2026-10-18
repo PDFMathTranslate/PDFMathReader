@@ -41,24 +41,40 @@
         <a href="#features">기능</a><a href="#reader">사용해 보기</a
         ><a href="#appearance">화면</a><a href="#download">다운로드</a>
       </nav>
-      <label class="language-picker"
-        ><span class="sr-only">언어</span
-        ><select id="site-language" aria-label="언어">
-          <option value="en">English</option>
-          <option value="zh-CN">简体中文</option>
-          <option value="ja">日本語</option>
-          <option value="ko" selected>한국어</option>
-          <option value="fr">Français</option>
-          <option value="es">Español</option>
-          <option value="hi">हिन्दी</option>
-          <option value="bn">বাংলা</option>
-        </select></label
-      >
-      <a
-        class="download-link"
-        href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
-        >앱 받기</a
-      >
+      <div class="header-actions">
+        <a
+          class="download-link"
+          href="https://github.com/PDFMathTranslate/PDFMathReader/releases/latest"
+          >앱 받기</a
+        >
+        <label class="language-picker"
+          ><svg
+            class="language-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path
+              d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z"
+            /></svg
+          ><span class="sr-only">언어</span
+          ><select id="site-language" aria-label="언어">
+            <option value="en">English</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko" selected>한국어</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="hi">हिन्दी</option>
+            <option value="bn">বাংলা</option>
+          </select></label
+        >
+      </div>
     </header>
     <main id="main">
       <section class="hero wrap">
