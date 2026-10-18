@@ -1,4 +1,4 @@
-[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md)
+[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="icône de l’application PDFMathReader" style="height: 1em; width: auto;"> PDFMathReader
 
@@ -8,36 +8,52 @@
 <a href="../LICENSE">
 <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
-Lisez des documents scientifiques dans n’importe quelle langue, avec une traduction en temps réel, sur toutes les plateformes. Propulsé par [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate).
+Lisez des documents scientifiques dans votre langue, en temps réel, sur toutes les plateformes.
+Propulsé par [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) et par une intelligence artificielle de pointe.
 
 <img src="demo.gif" alt="Démonstration" width="100%">
 
 ## Fonctionnalités
 
-- **Préservation de la mise en page** : préservez les formules, les tableaux et les informations importantes tout en conservant aux pages traduites une mise en page proche de l’original.
-- **Traduction en temps réel** : détectez la mise en page et traduisez au fil de la lecture, sans attendre que le document entier soit traité.
-- **Langues de l’interface** : 16 langues, classées selon le nom anglais des pays, avec l’anglais comme langue par défaut. Sont inclus l’arabe, l’arabe égyptien, l’hindi, le bengali, le russe, le portugais, l’ourdou, l’allemand et le pidgin nigérian.
-- **Options de traduction** : choisissez les moteurs, les services et les langues de traduction, ainsi qu’une traduction du document entier ou des pages voisines.
-- **Lecture bilingue** : cliquez sur les paragraphes détectés pour basculer entre le texte original et la traduction.
-- **Navigation flexible** : lisez avec des miniatures, un zoom, un défilement vertical ou horizontal et des mises en page à une, deux ou quatre pages.
-- **Documents multiples** : ouvrez des PDF dans des fenêtres indépendantes et restaurez les positions de lecture et les paramètres d’affichage lors de leur réouverture.
-- **Liens de lecture** : enregistrez des liens bidirectionnels entre les résultats de recherche et leurs emplacements d’origine dans la lecture pour les retrouver facilement.
-- **Surlignages et commentaires** : surlignez les passages importants et ajoutez des commentaires pour consigner vos notes de lecture.
-- **Actions sur les fichiers** : affichez les PDF originaux ou entièrement traduits dans le Finder et envoyez-les avec AirDrop sur macOS ; affichez-les dans l’Explorateur de fichiers et ouvrez le panneau de partage natif de Windows sur Windows.
+- **Lire des documents traduits en préservant la mise en page** : conservez intactes les formules, les tableaux et les autres éléments essentiels.
+- **Commencer à lire sans attendre** : détectez la mise en page et traduisez le contenu au fil de votre lecture.
+- **Lire dans la langue de votre choix** : choisissez parmi une large gamme de langues d’interface, de source et de destination, avec des options de personnalisation supplémentaires.
+- **Choisir votre service de traduction préféré** :
+  - Connectez-vous aux principaux fournisseurs d’IA.
+  - Utilisez des services personnalisés via des API compatibles avec OpenAI.
+  - Accédez gratuitement à la traduction grâce à nos partenariats, afin de rendre la lecture multilingue plus accessible.
+- **Conserver vos notes avec votre lecture** : surlignez des passages et ajoutez des commentaires dans les documents originaux comme dans les documents traduits.
+- **Naviguer efficacement** :
+  - Explorez les documents grâce aux miniatures, aux liens rapides, à la recherche, aux plans, aux numéros de page et aux vues en galerie.
+  - Choisissez parmi plusieurs mises en page de lecture.
+  - Organisez votre travail entre plusieurs fenêtres et onglets.
+- **Adapter l’expérience de lecture** :
+  - Mettez automatiquement en évidence les phrases thématiques, les résultats scientifiques et les liens logiques.
+  - Ajustez le comportement de la traduction selon votre flux de travail.
+  - Personnalisez les polices, les icônes, les couleurs d’accent et le mode sombre.
+  - Trouvez le meilleur équilibre entre vitesse et qualité de détection de la mise en page.
+  - Activez le défilement fluide.
+- **Faciliter le suivi du texte** :
+  - Mettez en évidence les termes distinctifs grâce à la pondération TF-IDF.
+  - Activez la lecture bionique avec une mise en évidence de longueur fixe ou des racines des mots.
+- **Garder votre flux de travail ouvert** : partagez et modifiez des fichiers entre applications et appareils ; par exemple, utilisez AirDrop pour continuer votre lecture sur un appareil mobile.
+- **Profiter d’une interface familière sur toutes les plateformes** : lisez sur macOS, Windows, Linux et iOS.
 
 ## Mises à jour récentes
 
-| Date       | Fonctionnalité                                                                                                                                                                | Contributeur                       |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-10 | [ajouter neuf langues d’interface](https://github.com/PDFMathTranslate/PDFMathReader/commit/041a09d7d9bb1035715bcc2adbb74e6fae8b391e)                                         | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [ajouter les actions de fichiers Finder et AirDrop sur macOS](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073)              | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [ajouter une vérification expérimentale de la langue du document avec Jev](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031) | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [restaurer les pages traduites avant le démarrage du noyau](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)                | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [améliorer la mise en page de lecture et le comportement de la traduction](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe) | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [ajouter le verre liquide et le recentrage de la traduction](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)               | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [personnaliser les raccourcis et affiner les interactions du lecteur](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1)      | [@reycn](https://github.com/reycn) |
+| Date       | Fonctionnalité                                                                                                                                                                          | Contributeur                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-17 | [raccourcir les codes d’association avec les appareils compagnons à huit caractères](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52) | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [ajouter une option réservée à la souris pour forcer le défilement fluide](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)           | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [ajouter les icônes des applications Art et Zotero et actualiser l’icône moderne](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76)    | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [poursuivre les traductions en mode service lorsque les fenêtres sont réduites](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b)      | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [partager les noyaux avec les appareils distants et afficher les clients connectés](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)  | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [copier la sélection ou l’annotation ciblée avec Cmd+C et afficher une notification](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac) | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [ajouter un sélecteur d’icône d’application aux réglages d’apparence](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                | [@reycn](https://github.com/reycn) |
 
 ## Démarrage rapide
+
+### Bureau
 
 <table width="100%">
   <thead>
@@ -75,7 +91,12 @@ Lisez des documents scientifiques dans n’importe quelle langue, avec une tradu
     </tr>
   </tbody>
 </table>
-  *En raison du nombre limité d’appareils disponibles pour les tests, les vérifications de compatibilité sur Windows et Linux sont effectuées périodiquement.*
+  *En raison du nombre limité d’appareils disponibles pour les tests, les vérifications de compatibilité sur Windows et Linux sont effectuées périodiquement (contributions bienvenues).*
+
+### Mobile
+
+- **iOS** : [fourni dans ce dépôt](https://github.com/PDFMathTranslate/PDFMathReader-iOS), avec un design familier pour les clients de bureau
+- **Android** : (contributions bienvenues)
 
 ## Développement
 
@@ -102,7 +123,7 @@ bun run desktop
 Construisez sur la plateforme correspondante :
 
 ```sh
-# macOS (requires a signing identity; add --unsigned to skip signing)
+# macOS (nécessite une identité de signature ; ajoutez --unsigned pour ignorer la signature)
 bun run package:mac
 # Windows
 bun run package:win
@@ -144,6 +165,12 @@ Le texte traduit est mis en cache entre les documents et les redémarrages de l�
 | Rapide       | PDFMathTranslate      | Pages PDF traduites avec conservation des formules      |
 | Précis       | PDFMathTranslate-next | Pages PDF traduites avec une composition plus détaillée |
 
+La détection expérimentale de la continuation des paragraphes par Jev est disponible avec les modes Ultra rapide et Rapide. Le mode Rapide regroupe les fragments adjacents confirmés dans une même colonne avant la traduction et la composition, en conservant les formules à leur place. Les vérifications incertaines ou échouées conservent des fragments séparés. Son activation utilise des caches de pages distincts afin de régénérer les résultats produits avant la fusion.
+
+Expérimental : Settings → Experimental → Generate table of contents ajoute Edit → Generate Table of Contents, qui crée localement une table des matières pour les documents dépourvus de signets, avec une progression affichée dans la barre latérale Contents. Il analyse une page de table des matières imprimée (y compris les points de conduite et les numéros de page alignés à droite) et associe ses numéros de page aux pages physiques ; en l’absence d’une telle page, il déduit les titres à partir des tailles de police, de la numérotation et de l’espacement. Rien n’est envoyé. Les pages numérisées sans couche de texte ne sont pas prises en charge et les tables des matières générées ne sont pas enregistrées avec le document.
+
+Expérimental : le mode Précis peut également traduire via un serveur distant [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) sur HTTP (Settings → Experimental). PDFMathReader implémente le protocole HTTP de ce serveur en tant que client ; le serveur n’est pas inclus et reste facultatif. Le noyau distant est utilisé uniquement lorsque la vérification `/health` du serveur réussit ; sinon, le noyau local Précis est utilisé. Aucune clé d’API n’est envoyée ; le serveur utilise son propre service de traduction. Les pages distantes ne possèdent pas de couche de texte de lecture, et le service de traduction ainsi que les glossaires sélectionnés ne sont pas utilisés pour les pages traduites à distance.
+
 Le rendu PDF et l’analyse de la mise en page restent locaux. La traduction envoie le texte du document à OpenAI et peut entraîner des frais d’API. Les modes Rapide et Précis s’exécutent dans des environnements Python distincts gérés par l’application et installés avec `uv`, et accèdent à OpenAI par l’intermédiaire du proxy backend. Les clés d’API restent en dehors du renderer.
 
 Les clés de bureau enregistrées sont chiffrées avec `safeStorage` d’Electron et protégées par le trousseau macOS. Une clé enregistrée remplace `OPENAI_API_KEY` ; sa suppression rétablit la valeur de repli de l’environnement. L’enregistrement est désactivé lorsque le stockage sécurisé n’est pas disponible.
@@ -158,7 +185,7 @@ Dans le développement dans le navigateur, Express et Vite s’exécutent dans u
 <summary>Limitations</summary>
 
 - **Prise en charge des plateformes** : macOS est la plateforme testée. Windows et Linux disposent de styles propres à chaque plateforme, mais la validation du runtime natif est en attente. Les commandes d’empaquetage ciblent macOS arm64 et Windows x64.
-- **Fidélité de la mise en page** : Ultra rapide utilise un regroupement géométrique des paragraphes et des superpositions de texte. Les tableaux complexes, le texte pivoté, les arrière-plans inhabituels et les traductions longues peuvent ne pas conserver la typographie originale. Le résultat des noyaux mathématiques dépend de la gestion de la mise en page en amont.
+- **Fidélité de la mise en page** : le mode Ultra rapide utilise un regroupement géométrique des paragraphes et des superpositions de texte. Les tableaux complexes, le texte pivoté, les arrière-plans inhabituels et les traductions longues peuvent ne pas conserver la typographie originale. Le résultat des noyaux mathématiques dépend de la gestion de la mise en page en amont.
 - **Documents numérisés** : les PDF numérisés nécessitent un OCR, que cette application n’implémente pas.
 - **Exigences de traduction** : la traduction nécessite une clé d’API OpenAI et un accès réseau. Les modes Rapide et Précis nécessitent des noyaux mathématiques installés séparément avec `uv`.
 - **Périmètre** : il s’agit d’une application locale de lecture et de traduction, et non d’un outil complet d’édition ou d’exportation de PDF.
@@ -196,7 +223,7 @@ Citation :
 
 ## Licence
 
-PDFMathReader est distribué sous la licence GNU Affero General Public License, version 3. Consultez [LICENSE](../LICENSE) pour le texte intégral. Les dépendances conservent leurs licences respectives.
+PDFMathReader est distribué sous la licence GNU Affero General Public License, version 3. Consultez [LICENSE](../LICENSE) pour le texte intégral. Les dépendances conservent leurs licences respectives, notamment [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate), [PDFMathTranslate-next](https://github.com/PDFMathTranslate-next/PDFMathTranslate-next) et [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) (AGPL-3.0, protocole de noyau distant facultatif).
 
 ## Remerciements
 

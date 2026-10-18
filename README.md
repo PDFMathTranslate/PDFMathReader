@@ -1,4 +1,4 @@
-[English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md) · [हिन्दी](doc/README.hi.md) · [Français](doc/README.fr.md) · [Español](doc/README.es.md) · [বাংলা](doc/README.bn.md)
+[English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md) · [हिन्दी](doc/README.hi.md) · [Français](doc/README.fr.md) · [Español](doc/README.es.md) · [বাংলা](doc/README.bn.md) · [한국어](doc/README.ko.md)
 
 # <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader
 
@@ -15,29 +15,29 @@ Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTransla
 
 ## Features
 
-- **Read translated document with preserved layouts**: Preserve formulas, tables, and key information after translation.
-- **Browse translation without waiting**: Detect layouts and translate as you read, without waiting.
-- **Use this application on any platform**: Familar user-interface across macOS, Windows, Linux, and iOS
-- **Choose the translation service you prefer**:
-  - All mainstream AI-providers
-  - Customizable OpenAI-alike protocols
-  - Free service from our cooperation with frontier commercial entities to provide for inclusive use.
-- **Set language you wanna read**: For both interface and translation (source, target), the tool supports a lot of languages and can be customized.
-- **Leave your valuable thoughts across documents**: Highlight key passages and add comments to record your reading notes in either original and translated document
-- **Find information in an inclusive way**
-  - ADHD-friendly information emphsis through TF-IDF calculation
-  - Bionic reading using either fixt chars or word roots
-- **Optimized for your productivity**:
-  - Flexible navigation through thumbnails, quick links, searches, outlines, page numbers, gallery, and multiple layouts
-  - Multiple windows / tabs for different puerposes
-- **Customize reading preferences on your will**: Rich features are provided to customize your own way of reading:
-  - Automatically emphasize key information (topic sentences, scientific findings, logical connections)
-  - Different mode of translation behaviors
-  - Fonts, icons, accent colors and dark mode
-  - Layout detection mode control, from ultrafast to quality preferred
-  - Smooth scrolling
-  - A lot more...
-- **Open ecosystem for any workflow**: Files are sharable, editable, and always ready for other applications and devices (e.g., AirDrop and continue reading on mobile device)
+- **Read translated documents with layouts preserved**: Keep formulas, tables, and other essential content intact.
+- **Start reading without waiting**: Detect layouts and translate content as you read.
+- **Read in your preferred language**: Choose from a wide range of interface, source, and target languages, with options for further customization.
+- **Choose your preferred translation service**:
+  - Connect to major AI providers.
+  - Use custom services through OpenAI-compatible APIs.
+  - Access free translation through our partnerships, helping make multilingual reading more accessible.
+- **Keep your notes alongside your reading**: Highlight passages and add comments in both original and translated documents.
+- **Navigate efficiently**:
+  - Explore documents through thumbnails, quick links, search, outlines, page numbers, and gallery views.
+  - Choose from multiple reading layouts.
+  - Organize your work across windows and tabs.
+- **Tailor the reading experience**:
+  - Automatically emphasize topic sentences, scientific findings, and logical connections.
+  - Adjust translation behavior to suit your workflow.
+  - Customize fonts, icons, accent colors, and dark mode.
+  - Balance layout-detection speed and quality.
+  - Enable smooth scrolling.
+- **Make text easier to follow**:
+  - Emphasize distinctive terms with TF-IDF weighting.
+  - Enable bionic reading with fixed-length or word-root emphasis.
+- **Keep your workflow open**: Share and edit files across applications and devices—for example, use AirDrop to continue reading on a mobile device.
+- **Enjoy a familiar interface across platforms**: Read on macOS, Windows, Linux, and iOS.
 
 ## Recent updates
 
@@ -91,7 +91,7 @@ Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTransla
     </tr>
   </tbody>
 </table>
-  *Due to the limited devices for testing, the compatibility checks on Windows and Linux are done periodically.*
+  *Due to the limited devices available for testing, the compatibility checks on Windows and Linux are done periodically (contribution welcome).*
 
 ### Mobile
 

@@ -1,4 +1,4 @@
-[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md)
+[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="PDFMathReader 应用图标" style="height: 1em; width: auto;"> PDFMathReader
 
@@ -8,36 +8,52 @@
 <a href="../LICENSE">
 <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
-在任何平台上，通过实时翻译阅读任何语言的科学文档。由 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) 提供支持。
+使用你的语言在任何平台上实时阅读科学文档。<br>
+由 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) 和前沿人工智能提供支持。
 
 <img src="demo.gif" alt="演示" width="100%">
 
 ## 功能
 
-- **保留排版**：保留公式、表格和关键信息，同时让翻译后的页面尽可能接近原始布局。
-- **实时翻译**：阅读时检测版面并进行翻译，无需等待整份文档处理完成。
-- **界面语言**：支持 16 种语言，按英文国家名称排序，默认使用英语。包括阿拉伯语、埃及阿拉伯语、印地语、孟加拉语、俄语、葡萄牙语、乌尔都语、德语和尼日利亚皮钦语。
-- **翻译选项**：选择翻译引擎、服务和语言，以及整份文档或邻近页面翻译。
-- **双语阅读**：点击检测出的段落即可在原文与译文之间切换。
-- **灵活导航**：支持缩略图、缩放、纵向或横向滚动，以及单页、双页或四页布局。
-- **多个文档**：在独立窗口中打开 PDF，重新打开时恢复阅读位置和显示设置。
-- **阅读链接**：保存搜索结果与其阅读来源之间的双向链接，方便查阅。
-- **高亮和批注**：高亮重点段落并添加批注，记录阅读笔记。
-- **文件操作**：在 macOS 上在 Finder 中显示原始或完整翻译后的 PDF，并通过 AirDrop 发送；在 Windows 上在文件资源管理器中显示原始或完整翻译后的 PDF，并打开原生 Windows 共享面板。
+- **保留排版阅读翻译后的文档**：保留公式、表格和其他重要内容。
+- **无需等待即可开始阅读**：边阅读边检测版面并翻译内容。
+- **使用偏好的语言阅读**：从丰富的界面语言、源语言和目标语言中选择，并可进一步自定义。
+- **选择偏好的翻译服务**：
+  - 连接主要 AI 提供商。
+  - 通过 OpenAI 兼容 API 使用自定义服务。
+  - 通过合作伙伴获取免费翻译，帮助更多人进行多语言阅读。
+- **让笔记伴随阅读**：在原文和译文中高亮段落并添加批注。
+- **高效导航**：
+  - 通过缩略图、快速链接、搜索、目录、页码和画廊视图浏览文档。
+  - 选择多种阅读布局。
+  - 在多个窗口和标签页之间管理工作。
+- **定制阅读体验**：
+  - 自动突出主题句、科学发现和逻辑联系。
+  - 根据工作流程调整翻译行为。
+  - 自定义字体、图标、强调色和深色模式。
+  - 在版面检测速度和质量之间进行平衡。
+  - 启用平滑滚动。
+- **让文本更易读**：
+  - 使用 TF-IDF 加权突出具有辨识度的术语。
+  - 使用固定长度或词根强调启用仿生阅读。
+- **保持工作流程开放**：在应用和设备之间共享和编辑文件，例如通过 AirDrop 在移动设备上继续阅读。
+- **在不同平台享受熟悉的界面**：支持 macOS、Windows、Linux 和 iOS。
 
 ## 最近更新
 
-| 日期       | 功能                                                                                                                                            | 贡献者                             |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-10 | [新增九种界面语言](https://github.com/PDFMathTranslate/PDFMathReader/commit/041a09d7d9bb1035715bcc2adbb74e6fae8b391e)                           | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [在 macOS 上新增 Finder 和 AirDrop 文件操作](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073) | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [新增实验性的 Jev 文档语言检查](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031)              | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [在内核启动前恢复翻译页面](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)                   | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [改进阅读布局和翻译行为](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe)                     | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [新增液态玻璃和翻译重新聚焦](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)                 | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [自定义快捷键并优化阅读器交互](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1)               | [@reycn](https://github.com/reycn) |
+| 日期       | 功能                                                                                                                                           | 贡献者                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-17 | [将伴侣配对码缩短为八位字符](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52)                | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [增加仅鼠标使用时强制平滑滚动的选项](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)        | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [增加 Art 和 Zotero 应用图标并更新现代图标](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76) | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [窗口最小化时在服务模式下继续翻译](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b)          | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [与远程设备共享内核并显示已连接的客户端](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)    | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [使用 Cmd+C 复制选区或当前批注并显示提示](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)   | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [在“外观”设置中增加应用图标选择器](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)          | [@reycn](https://github.com/reycn) |
 
 ## 快速开始
+
+### 桌面版
 
 <table width="100%">
   <thead>
@@ -75,7 +91,12 @@
     </tr>
   </tbody>
 </table>
-  *由于用于测试的设备有限，Windows 和 Linux 的兼容性检查会定期进行。*
+  *由于可用于测试的设备有限，Windows 和 Linux 的兼容性检查会定期进行（欢迎贡献）。*
+
+### 移动端
+
+- **iOS**：[本仓库提供](https://github.com/PDFMathTranslate/PDFMathReader-iOS)，与桌面客户端采用熟悉的设计
+- **Android**：（欢迎贡献）
 
 ## 开发
 
@@ -83,9 +104,9 @@
 <summary>贡献</summary>
 
 - **工具链：** Bun 管理依赖和脚本；Vue/Vite 构建 UI，Electron 和 Express 在 Node.js 上运行。更改依赖时提交 `bun.lock`。
-- **测试：** 运行 `bun run build`，然后运行 `bun run test`；CI 脚本使用 `node --test .github/scripts/*.test.*`。行为变更应增加有针对性的回归覆盖；参见[测试重点](testing.md)。
+- **测试：**运行 `bun run build`，然后运行 `bun run test`；CI 脚本使用 `node --test .github/scripts/*.test.*`。行为变更应增加有针对性的回归覆盖；参见[测试重点](testing.md)。
 - **CI：** **代码风格**检查格式和 lint；**打包**在 macOS、Windows 和 Linux 上构建并启动应用。**发布**在版本增加时发布默认分支构建成功的软件包。
-- **代码风格：** 提交前运行 `bun run style:fix`。Husky 会自动格式化并检查暂存文件，阻止未解决的错误。Prettier/ESLint 覆盖 JS 和 Vue，Ruff 覆盖 Python，swift-format 覆盖 Swift；参见[设置与规则](code-style.md)。
+- **代码风格：**提交前运行 `bun run style:fix`。Husky 会自动格式化并检查暂存文件，阻止未解决的错误。Prettier/ESLint 覆盖 JS 和 Vue，Ruff 覆盖 Python，swift-format 覆盖 Swift；参见[设置与规则](code-style.md)。
 
 </details>
 
@@ -140,11 +161,15 @@ PDFMathReader 使用 Vue 3 和 PDF.js 构建阅读器，使用 Electron 构建�
 
 | 设置       | 引擎                  | 输出                        |
 | ---------- | --------------------- | --------------------------- |
-| Ultra fast | PDF Inspector         | 在原始 PDF 上覆盖段落译文   |
+| Ultra fast | PDF Inspector         | 原始 PDF 上的段落覆盖层     |
 | Fast       | PDFMathTranslate      | 保留公式的翻译后 PDF 页面   |
 | Precise    | PDFMathTranslate-next | 排版更细致的翻译后 PDF 页面 |
 
-实验性：精确模式可改为通过 HTTP 使用远程 [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) 服务器翻译（设置 → 实验性）。PDFMathReader 仅作为客户端实现该服务器的 HTTP 协议，不内置服务器，且为可选项。只有服务器的 `/health` 检查通过时才使用远程内核，否则使用本地精确内核。不会发送 API 密钥；服务器使用自己的翻译服务。远程页面没有阅读文本层，所选翻译服务和术语表不会用于远程翻译的页面。
+实验性的 Jev 段落续接检测可用于 Ultra fast 和 Fast。Fast 会在翻译和排版前，将同一栏中已确认相邻的片段合并，同时保持公式位置不变。不确定或检查失败时保留独立片段。启用此功能会使用独立的页面缓存，因此会重新生成之前未合并的输出。
+
+实验性：设置 → 实验性 → 生成目录会增加编辑 → 生成目录，该功能会为没有书签的文档在本地建立目录列表，并在目录侧边栏中显示进度。它会解析印刷版目录页（包括点引导线和右对齐的页码），并将其中的页码映射到实际页面；如果没有目录页，则根据字号、编号和间距推断标题。任何内容都不会发送到其他地方。不支持没有文本层的扫描页面，生成的目录也不会随文档保存。
+
+实验性：Precise 还可以通过 HTTP 使用远程 [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) 服务器进行翻译（设置 → 实验性）。PDFMathReader 作为客户端实现该服务器的 HTTP 协议；服务器未随应用打包，为可选项。仅当服务器的 `/health` 检查通过时才使用远程内核，否则运行本地 Precise 内核。不会发送 API 密钥；服务器使用自己的翻译服务。远程页面没有阅读文本层，所选翻译服务和术语表不会用于远程翻译页面。
 
 PDF 渲染和版面分析保持在本地。翻译会将文档文本发送给 OpenAI，可能产生 API 费用。Fast 和 Precise 在通过 `uv` 安装、由应用管理的独立 Python 环境中运行，并通过后端代理访问 OpenAI。API 密钥不会进入渲染器。
 
@@ -159,12 +184,12 @@ PDF 渲染和版面分析保持在本地。翻译会将文档文本发送给 Ope
 <details>
 <summary>限制</summary>
 
-- **平台支持：** macOS 是经过测试的平台。Windows 和 Linux 具有平台专用样式，但原生运行时验证仍在等待。打包命令面向 macOS arm64 和 Windows x64。
-- **版面保真度：** Ultra fast 使用几何段落分组和文本覆盖层。复杂表格、旋转文本、特殊背景和较长的翻译可能无法保留原始排版。数学内核的输出取决于上游的版面处理。
-- **扫描文档：** 扫描 PDF 需要 OCR，而本应用尚未实现 OCR。
-- **翻译要求：** 翻译需要 OpenAI API 密钥和网络访问。Fast 和 Precise 需要通过 `uv` 单独安装数学内核。
-- **范围：** 这是本地阅读和翻译应用，不是完整的 PDF 编辑或导出工具。
-- **验证：** [30 个核心回归测试](core-tests.md)覆盖后端和阅读器支持逻辑。模拟服务提供方的检查无法证明真实的 OpenAI 翻译质量或 API 密钥有效性。
+- **平台支持：**macOS 是经过测试的平台。Windows 和 Linux 具有平台专用样式，但原生运行时验证仍在等待。打包命令面向 macOS arm64 和 Windows x64。
+- **版面保真度：**Ultra fast 使用几何段落分组和文本覆盖层。复杂表格、旋转文本、特殊背景和较长的翻译可能无法保留原始排版。数学内核的输出取决于上游的版面处理。
+- **扫描文档：**扫描 PDF 需要 OCR，而本应用尚未实现 OCR。
+- **翻译要求：**翻译需要 OpenAI API 密钥和网络访问。Fast 和 Precise 需要通过 `uv` 单独安装数学内核。
+- **范围：**这是本地阅读和翻译应用，不是完整的 PDF 编辑或导出工具。
+- **验证：**[30 个核心回归测试](core-tests.md)覆盖后端和阅读器支持逻辑。模拟服务提供方的检查无法证明真实的 OpenAI 翻译质量或 API 密钥有效性。
 
 </details>
 
@@ -198,7 +223,7 @@ PDF 渲染和版面分析保持在本地。翻译会将文档文本发送给 Ope
 
 ## 许可证
 
-PDFMathReader 根据 GNU Affero General Public License 第 3 版授权。完整文本见 [LICENSE](../LICENSE)。依赖项保留各自的许可证。
+PDFMathReader 根据 GNU Affero 通用公共许可证第 3 版授权。完整文本请参见 [LICENSE](../LICENSE)。依赖项保留各自的许可证，包括 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate)、[PDFMathTranslate-next](https://github.com/PDFMathTranslate-next/PDFMathTranslate-next) 和 [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh)（AGPL-3.0，可选的远程内核协议）。
 
 ## 致谢
 

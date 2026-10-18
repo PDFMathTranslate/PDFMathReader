@@ -1,4 +1,4 @@
-[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md)
+[English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader
 
@@ -8,36 +8,52 @@
 <a href="../LICENSE">
 <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
-リアルタイム翻訳を使い、あらゆるプラットフォームで、あらゆる言語の科学文書を読めます。[PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) を基盤としています。
+お好みの言語で科学文書をリアルタイムに、あらゆるプラットフォームで読めます。<br>
+[PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) を基盤に、最先端の人工知能を活用しています。
 
 <img src="demo.gif" alt="デモ" width="100%">
 
 ## 機能
 
-- **レイアウト保持**：数式や表、重要な情報を保ち、翻訳後のページを原文のレイアウトに近い状態にします。
-- **リアルタイム翻訳**：読みながらレイアウトを検出して翻訳し、文書全体の処理完了を待つ必要がありません。
-- **インターフェース言語**：16 言語に対応し、英語の国名順で表示します。既定は英語です。アラビア語、エジプトアラビア語、ヒンディー語、ベンガル語、ロシア語、ポルトガル語、ウルドゥー語、ドイツ語、ナイジェリアピジン語を含みます。
-- **翻訳オプション**：翻訳エンジン、サービス、言語を選び、文書全体または近くのページを翻訳できます。
-- **対訳表示**：検出された段落をクリックして原文と訳文を切り替えられます。
-- **柔軟なナビゲーション**：サムネイル、ズーム、縦横スクロール、1・2・4 ページのレイアウトに対応しています。
-- **複数文書**：PDF を独立したウィンドウで開き、再び開くと閲覧位置と表示設定を復元します。
-- **閲覧リンク**：検索結果と閲覧元の間の双方向リンクを保存し、簡単に参照できます。
-- **ハイライトとコメント**：重要な箇所をハイライトし、コメントを追加して読書メモを残せます。
-- **ファイル操作**：macOS では Finder で元の PDF または完全に翻訳された PDF を表示し、AirDrop で送信できます。Windows ではファイル エクスプローラーで元の PDF または完全に翻訳された PDF を表示し、ネイティブの Windows 共有パネルを開けます。
+- **レイアウトを保った翻訳文書の閲覧**：数式、表、その他の重要な内容をそのまま保ちます。
+- **待たずに読み始める**：読み進めながらレイアウトを検出して内容を翻訳します。
+- **好みの言語で読む**：インターフェース言語、原文言語、翻訳先言語を幅広く選べ、さらに細かくカスタマイズできます。
+- **好みの翻訳サービスを選ぶ**：
+  - 主要な AI プロバイダーに接続できます。
+  - OpenAI 互換 API を使ってカスタムサービスを利用できます。
+  - パートナーシップによる無料翻訳を利用でき、多言語での読書をより身近にします。
+- **読書中のメモを手元に残す**：原文と翻訳文の両方で、文章をハイライトしたりコメントを追加したりできます。
+- **効率的にナビゲーションする**：
+  - サムネイル、クイックリンク、検索、アウトライン、ページ番号、ギャラリービューで文書を閲覧できます。
+  - 複数の閲覧レイアウトから選べます。
+  - ウィンドウとタブをまたいで作業を整理できます。
+- **閲覧体験を調整する**：
+  - トピックセンテンス、科学的知見、論理的なつながりを自動的に強調します。
+  - ワークフローに合わせて翻訳の動作を調整できます。
+  - フォント、アイコン、アクセントカラー、ダークモードをカスタマイズできます。
+  - レイアウト検出の速度と品質のバランスを調整できます。
+  - スムーズスクロールを有効にできます。
+- **文章を読みやすくする**：
+  - TF-IDF の重み付けで特徴的な用語を強調します。
+  - 固定長または語根の強調によるバイオニックリーディングを有効にできます。
+- **ワークフローを途切れさせない**：アプリケーションやデバイス間でファイルを共有・編集できます。たとえば AirDrop を使ってモバイルデバイスで読書を続けられます。
+- **プラットフォーム間で使い慣れたインターフェースを利用する**：macOS、Windows、Linux、iOS で読めます。
 
 ## 最近の更新
 
-| 日付       | 機能                                                                                                                                                    | 貢献者                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-10 | [インターフェース言語を 9 言語追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/041a09d7d9bb1035715bcc2adbb74e6fae8b391e)                  | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [macOS に Finder と AirDrop のファイル操作を追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/218541d7ad70ba7fb42ed4321b8d470492391073)    | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [実験的な Jev 文書言語チェックを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/00d5afbfe58b4ef689c6619c8b6c6f0faf671031)                | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [カーネル起動前に翻訳済みページを復元](https://github.com/PDFMathTranslate/PDFMathReader/commit/e902a304fcd62e333e44e1a9100e19bd5b8ba386)               | [@reycn](https://github.com/reycn) |
-| 2026-10-09 | [閲覧レイアウトと翻訳動作を改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/5729cd091d34b2134ba4202392074efc3205bdbe)                     | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [リキッドグラスと翻訳の再フォーカスを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/d68b7614328512be5cbb879dbaef48895adf8c91)           | [@reycn](https://github.com/reycn) |
-| 2026-10-08 | [ショートカットをカスタマイズし、リーダー操作を改善](https://github.com/PDFMathTranslate/PDFMathReader/commit/4b3deefab7eb854fbae0fac33cc62664469f96f1) | [@reycn](https://github.com/reycn) |
+| 日付       | 機能                                                                                                                                                                    | 貢献者                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-17 | [コンパニオンのペアリングコードを 8 文字に短縮](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52)                      | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [マウス使用時だけスムーズスクロールを強制するオプションを追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)       | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [Art と Zotero のアプリアイコンを追加し、モダンアイコンを更新](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76)       | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [ウィンドウを最小化している間もサービスモードで翻訳を継続](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b)           | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [リモートデバイスとカーネルを共有し、接続中のクライアントを表示](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)     | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [Cmd+C で選択範囲またはフォーカス中の注釈をコピーし、トーストを表示](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac) | [@reycn](https://github.com/reycn) |
+| 2026-10-16 | [外観設定にアプリアイコンの選択機能を追加](https://github.com/PDFMathTranslate/PDFMathReader/commit/729755524d0e3cf3464d0ebbf0020e8fb9ddf90d)                           | [@reycn](https://github.com/reycn) |
 
 ## クイックスタート
+
+### デスクトップ
 
 <table width="100%">
   <thead>
@@ -63,19 +79,24 @@
     </tr>
     <tr>
       <td>インストール</td>
-      <td>macOS の ZIP を展開し、<code>PDFMathReader.app</code> を <code>/Applications</code> に移動して開きます。</td>
-      <td><code>PDFMathReader-win32-x64.exe</code> をダブルクリックします（32 ビット Windows では <code>ia32</code> 版）。</td>
+      <td>macOS 用 ZIP を展開し、<code>PDFMathReader.app</code> を <code>/Applications</code> に移動して開きます。</td>
+      <td><code>PDFMathReader-win32-x64.exe</code> をダブルクリックします（32 ビット版 Windows では <code>ia32</code> 版）。</td>
       <td>CPU に合った <code>.tar.gz</code> を展開し、そのフォルダーで <code>./PDFMathReader</code> を実行します。</td>
     </tr>
     <tr>
       <td>補足</td>
-      <td>macOS でアプリが「壊れている」と表示された場合は、ダウンロードが信頼できることを確認してから、ターミナルで <code>sudo xattr -dr</code> <code>com.apple.quarantine</code> <code>/Applications/PDFMathReader.app</code> を実行します。求められたら Mac のログインパスワードを入力し（表示されません）、アプリを再度開いてください。</td>
-      <td>ポータブルアプリにはランタイムが含まれています。起動すると PDF の <strong>Open with PDFMathReader</strong> メニューが登録されます。実行ファイルを移動したら、もう一度起動してください。</td>
+      <td>macOS でアプリが「壊れている」と表示された場合は、ダウンロードが信頼できることを確認してから、ターミナルで <code>sudo xattr -dr</code> <code>com.apple.quarantine</code> <code>/Applications/PDFMathReader.app</code> を実行します。求められたら Mac のログインパスワードを入力してください（入力中は表示されません）。その後、アプリを再度開きます。</td>
+      <td>ポータブルアプリにはランタイムが含まれています。起動すると PDF の <strong>Open with PDFMathReader</strong> メニューが登録されます。実行ファイルを移動した後は、もう一度起動してください。</td>
       <td>CPU アーキテクチャに合ったパッケージを選んでください。</td>
     </tr>
   </tbody>
 </table>
-  *テストに使用できるデバイスが限られているため、Windows と Linux の互換性チェックは定期的に実施しています。*
+  *テストに使用できるデバイスが限られているため、Windows と Linux の互換性チェックは定期的に実施しています（ご協力を歓迎します）。*
+
+### モバイル
+
+- **iOS**：[このリポジトリで提供](https://github.com/PDFMathTranslate/PDFMathReader-iOS)。デスクトップクライアントと親しみやすいデザインを採用しています。
+- **Android**：（ご協力を歓迎します）
 
 ## 開発
 
@@ -102,7 +123,7 @@ bun run desktop
 対応するプラットフォーム向けにビルドします：
 
 ```sh
-# macOS (requires a signing identity; add --unsigned to skip signing)
+# macOS（署名 ID が必要です。署名を省略するには --unsigned を追加してください）
 bun run package:mac
 # Windows
 bun run package:win
@@ -144,6 +165,12 @@ PDFMathReader はリーダーに Vue 3 と PDF.js、デスクトップアプリ�
 | Fast       | PDFMathTranslate      | 数式を保持した翻訳済み PDF ページ       |
 | Precise    | PDFMathTranslate-next | より詳細な組版による翻訳済み PDF ページ |
 
+実験的な Jev 段落継続検出は Ultra fast と Fast で利用できます。Fast は、翻訳と組版の前に同じ段組み内で連続していることが確認された断片を結合し、数式の位置を保ちます。判定が不確実または失敗した場合は、断片を分離したままにします。有効にするとページキャッシュが分離されるため、以前に結合されていない出力が再生成されます。
+
+実験的機能：設定 → 実験 →「目次を生成」を選ぶと、編集 →「目次を生成」が追加されます。これはブックマークのない文書に対して目次をローカルで作成し、目次サイドバーに進捗を表示します。印刷された目次ページ（ドットリーダーと右揃えのページ番号を含む）を解析してページ番号を物理ページに対応付け、目次ページがない場合はフォントサイズ、番号付け、間隔から見出しを推定します。データが外部に送信されることはありません。テキストレイヤーのないスキャンページには対応しておらず、生成した目次は文書と一緒には保存されません。
+
+実験的機能：Precise は、リモートの [zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh) サーバーを HTTP 経由で利用して翻訳することもできます（設定 → 実験）。PDFMathReader はそのサーバーの HTTP プロトコルをクライアントとして実装しています。サーバーは同梱されず、利用は任意です。リモートカーネルはサーバーの `/health` チェックが成功した場合のみ使用され、それ以外ではローカルの Precise カーネルが動作します。API キーは送信されず、サーバーは独自の翻訳サービスを使用します。リモートページには読書用テキストレイヤーがなく、選択した翻訳サービスと用語集はリモート翻訳ページでは使用されません。
+
 PDF のレンダリングとレイアウト解析はローカルで行われます。翻訳では文書テキストを OpenAI に送信し、API 料金が発生する場合があります。Fast と Precise は `uv` でインストールされたアプリ管理の個別 Python 環境で動作し、バックエンドプロキシ経由で OpenAI にアクセスします。API キーはレンダラーの外部に保持されます。
 
 保存されたデスクトップキーは Electron `safeStorage` と macOS Keychain による保護で暗号化されます。保存されたキーは `OPENAI_API_KEY` を上書きし、消去すると環境変数のフォールバックに戻ります。安全なストレージを利用できない場合、保存は無効になります。
@@ -168,7 +195,7 @@ PDF のレンダリングとレイアウト解析はローカルで行われま�
 
 ## 論文
 
-本プロジェクトの基盤となる研究は、[_Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: System Demonstrations_](https://aclanthology.org/2025.emnlp-demos.71/)（EMNLP 2025）に採択されています。
+本研究の中核は、[_Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: System Demonstrations_](https://aclanthology.org/2025.emnlp-demos.71/)（EMNLP 2025）に採択されています。
 
 引用：
 
@@ -196,7 +223,7 @@ PDF のレンダリングとレイアウト解析はローカルで行われま�
 
 ## ライセンス
 
-PDFMathReader は GNU Affero General Public License, version 3 に基づいてライセンスされています。全文は [LICENSE](../LICENSE) を参照してください。依存関係にはそれぞれのライセンスが適用されます。
+PDFMathReader は GNU Affero General Public License, version 3 に基づいてライセンスされています。全文は [LICENSE](../LICENSE) を参照してください。依存関係にはそれぞれのライセンスが適用されます。これには [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate)、[PDFMathTranslate-next](https://github.com/PDFMathTranslate-next/PDFMathTranslate-next)、[zotero-pdf2zh](https://github.com/guaguastandup/zotero-pdf2zh)（AGPL-3.0、任意のリモートカーネルプロトコル）が含まれます。
 
 ## 謝辞
 
