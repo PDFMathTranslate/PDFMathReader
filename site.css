@@ -667,3 +667,13 @@ footer nav {
     font-size: clamp(38px, 10vw, 48px);
   }
 }
+
+.platform-banner {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+}
