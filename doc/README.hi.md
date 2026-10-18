@@ -1,3 +1,5 @@
+<img src="banner.jpg" alt="डेमो" width="100%">
+
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="PDFMathReader ऐप आइकन" style="height: 1em; width: auto;"> PDFMathReader
@@ -9,8 +11,6 @@
 <img src="https://img.shields.io/github/license/PDFMathTranslate/PDFMathReader"></a>
 
 अपनी भाषा में वैज्ञानिक दस्तावेज़ किसी भी प्लेटफ़ॉर्म पर रीयल-टाइम में पढ़ें। [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) की अत्याधुनिक कृत्रिम बुद्धिमत्ता से संचालित।
-
-<img src="demo.gif" alt="डेमो" width="100%">
 
 ## सुविधाएँ
 
@@ -37,6 +37,10 @@
   - निश्चित लंबाई या शब्द-मूल पर ज़ोर देने वाली बायोनिक रीडिंग सक्षम करें।
 - **अपना कार्यप्रवाह खुला रखें**: ऐप्लिकेशन और उपकरणों के बीच फ़ाइलें साझा और संपादित करें—उदाहरण के लिए, मोबाइल उपकरण पर पढ़ना जारी रखने के लिए AirDrop का उपयोग करें।
 - **सभी प्लेटफ़ॉर्म पर परिचित इंटरफ़ेस का आनंद लें**: macOS, Windows, Linux और iOS पर पढ़ें।
+
+## एक नज़र में
+
+<img src="demo.gif" alt="डेमो" width="100%">
 
 ## हाल के अपडेट
 

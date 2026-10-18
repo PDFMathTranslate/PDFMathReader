@@ -1,3 +1,5 @@
+<img src="doc/banner.jpg" alt="Demo" width="100%">
+
 [English](README.md) · [简体中文](doc/README.zh-CN.md) · [日本語](doc/README.ja.md) · [हिन्दी](doc/README.hi.md) · [Français](doc/README.fr.md) · [Español](doc/README.es.md) · [বাংলা](doc/README.bn.md) · [한국어](doc/README.ko.md)
 
 # <img src="doc/icon.png" alt="PDFMathReader app icon" style="height: 1em; width: auto;"> PDFMathReader
@@ -10,8 +12,6 @@
 
 Read scientific documents in your language, in realtime, on any platform.  
 Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) with frontier artificial intelligence.
-
-<img src="doc/demo.gif" alt="Demo" width="100%">
 
 ## Features
 
@@ -38,6 +38,10 @@ Powered by [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTransla
   - Enable bionic reading with fixed-length or word-root emphasis.
 - **Keep your workflow open**: Share and edit files across applications and devices—for example, use AirDrop to continue reading on a mobile device.
 - **Enjoy a familiar interface across platforms**: Read on macOS, Windows, Linux, and iOS.
+
+## At a glance
+
+<img src="doc/demo.gif" alt="Demo" width="100%">
 
 ## Recent updates
 

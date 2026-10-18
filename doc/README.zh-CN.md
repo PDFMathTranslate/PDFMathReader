@@ -1,3 +1,5 @@
+<img src="banner.jpg" alt="演示" width="100%">
+
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="PDFMathReader 应用图标" style="height: 1em; width: auto;"> PDFMathReader
@@ -10,8 +12,6 @@
 
 使用你的语言在任何平台上实时阅读科学文档。<br>
 由 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) 和前沿人工智能提供支持。
-
-<img src="demo.gif" alt="演示" width="100%">
 
 ## 功能
 
@@ -38,6 +38,10 @@
   - 使用固定长度或词根强调启用仿生阅读。
 - **保持工作流程开放**：在应用和设备之间共享和编辑文件，例如通过 AirDrop 在移动设备上继续阅读。
 - **在不同平台享受熟悉的界面**：支持 macOS、Windows、Linux 和 iOS。
+
+## 概览
+
+<img src="demo.gif" alt="演示" width="100%">
 
 ## 最近更新
 

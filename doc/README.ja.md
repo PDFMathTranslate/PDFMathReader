@@ -1,3 +1,5 @@
+<img src="banner.jpg" alt="デモ" width="100%">
+
 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [हिन्दी](README.hi.md) · [Français](README.fr.md) · [Español](README.es.md) · [বাংলা](README.bn.md) · [한국어](README.ko.md)
 
 # <img src="icon.png" alt="PDFMathReader アプリアイコン" style="height: 1em; width: auto;"> PDFMathReader
@@ -10,8 +12,6 @@
 
 お好みの言語で科学文書をリアルタイムに、あらゆるプラットフォームで読めます。<br>
 [PDFMathTranslate](https://github.com/PDFMathTranslate/PDFMathTranslate) を基盤に、最先端の人工知能を活用しています。
-
-<img src="demo.gif" alt="デモ" width="100%">
 
 ## 機能
 
@@ -38,6 +38,10 @@
   - 固定長または語根の強調によるバイオニックリーディングを有効にできます。
 - **ワークフローを途切れさせない**：アプリケーションやデバイス間でファイルを共有・編集できます。たとえば AirDrop を使ってモバイルデバイスで読書を続けられます。
 - **プラットフォーム間で使い慣れたインターフェースを利用する**：macOS、Windows、Linux、iOS で読めます。
+
+## 概要
+
+<img src="demo.gif" alt="デモ" width="100%">
 
 ## 最近の更新
 
