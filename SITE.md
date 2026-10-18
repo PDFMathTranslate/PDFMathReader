@@ -14,13 +14,16 @@ of `main:electron/app-icons/*.png`. Refresh these from the application when its
 appearance changes. Release downloads use GitHub's `releases/latest` URL; update
 the version-specific release note link when refreshing the page.
 
-The static demo is maintained in `reader.html`, `reader.css`, and `reader.js`.
-It renders `sample.pdf` (copied byte-for-byte from `main:public/sample.pdf`)
-with the locally vendored PDF.js runtime in `assets/demo-pdfjs/`.
-`demo/sample.json` contains prepared translations and PDF-coordinate text boxes
-for the sample. Update both PDF and JSON when the source sample changes.
-No application backend, kernel, credential, or translation API is used.
-Legacy hashed application assets are retained for existing direct asset URLs.
+The demo builds the current application UI from `main:src/main.js` through
+`main:pages/vite.config.mjs`. Build instructions and the prepared-data transport
+live in `main:pages/`. The website build hides kernel switching; the desktop
+application sources and normal build remain unchanged.
+
+`sample.pdf` is copied byte-for-byte from `main:public/sample.pdf`. Its matching
+paragraph geometry and prepared translations are in `main:pages/data/sample.json`.
+Layout and translation calls resolve locally from that data, with no kernel,
+translation service, or credentials. Retain the current app controls and styles
+when updating the demo; do not replace the renderer with a separate viewer.
 
 Preview from this branch with `python3 -m http.server 4173`. Check desktop and
 mobile layouts, platform screenshot switching, all nine icon choices, the demo

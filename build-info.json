@@ -1,0 +1,179 @@
+{
+  "version": "0.1.13",
+  "revision": "e849d84b5b8203a09a2e965786ddb4502757eaa9",
+  "builtAt": "2026-10-18T09:33:41.223Z",
+  "recentFeatures": [
+    {
+      "hash": "5bec25f69a04c0a7cb8811f1faed6ada1a84ba52",
+      "date": "2026-10-17T17:42:40+08:00",
+      "subject": "shorten companion pairing codes to eight characters"
+    },
+    {
+      "hash": "b90ebdd8f2311d1060af6882ea20bc1c90404a8f",
+      "date": "2026-10-17T16:22:13+08:00",
+      "subject": "add an only-for-mouse option to force smooth scrolling"
+    },
+    {
+      "hash": "ea8fc7a0787fe67788e6501d5fffba02f6869e76",
+      "date": "2026-10-17T16:22:13+08:00",
+      "subject": "add art and zotero app icons and refresh the modern icon"
+    },
+    {
+      "hash": "b77dccaaefd92cfd145781c1b9164b67f02adf2b",
+      "date": "2026-10-17T01:16:54+08:00",
+      "subject": "continue translations in service mode while windows are minimized"
+    },
+    {
+      "hash": "6ecb48f5759d1eda69470c54d6236cbbe43b8204",
+      "date": "2026-10-16T22:10:30+08:00",
+      "subject": "share kernels with remote devices and show connected clients"
+    },
+    {
+      "hash": "175a04ec5d1ef6fb9e94380180aa1ff621e4aa27",
+      "date": "2026-10-16T17:46:15+08:00",
+      "subject": "merge local document font pickers into main"
+    },
+    {
+      "hash": "b9e5cc82b22dee2ae35160df31db9dadace538ac",
+      "date": "2026-10-16T17:20:33+08:00",
+      "subject": "copy selection or focused annotation with Cmd+C and show a toast"
+    },
+    {
+      "hash": "729755524d0e3cf3464d0ebbf0020e8fb9ddf90d",
+      "date": "2026-10-16T16:55:44+08:00",
+      "subject": "add app icon picker to Appearance settings"
+    },
+    {
+      "hash": "1c13247863cec538d15c04a93dd3af99efe3efa3",
+      "date": "2026-10-14T14:55:45+08:00",
+      "subject": "choose separate local fonts for CJK characters in original and translated documents"
+    },
+    {
+      "hash": "48a16bbbb2ea2a4c5f61b25fde764944436eb54f",
+      "date": "2026-10-14T14:30:06+08:00",
+      "subject": "pick installed fonts for original and translated documents in Appearance"
+    }
+  ],
+  "acknowledgements": {
+    "en": [
+      {
+        "text": "Many thanks to "
+      },
+      {
+        "text": "OpenAI",
+        "href": "https://openai.com/"
+      },
+      {
+        "text": ", "
+      },
+      {
+        "text": "Anthropic",
+        "href": "https://www.anthropic.com/"
+      },
+      {
+        "text": ", "
+      },
+      {
+        "text": "Warp",
+        "href": "https://www.warp.dev/"
+      },
+      {
+        "text": ", "
+      },
+      {
+        "text": "Immersive Translate",
+        "href": "https://immersivetranslate.com/"
+      },
+      {
+        "text": ", and "
+      },
+      {
+        "text": "SiliconFlow",
+        "href": "https://siliconflow.cn/"
+      },
+      {
+        "text": " for their support."
+      }
+    ],
+    "zh-CN": [
+      {
+        "text": "感谢 "
+      },
+      {
+        "text": "OpenAI",
+        "href": "https://openai.com/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Anthropic",
+        "href": "https://www.anthropic.com/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Warp",
+        "href": "https://www.warp.dev/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Immersive Translate",
+        "href": "https://immersivetranslate.com/"
+      },
+      {
+        "text": " 和 "
+      },
+      {
+        "text": "SiliconFlow",
+        "href": "https://siliconflow.cn/"
+      },
+      {
+        "text": " 提供支持。"
+      }
+    ],
+    "ja": [
+      {
+        "text": "ご支援いただいた "
+      },
+      {
+        "text": "OpenAI",
+        "href": "https://openai.com/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Anthropic",
+        "href": "https://www.anthropic.com/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Warp",
+        "href": "https://www.warp.dev/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "Immersive Translate",
+        "href": "https://immersivetranslate.com/"
+      },
+      {
+        "text": "、"
+      },
+      {
+        "text": "SiliconFlow",
+        "href": "https://siliconflow.cn/"
+      },
+      {
+        "text": " に心より感謝いたします。"
+      }
+    ]
+  }
+}
