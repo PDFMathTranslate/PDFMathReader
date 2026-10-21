@@ -54,9 +54,9 @@ export function registerAnnotationIPC({
         : 'https://www.google.com/search';
     return shell.openExternal(`${base}?q=${encodeURIComponent(text.trim())}`);
   });
-  handle('previewAnnotations:contextMenu', (event, kind) => {
+  handle('previewAnnotations:contextMenu', (event, kind, scope) => {
     const target = trustedWindow(event);
-    if (process.platform !== 'darwin') return null;
+    if (process.platform !== 'darwin' && scope !== 'sidebar') return null;
     if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
     return new Promise((resolve) => {
       let selected = null;
@@ -66,30 +66,39 @@ export function registerAnnotationIPC({
           selected = label;
         },
       });
-      const template = [
-        item('复制'),
-        item('分享'),
-        ...(kind === 'highlight'
-          ? [
-              item(
-                '在文档内搜索',
-                menuLabel(
-                  'Search in Document',
-                  resolveUILanguage(
-                    registry.stateFor(target)?.preferences?.uiLanguage || 'en',
-                    app.getPreferredSystemLanguages()[0] || app.getLocale(),
-                  ),
-                ),
-              ),
-              item('谷歌搜索'),
-              item('谷歌学术搜索'),
-            ]
-          : []),
-        item('和人工智能讨论'),
-        { type: 'separator' },
-        ...(kind === 'comment' ? [item('修改')] : []),
-        item('删除'),
-      ];
+      const locale = resolveUILanguage(
+        registry.stateFor(target)?.preferences?.uiLanguage || 'en',
+        app.getPreferredSystemLanguages()[0] || app.getLocale(),
+      );
+      const template =
+        scope === 'sidebar'
+          ? [item('复制', menuLabel('Copy', locale)), item('删除', menuLabel('Delete', locale))]
+          : [
+              item('复制'),
+              item('分享'),
+              ...(kind === 'highlight'
+                ? [
+                    item(
+                      '在文档内搜索',
+                      menuLabel(
+                        'Search in Document',
+                        resolveUILanguage(
+                          registry.stateFor(target)?.preferences?.uiLanguage || 'en',
+                          app.getPreferredSystemLanguages()[0] || app.getLocale(),
+                        ),
+                      ),
+                    ),
+                    item('glossary-selection', menuLabel('Add to translation glossary...', locale)),
+                    item('谷歌搜索'),
+                    item('谷歌学术搜索'),
+                  ]
+                : []),
+              item('和人工智能讨论'),
+              item('Paraphrase via AI chats...', menuLabel('Paraphrase via AI chats...', locale)),
+              { type: 'separator' },
+              ...(kind === 'comment' ? [item('修改')] : []),
+              item('删除'),
+            ];
       const callback = () => resolve(selected);
       if (
         !popupGlassMenu({

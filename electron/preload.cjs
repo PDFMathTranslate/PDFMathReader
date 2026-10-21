@@ -116,7 +116,7 @@ contextBridge.exposeInMainWorld(
   'previewAnnotations',
   Object.freeze({
     search: (provider, text) => ipcRenderer.invoke('previewAnnotations:search', { provider, text }),
-    contextMenu: (kind) => ipcRenderer.invoke('previewAnnotations:contextMenu', kind),
+    contextMenu: (kind, scope) => ipcRenderer.invoke('previewAnnotations:contextMenu', kind, scope),
     confirmDelete: (kind) => ipcRenderer.invoke('previewAnnotations:confirmDelete', kind),
     palette: () => ipcRenderer.invoke('previewAnnotations:palette'),
     markDeleteHint: () => ipcRenderer.invoke('previewAnnotations:markDeleteHint'),

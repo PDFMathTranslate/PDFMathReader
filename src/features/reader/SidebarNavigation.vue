@@ -17,11 +17,14 @@ const emit = defineEmits([
   'update:mode',
   'page',
   'annotation',
+  'annotations',
+  'notice',
   'ready',
   'scroll',
   'cancel-toc',
   'dismiss-toc',
 ]);
+const { innerWidth, innerHeight } = window;
 const collapsed = ref(new Set());
 const view = ref(),
   dateNow = ref(new Date());
@@ -154,6 +157,50 @@ watch(
 function annotationText(item) {
   return (item.text || '').replace(/[\r\n\u2028\u2029]+/g, '').trim();
 }
+const annotationMenu = ref(null);
+async function annotationAction(name, id, point) {
+  annotationMenu.value = null;
+  const item = props.annotations.find((a) => a.id === id);
+  if (!item) return;
+  try {
+    if (name === '删除') {
+      if (
+        window.previewAnnotations?.confirmDelete &&
+        !(await window.previewAnnotations.confirmDelete(item.kind))
+      )
+        return;
+      if (props.annotations.some((a) => a.id === id))
+        emit(
+          'annotations',
+          props.annotations.filter((a) => a.id !== id),
+        );
+    } else if (name === '复制') {
+      const text = [item.text, item.comment].filter(Boolean).join('\n\n');
+      await (
+        window.previewClipboard?.writeText ||
+        navigator.clipboard.writeText.bind(navigator.clipboard)
+      )(text);
+      emit('notice', { text: '已复制', ...point });
+    }
+  } catch (error) {
+    emit('notice', { text: '无法完成操作：' + error.message, ...point });
+  }
+}
+async function annotationContextMenu(item, event) {
+  const point = { x: event.clientX, y: event.clientY };
+  if (window.previewAnnotations?.contextMenu) {
+    try {
+      const action = await window.previewAnnotations.contextMenu(item.kind, 'sidebar');
+      if (action) await annotationAction(action, item.id, point);
+    } catch (error) {
+      emit('notice', { text: '无法打开菜单：' + error.message, ...point });
+    }
+  } else {
+    annotationMenu.value = { id: item.id, ...point };
+    await nextTick();
+    document.querySelector('.sidebar-annotation-menu button')?.focus();
+  }
+}
 function annotationDate(item) {
   const value = item.modifiedAt || (!item.dateUnknown && item.createdAt),
     date = value ? new Date(value) : null;
@@ -178,6 +225,37 @@ watch(
 );
 </script>
 <template>
+  <Teleport to="body">
+    <div
+      v-if="annotationMenu"
+      class="sidebar-annotation-menu-backdrop"
+      @pointerdown.self="annotationMenu = null"
+      @contextmenu.prevent.self="annotationMenu = null"
+      @keydown.esc.stop="annotationMenu = null"
+    >
+      <div
+        class="sidebar-annotation-menu"
+        role="menu"
+        :style="{
+          left: Math.min(annotationMenu.x, innerWidth - 160) + 'px',
+          top: Math.min(annotationMenu.y, innerHeight - 90) + 'px',
+        }"
+      >
+        <button
+          role="menuitem"
+          @click="annotationAction('复制', annotationMenu.id, annotationMenu)"
+        >
+          Copy
+        </button>
+        <button
+          role="menuitem"
+          @click="annotationAction('删除', annotationMenu.id, annotationMenu)"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </Teleport>
   <div ref="view" class="sidebar-view">
     <div v-show="mode === 'thumbnails'" class="sidebar-thumbnail-view"><slot></slot></div>
     <div
@@ -355,6 +433,7 @@ watch(
             class="sidebar-annotation-item"
             :class="{ selected: selected === item.id }"
             @click="emit('annotation', item)"
+            @contextmenu.prevent.stop="annotationContextMenu(item, $event)"
           >
             <span class="sidebar-annotation-meta"
               ><i :style="{ background: item.kind === 'comment' ? '#8e8e93' : item.color }"></i
@@ -883,5 +962,36 @@ watch(
   text-align: center;
   color: var(--text-secondary);
   font-size: 12px;
+}
+</style>
+
+<style>
+.sidebar-annotation-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+.sidebar-annotation-menu {
+  position: absolute;
+  width: 150px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--chrome);
+  color: var(--text);
+  box-shadow: 0 4px 20px #0004;
+}
+.sidebar-annotation-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.sidebar-annotation-menu button:hover,
+.sidebar-annotation-menu button:focus-visible {
+  background: var(--chrome-pressed);
 }
 </style>

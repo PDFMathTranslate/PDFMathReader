@@ -1,5 +1,8 @@
 <script setup>
-import { t } from '../../i18n/index.mjs';
+import { paraphrasePrompt } from '../../../shared/reader/ai-paraphrase.mjs';
+import { requestGlossaryTerm, normalizeGlossaryTerm } from '../settings/quick-glossary.mjs';
+import { menuLabel } from '../../../shared/i18n/menu.mjs';
+import { t, uiLanguage } from '../../i18n/index.mjs';
 import { ref, computed, inject, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { ownsTranslationGeometry } from '../translation/translation-versions.mjs';
 import {
@@ -556,6 +559,11 @@ async function action(name, a = menu.value?.a) {
   menu.value = null;
   if (!a) return;
   try {
+    if (name === 'glossary-selection') {
+      toolbar.value = false;
+      requestGlossaryTerm(a.text);
+      return;
+    }
     if (name === '删除') {
       if (popupPlatform === 'darwin' && window.previewAnnotations?.confirmDelete) {
         if (await window.previewAnnotations.confirmDelete(a.kind)) {
@@ -607,10 +615,12 @@ async function action(name, a = menu.value?.a) {
       await navigator.share({ text });
       return;
     }
-    if (name === '和人工智能讨论') {
+    if (name === '和人工智能讨论' || name === 'Paraphrase via AI chats...') {
       if (!window.previewAnnotations?.handover)
         throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
-      const result = await window.previewAnnotations.handover(text);
+      const result = await window.previewAnnotations.handover(
+        name === 'Paraphrase via AI chats...' ? paraphrasePrompt(a.text, a.comment) : text,
+      );
       if (!result.cancelled)
         emit('notice', {
           text:
@@ -953,7 +963,7 @@ watch(
         <p>
           {{
             opened.kind === 'highlight' && !opened.comment?.trim()
-              ? (opened.text || '').replace(/[\r\n\u2028\u2029]+/g, '').trim()
+              ? normalizeGlossaryTerm(opened.text)
               : opened.comment || opened.text
           }}
         </p>
@@ -1000,13 +1010,29 @@ watch(
     >
       <button
         v-for="name in menu.a.kind === 'highlight'
-          ? ['复制', '分享', '在文档内搜索', '谷歌搜索', '谷歌学术搜索', '和人工智能讨论', '删除']
-          : ['复制', '分享', '和人工智能讨论', '修改', '删除']"
+          ? [
+              '复制',
+              '分享',
+              'glossary-selection',
+              '在文档内搜索',
+              '谷歌搜索',
+              '谷歌学术搜索',
+              '和人工智能讨论',
+              'Paraphrase via AI chats...',
+              '删除',
+            ]
+          : ['复制', '分享', '和人工智能讨论', 'Paraphrase via AI chats...', '修改', '删除']"
         :key="name"
         role="menuitem"
         @click="action(name)"
       >
-        {{ name === '在文档内搜索' ? t('toolbar.searchDocument') : name }}
+        {{
+          name === 'glossary-selection'
+            ? menuLabel('Add to translation glossary...', uiLanguage)
+            : name === '在文档内搜索'
+              ? t('toolbar.searchDocument')
+              : menuLabel(name, uiLanguage)
+        }}
       </button>
     </div>
     <div v-if="confirming" :data-platform="popupPlatform" class="annotation-ui annotation-modal">

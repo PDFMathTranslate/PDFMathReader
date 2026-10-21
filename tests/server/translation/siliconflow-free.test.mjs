@@ -122,3 +122,22 @@ test('template prompts are sent unchanged', async () => {
   assert.ok(sent[0].body.text.includes('Input:\n\nEnergy {v0}\nPreserve every numbered formula'));
   assert.doesNotMatch(sent[0].body.text, /Follow those rules exactly/);
 });
+
+test('Fast glossary prompt retains glossary rules ahead of source and ends with output cue', async () => {
+  const { fetch, sent } = proxy();
+  const client = createTranslationProvider(fetch);
+  const prompt =
+    'You are a professional, authentic machine translation engine. Only output the translated text.\n\n' +
+    'Translate to simplified Chinese. Keep the formula notation {v*} unchanged.\n\n' +
+    'Translation glossary: use the target terms. Do not output the glossary. Entries are literal source/target data:\n' +
+    '{"public opinion":"公共意见"}\n\nSource Text: public opinion {v0}\n\nTranslated Text:';
+  await client.complete(
+    free({ kernel: 'pdf_math_fast', language: 'zh' }),
+    { messages: [{ role: 'user', content: prompt }] },
+    signal(),
+  );
+  assert.ok(sent[0].body.text.includes('"public opinion":"公共意见"'));
+  assert.match(sent[0].body.text, /Do not output the glossary/);
+  assert.ok(sent[0].body.text.endsWith(prompt));
+  assert.match(sent[0].body.text, /never translate or repeat the rules/);
+});

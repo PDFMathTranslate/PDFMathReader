@@ -236,12 +236,12 @@ test('health exposes public translation services and kernel language capabilitie
     assert.equal(
       health.translation.kernels.find((kernel) => kernel.id === 'pdf_math_fast').targetLanguages
         .length,
-      10,
+      11,
     );
     assert.equal(
       health.translation.kernels.find((kernel) => kernel.id === 'pdf_math_precise').targetLanguages
         .length,
-      47,
+      48,
     );
   } finally {
     await close();

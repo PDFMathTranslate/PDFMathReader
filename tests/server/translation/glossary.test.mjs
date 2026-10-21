@@ -76,6 +76,14 @@ for kind, module_name in [('pdf_math_fast', 'pdf2zh.translator'), ('pdf_math_pre
         content = prompted.messages[-1]['content']
         assert content.startswith('Custom instruction: treatment effect {v0}')
         assert 'Translation glossary:' in content
+        default = BaseTranslator()
+        default.CustomPrompt = True
+        default_messages = default.prompt('treatment effect {v0}\\n\\nTranslated Text:', 'Translate to Chinese.\\n\\nSource Text: ')
+        default_content = default_messages[-1]['content']
+        assert default_content.index('Translation glossary:') < default_content.index('Source Text:')
+        assert default_content.endswith('Translated Text:')
+        assert 'Do not output the glossary' in default_content
+        assert 'Source Text: treatment effect {v0}' in default_content
         assert json.loads(content.split('data:\\n')[1]) == {'treatment effect': '处理"效应'}
 `,
     ],

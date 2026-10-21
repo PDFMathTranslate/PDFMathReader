@@ -64,7 +64,8 @@ function requestBody(provider, body) {
   // Preserve Fast's source and formula placeholders using Next's supported template.
   if (
     provider.kernel === 'pdf_math_fast' &&
-    text.startsWith('You are a professional, authentic machine translation engine.')
+    text.startsWith('You are a professional, authentic machine translation engine.') &&
+    !text.includes('\n\nTranslation glossary:')
   ) {
     const source = text.match(/\n\nSource Text: ([\s\S]*)\n\nTranslated Text:$/);
     if (source)

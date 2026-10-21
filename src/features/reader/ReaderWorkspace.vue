@@ -159,6 +159,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
           @dismiss-toc="dismissTocGeneration"
           @page="navigateFromSidebar"
           @annotation="navigateFromSidebar"
+          @annotations="saveAnnotations"
+          @notice="annotationNotice"
           @scroll="showScrollbar"
         >
           <div

@@ -1,3 +1,5 @@
+import { paraphrasePrompt } from '../../../shared/reader/ai-paraphrase.mjs';
+import { requestGlossaryTerm } from '../settings/quick-glossary.mjs';
 import { selectionSearchQuery } from '../search/document-search.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
@@ -43,14 +45,20 @@ export function createReaderCommands({
       );
       return;
     }
-    if (action === 'chat-selection') {
+    if (action === 'glossary-selection') {
+      requestGlossaryTerm(selectionText);
+      return;
+    }
+    if (action === 'chat-selection' || action === 'paraphrase-selection') {
       const text = typeof selectionText === 'string' ? selectionText.trim() : '';
       if (!text) return;
       void (async () => {
         try {
           if (!window.previewAnnotations?.handover)
             throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
-          const result = await window.previewAnnotations.handover(text);
+          const result = await window.previewAnnotations.handover(
+            action === 'paraphrase-selection' ? paraphrasePrompt(text) : text,
+          );
           if (result.cancelled) return;
           actions.rootActions.notifyCopy(
             result.delivery === 'prefilled'

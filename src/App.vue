@@ -1,4 +1,5 @@
 <script setup>
+import QuickGlossaryDialog from './features/settings/QuickGlossaryDialog.vue';
 import ReaderToolbar from './features/reader/ReaderToolbar.vue';
 import DocumentSearchBar from './features/search/DocumentSearchBar.vue';
 import ReaderWorkspace from './features/reader/ReaderWorkspace.vue';
@@ -250,6 +251,7 @@ const copyToastDetail = computed(() =>
 </script>
 
 <template>
+  <QuickGlossaryDialog v-model="glossaries" />
   <RecentTranslationStatus
     v-if="recentStatusDocument"
     :document="recentStatusDocument"

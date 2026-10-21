@@ -558,12 +558,22 @@ export function createWindowController({
         { role: 'selectAll' },
         { type: 'separator' },
         {
+          label: menuLabel('Add to translation glossary...', locale),
+          click: () =>
+            target.webContents.send('reader:action', 'glossary-selection', params.selectionText),
+        },
+        {
           label: menuLabel('Search in Document', locale),
           click: () =>
             target.webContents.send('reader:action', 'search-selection', params.selectionText),
         },
       ];
       if (process.platform === 'darwin') {
+        template.push({
+          label: menuLabel('Paraphrase via AI chats...', locale),
+          click: () =>
+            target.webContents.send('reader:action', 'paraphrase-selection', params.selectionText),
+        });
         template.push({
           label: 'AI Chat…',
           click: () =>

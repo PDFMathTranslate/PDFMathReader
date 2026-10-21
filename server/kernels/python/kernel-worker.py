@@ -553,15 +553,24 @@ def install_glossary(kind, entries):
         instructions = (
             "\n\nTranslation glossary: use the following target terms whenever the "
             "corresponding source terms occur. Preserve formula placeholders and "
-            "output only the translation. Entries are literal source/target data:\n"
-            + json.dumps(targets, ensure_ascii=False)
+            "output only the translated source text. Do not output the glossary, "
+            "source text, explanations, notes, or headings. "
+            "Entries are literal source/target data:\n" + json.dumps(targets, ensure_ascii=False)
         )
 
         def glossary_prompt(self, *args, **kwargs):
             messages = original_prompt(self, *args, **kwargs)
             if getattr(self, "CustomPrompt", False):
                 messages = [dict(message) for message in messages]
-                messages[-1]["content"] += instructions
+                content = messages[-1]["content"]
+                marker = "\n\nSource Text: "
+                if marker in content:
+                    # Keep the output cue last; glossary data is an instruction,
+                    # never part of the passage the model is asked to translate.
+                    before, source = content.split(marker, 1)
+                    messages[-1]["content"] = before + instructions + marker + source
+                else:
+                    messages[-1]["content"] = content + instructions
             return messages
 
         BaseTranslator.prompt = glossary_prompt

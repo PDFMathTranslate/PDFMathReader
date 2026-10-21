@@ -672,6 +672,17 @@ export function menuLabel(label, locale = 'en') {
 }
 
 for (const [locale, value] of Object.entries({
+  en: 'Paraphrase via AI chats...',
+  'zh-CN': '通过 AI 对话改写...',
+  'zh-TW': '透過 AI 對話改寫...',
+  ja: 'AI チャットで言い換える...',
+  ko: 'AI 채팅으로 바꿔 쓰기...',
+  fr: 'Reformuler via les chats IA...',
+  es: 'Parafrasear mediante chats de IA...',
+}))
+  menuMessages[locale]['Paraphrase via AI chats...'] = value;
+
+for (const [locale, value] of Object.entries({
   en: 'Reopen Closed Tab',
   'zh-CN': '重新打开关闭的标签页',
   'zh-TW': '重新開啟關閉的分頁',
