@@ -1,6 +1,12 @@
 <script setup>
 import { t } from '../../i18n/index.mjs';
-import { AppButton, AppSearchField, AppSegmentedControl, AppSegment } from '../../ui/controls.mjs';
+import {
+  platform,
+  AppButton,
+  AppSearchField,
+  AppSegmentedControl,
+  AppSegment,
+} from '../../ui/controls.mjs';
 defineProps([
   'searchOpen',
   'pages',
@@ -15,6 +21,21 @@ defineProps([
 ]);
 const searchQuery = defineModel('searchQuery');
 const searchMode = defineModel('searchMode', { default: 'fuzzy' });
+const modes = ['fuzzy', 'exact', 'regex'];
+function moveMode(event) {
+  const direction = getComputedStyle(event.currentTarget).direction === 'rtl' ? -1 : 1;
+  const step = { ArrowRight: direction, ArrowLeft: -direction }[event.key];
+  if (!step && event.key !== 'Home' && event.key !== 'End') return;
+  event.preventDefault();
+  const index =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? modes.length - 1
+        : (modes.indexOf(searchMode.value) + step + modes.length) % modes.length;
+  searchMode.value = modes[index];
+  event.currentTarget.querySelectorAll('button')[index]?.focus();
+}
 </script>
 
 <template>
@@ -32,7 +53,25 @@ const searchMode = defineModel('searchMode', { default: 'fuzzy' });
         :aria-label="t('search.documentText')"
         @keydown.enter.prevent="nextSearch($event.shiftKey ? -1 : 1)"
       />
-      <AppSegmentedControl v-model="searchMode" :aria-label="t('search.mode')">
+      <div
+        v-if="platform === 'darwin'"
+        class="search-mode-control"
+        role="group"
+        :aria-label="t('search.mode')"
+        @keydown="moveMode"
+      >
+        <button
+          v-for="mode in modes"
+          :key="mode"
+          type="button"
+          :aria-pressed="searchMode === mode"
+          :tabindex="searchMode === mode ? 0 : -1"
+          @click="searchMode = mode"
+        >
+          {{ t('search.' + mode) }}
+        </button>
+      </div>
+      <AppSegmentedControl v-else v-model="searchMode" :aria-label="t('search.mode')">
         <AppSegment value="fuzzy">{{ t('search.fuzzy') }}</AppSegment>
         <AppSegment value="exact">{{ t('search.exact') }}</AppSegment>
         <AppSegment value="regex">{{ t('search.regex') }}</AppSegment>
@@ -75,3 +114,60 @@ const searchMode = defineModel('searchMode', { default: 'fuzzy' });
     </form>
   </Transition>
 </template>
+
+<style scoped>
+.document-search,
+.document-search :deep(button),
+.search-mode-control {
+  -webkit-app-region: no-drag;
+}
+.search-mode-control {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  min-height: 32px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text, #1d1d1f) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text, #1d1d1f) 5%, transparent);
+  isolation: isolate;
+}
+.search-mode-control > button {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #6e6e73);
+  font:
+    500 13px/1.25 -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  overflow-wrap: anywhere;
+  cursor: default;
+  pointer-events: auto;
+}
+.search-mode-control > button[aria-pressed='true'] {
+  background: var(--chrome-solid, #fff);
+  color: var(--text, #1d1d1f);
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 14%),
+    inset 0 0 0 1px rgb(128 128 128 / 12%);
+}
+.search-mode-control > button:active {
+  background: color-mix(in srgb, var(--text, #1d1d1f) 12%, var(--chrome-solid, #fff));
+}
+.search-mode-control > button:focus-visible {
+  outline: 3px solid var(--macvue-focus-ring, Highlight);
+  outline-offset: 2px;
+}
+@media (prefers-contrast: more) {
+  .search-mode-control > button[aria-pressed='true'] {
+    outline: 1px solid currentColor;
+    outline-offset: -1px;
+  }
+}
+</style>
