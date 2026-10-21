@@ -47,15 +47,15 @@ See [PDFMathReader-iOS](https://github.com/PDFMathTranslate/PDFMathReader-iOS) f
 
 ## Recent updates
 
-| Date       | Feature                                                                                                                                                                | Contributor                        |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 2026-10-18 | [build prepared demo with actual app UI](https://github.com/PDFMathTranslate/PDFMathReader/commit/aae85e7fc46e3b0788045823ba64d6361754b0b7)                            | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [shorten companion pairing codes to eight characters](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52)               | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [add an only-for-mouse option to force smooth scrolling](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f)            | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [add art and zotero app icons and refresh the modern icon](https://github.com/PDFMathTranslate/PDFMathReader/commit/ea8fc7a0787fe67788e6501d5fffba02f6869e76)          | [@reycn](https://github.com/reycn) |
-| 2026-10-17 | [continue translations in service mode while windows are minimized](https://github.com/PDFMathTranslate/PDFMathReader/commit/b77dccaaefd92cfd145781c1b9164b67f02adf2b) | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [share kernels with remote devices and show connected clients](https://github.com/PDFMathTranslate/PDFMathReader/commit/6ecb48f5759d1eda69470c54d6236cbbe43b8204)      | [@reycn](https://github.com/reycn) |
-| 2026-10-16 | [copy selection or focused annotation with Cmd+C and show a toast](https://github.com/PDFMathTranslate/PDFMathReader/commit/b9e5cc82b22dee2ae35160df31db9dadace538ac)  | [@reycn](https://github.com/reycn) |
+| Date       | Feature                                                                                                                                                     | Contributor                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-10-21 | [reopen closed tabs with cmd shift t](https://github.com/PDFMathTranslate/PDFMathReader/commit/5cf3a9d401b9a5414e6fdeaa4df1332ce92396b6)                    | [@reycn](https://github.com/reycn) |
+| 2026-10-21 | [make DOI text clickable](https://github.com/PDFMathTranslate/PDFMathReader/commit/cfb1d08238021c0735038061a78173160cb527c2)                                | [@reycn](https://github.com/reycn) |
+| 2026-10-21 | [add exact and regex document search](https://github.com/PDFMathTranslate/PDFMathReader/commit/65a5bb93f863cced68dd9ee36517135054cee507)                    | [@reycn](https://github.com/reycn) |
+| 2026-10-21 | [add stop all tasks to translation menu](https://github.com/PDFMathTranslate/PDFMathReader/commit/d5c5a99a67204c018ed5fbe7a44c65181ecbfd74)                 | [@reycn](https://github.com/reycn) |
+| 2026-10-18 | [build prepared demo with actual app UI](https://github.com/PDFMathTranslate/PDFMathReader/commit/aae85e7fc46e3b0788045823ba64d6361754b0b7)                 | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [shorten companion pairing codes to eight characters](https://github.com/PDFMathTranslate/PDFMathReader/commit/5bec25f69a04c0a7cb8811f1faed6ada1a84ba52)    | [@reycn](https://github.com/reycn) |
+| 2026-10-17 | [add an only-for-mouse option to force smooth scrolling](https://github.com/PDFMathTranslate/PDFMathReader/commit/b90ebdd8f2311d1060af6882ea20bc1c90404a8f) | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
