@@ -597,8 +597,25 @@
 }
 
 .reading-text-layer ::selection {
-  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: transparent;
   color: transparent;
+}
+
+/* Composite opacity once, so intersecting PDF runs keep a uniform wash. */
+.reading-text-layer > .text-selection-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.28;
+  transform: none;
+  font-size: 0;
+}
+
+.text-selection-overlay > div {
+  position: absolute;
+  background: var(--accent);
 }
 
 .reading-text-layer br::selection {

@@ -2,7 +2,40 @@
 // boundary in the empty space between lines (as in PDF.js's TextLayerBuilder).
 const layers = new Map();
 const textRuns = new Map();
+const selectionOverlays = new Map();
 let listeners;
+
+function drawSelection(document) {
+  const selection = document.getSelection();
+  for (const [host, overlay] of selectionOverlays) {
+    const boxes = [];
+    if (selection?.rangeCount && !selection.isCollapsed) {
+      const selected = selection.getRangeAt(0);
+      const bounds = host.getBoundingClientRect();
+      for (const span of textRuns.get(host)()) {
+        if (!host.contains(span) || !selected.intersectsNode(span)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(span);
+        if (span.contains(selected.startContainer))
+          range.setStart(selected.startContainer, selected.startOffset);
+        if (span.contains(selected.endContainer))
+          range.setEnd(selected.endContainer, selected.endOffset);
+        for (const rect of range.getClientRects()) {
+          if (!rect.width || !rect.height) continue;
+          const box = document.createElement('div');
+          Object.assign(box.style, {
+            left: `${rect.left - bounds.left}px`,
+            top: `${rect.top - bounds.top}px`,
+            width: `${rect.width}px`,
+            height: `${rect.height}px`,
+          });
+          boxes.push(box);
+        }
+      }
+    }
+    overlay.replaceChildren(...boxes);
+  }
+}
 
 export function preserveTextLayerSelection(spans) {
   const document = spans[0]?.ownerDocument;
@@ -61,6 +94,7 @@ function installSharedListeners(document) {
   document.addEventListener(
     'selectionchange',
     () => {
+      drawSelection(document);
       const selection = document.getSelection();
       if (!selection?.rangeCount || selection.isCollapsed) {
         resetAll();
@@ -180,6 +214,14 @@ export function bindTextLayerSelection(host, getSpans) {
   end.className = 'endOfContent';
   end.setAttribute('aria-hidden', 'true');
   host.append(end);
+  const overlay = document.createElement('div');
+  overlay.className = 'text-selection-overlay';
+  overlay.setAttribute('aria-hidden', 'true');
+  host.append(overlay);
+  selectionOverlays.set(host, overlay);
+  const redraw = () => drawSelection(document);
+  const resizeObserver = new ResizeObserver(redraw);
+  resizeObserver.observe(host);
   const start = () => host.classList.add('selecting');
   host.addEventListener('mousedown', start);
   layers.set(host, end);
@@ -192,6 +234,9 @@ export function bindTextLayerSelection(host, getSpans) {
     host.removeEventListener('mousedown', start);
     layers.delete(host);
     textRuns.delete(host);
+    selectionOverlays.delete(host);
+    resizeObserver.disconnect();
+    overlay.remove();
     end.remove();
     host.classList.remove('selecting');
     if (!layers.size) {
