@@ -204,8 +204,8 @@ onBeforeUnmount(() => {
       <span
         class="system-icon"
         aria-hidden="true"
-        data-symbol="network"
-        style="--symbol: url('/symbols/network.png')"
+        data-symbol="iphone"
+        style="--symbol: url('/symbols/iphone.png')"
       ></span>
       <span class="companion-status-dot" aria-hidden="true"></span>
     </AppButton>

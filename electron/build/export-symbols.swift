@@ -6,7 +6,8 @@ try FileManager.default.createDirectory(atPath: output, withIntermediateDirector
 for name in [
     "link", "magnifyingglass", "sidebar.left", "minus.magnifyingglass", "plus.magnifyingglass",
     "gearshape", "gearshape.fill", "circle.lefthalf.filled", "character.book.closed",
-    "character.book.closed.fill", "network", "cpu.fill", "gauge.with.dots.needle.67percent",
+    "character.book.closed.fill", "network", "iphone", "cpu.fill",
+    "gauge.with.dots.needle.67percent",
     "info.circle.fill", "doc.badge.plus", "xmark", "doc.text", "checkmark.circle", "trash",
     "pin.fill", "keyboard", "flask.fill", "bolt.fill", "sparkles",
     "arrow.left.and.right", "arrow.up.and.down", "chevron.up", "chevron.down", "text.bubble",
