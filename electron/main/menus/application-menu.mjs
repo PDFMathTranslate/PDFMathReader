@@ -132,6 +132,8 @@ export function createApplicationMenu({
     const translateAllPages = item('translation-all-pages');
     if (translateAllPages)
       translateAllPages.enabled = !!registry.stateFor(target)?.performance.hasDocument;
+    const stopAllTasks = item('translation-stop-all-tasks');
+    if (stopAllTasks) stopAllTasks.enabled = !!registry.stateFor(target)?.performance.hasDocument;
     const state = registry.stateFor(target)?.preferences;
     if (!state) return;
     const layout = item('layout-' + (state.direction || 'vertical'));
@@ -536,6 +538,15 @@ export function createApplicationMenu({
               undefined,
               'translate-all-pages',
               'translation-all-pages',
+            ),
+            enabled: false,
+          },
+          {
+            ...command(
+              'Stop All Tasks in Progress',
+              undefined,
+              'stop-all-tasks',
+              'translation-stop-all-tasks',
             ),
             enabled: false,
           },

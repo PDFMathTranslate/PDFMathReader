@@ -628,6 +628,17 @@ for (const [locale, value] of Object.entries({
 }))
   menuMessages[locale]['Compare…'] = value;
 
+for (const [locale, value] of Object.entries({
+  en: 'Stop All Tasks in Progress',
+  'zh-CN': '停止所有进行中的任务',
+  'zh-TW': '停止所有進行中的工作',
+  ja: '実行中のすべてのタスクを停止',
+  ko: '진행 중인 모든 작업 중지',
+  fr: 'Arrêter toutes les tâches en cours',
+  es: 'Detener todas las tareas en curso',
+}))
+  menuMessages[locale]['Stop All Tasks in Progress'] = value;
+
 function localeMessages(locale) {
   return supportedLocales.has(locale) ? menuMessages[locale] : menuMessages.en;
 }

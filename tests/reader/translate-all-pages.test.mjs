@@ -207,3 +207,41 @@ test('the menu command starts current-document translation and ignores empty/set
     globalThis.window = oldWindow;
   }
 });
+
+test('stop all tasks cancels work and disables automatic restart without clearing completed pages', () => {
+  const oldWindow = globalThis.window;
+  globalThis.window = {};
+  try {
+    const f = fixture('pdf_inspector');
+    const shell = { settingsWindowMode: false };
+    const calls = [];
+    const completed = f.session.pages.value[0];
+    f.preferences.automatic.value = true;
+    const commands = createReaderCommands({
+      ...f,
+      shell,
+      actions: {
+        tocGeneration: { cancelTocGeneration: () => calls.push('toc') },
+        documentLifecycle: {
+          cancel: () => {
+            assert.equal(f.preferences.automatic.value, false);
+            calls.push('cancel');
+          },
+        },
+        canvasRendering: { renderPages: () => calls.push('render') },
+      },
+    });
+    commands.readerAction('stop-all-tasks');
+    assert.deepEqual(calls, ['toc', 'cancel', 'render']);
+    assert.equal(completed.status, 'ready');
+    assert.equal(completed.blocks[0].translation, 'Saved');
+    shell.settingsWindowMode = true;
+    commands.readerAction('stop-all-tasks');
+    shell.settingsWindowMode = false;
+    f.session.pages.value = [];
+    commands.readerAction('stop-all-tasks');
+    assert.equal(calls.length, 3);
+  } finally {
+    globalThis.window = oldWindow;
+  }
+});

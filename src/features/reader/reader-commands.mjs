@@ -86,6 +86,14 @@ export function createReaderCommands({
       void actions.translationQueue.translateAllDocumentPages();
       return;
     }
+    if (action === 'stop-all-tasks') {
+      if (!session.pages.value.length || shell.settingsWindowMode) return;
+      preferences.automatic.value = false;
+      actions.tocGeneration.cancelTocGeneration();
+      actions.documentLifecycle.cancel();
+      actions.canvasRendering.renderPages();
+      return;
+    }
     if (action === 'force-retranslate') {
       if (!session.pages.value.length || shell.settingsWindowMode) return;
       translationState.forceRetranslation = true;
