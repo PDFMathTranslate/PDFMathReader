@@ -9,6 +9,7 @@ import {
 import { topicSentenceParagraphs } from '../translation/topic-sentences.mjs';
 import { loadPDFRuntime } from './pdf-runtime.mjs';
 import { bindTextLayerSelection, preserveTextLayerSelection } from './text-layer-selection.mjs';
+import { linkifyDoiText } from './text-layer-links.mjs';
 const props = defineProps({
   document: Object,
   pageNumber: Number,
@@ -22,6 +23,10 @@ const props = defineProps({
   selectable: Boolean,
 });
 const host = ref();
+function followDoi(event) {
+  if (event.target.closest('a.pdf-doi-link') && !window.getSelection()?.isCollapsed)
+    event.preventDefault();
+}
 let layer,
   generation = 0,
   currentDocument,
@@ -145,6 +150,7 @@ function emphasize() {
       span.textContent = originals.get(span);
       emphasisKeys.delete(span);
     }
+    if (props.selectable) linkifyDoiText(spans);
     restoreSelection();
     drawEmphasis();
     return;
@@ -198,6 +204,7 @@ function emphasize() {
       }),
     );
   }
+  if (props.selectable) linkifyDoiText(spans);
   restoreSelection();
   drawEmphasis();
 }
@@ -320,10 +327,24 @@ onBeforeUnmount(() => {
     class="reading-text-layer textLayer"
     :class="{ 'topic-layer-only': !selectable }"
     aria-label="Selectable document text"
+    @click="followDoi"
   ></div>
 </template>
 
 <style>
+.reading-text-layer .pdf-doi-link {
+  position: static;
+  font: inherit;
+  color: transparent;
+  text-decoration: none;
+  cursor: pointer;
+}
+.reading-text-layer .pdf-doi-link:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.reading-text-layer .pdf-doi-link:focus-visible {
+  outline: 1px solid var(--accent);
+}
 .reading-text-layer.topic-layer-only {
   pointer-events: none;
   user-select: none;

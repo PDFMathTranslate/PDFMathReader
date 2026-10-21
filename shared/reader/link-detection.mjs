@@ -2,7 +2,7 @@
 // lines (for example "https://doi." / "org/10.1073/..."), so a line break is
 // rejoined when the text before it clearly continues a URL.
 const urlPattern =
-  /\b(?:https?:\/\/|www\.)[^\s<>"，。；：、（）【】《》]+|\bdoi:\s*10\.\d{4,9}\/[^\s<>"，。；：、（）【】《》]+/gi;
+  /\b(?:https?:\/\/|www\.)[^\s<>"，。；：、（）【】《》]+|\b(?:doi:\s*)?10\.\d{4,9}\/[^\s<>"，。；：、（）【】《》]+/gi;
 const trailingPunctuation = /[.,;:!?'"\u2018\u2019\u201c\u201d]+$/;
 const closers = { ')': '(', ']': '[', '}': '{', '>': '<' };
 const maxLinks = 5;
@@ -14,7 +14,7 @@ function rejoinWrappedUrls(text) {
   for (let pass = 0; pass < 8; pass++) {
     // The lookahead leaves the next line's token unconsumed so it can begin a URL.
     const joined = text.replace(/(\S+)[^\S\n]*\n\s*(?=(\S+))/g, (whole, before, after) => {
-      if (!/(?:https?:\/\/|www\.|doi:)/i.test(before)) return whole;
+      if (!/(?:https?:\/\/|www\.|doi:|\b10\.\d{4,9}\/)/i.test(before)) return whole;
       // A break after "/" or "-" is always mid-URL; after "." it is only a
       // continuation when the next token itself looks like part of a URL.
       if (/[/\-_=&?#%~]$/.test(before) || (/\.$/.test(before) && /[./]/.test(after))) return before;
@@ -44,7 +44,7 @@ function trimUrl(candidate) {
 }
 
 function normalize(candidate) {
-  const doi = candidate.match(/^doi:\s*(10\..+)$/i);
+  const doi = candidate.match(/^(?:doi:\s*)?(10\.\d{4,9}\/.+)$/i);
   const raw = doi
     ? `https://doi.org/${doi[1]}`
     : /^www\./i.test(candidate)
@@ -58,6 +58,42 @@ function normalize(candidate) {
   } catch {
     return null;
   }
+}
+
+// Offsets stay in the original text so PDF text runs can become links without
+// replacing their glyphs or approximating their on-screen positions.
+export function detectDoiRanges(text) {
+  const pattern =
+    /\b(?:https?:\/\/(?:dx\.)?doi\.\s*org\/\s*|doi:\s*)?10\.\d{4,9}\/[^\s<>"，。；：、（）【】《》]+/gi;
+  const ranges = [];
+  // Join only breaks with clear continuation punctuation, as detectLinks does.
+  const joined = [];
+  const offsets = [];
+  for (let i = 0; i < text.length; i++) {
+    if (
+      text[i] === '\n' &&
+      /[/\-_.]/.test(joined.at(-1) || '') &&
+      !/^(?:https?:\/\/|doi:|10\.\d{4,9}\/)/i.test(text.slice(i + 1).trimStart()) &&
+      (joined.at(-1) !== '.' || /^[^\s]*[./]/.test(text.slice(i + 1).trimStart()))
+    ) {
+      while (/\s/.test(text[i + 1] || '') && i + 1 < text.length) i++;
+      continue;
+    }
+    joined.push(text[i]);
+    offsets.push(i);
+  }
+  // Newlines that were not joined are boundaries, never part of a DOI.
+  for (const match of joined.join('').matchAll(pattern)) {
+    const candidate = trimUrl(match[0]);
+    const url = normalize(candidate.slice(candidate.search(/10\.\d{4,9}\//)).replace(/\s+/g, ''));
+    if (url)
+      ranges.push({
+        start: offsets[match.index],
+        end: offsets[match.index + candidate.length - 1] + 1,
+        url,
+      });
+  }
+  return ranges;
 }
 
 export function detectLinks(text) {

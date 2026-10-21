@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectEmails, detectLinks, linkLabel } from '../../shared/reader/link-detection.mjs';
+import {
+  detectDoiRanges,
+  detectEmails,
+  detectLinks,
+  linkLabel,
+} from '../../shared/reader/link-detection.mjs';
 import { menuLabel } from '../../shared/i18n/menu.mjs';
 
 test('detects a link at the end of a selected reference', () => {
@@ -60,6 +65,30 @@ test('deduplicates links and labels them compactly', () => {
   assert.equal(linkLabel('https://www.example.org/'), 'example.org');
   assert.equal(linkLabel(`https://example.org/${'a'.repeat(80)}`).length, 48);
   assert.equal(menuLabel('Open Link', 'zh-CN'), '打开链接');
+});
+
+test('detects bare DOIs and deduplicates their resolver URLs', () => {
+  const doi = '10.1002/9781118783665.ieicc0156';
+  assert.deepEqual(detectLinks(`${doi}. https://doi.org/${doi}`), [`https://doi.org/${doi}`]);
+  assert.deepEqual(detectLinks('10.1002/\n9781118783665.ieicc0156'), [`https://doi.org/${doi}`]);
+});
+
+test('DOI link ranges retain source offsets across PDF runs and punctuation', () => {
+  for (const prefix of ['', 'https://doi.org/', 'doi: ']) {
+    const text = `See (${prefix}10.1002/\n9781118783665.ieicc0156). Next reference.`;
+    const [link] = detectDoiRanges(text);
+    assert.equal(link.url, 'https://doi.org/10.1002/9781118783665.ieicc0156');
+    assert.equal(text.slice(link.start, link.end), `${prefix}10.1002/\n9781118783665.ieicc0156`);
+  }
+  assert.deepEqual(detectDoiRanges('10.123/nope 10.12345/ 2026/10.1002'), []);
+  assert.equal(
+    detectDoiRanges('10.1002/first\nNext reference.')[0].url,
+    'https://doi.org/10.1002/first',
+  );
+  assert.deepEqual(
+    detectDoiRanges('https://doi.org/10.1002/first.\n10.1002/second').map((link) => link.url),
+    ['https://doi.org/10.1002/first', 'https://doi.org/10.1002/second'],
+  );
 });
 
 test('detects email addresses in a selection', () => {

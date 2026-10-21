@@ -537,7 +537,11 @@ export function createWindowController({
       reply({ requestHeaders: { ...details.requestHeaders, 'X-Preview-Token': token } }),
     );
     target.webContents.setWindowOpenHandler(({ url }) => {
+      const destination = new URL(url);
       if (
+        (destination.protocol === 'https:' &&
+          ['doi.org', 'dx.doi.org'].includes(destination.hostname) &&
+          /^\/10\.\d{4,9}\/.+/.test(destination.pathname)) ||
         url === 'https://siliconflow.cn/' ||
         url === 'https://chatgpt.com/settings/usage' ||
         url === 'https://developers.openai.com/siwc/token-sharing-open-source' ||
