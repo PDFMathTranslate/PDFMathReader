@@ -2,7 +2,7 @@
 // Scoring follows fasttfidf (https://github.com/purijs/fasttfidf): lowercase
 // tokens of 2-127 characters, raw term counts, idf = ln(N / df) + 1 and a
 // max_df cutoff. N and df count the open document as one of the corpus, so
-// every term on its page has df >= 1.
+// every term in it has df >= 1.
 import { joinLogicalRuns, splitLogicalRanges } from './information-emphasis.mjs';
 
 // Random pages read from each opened document for the shared DF cache.
@@ -11,7 +11,7 @@ export const TFIDF_SAMPLE_PAGES = 12;
 export const TFIDF_MIN_DOCUMENTS = 3;
 // Terms in more than this share of documents (fasttfidf max_df) stay regular.
 export const TFIDF_MAX_DF = 0.5;
-// Share of a page's distinct terms that is emphasized.
+// Share of a document's distinct terms that is emphasized.
 export const TFIDF_EMPHASIZED_SHARE = 0.3;
 // Stroke strengths from the highest-scoring band down; 1 matches bionic bold.
 export const TFIDF_LEVELS = Object.freeze([1, 0.7, 0.4]);
@@ -58,15 +58,9 @@ export function samplePageNumbers(count, size = TFIDF_SAMPLE_PAGES, random = Mat
 
 export const inverseDocumentFrequency = (df, documents) => Math.log(documents / df) + 1;
 
-/**
- * Emphasized word ranges in text. `corpus.documents` and `corpus.frequency(term)`
- * describe the other cached documents only.
- */
-export function tfidfRanges(text, corpus) {
-  const tokens = tfidfTokens(text);
-  if (!tokens.length || !(corpus?.documents >= TFIDF_MIN_DOCUMENTS)) return [];
-  const counts = new Map();
-  for (const { term } of tokens) counts.set(term, (counts.get(term) || 0) + 1);
+/** One ranking for the whole document, against the other cached library documents. */
+export function tfidfStrengths(counts, corpus) {
+  if (!counts.size || !(corpus?.documents >= TFIDF_MIN_DOCUMENTS)) return new Map();
   const documents = corpus.documents + 1,
     scored = [];
   for (const [term, tf] of counts) {
@@ -79,7 +73,12 @@ export function tfidfRanges(text, corpus) {
     strengths = new Map();
   for (let i = 0; i < emphasized; i++)
     strengths.set(scored[i].term, TFIDF_LEVELS[Math.floor((i * TFIDF_LEVELS.length) / emphasized)]);
-  return tokens
+  return strengths;
+}
+
+/** Project the document's fixed strengths onto a page's text. */
+export function tfidfRanges(text, strengths) {
+  return tfidfTokens(text)
     .filter(({ term }) => strengths.has(term))
     .map(({ term, start, end }) => ({ start, end, strength: strengths.get(term) }));
 }
@@ -91,6 +90,6 @@ export function tfidfRunText(runs = []) {
 }
 
 /** Per-run emphasized ranges for native PDF text, joining hyphenated and split words. */
-export function tfidfRunRanges(runs, corpus, text = tfidfRunText(runs)) {
-  return splitLogicalRanges(tfidfRanges(text.logical, corpus), text.parts);
+export function tfidfRunRanges(runs, strengths, text = tfidfRunText(runs)) {
+  return splitLogicalRanges(tfidfRanges(text.logical, strengths), text.parts);
 }

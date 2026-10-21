@@ -5,11 +5,19 @@ import {
   inverseDocumentFrequency,
   samplePageNumbers,
   tfidfRanges,
+  tfidfStrengths,
   tfidfTerm,
   tfidfTermSet,
   tfidfTokens,
 } from '../../src/features/translation/tfidf-weighting.mjs';
 import { glyphPlan, mergeGlyphPlans } from '../../src/features/reader/bionic-rendering.mjs';
+
+const counts = (text) => {
+  const result = new Map();
+  for (const { term } of tfidfTokens(text)) result.set(term, (result.get(term) || 0) + 1);
+  return result;
+};
+const rankedRanges = (text, corpus) => tfidfRanges(text, tfidfStrengths(counts(text), corpus));
 
 const corpus = (documents, frequencies = {}) => ({
   documents,
@@ -39,14 +47,14 @@ test('terms are lowercase words of two or more characters that hold a letter', (
 test('idf follows fasttfidf and nothing is weighed before the corpus is large enough', () => {
   assert.equal(inverseDocumentFrequency(1, 1), 1);
   assert.ok(Math.abs(inverseDocumentFrequency(1, Math.E) - 2) < 1e-12);
-  assert.deepEqual(tfidfRanges('entropy entropy', corpus(2)), []);
-  assert.ok(tfidfRanges('entropy entropy', corpus(3)).length);
+  assert.deepEqual(rankedRanges('entropy entropy', corpus(2)), []);
+  assert.ok(rankedRanges('entropy entropy', corpus(3)).length);
 });
 
 test('common terms stay regular and the top terms are banded by score', () => {
   // Ten documents besides the page's own: "the" is in all of them.
   const text = 'the alpha alpha alpha the beta beta the gamma the delta the epsilon';
-  const ranges = tfidfRanges(text, corpus(10, { the: 10, delta: 3, epsilon: 3 }));
+  const ranges = rankedRanges(text, corpus(10, { the: 10, delta: 3, epsilon: 3 }));
   const strength = (word) => ranges.find((r) => text.slice(r.start, r.end) === word)?.strength;
   assert.equal(strength('the'), undefined);
   // Six distinct terms, so ceil(6 * 0.3) = 2 are emphasized.
@@ -98,4 +106,12 @@ test('glyph plans carry strengths and merging keeps the strongest stroke', () =>
   );
   assert.equal(mergeGlyphPlans(null, new Map()), null);
   assert.equal(mergeGlyphPlans(tfidf, null), tfidf);
+});
+
+test('document frequency determines emphasis consistently regardless of page repetition', () => {
+  const strengths = tfidfStrengths(counts('alpha alpha alpha alpha beta gamma delta'), corpus(10));
+  assert.equal(tfidfRanges('alpha beta beta beta beta beta', strengths)[0].strength, 1);
+  assert.ok(tfidfRanges('beta beta beta', strengths).every(({ strength }) => strength === 0.7));
+  assert.deepEqual(tfidfRanges('gamma gamma gamma gamma', strengths), []);
+  assert.equal(tfidfRanges('alpha', strengths)[0].strength, 1);
 });
