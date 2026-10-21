@@ -7,6 +7,7 @@ export function registerDocumentIPC({
   registry,
   annotations,
   documentSession,
+  rememberClosedTab,
   readSystemPDF,
   validateSystemPDF,
   documentIdentity,
@@ -19,6 +20,7 @@ export function registerDocumentIPC({
   handle('documents:next', async (event) => {
     const target = trustedWindow(event);
     const state = registry.stateFor(target);
+    state.closedTabRemembered = false;
     const document = state.documents.shift();
     if (!document) return null;
     if (typeof document !== 'string') {
@@ -70,6 +72,7 @@ export function registerDocumentIPC({
       state.performance.hasDocument ||
       state.documents.length
     );
+    await rememberClosedTab?.(target);
     state.documentIdentity = null;
     // The start page is reusable as soon as the document closes. Diagnostic
     // snapshots may still finish asynchronously and do not own this state.

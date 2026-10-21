@@ -219,6 +219,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     clearTimeout(bindings.session.readingSaveTimer);
     delete window.previewSaveReadingView;
     delete window.previewPrepareServiceMode;
+    delete window.previewClosedTabDocument;
     delete window.previewCurrentFileKind;
     bindings.invalidateRecentPreviews();
     stopFullscreen?.();

@@ -42,6 +42,7 @@ export async function createDocumentSession(path) {
   }
   return {
     restore: () => structuredClone(saved.documents),
+    current: (key) => structuredClone(live.get(key)),
     open(key, value) {
       const document = entry(value);
       if (!document) throw Error('Invalid session document');

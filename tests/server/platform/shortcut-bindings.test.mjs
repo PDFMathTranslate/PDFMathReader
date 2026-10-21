@@ -177,3 +177,15 @@ test('validShortcutOverrides accepts canonical remaps and clear values only', ()
   assert.equal(validShortcutOverrides('darwin', { search: ['Command+G'] }), false);
   assert.equal(validShortcutOverrides('darwin', { search: 'Command+W' }), false);
 });
+
+test('reopen closed tab uses Command Shift T on macOS and Control Shift T elsewhere', () => {
+  assert.equal(
+    shortcutAction('darwin', keyEvent('T', { meta: true, shift: true })),
+    'reopen-closed-tab',
+  );
+  assert.equal(
+    shortcutAction('win32', keyEvent('T', { control: true, shift: true })),
+    'reopen-closed-tab',
+  );
+  assert.equal(shortcutAction('darwin', keyEvent('t', { meta: true })), 'new-tab');
+});

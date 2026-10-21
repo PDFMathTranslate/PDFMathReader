@@ -49,6 +49,59 @@ export function createWindowController({
     isTabMode: () => getPreferences()?.load?.().windowMode === 'tabs',
     backgroundRenderSmoke,
   });
+  const closedTabs = [];
+  const rememberClosedTab = async (target) => {
+    const state = registry.stateFor(target);
+    if (
+      getPreferences()?.load?.().windowMode !== 'tabs' ||
+      state?.settingsOwner ||
+      state?.closedTabRemembered ||
+      getRuntime().quitting
+    )
+      return;
+    const saved = getDocumentSession()?.current?.(target.id);
+    const source = state?.unkeyedAnnotationSource;
+    let document =
+      saved?.path ||
+      source?.path ||
+      state?.documents?.[0] ||
+      (source?.bytes
+        ? { bytes: Buffer.from(source.bytes), name: target.getTitle().replace(/^TEST — /, '') }
+        : undefined);
+    if (
+      !saved?.path &&
+      !source?.path &&
+      !state?.documents?.length &&
+      state?.serviceMode?.phase !== 'suspended'
+    ) {
+      const snapshot = await target.webContents.executeJavaScript(
+        'window.previewClosedTabDocument?.()',
+      );
+      if (snapshot) document = snapshot;
+    }
+    closedTabs.push({ document, view: saved?.view });
+    if (closedTabs.length > 20) closedTabs.shift();
+    state.closedTabRemembered = true;
+  };
+  const reopenClosedTab = async (owner) => {
+    if (getPreferences()?.load?.().windowMode !== 'tabs') return;
+    const entry = closedTabs.pop();
+    if (!entry) return;
+    try {
+      if (typeof entry.document === 'string') {
+        const existing = registry.findDocumentWindow(await documentIdentity(entry.document));
+        if (existing) return focusDocumentWindow(existing);
+      }
+      if (entry.document)
+        return await createWindow(entry.document, entry.view, null, 'general', true, undefined, {
+          anchor: registry.stateFor(owner)?.settingsOwner || owner || registry.focusedWindow(),
+        });
+      return await newTab(owner);
+    } catch (error) {
+      closedTabs.push(entry);
+      throw error;
+    }
+  };
   registry.setActiveTabResolver?.(tabs.activeFor);
   const serviceMode = createWindowServiceMode({
     registry,
@@ -423,6 +476,11 @@ export function createWindowController({
         void newTab(target).catch(handleBackendFailure);
         return;
       }
+      if (action === 'reopen-closed-tab' && getPreferences()?.load?.().windowMode === 'tabs') {
+        event.preventDefault();
+        void reopenClosedTab(target).catch(handleBackendFailure);
+        return;
+      }
       if (action === 'next-tab' || action === 'previous-tab') {
         event.preventDefault();
         void (action === 'next-tab' ? tabs.next(target) : tabs.previous(target));
@@ -589,9 +647,10 @@ export function createWindowController({
       if (!tabs.beforeClose(target)) target.hide();
       void saveWindowReadingView(target)
         .then(async () => {
-          await getDocumentSession()?.close(target.id);
           await flushCompanionPersistence?.();
           await releaseCompanionDocument?.(target, ownership);
+          await rememberClosedTab(target);
+          await getDocumentSession()?.close(target.id);
           return true;
         })
         .catch((error) => {
@@ -793,6 +852,8 @@ export function createWindowController({
     setRuntime,
     tabs,
     newTab,
+    reopenClosedTab,
+    rememberClosedTab,
     newWindow,
   };
 }

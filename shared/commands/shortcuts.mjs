@@ -9,6 +9,7 @@ const entries = [
   ['settings', 'Settings…', 'File', 'app-settings', ','],
   ['new-window', 'New Window', 'File', 'file-new-window', 'N'],
   ['new-tab', 'New Tab', 'File', 'file-new-tab', 'T'],
+  ['reopen-closed-tab', 'Reopen Closed Tab', 'File', 'file-reopen-closed-tab', 'Shift+T'],
   ['open', 'Open PDF…', 'File', 'file-open', 'O'],
   ['close-document', 'Close Document', 'File', 'file-close-document', 'W'],
   ['close-window', 'Close Window', 'File', 'file-close-window'],

@@ -24,6 +24,10 @@ test('session persists multiple documents and positions; closing all restores no
     await session.open(1, { path: '/tmp/a.pdf' });
     await session.open(2, { path: '/tmp/b.pdf' });
     await session.update(1, view);
+    const snapshot = session.current(1);
+    assert.deepEqual(snapshot, { path: '/tmp/a.pdf', view });
+    snapshot.view.page = 99;
+    assert.equal(session.current(1).view.page, view.page);
     await session.saveOnQuit();
     assert.deepEqual((await createDocumentSession(path)).restore(), [
       { path: '/tmp/a.pdf', view },

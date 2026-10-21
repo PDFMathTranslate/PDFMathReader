@@ -123,6 +123,8 @@ export async function runDesktopSmoke({
   else if (smoke === 'search') await (await import('./search-smoke.mjs')).verifySearch(window);
   else if (smoke === 'text-selection')
     await (await import('./text-selection-smoke.mjs')).verifyTextSelection(window, recents);
+  else if (smoke === 'reopen-tab')
+    await (await import('./reopen-tab-smoke.mjs')).verifyReopenTab(window, windows);
   else if (smoke === 'tabs') await (await import('./tabs-smoke.mjs')).verifyTabs(window, windows);
   else if (smoke === 'multi-window')
     await (

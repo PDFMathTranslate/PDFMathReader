@@ -18,6 +18,7 @@ export function createApplicationMenu({
   newWindow,
   tabs,
   newTab,
+  reopenClosedTab,
   handleBackendFailure,
   shareKernels,
   hideNativeMenuBar,
@@ -369,6 +370,17 @@ export function createApplicationMenu({
                   accelerator: accelerator('T'),
                   click: (_item, target) =>
                     void newTab(target || focusedWindow()).catch(handleBackendFailure),
+                },
+              ]
+            : []),
+          ...(reopenClosedTab && preferences?.load?.().windowMode === 'tabs'
+            ? [
+                {
+                  id: 'file-reopen-closed-tab',
+                  label: 'Reopen Closed Tab',
+                  accelerator: accelerator('Shift+T'),
+                  click: (_item, target) =>
+                    void reopenClosedTab(target || focusedWindow()).catch(handleBackendFailure),
                 },
               ]
             : []),

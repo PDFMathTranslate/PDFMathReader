@@ -325,6 +325,7 @@ export function registerRecentsIPC({
         source.bytes = previous.bytes;
       state.annotationSources.set(first.id, source);
       state.unkeyedAnnotationSource = source;
+      state.closedTabRemembered = false;
       const restored = state.restoreView;
       state.restoreView = null;
       try {

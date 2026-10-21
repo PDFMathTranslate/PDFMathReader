@@ -146,6 +146,15 @@ export async function verifyTabs(first, windows) {
   await wait(first, "!document.querySelector('.app').classList.contains('has-tabs')");
   assert.equal(first.isVisible(), true);
 
+  // Reopen the closed document with the keyboard shortcut, then close it again.
+  first.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'T', modifiers: ['meta', 'shift'] });
+  await until(() => readers().length === 2, 'closed tab reopened');
+  const reopened = readers().find((window) => window !== first);
+  await wait(reopened, 'window.previewRenderDiagnostics?.().totalPages>0');
+  await until(() => reopened.isVisible() && !first.isVisible(), 'reopened tab active');
+  await run(reopened, `window.previewTabs.close(${reopened.id})`);
+  await until(() => readers().length === 1 && first.isVisible(), 'reopened tab closed');
+
   // New Window (⌘N) opens its start page as a tab, not a standalone window.
   first.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'N', modifiers: ['meta'] });
   await until(() => readers().length === 2, 'third tab window');

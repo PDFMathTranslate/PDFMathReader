@@ -670,3 +670,14 @@ export function menuLabel(label, locale = 'en') {
   if (quit) return (quitLabel[code] || quitLabel.en)(quit[1]);
   return messages[label] || menuMessages.en[label] || label;
 }
+
+for (const [locale, value] of Object.entries({
+  en: 'Reopen Closed Tab',
+  'zh-CN': '重新打开关闭的标签页',
+  'zh-TW': '重新開啟關閉的分頁',
+  ja: '閉じたタブを開く',
+  ko: '닫은 탭 다시 열기',
+  fr: 'Rouvrir l’onglet fermé',
+  es: 'Volver a abrir la pestaña cerrada',
+}))
+  menuMessages[locale]['Reopen Closed Tab'] = value;

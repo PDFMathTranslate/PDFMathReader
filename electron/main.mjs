@@ -623,6 +623,7 @@ else {
         newWindow: windowController.newWindow,
         tabs: windowController.tabs,
         newTab: windowController.newTab,
+        reopenClosedTab: windowController.reopenClosedTab,
         handleBackendFailure,
         shareKernels: companion ? (target) => companion.showDialog(target) : undefined,
         hideNativeMenuBar: windowController.hideNativeMenuBar,
@@ -747,6 +748,7 @@ else {
         appearance,
       });
       registerDocumentIPC({
+        rememberClosedTab: windowController.rememberClosedTab,
         handle: handleMeasuredIPC,
         trustedWindow: registry.trustedWindow,
         registry,

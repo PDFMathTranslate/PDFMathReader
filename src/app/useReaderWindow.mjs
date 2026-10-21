@@ -652,6 +652,14 @@ export function useReaderWindow() {
     await flushAnnotations();
     await featureActions.saveReadingView();
   };
+  window.previewClosedTabDocument = async () =>
+    session.pdf
+      ? {
+          name: session.title.value.replace(/^TEST — /, ''),
+          bytes: await session.pdf.getData(),
+          resumeView: featureActions.readingView() || session.lastReadingView,
+        }
+      : null;
   window.previewPrepareServiceMode = async () => {
     const busy = () =>
       !window.previewReady ||
