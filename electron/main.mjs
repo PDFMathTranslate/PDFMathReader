@@ -813,23 +813,31 @@ else {
       };
       await openLaunchFiles();
       if (!smoke && !ciLaunchCheck && preferences.load().restoreDocuments) {
-        for (const document of documentSession.restore()) {
+        let savedDocuments = [];
+        try {
+          savedDocuments = documentSession.restore();
+        } catch (error) {
+          console.warn('Could not restore document session:', error);
+        }
+        for (const document of savedDocuments) {
           await openLaunchFiles();
           try {
             await validateSystemPDF(document.path);
-          } catch {
-            continue;
+            await openLaunchFiles();
+            const firstRestore = windows.size === 0;
+            const restored = await windowController.openDocumentWindow(
+              document.path,
+              null,
+              document.view,
+              false,
+            );
+            await openLaunchFiles();
+            if (firstRestore && !externalLaunch) windowController.focusDocumentWindow(restored);
+          } catch (error) {
+            // A stale, locked, or otherwise unavailable document must not prevent
+            // startup from reaching the blank start-page fallback below.
+            console.warn('Could not restore document:', document.path, error);
           }
-          await openLaunchFiles();
-          const firstRestore = windows.size === 0;
-          const restored = await windowController.openDocumentWindow(
-            document.path,
-            null,
-            document.view,
-            false,
-          );
-          await openLaunchFiles();
-          if (firstRestore && !externalLaunch) windowController.focusDocumentWindow(restored);
         }
       }
       await openLaunchFiles();
