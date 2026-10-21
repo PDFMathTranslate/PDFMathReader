@@ -546,12 +546,50 @@ def install_glossary(kind, entries):
     else:
         from pdf2zh_next.translator.base_translator import BaseTranslator
     targets = {entry["source"]: entry["target"] for entry in entries}
+    if kind == "pdf_math_fast":
+        import os
+
+        original_prompt = BaseTranslator.prompt
+        instructions = (
+            "\n\nTranslation glossary: use the following target terms whenever the "
+            "corresponding source terms occur. Preserve formula placeholders and "
+            "output only the translation. Entries are literal source/target data:\n"
+            + json.dumps(targets, ensure_ascii=False)
+        )
+
+        def glossary_prompt(self, *args, **kwargs):
+            messages = original_prompt(self, *args, **kwargs)
+            if getattr(self, "CustomPrompt", False):
+                messages = [dict(message) for message in messages]
+                messages[-1]["content"] += instructions
+            return messages
+
+        BaseTranslator.prompt = glossary_prompt
+
+        def supports_glossary_prompt(translator):
+            return (
+                getattr(translator, "CustomPrompt", False)
+                and os.environ.get("PDFMATHREADER_LOCAL_TRANSLATION") != "1"
+            )
+    else:
+
+        def supports_glossary_prompt(translator):
+            return False
+
     pattern = re.compile(
         "|".join(re.escape(source) for source in sorted(targets, key=len, reverse=True))
     )
 
     def wrap(original, structured=False):
         def translate(self, text, *args, **kwargs):
+            if supports_glossary_prompt(self):
+                # Bypass pre-glossary caches, including providers that do not
+                # include their rendered prompt in the upstream cache key.
+                if args:
+                    args = (True, *args[1:])
+                else:
+                    kwargs["ignore_cache"] = True
+                return original(self, text, *args, **kwargs)
             prefix = "PMRGLOSSARY"
             while prefix in text:
                 prefix += "X"

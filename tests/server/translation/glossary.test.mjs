@@ -49,6 +49,8 @@ namespace = {'json': json, 're': re}
 exec(compile(ast.Module(body=[node], type_ignores=[]), '<glossary>', 'exec'), namespace)
 for kind, module_name in [('pdf_math_fast', 'pdf2zh.translator'), ('pdf_math_precise', 'pdf2zh_next.translator.base_translator')]:
     class BaseTranslator:
+        def prompt(self, text, template=None):
+            return [{'role': 'user', 'content': (template or 'Translate: ') + text}]
         def translate(self, text, ignore_cache=False):
             return text
         def llm_translate(self, text, ignore_cache=False):
@@ -56,10 +58,25 @@ for kind, module_name in [('pdf_math_fast', 'pdf2zh.translator'), ('pdf_math_pre
     module = types.ModuleType(module_name)
     module.BaseTranslator = BaseTranslator
     sys.modules[module_name] = module
+    class PromptTranslator(BaseTranslator):
+        CustomPrompt = True
+        def translate(self, text, ignore_cache=False):
+            assert ignore_cache
+            self.messages = self.prompt(text, 'Custom instruction: ')
+            self.source = text
+            return '处理"效应'
     namespace['install_glossary'](kind, [{'source': 'treatment effect', 'target': '处理"效应'}])
     translator = BaseTranslator()
     assert translator.translate('treatment effect {v0}') == '处理"效应 {v0}'
     assert json.loads(translator.llm_translate('treatment effect'))['translation'] == '处理"效应'
+    if kind == 'pdf_math_fast':
+        prompted = PromptTranslator()
+        assert prompted.translate('treatment effect {v0}') == '处理"效应'
+        assert prompted.source == 'treatment effect {v0}'
+        content = prompted.messages[-1]['content']
+        assert content.startswith('Custom instruction: treatment effect {v0}')
+        assert 'Translation glossary:' in content
+        assert json.loads(content.split('data:\\n')[1]) == {'treatment effect': '处理"效应'}
 `,
     ],
     { cwd: process.cwd() },
