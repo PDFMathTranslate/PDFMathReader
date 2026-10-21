@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'ترجمے کی ترتیبات کھولیں',
   },
   search: {
+    mode: 'تلاش کا طریقہ',
+    fuzzy: 'تقریبی',
+    exact: 'عین مطابق',
+    regex: 'ریجیکس',
+    invalidRegex: 'غلط ریگولر ایکسپریشن',
+
     foundPages: '{count} صفحات میں ملا',
     done: 'مکمل',
     searchTranslation: 'ترجمے میں تلاش کریں',

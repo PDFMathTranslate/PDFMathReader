@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: '번역 설정 열기',
   },
   search: {
+    mode: '검색 모드',
+    fuzzy: '유사',
+    exact: '정확',
+    regex: '정규식',
+    invalidRegex: '잘못된 정규식',
+
     foundPages: '{count}개 페이지에서 발견',
     done: '완료',
     searchTranslation: '번역문 검색',

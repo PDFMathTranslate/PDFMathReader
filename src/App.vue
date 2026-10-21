@@ -182,6 +182,7 @@ const {
   searchOpen,
   searchPageCount,
   searchQuery,
+  searchMode,
   searchResults,
   selectedAnnotation,
   selectedParagraph,
@@ -334,6 +335,7 @@ const copyToastDetail = computed(() =>
         :search-page-count="searchPageCount"
         :close-search="closeSearch"
         v-model:search-query="searchQuery"
+        v-model:search-mode="searchMode"
       />
       <input
         ref="fileInput"

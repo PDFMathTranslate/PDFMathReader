@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: '翻訳設定を開く',
   },
   search: {
+    mode: '検索モード',
+    fuzzy: 'あいまい',
+    exact: '完全一致',
+    regex: '正規表現',
+    invalidRegex: '無効な正規表現',
+
     foundPages: '{count} ページで見つかりました',
     done: '完了',
     searchTranslation: '翻訳を検索',

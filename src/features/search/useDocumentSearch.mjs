@@ -23,6 +23,7 @@ export function useDocumentSearch({
 }) {
   const searchOpen = ref(false),
     searchQuery = ref(''),
+    searchMode = ref('fuzzy'),
     searchInput = ref(),
     searchResults = shallowRef([]),
     searchIndex = ref(-1),
@@ -79,13 +80,23 @@ export function useDocumentSearch({
   async function runSearch() {
     const generation = ++searchGeneration,
       token = getEpoch(),
-      query = searchQuery.value;
+      query = searchQuery.value,
+      mode = searchMode.value;
     searchResults.value = [];
     searchIndex.value = -1;
     searchFailure.value = '';
     if (!searchOpen.value || !query.trim() || !getDocument()) {
       searchBusy.value = false;
       return;
+    }
+    if (mode === 'regex') {
+      try {
+        new RegExp(query, 'giu');
+      } catch {
+        searchFailure.value = t('search.invalidRegex');
+        searchBusy.value = false;
+        return;
+      }
     }
     searchBusy.value = true;
     const translated = showTranslations.value;
@@ -118,7 +129,7 @@ export function useDocumentSearch({
             );
             return { ...segment, paragraph: block || segment.paragraph || segment };
           });
-        const matches = searchSegments(segments, query).map((match) => ({
+        const matches = searchSegments(segments, query, mode).map((match) => ({
           ...match,
           page: p.number,
         }));
@@ -185,7 +196,7 @@ export function useDocumentSearch({
       (searchIndex.value + delta + searchResults.value.length) % searchResults.value.length;
     void locateSearch();
   }
-  watch([searchQuery, showTranslations], scheduleSearch);
+  watch([searchQuery, searchMode, showTranslations], scheduleSearch);
 
   watch(searchOpen, (value) => {
     if (value) scheduleSearch();
@@ -194,6 +205,7 @@ export function useDocumentSearch({
   return {
     searchOpen,
     searchQuery,
+    searchMode,
     searchInput,
     searchResults,
     searchIndex,

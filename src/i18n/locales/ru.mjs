@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'Открыть настройки перевода',
   },
   search: {
+    mode: 'Режим поиска',
+    fuzzy: 'Нечёткий',
+    exact: 'Точный',
+    regex: 'Регулярное выражение',
+    invalidRegex: 'Недопустимое регулярное выражение',
+
     foundPages: 'Найдено на страницах: {count}',
     done: 'Готово',
     searchTranslation: 'Искать в переводе',

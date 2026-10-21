@@ -484,6 +484,7 @@ export function useReaderWindow() {
   const {
     searchOpen,
     searchQuery,
+    searchMode,
     searchInput,
     searchResults,
     searchIndex,
@@ -1353,6 +1354,7 @@ export function useReaderWindow() {
     searchOpen,
     searchPageCount,
     searchQuery,
+    searchMode,
     searchResults,
     selectedAnnotation,
     selectedParagraph,

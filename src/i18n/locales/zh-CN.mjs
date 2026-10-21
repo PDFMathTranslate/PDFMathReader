@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: '打开翻译设置',
   },
   search: {
+    mode: '搜索模式',
+    fuzzy: '模糊',
+    exact: '精确',
+    regex: '正则',
+    invalidRegex: '无效的正则表达式',
+
     foundPages: '在 {count} 页找到结果',
     done: '完成',
     searchTranslation: '搜索译文',

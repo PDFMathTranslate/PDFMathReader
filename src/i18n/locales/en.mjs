@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'Open translation settings',
   },
   search: {
+    mode: 'Search mode',
+    fuzzy: 'Fuzzy',
+    exact: 'Exact',
+    regex: 'Regex',
+    invalidRegex: 'Invalid regular expression',
+
     foundPages: 'Found on {count} pages',
     done: 'Done',
     searchTranslation: 'Search translation',

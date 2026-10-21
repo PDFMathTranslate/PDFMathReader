@@ -1,6 +1,6 @@
 <script setup>
 import { t } from '../../i18n/index.mjs';
-import { AppButton, AppSearchField } from '../../ui/controls.mjs';
+import { AppButton, AppSearchField, AppSegmentedControl, AppSegment } from '../../ui/controls.mjs';
 defineProps([
   'searchOpen',
   'pages',
@@ -14,6 +14,7 @@ defineProps([
   'closeSearch',
 ]);
 const searchQuery = defineModel('searchQuery');
+const searchMode = defineModel('searchMode', { default: 'fuzzy' });
 </script>
 
 <template>
@@ -31,6 +32,11 @@ const searchQuery = defineModel('searchQuery');
         :aria-label="t('search.documentText')"
         @keydown.enter.prevent="nextSearch($event.shiftKey ? -1 : 1)"
       />
+      <AppSegmentedControl v-model="searchMode" :aria-label="t('search.mode')">
+        <AppSegment value="fuzzy">{{ t('search.fuzzy') }}</AppSegment>
+        <AppSegment value="exact">{{ t('search.exact') }}</AppSegment>
+        <AppSegment value="regex">{{ t('search.regex') }}</AppSegment>
+      </AppSegmentedControl>
       <div class="search-results-row">
         <span class="search-count" role="status">{{
           searchFailure ||

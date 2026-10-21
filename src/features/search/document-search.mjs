@@ -8,7 +8,14 @@ const normalized = (value) =>
     .normalize('NFKC')
     .toLocaleLowerCase()
     .replace(/\s+/gu, '');
-export function searchSegments(segments, query) {
+export function searchSegments(segments, query, mode = 'fuzzy') {
+  const pattern =
+    mode === 'fuzzy'
+      ? null
+      : new RegExp(
+          mode === 'regex' ? query : String(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          'giu',
+        );
   const needles = [
     ...new Set(
       String(query || '')
@@ -30,7 +37,17 @@ export function searchSegments(segments, query) {
     let text = '';
     const spans = [];
     for (const segment of group) {
-      const value = normalized(segment.text);
+      const value = mode === 'fuzzy' ? normalized(segment.text) : String(segment.text || '');
+      if (mode !== 'fuzzy' && text && value && !/\s$/u.test(text) && !/^\s/u.test(value)) {
+        const previous = spans.at(-1)?.box;
+        if (
+          !previous ||
+          !segment.box ||
+          Math.abs(segment.box.y - previous.y) > previous.height * 0.5 ||
+          segment.box.x - previous.x - previous.width > previous.height * 0.15
+        )
+          text += ' ';
+      }
       if (!value) continue;
       spans.push({
         start: text.length,
@@ -40,7 +57,19 @@ export function searchSegments(segments, query) {
       });
       text += value;
     }
-    if (needles.length === 1) {
+    if (mode !== 'fuzzy') {
+      for (const match of text.matchAll(pattern)) {
+        if (!match[0].length) continue;
+        const start = match.index,
+          length = match[0].length;
+        const selected = spans.filter((span) => span.end > start && span.start < start + length);
+        if (selected.length)
+          matches.push({
+            boxes: selected.map((span) => span.box),
+            blocks: [...new Set(selected.map((span) => span.block).filter(Boolean))],
+          });
+      }
+    } else if (needles.length === 1) {
       const needle = needles[0];
       for (
         let start = text.indexOf(needle);

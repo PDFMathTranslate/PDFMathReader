@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'অনুবাদ সেটিংস খুলুন',
   },
   search: {
+    mode: 'অনুসন্ধান মোড',
+    fuzzy: 'আনুমানিক',
+    exact: 'হুবহু',
+    regex: 'রেগেক্স',
+    invalidRegex: 'অবৈধ রেগুলার এক্সপ্রেশন',
+
     foundPages: '{count}টি পৃষ্ঠায় পাওয়া গেছে',
     done: 'সম্পন্ন',
     searchTranslation: 'অনুবাদ অনুসন্ধান করুন',

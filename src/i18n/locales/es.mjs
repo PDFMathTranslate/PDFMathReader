@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'Abrir configuración de traducción',
   },
   search: {
+    mode: 'Modo de búsqueda',
+    fuzzy: 'Difusa',
+    exact: 'Exacta',
+    regex: 'Regex',
+    invalidRegex: 'Expresión regular no válida',
+
     foundPages: 'Encontrado en {count} páginas',
     done: 'Listo',
     searchTranslation: 'Buscar traducción',

@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: '開啟翻譯設定',
   },
   search: {
+    mode: '搜尋模式',
+    fuzzy: '模糊',
+    exact: '精確',
+    regex: '正規表示式',
+    invalidRegex: '無效的正規表示式',
+
     foundPages: '在 {count} 頁找到結果',
     done: '完成',
     searchTranslation: '搜尋譯文',

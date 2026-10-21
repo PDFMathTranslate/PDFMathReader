@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'अनुवाद सेटिंग्स खोलें',
   },
   search: {
+    mode: 'खोज मोड',
+    fuzzy: 'अनुमानित',
+    exact: 'सटीक',
+    regex: 'रेगेक्स',
+    invalidRegex: 'अमान्य रेगुलर एक्सप्रेशन',
+
     foundPages: '{count} पृष्ठों पर मिला',
     done: 'पूर्ण',
     searchTranslation: 'अनुवाद खोजें',

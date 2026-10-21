@@ -24,6 +24,12 @@ export default {
     openTranslationSettings: 'افتح إعدادات الترجمة',
   },
   search: {
+    mode: 'طريقة البحث',
+    fuzzy: 'تقريبي',
+    exact: 'دقيق',
+    regex: 'تعبير نمطي',
+    invalidRegex: 'تعبير نمطي مش صالح',
+
     foundPages: 'اتلاقى في {count} صفحات',
     done: 'خلص',
     searchTranslation: 'دوّر في الترجمة',
