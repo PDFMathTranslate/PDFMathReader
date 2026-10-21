@@ -16,7 +16,8 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     stopActions,
     stopPreferences,
     stopAppearance,
-    stopDocuments;
+    stopDocuments,
+    stopHandoff;
   let disposed = false;
   let lastCacheActivity = -Infinity,
     cacheActivityTimer;
@@ -173,6 +174,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     bindings.visibility();
     if (!bindings.settingsWindowMode && window.previewDocuments) {
       stopDocuments = window.previewDocuments.onAvailable(bindings.receiveDocuments);
+      stopHandoff = window.previewDocuments.onHandoff?.(bindings.resumeHandoff);
       await bindings.receiveDocuments();
     }
     bindings.visibility();
@@ -251,6 +253,7 @@ export function installWindowLifecycle({ bindings, lifecycle }) {
     stopAppearance?.();
     stopPreferences?.();
     stopDocuments?.();
+    stopHandoff?.();
     bindings.cancel();
     clearTimeout(bindings.translationState.timer);
     void Promise.allSettled(

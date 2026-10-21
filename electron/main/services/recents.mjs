@@ -254,6 +254,32 @@ export async function createRecents(path) {
   return {
     list: () => entries.map(listedEntry),
     path: (id) => entries.find((e) => e.id === id)?.path,
+    // The companion backend can add an imported PDF while this process is
+    // running. Merge those durable entries before resolving a Handoff ID.
+    async refresh() {
+      await writes;
+      let stored;
+      try {
+        stored = JSON.parse(await readFile(path, 'utf8'));
+      } catch {
+        return entries.map(listedEntry);
+      }
+      if (!Array.isArray(stored)) return entries.map(listedEntry);
+      const knownIDs = new Set(entries.map((entry) => entry.id));
+      const knownPaths = new Set(entries.map((entry) => entry.path));
+      const additions = stored
+        .filter(
+          (entry) =>
+            entry &&
+            typeof entry.id === 'string' &&
+            typeof entry.path === 'string' &&
+            !knownIDs.has(entry.id) &&
+            !knownPaths.has(entry.path),
+        )
+        .map((entry) => ({ id: entry.id, path: entry.path, pinned: entry.pinned === true }));
+      if (additions.length) entries = normalizeEntries([...additions, ...entries]);
+      return entries.map(listedEntry);
+    },
     prepare(file) {
       if (typeof file !== 'string' || !file) throw Error('Invalid recent document path.');
       const existing = entries.find((entry) => entry.path === file);

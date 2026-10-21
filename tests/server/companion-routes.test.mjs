@@ -16,6 +16,7 @@ async function serve({
   computer,
   companionTranslationOptions,
   providerFor,
+  documents,
 } = {}) {
   const calls = [];
   const proxyJobs = new Map();
@@ -56,6 +57,7 @@ async function serve({
     appVersion: '9.9.9',
     maxDocumentBytes: 1024 * 1024,
     computer,
+    documents,
   });
   const server = app.listen(0, '127.0.0.1');
   await new Promise((resolve) => server.once('listening', resolve));
@@ -113,6 +115,58 @@ test('companion routes require the pairing code and lock out guessing', async ()
     assert.equal((await request('/health', { code: loose })).status, 200);
     for (let attempt = 0; attempt < 10; attempt++) await request('/health', { code: 'nope' });
     assert.equal((await request('/health')).status, 429);
+  } finally {
+    await close();
+  }
+});
+
+test('document imports stay behind pairing authentication and return the desktop identity', async () => {
+  const calls = [];
+  const token = createPairingCode();
+  const receipt = {
+    documentID: 'desktop-import-1',
+    revision: 'a'.repeat(64),
+    sha256: 'a'.repeat(64),
+    byteCount: PDF.length,
+    pageCount: 1,
+  };
+  const { request, close } = await serve({
+    token,
+    documents: {
+      importDocument: async (body) => {
+        calls.push(body);
+        return { created: true, response: receipt };
+      },
+    },
+  });
+  const body = {
+    sourceID: 'ios-local-document-1',
+    title: 'Imported reading copy.pdf',
+    pdf: PDF.toString('base64'),
+    sha256: receipt.sha256,
+    byteCount: PDF.length,
+    pageCount: 1,
+  };
+  try {
+    assert.equal(
+      (
+        await request('/documents/import', {
+          code: 'WRONG-CODE',
+          method: 'POST',
+          body: JSON.stringify(body),
+        })
+      ).status,
+      401,
+    );
+    assert.equal(calls.length, 0);
+
+    const response = await request('/documents/import', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), receipt);
+    assert.deepEqual(calls, [body]);
   } finally {
     await close();
   }

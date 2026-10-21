@@ -89,6 +89,11 @@ contextBridge.exposeInMainWorld(
         path ? { path } : { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) },
       );
     },
+    onHandoff: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('documents:handoff', listener);
+      return () => ipcRenderer.removeListener('documents:handoff', listener);
+    },
     onAvailable: (callback) => {
       const listener = () => callback();
       ipcRenderer.on('documents:available', listener);

@@ -204,7 +204,13 @@ export function createWindowController({
       if (other !== target && registry.isBlankStartPage(other)) other.close();
     return focusDocumentWindow(target);
   };
-  const deliverDocumentWindow = async (document, preferredWindow, restoreView, activate) => {
+  const deliverDocumentWindow = async (
+    document,
+    preferredWindow,
+    restoreView,
+    activate,
+    claimOptions,
+  ) => {
     const identity = typeof document === 'string' ? await documentIdentity(document) : null;
     const existing = registry.findDocumentWindow(identity);
     if (existing) return activate ? focusDocumentWindow(existing) : existing;
@@ -225,8 +231,9 @@ export function createWindowController({
           identity,
           undefined,
           preferredWindow || registry.focusedWindow(),
+          claimOptions,
         );
-      await claimCompanionDocument?.(document, target, target);
+      await claimCompanionDocument?.(document, target, target, claimOptions);
       const state = registry.stateFor(target);
       state.documentIdentity = identity;
       state.restoreView = restoreView;
@@ -243,10 +250,22 @@ export function createWindowController({
       if (identity) registry.openingDocuments.delete(identity);
     }
   };
-  const openDocumentWindow = async (document, preferredWindow, restoreView, activate = true) => {
+  const openDocumentWindow = async (
+    document,
+    preferredWindow,
+    restoreView,
+    activate = true,
+    claimOptions,
+  ) => {
     const started = globalThis.performance.now();
     try {
-      return await deliverDocumentWindow(document, preferredWindow, restoreView, activate);
+      return await deliverDocumentWindow(
+        document,
+        preferredWindow,
+        restoreView,
+        activate,
+        claimOptions,
+      );
     } finally {
       developerOperationMetrics.fileOpen(globalThis.performance.now() - started);
     }
@@ -260,6 +279,7 @@ export function createWindowController({
     knownIdentity,
     placement,
     lockNotificationTarget,
+    claimOptions,
   ) => {
     const identity =
       typeof document === 'string' ? (knownIdentity ?? (await documentIdentity(document))) : null;
@@ -370,7 +390,12 @@ export function createWindowController({
     });
     try {
       if (document && !settingsOwner)
-        await claimCompanionDocument?.(document, target, lockNotificationTarget || target);
+        await claimCompanionDocument?.(
+          document,
+          target,
+          lockNotificationTarget || target,
+          claimOptions,
+        );
     } catch (error) {
       registry.windows.delete(target);
       target.destroy();

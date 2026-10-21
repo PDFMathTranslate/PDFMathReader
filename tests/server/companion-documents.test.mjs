@@ -30,6 +30,7 @@ async function fixture() {
   const path = join(directory, 'source.pdf');
   const recentsPath = join(directory, 'recent-documents.json');
   const statePath = join(directory, 'companion-documents.json');
+  const importsRoot = join(directory, 'companion-imports');
   const annotationsRoot = join(directory, 'annotations');
   const quickLinksRoot = join(directory, 'quick-links');
   const pdf = await PDFDocument.create();
@@ -79,6 +80,7 @@ async function fixture() {
       annotationsRoot,
       quickLinksRoot,
       statePath,
+      importsRoot,
       maxDocumentBytes: 10 * 1024 * 1024,
     });
   return {
@@ -86,6 +88,7 @@ async function fixture() {
     path,
     recentsPath,
     statePath,
+    importsRoot,
     bytes,
     makeStore,
   };
@@ -263,11 +266,116 @@ test('desktop ownership blocks paired sessions and releases explicitly', async (
   }
 });
 
+test('iOS-local imports are authenticated, create-only, and idempotent', async () => {
+  const fixtureState = await fixture();
+  try {
+    const store = await fixtureState.makeStore();
+    const encoded = fixtureState.bytes.toString('base64');
+    const sha256 = createHash('sha256').update(fixtureState.bytes).digest('hex');
+    const request = {
+      sourceID: 'ios-local-document-1',
+      title: 'Imported reading copy.pdf',
+      pdf: encoded,
+      sha256,
+      byteCount: fixtureState.bytes.length,
+      pageCount: 1,
+    };
+    const created = await store.importDocument(request);
+    assert.equal(created.created, true);
+    assert.deepEqual(Object.keys(created.response).sort(), [
+      'byteCount',
+      'documentID',
+      'pageCount',
+      'revision',
+      'sha256',
+    ]);
+    assert.equal(created.response.revision, sha256);
+    assert.equal(created.response.sha256, sha256);
+    assert.equal(created.response.byteCount, fixtureState.bytes.length);
+    assert.equal(created.response.pageCount, 1);
+
+    const retried = await store.importDocument(request);
+    assert.equal(retried.created, false);
+    assert.deepEqual(retried.response, created.response);
+
+    const restarted = await fixtureState.makeStore();
+    const durableRetry = await restarted.importDocument(request);
+    assert.equal(durableRetry.created, false);
+    assert.deepEqual(durableRetry.response, created.response);
+
+    const changedPDF = await PDFDocument.load(fixtureState.bytes);
+    changedPDF.addPage([612, 792]);
+    const changed = Buffer.from(await changedPDF.save({ useObjectStreams: false }));
+    await assert.rejects(
+      store.importDocument({
+        ...request,
+        pdf: changed.toString('base64'),
+        sha256: createHash('sha256').update(changed).digest('hex'),
+        byteCount: changed.length,
+        pageCount: 2,
+      }),
+      (error) => error.code === 'IDEMPOTENCY_CONFLICT' && error.status === 409,
+    );
+    const importState = JSON.parse(await readFile(fixtureState.statePath, 'utf8'));
+    const importedPath = importState.imports[request.sourceID].path;
+    await writeFile(importedPath, changed);
+    await assert.rejects(
+      store.importDocument(request),
+      (error) => error.code === 'REVISION_CONFLICT' && error.status === 409,
+    );
+    assert.deepEqual(await readFile(importedPath), changed);
+    const listed = await store.list();
+    assert.ok(listed.documents.some((entry) => entry.id === created.response.documentID));
+  } finally {
+    await rm(fixtureState.directory, { recursive: true, force: true });
+  }
+});
+
 test('a malformed durable state fails closed', async () => {
   const fixtureState = await fixture();
   try {
     await writeFile(fixtureState.statePath, '{"version":1,"documents":[]}', 'utf8');
     await assert.rejects(fixtureState.makeStore(), /Companion document state is invalid/);
+  } finally {
+    await rm(fixtureState.directory, { recursive: true, force: true });
+  }
+});
+
+test('opening anyway accepts a changed desktop PDF but cannot take a paired lock', async () => {
+  const fixtureState = await fixture();
+  try {
+    const store = await fixtureState.makeStore();
+    const original = await store.claimDesktop('desktop-document', 'desktop-before', 'This Mac');
+    const pdf = await PDFDocument.load(fixtureState.bytes);
+    pdf.addPage([612, 792]);
+    await writeFile(fixtureState.path, await pdf.save());
+    await assert.rejects(
+      store.claimDesktop('desktop-document', 'desktop-after', 'This Mac'),
+      (error) => error.code === 'REVISION_CONFLICT',
+    );
+    const accepted = await store.claimDesktop('desktop-document', 'desktop-after', 'This Mac', {
+      acceptCurrentRevision: true,
+    });
+    assert.notEqual(accepted.revision, original.revision);
+    const restarted = await fixtureState.makeStore();
+    const resumed = await restarted.claimDesktop(
+      'desktop-document',
+      'desktop-restarted',
+      'This Mac',
+    );
+    assert.equal(resumed.revision, accepted.revision);
+    await restarted.releaseDesktop('desktop-document', 'desktop-restarted');
+    await restarted.acquire('desktop-document', {
+      deviceID: 'ios-device-1',
+      deviceName: 'iPhone',
+      sessionID: 'paired-session',
+    });
+    await assert.rejects(
+      restarted.claimDesktop('desktop-document', 'desktop-force', 'This Mac', {
+        acceptCurrentRevision: true,
+      }),
+      (error) => error.code === 'DOCUMENT_LOCKED',
+    );
   } finally {
     await rm(fixtureState.directory, { recursive: true, force: true });
   }

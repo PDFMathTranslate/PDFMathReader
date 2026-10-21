@@ -324,6 +324,14 @@ export function registerCompanionRoutes(
       documentHandler(async (_req, res) => res.json(await documents.list())),
     );
     app.post(
+      '/companion/v1/documents/import',
+      express.json({ limit: documentJSONLimit }),
+      documentHandler(async (req, res) => {
+        const result = await documents.importDocument(req.body || {});
+        return res.status(result.created ? 201 : 200).json(result.response);
+      }),
+    );
+    app.post(
       '/companion/v1/documents/:id/desktop-session',
       express.json({ limit: '16kb' }),
       documentHandler(async (req, res) =>
@@ -332,6 +340,7 @@ export function registerCompanionRoutes(
             req.params.id,
             req.body?.sessionID,
             req.body?.deviceName || 'This Mac',
+            { acceptCurrentRevision: req.body?.acceptCurrentRevision === true },
           ),
         ),
       ),

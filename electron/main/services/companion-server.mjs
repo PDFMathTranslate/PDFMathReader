@@ -34,6 +34,7 @@ export async function createCompanionServer({
   discoveryEnabled = false,
   documents,
   getDesktopClaims,
+  onStateChange = () => {},
   advertiser = createBonjourAdvertiser({
     logger: (error) =>
       console.error('Unable to advertise PDFMathReader on the local network:', error.message),
@@ -133,6 +134,7 @@ export async function createCompanionServer({
     backend = null;
     starting = null;
     activePort = config.port;
+    onStateChange();
     // A pending start can finish between the first stop and the await above.
     // Stop again after it resolves so that it cannot leave a registration up.
     advertiser.stop();
@@ -167,10 +169,12 @@ export async function createCompanionServer({
             activePort = config.port;
             advertiser.stop();
             lastError = error?.message || 'The kernel sharing service stopped.';
+            onStateChange();
           },
         });
         backend = service;
         activePort = service.companionPort || config.port;
+        onStateChange();
         if (shouldAdvertise) advertise();
         return service;
       } catch (error) {
@@ -230,21 +234,30 @@ export async function createCompanionServer({
   const documentRequest = (pathname, options = {}) =>
     runTransition(() => documentRequestNow(pathname, options));
 
-  const claimDesktopDocument = async (id, sessionID, deviceName = computerName()) =>
+  const claimDesktopDocument = async (id, sessionID, deviceName = computerName(), options = {}) =>
     runTransition(async () => {
       if (!config.enabled) {
         const store = await ensureLocalDocuments();
-        return store ? store.claimDesktop(id, sessionID, deviceName) : { available: false };
+        return store
+          ? store.claimDesktop(id, sessionID, deviceName, options)
+          : { available: false };
       }
       try {
         return await documentRequestNow(
           `/companion/v1/documents/${encodeURIComponent(id)}/desktop-session`,
-          { method: 'POST', body: JSON.stringify({ sessionID, deviceName }) },
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              sessionID,
+              deviceName,
+              acceptCurrentRevision: options.acceptCurrentRevision === true,
+            }),
+          },
         );
       } catch (error) {
         if (!backend) {
           const store = await ensureLocalDocuments();
-          if (store) return store.claimDesktop(id, sessionID, deviceName);
+          if (store) return store.claimDesktop(id, sessionID, deviceName, options);
         }
         throw error;
       }

@@ -1170,6 +1170,12 @@ export function useReaderWindow() {
       resetBitmaps: featureActions.resetBitmaps,
       settle: featureActions.settle,
       receiveDocuments: featureActions.receiveDocuments,
+      resumeHandoff: async ({ page }) => {
+        const view = featureActions.readingView();
+        if (!view || !Number.isSafeInteger(page) || page < 1) return;
+        await featureActions.restoreReadingView({ ...view, page, offsetX: 0, offsetY: 0 });
+        featureActions.saveReadingView();
+      },
       cancel: featureActions.cancel,
       releaseDocument: featureActions.releaseDocument,
       applySavedSettings: featureActions.applySavedSettings,

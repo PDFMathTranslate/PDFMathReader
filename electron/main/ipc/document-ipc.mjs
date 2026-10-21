@@ -3,6 +3,7 @@ import { documentSource } from '../services/documents.mjs';
 
 export function registerDocumentIPC({
   handle,
+  handoff,
   trustedWindow,
   registry,
   annotations,
@@ -74,6 +75,8 @@ export function registerDocumentIPC({
     );
     await rememberClosedTab?.(target);
     state.documentIdentity = null;
+    delete state.handoffPage;
+    handoff?.refresh();
     // The start page is reusable as soon as the document closes. Diagnostic
     // snapshots may still finish asynchronously and do not own this state.
     state.performance.hasDocument = false;
@@ -116,6 +119,8 @@ export function registerDocumentIPC({
   handle('documents:view', async (event, view) => {
     const target = trustedWindow(event);
     await documentSession.update(target.id, view);
+    registry.stateFor(target).handoffPage = view.page;
+    handoff?.refresh();
     return true;
   });
 }

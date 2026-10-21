@@ -2,7 +2,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
-import { basename, dirname, extname, isAbsolute, join } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative } from 'node:path';
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib';
 import { replaceFile } from '../../runtime/node/atomic-file.mjs';
 import { validateQuickLinks } from '../../shared/quick-links.mjs';
@@ -442,6 +442,45 @@ function stateDocument(value) {
   return state;
 }
 
+function stateImport(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw Error('Companion document import state is invalid.');
+  if (
+    typeof value.documentID !== 'string' ||
+    !IDENTIFIER_PATTERN.test(value.documentID) ||
+    typeof value.path !== 'string' ||
+    !isAbsolute(value.path) ||
+    extname(value.path).toLowerCase() !== '.pdf' ||
+    !validHash(value.sha256) ||
+    !Number.isSafeInteger(value.byteCount) ||
+    value.byteCount < 1 ||
+    !Number.isSafeInteger(value.pageCount) ||
+    value.pageCount < 1
+  )
+    throw Error('Companion document import state is invalid.');
+  return {
+    documentID: value.documentID,
+    path: value.path,
+    sha256: value.sha256,
+    byteCount: value.byteCount,
+    pageCount: value.pageCount,
+  };
+}
+
+function pathInside(root, candidate) {
+  const remainder = relative(root, candidate);
+  return remainder === '' || (remainder && !remainder.startsWith('..') && !isAbsolute(remainder));
+}
+
+function importedFilename(documentID, title) {
+  const safeTitle = basename(title)
+    .replace(/[^A-Za-z0-9._ -]/g, '_')
+    .trim()
+    .slice(0, 180);
+  const name = safeTitle || 'Document';
+  return `${documentID}-${/\.pdf$/i.test(name) ? name : `${name}.pdf`}`;
+}
+
 async function atomicJSON(path, value) {
   await mkdir(dirname(path), { recursive: true });
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -650,6 +689,7 @@ export async function createCompanionDocumentStore({
   annotationsRoot,
   quickLinksRoot,
   statePath,
+  importsRoot,
   maxDocumentBytes = DEFAULT_MAX_DOCUMENT_BYTES,
   now = () => Date.now(),
 } = {}) {
@@ -659,10 +699,14 @@ export async function createCompanionDocumentStore({
     typeof statePath === 'string' && isAbsolute(statePath)
       ? statePath
       : join(dirname(recentsPath), 'companion-documents.json');
+  const durableImportsRoot =
+    typeof importsRoot === 'string' && isAbsolute(importsRoot)
+      ? importsRoot
+      : join(dirname(recentsPath), 'companion-imports');
   const limit = Number.isSafeInteger(maxDocumentBytes)
     ? Math.min(Math.max(maxDocumentBytes, 1), DEFAULT_MAX_DOCUMENT_BYTES)
     : DEFAULT_MAX_DOCUMENT_BYTES;
-  let state = { version: 1, documents: {} };
+  let state = { version: 1, documents: {}, imports: {} };
   try {
     const saved = JSON.parse(await readFile(durableStatePath, 'utf8'));
     if (
@@ -676,6 +720,21 @@ export async function createCompanionDocumentStore({
     if (entries.some(([id]) => !IDENTIFIER_PATTERN.test(id)))
       throw Error('Companion document state identifier is invalid.');
     state.documents = Object.fromEntries(entries.map(([id, value]) => [id, stateDocument(value)]));
+    if (saved.imports !== undefined) {
+      if (!saved.imports || typeof saved.imports !== 'object' || Array.isArray(saved.imports))
+        throw Error('Companion document import state is invalid.');
+      const imports = Object.entries(saved.imports);
+      if (imports.some(([sourceID]) => !IDENTIFIER_PATTERN.test(sourceID)))
+        throw Error('Companion document import identifier is invalid.');
+      state.imports = Object.fromEntries(
+        imports.map(([sourceID, value]) => {
+          const imported = stateImport(value);
+          if (!pathInside(durableImportsRoot, imported.path))
+            throw Error('Companion document import path is invalid.');
+          return [sourceID, imported];
+        }),
+      );
+    }
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
   }
@@ -686,7 +745,12 @@ export async function createCompanionDocumentStore({
     writes = result.catch(() => {});
     return result;
   };
-  const persist = () => atomicJSON(durableStatePath, { version: 1, documents: state.documents });
+  const persist = () =>
+    atomicJSON(durableStatePath, {
+      version: 1,
+      documents: state.documents,
+      ...(Object.keys(state.imports).length ? { imports: state.imports } : {}),
+    });
   const restoreDocumentState = (documentState, previous) => {
     for (const key of Object.keys(documentState)) delete documentState[key];
     if (previous) Object.assign(documentState, previous);
@@ -697,6 +761,106 @@ export async function createCompanionDocumentStore({
     const entry = (await readRecentEntries(recentsPath)).find((candidate) => candidate.id === id);
     if (!entry) fail('Unknown document.', 'UNKNOWN_DOCUMENT', 404);
     return entry;
+  }
+
+  async function rememberImportedRecent(documentID, path) {
+    const entries = await readRecentEntries(recentsPath);
+    const current = entries.find((entry) => entry.id === documentID || entry.path === path);
+    const entry = {
+      ...(current || {}),
+      id: documentID,
+      path,
+      pinned: current?.pinned === true,
+      lastOpened: new Date(now()).toISOString(),
+    };
+    await atomicJSON(recentsPath, [
+      entry,
+      ...entries.filter((item) => item.id !== documentID && item.path !== path),
+    ]);
+  }
+
+  async function importDocument(body = {}) {
+    return serial(async () => {
+      if (!body || typeof body !== 'object' || Array.isArray(body))
+        fail('Invalid document import.', 'INVALID_REQUEST', 400);
+      const sourceID = validIdentifier(body.sourceID, 'source identifier');
+      const title = validDeviceField(body.title, 'document title');
+      const bytes = decodeBase64(body.pdf, 'PDF');
+      if (!validHash(body.sha256)) fail('Invalid PDF checksum.', 'INVALID_DOCUMENT', 400);
+      if (!Number.isSafeInteger(body.byteCount) || body.byteCount !== bytes.length)
+        fail('The PDF byte count does not match the request.', 'INVALID_DOCUMENT', 400);
+      const requestedPageCount = validatePageCount(body.pageCount);
+      const parsed = await parsePDF(bytes, limit);
+      if (parsed.pageCount !== requestedPageCount)
+        fail('The PDF page count does not match the request.', 'INVALID_DOCUMENT', 400);
+      if (parsed.sha256 !== body.sha256.toLowerCase())
+        fail('The PDF checksum does not match the request.', 'INVALID_DOCUMENT', 400);
+
+      const existing = state.imports[sourceID];
+      if (existing) {
+        if (
+          existing.sha256 !== parsed.sha256 ||
+          existing.byteCount !== bytes.length ||
+          existing.pageCount !== parsed.pageCount
+        )
+          fail(
+            'The import source was already used for different content.',
+            'IDEMPOTENCY_CONFLICT',
+            409,
+          );
+        let current;
+        try {
+          current = Buffer.from(await readFile(existing.path));
+        } catch (error) {
+          if (error?.code !== 'ENOENT') throw error;
+        }
+        if (current && !current.equals(bytes))
+          fail('The imported document changed after it was created.', 'REVISION_CONFLICT', 409);
+        if (!current) await atomicBytes(existing.path, bytes);
+        await rememberImportedRecent(existing.documentID, existing.path);
+        return {
+          response: {
+            documentID: existing.documentID,
+            revision: existing.sha256,
+            sha256: existing.sha256,
+            byteCount: existing.byteCount,
+            pageCount: existing.pageCount,
+          },
+          created: false,
+        };
+      }
+
+      const documentID = randomUUID();
+      const path = join(durableImportsRoot, importedFilename(documentID, title));
+      const record = {
+        documentID,
+        path,
+        sha256: parsed.sha256,
+        byteCount: bytes.length,
+        pageCount: parsed.pageCount,
+      };
+      await atomicBytes(path, bytes);
+      state.imports[sourceID] = record;
+      try {
+        await persist();
+        await rememberImportedRecent(documentID, path);
+      } catch (error) {
+        delete state.imports[sourceID];
+        await persist().catch(() => {});
+        await unlink(path).catch(() => {});
+        throw error;
+      }
+      return {
+        response: {
+          documentID,
+          revision: record.sha256,
+          sha256: record.sha256,
+          byteCount: record.byteCount,
+          pageCount: record.pageCount,
+        },
+        created: true,
+      };
+    });
   }
 
   async function recoverPending(id, entry, documentState) {
@@ -820,7 +984,12 @@ export async function createCompanionDocumentStore({
   // The desktop reader uses the same durable lock as paired readers, but it
   // does not need to upload its PDF to itself. Its session identifier is kept
   // by the Electron main process so a restart can resume an existing lock.
-  async function claimDesktop(id, sessionID, deviceName = 'This Mac') {
+  async function claimDesktop(
+    id,
+    sessionID,
+    deviceName = 'This Mac',
+    { acceptCurrentRevision = false } = {},
+  ) {
     return serial(async () => {
       validIdentifier(sessionID, 'session identifier');
       const entry = await resolve(id);
@@ -832,7 +1001,11 @@ export async function createCompanionDocumentStore({
             deviceName: documentState.lock.deviceName,
           });
         const source = await readSource(entry, limit);
-        if (documentState.revision && documentState.revision !== source.sha256)
+        if (
+          documentState.revision &&
+          documentState.revision !== source.sha256 &&
+          !acceptCurrentRevision
+        )
           fail('The document changed while it was locked.', 'REVISION_CONFLICT', 409);
         const previous = clone(documentState);
         // The desktop endpoint is only reachable from this app's main process.
@@ -841,7 +1014,8 @@ export async function createCompanionDocumentStore({
         const resumed = documentState.lock.sessionID !== sessionID;
         if (resumed) documentState.lock.sessionID = sessionID;
         documentState.lock.deviceName = validDeviceField(deviceName, 'device name');
-        documentState.revision ||= source.sha256;
+        documentState.revision = source.sha256;
+        if (acceptCurrentRevision) documentState.lock.acquiredRevision = source.sha256;
         documentState.lock.lastSeenAt = now();
         try {
           await persist();
@@ -1135,6 +1309,7 @@ export async function createCompanionDocumentStore({
 
   return {
     list,
+    importDocument,
     acquire,
     claimDesktop,
     heartbeat,

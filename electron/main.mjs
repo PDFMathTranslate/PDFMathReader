@@ -1,3 +1,4 @@
+import { createHandoff } from './platform/macos/handoff.mjs';
 import { registerGlassMenuIPC } from './main/services/glass-menu.mjs';
 import {
   app,
@@ -218,6 +219,8 @@ else {
     loadServiceCredentials: () => serviceCredentialStore?.load?.() || {},
   });
   const desktopSessionID = () => `desktop-${randomUUID()}`;
+  const handoffLockWaitMs = 30_000;
+  const handoffLockRetryMs = 250;
   const desktopClaimsInFlight = new Map();
   const recentIDForPath = (path) => {
     const entries = recents?.list?.();
@@ -225,8 +228,82 @@ else {
       ? entries.find((entry) => recents.path(entry.id) === path)?.id
       : undefined;
   };
+  const handoff = createHandoff({
+    app,
+    current: () => {
+      if (!companion?.enabled() || !companion.running()) return null;
+      const target = registry.focusedWindow();
+      const state = registry.stateFor(target);
+      if (!state?.documentIdentity || state.closing) return null;
+      const documentID = state.companionDocumentId;
+      if (!documentID) return null;
+      return {
+        version: 1,
+        documentID,
+        page: state.handoffPage || 1,
+        serverURL: companion.addresses()[0],
+      };
+    },
+    resume: async ({ documentID, page }) => {
+      await recents?.refresh?.();
+      const path = recents?.path(documentID);
+      if (!path) throw Error('This Handoff document is not available on this Mac.');
+      const recent = recents.list().find((entry) => entry.id === documentID);
+      const view = {
+        zoom: 1,
+        fit: 'width',
+        direction: 'vertical',
+        columns: 1,
+        sidebar: true,
+        showTranslations: true,
+        ...recent?.view,
+        page,
+        offsetX: 0,
+        offsetY: 0,
+      };
+      const target = await windowController.openDocumentWindow(path, undefined, view, true, {
+        waitForRelease: true,
+      });
+      windowController.focusDocumentWindow(target);
+      target.webContents.send('documents:handoff', { page });
+    },
+    onActivityWasContinued: async ({ documentID }) => {
+      const source = [...windows.entries()].find(
+        ([target, state]) =>
+          !target.isDestroyed?.() &&
+          !state?.closing &&
+          state?.companionDocumentId === documentID &&
+          state.companionSessionID,
+      );
+      if (!source) return;
+      const [target, state] = source;
+      const ownership = companionOwnership(target);
+      // Stop interaction before taking the final snapshot. The window close
+      // handler still performs its ordinary cleanup after the claim is
+      // released, but hiding it here closes the gap in which a user edit
+      // could arrive between the snapshot and release.
+      const previousClosing = state?.closing;
+      if (state) state.closing = true;
+      target.hide?.();
+      try {
+        await windowController.saveWindowReadingView(target);
+        await Promise.all([annotations?.flush?.(), quickLinks?.flush?.(), recents?.flush?.()]);
+        await releaseCompanionDocument(target, ownership);
+        handoff.refresh();
+        if (!target.isDestroyed?.()) target.close();
+      } catch (error) {
+        if (state && !target.isDestroyed?.()) state.closing = previousClosing;
+        if (!target.isDestroyed?.()) {
+          target.show?.();
+          target.focus?.();
+        }
+        throw error;
+      }
+    },
+    onError: (error) => dialog.showErrorBox('PDFMathReader Handoff', error.message),
+  });
   const notifyCompanionLock = (target, error) => {
-    if (!target || target.isDestroyed?.()) return;
+    if (error?.code !== 'DOCUMENT_LOCKED' || !target || target.isDestroyed?.()) return;
     const device =
       typeof error?.deviceName === 'string' && error.deviceName.trim()
         ? error.deviceName.trim()
@@ -245,7 +322,7 @@ else {
     if (deviceName) error.deviceName = deviceName;
     return error;
   };
-  const claimCompanionID = async (id, target, notificationTarget = target) => {
+  const claimCompanionID = async (id, target, notificationTarget = target, options = {}) => {
     if (!id || !companion?.claimDesktopDocument) return { available: false };
     const state = registry.stateFor(target);
     if (state?.companionDocumentId === id && state.companionSessionID)
@@ -278,7 +355,51 @@ else {
     const sessionID = desktopSessionID();
     const promise = (async () => {
       try {
-        const result = await companion.claimDesktopDocument(id, sessionID, 'This Mac');
+        let result;
+        const waitForRelease = options.waitForRelease === true;
+        const deadline = Date.now() + handoffLockWaitMs;
+        for (;;) {
+          try {
+            result = await companion.claimDesktopDocument(id, sessionID, 'This Mac');
+            break;
+          } catch (error) {
+            if (waitForRelease && error?.code === 'DOCUMENT_LOCKED' && Date.now() < deadline) {
+              await new Promise((resolve) =>
+                setTimeout(
+                  resolve,
+                  Math.min(handoffLockRetryMs, Math.max(0, deadline - Date.now())),
+                ),
+              );
+              continue;
+            }
+            if (error?.code !== 'REVISION_CONFLICT' || smoke || ciLaunchCheck || waitForRelease)
+              throw error;
+            const dialogOptions = {
+              type: 'warning',
+              title: 'PDFMathReader',
+              message: 'The document changed while it was locked.',
+              detail:
+                'Open anyway to use the current PDF and refresh this Mac’s saved document lock.',
+              buttons: ['Open anyway', 'Cancel'],
+              defaultId: 1,
+              cancelId: 1,
+              noLink: true,
+            };
+            const owner =
+              notificationTarget && !notificationTarget.isDestroyed?.() ? notificationTarget : null;
+            const { response } = owner
+              ? await dialog.showMessageBox(owner, dialogOptions)
+              : await dialog.showMessageBox(dialogOptions);
+            if (response !== 0) {
+              error.code = 'DOCUMENT_OPEN_CANCELLED';
+              throw error;
+            }
+            result = await companion.claimDesktopDocument(id, sessionID, 'This Mac', {
+              acceptCurrentRevision: true,
+            });
+            break;
+          }
+        }
         if (result?.available === false) return result;
         const current = registry.stateFor(target);
         if (current) {
@@ -299,7 +420,7 @@ else {
       if (desktopClaimsInFlight.get(id)?.promise === promise) desktopClaimsInFlight.delete(id);
     }
   };
-  const claimCompanionPath = async (path, target, notificationTarget = target) => {
+  const claimCompanionPath = async (path, target, notificationTarget = target, options = {}) => {
     if (typeof path !== 'string' || !path) return { available: false };
     let id = recentIDForPath(path);
     let prepared;
@@ -310,7 +431,7 @@ else {
     if (!id) return { available: false };
     try {
       if (prepared?.created) await recents.persistPrepared?.(id);
-      const result = await claimCompanionID(id, target, notificationTarget);
+      const result = await claimCompanionID(id, target, notificationTarget, options);
       if (result?.available === false && prepared?.created)
         await recents.discardPreparedAndPersist?.(id);
       return result;
@@ -403,7 +524,13 @@ else {
       Promise.all([annotations?.flush?.(), quickLinks?.flush?.(), recents?.flush?.()]),
   });
   const deliverPendingFiles = async () => {
-    while (pendingFiles.length) await windowController.openExternalDocument(pendingFiles.shift());
+    while (pendingFiles.length) {
+      try {
+        await windowController.openExternalDocument(pendingFiles.shift());
+      } catch (error) {
+        if (error?.code !== 'DOCUMENT_OPEN_CANCELLED') throw error;
+      }
+    }
   };
   notifyDocuments = () => {
     if (!documentsReady) return;
@@ -594,10 +721,12 @@ else {
             annotationsRoot: join(app.getPath('userData'), 'annotations'),
             quickLinksRoot: join(app.getPath('userData'), 'quick-links'),
             statePath: join(app.getPath('userData'), 'companion-documents.json'),
+            importsRoot: join(app.getPath('userData'), 'companion-imports'),
           },
           dialog,
           discoveryEnabled: preferences.load().companionDiscoveryEnabled,
           getDesktopClaims: desktopClaims,
+          onStateChange: () => handoff.refresh(),
           label: (text) =>
             menuLabel(
               text,
@@ -749,6 +878,7 @@ else {
       });
       registerDocumentIPC({
         rememberClosedTab: windowController.rememberClosedTab,
+        handoff,
         handle: handleMeasuredIPC,
         trustedWindow: registry.trustedWindow,
         registry,
@@ -846,6 +976,7 @@ else {
       window = [...windows.keys()][0] || (await windowController.createWindow());
       backend = windows.get(window).backend;
       documentsReady = true;
+      handoff.ready();
       if (!ciLaunchCheck) await deliverPendingFiles();
       if (app.isPackaged && !smoke && !ciLaunchCheck) appUpdates.start();
       if (ciLaunchCheck) {
@@ -894,6 +1025,7 @@ else {
     });
   app.on('before-quit', (event) => {
     appUpdates?.stop();
+    handoff.close();
     subscriptionClosing ??= chatGPTSubscription?.close();
     void subscriptionClosing?.catch(() => {});
     if (!backend || quitting) return;

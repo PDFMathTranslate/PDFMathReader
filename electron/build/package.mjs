@@ -1,3 +1,4 @@
+import { READING_ACTIVITY } from '../platform/macos/handoff.mjs';
 import { signMacApplication } from './sign-mac.mjs';
 import { distributeApplication } from './distribute.mjs';
 import { packager } from '@electron/packager';
@@ -81,6 +82,7 @@ const paths = await packager({
   extendInfo: test
     ? {}
     : {
+        NSUserActivityTypes: [READING_ACTIVITY],
         CFBundleDocumentTypes: [
           {
             CFBundleTypeName: 'PDF Document',
