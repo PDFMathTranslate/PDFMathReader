@@ -38,6 +38,7 @@ export function createReaderDocumentSurface({
   const {
     searchOpen,
     searchQuery,
+    searchMode,
     searchInput,
     searchResults,
     searchIndex,
@@ -201,6 +202,7 @@ export function createReaderDocumentSurface({
   return {
     searchOpen,
     searchQuery,
+    searchMode,
     searchInput,
     searchResults,
     searchIndex,
