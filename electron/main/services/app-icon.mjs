@@ -1,4 +1,5 @@
 import { nativeImage, nativeTheme } from 'electron';
+import { createPersistentAppIcon } from './persistent-app-icon.mjs';
 import { applicationPath } from '../../../runtime/node/application-paths.mjs';
 import {
   APP_ICON_IDS,
@@ -44,7 +45,7 @@ export function appIconPreview(image, size = 96) {
 
 // The chosen icon is applied at runtime: the Dock tile on macOS and every window
 // icon elsewhere, switching to the dark icon while Dark Mode is in effect. The
-// bundle icon shown while the app is closed stays the default.
+// selected icon is also saved as the bundle’s custom icon for when it is closed.
 export function createAppIcon({
   app,
   preferences,
@@ -53,12 +54,16 @@ export function createAppIcon({
   dark = () => nativeTheme.shouldUseDarkColors,
 }) {
   let previews, applied;
+  const persist = createPersistentAppIcon({ app, platform });
   const current = () => {
     const id = preferences.load().appIcon;
     return isValidAppIcon(id) ? id : DEFAULT_APP_ICON;
   };
   const path = () => appIconPath(activeAppIcon(current(), dark()));
   function apply() {
+    void persist(appIconPath(current())).catch((error) => {
+      console.warn('Cannot persist application icon:', error.message);
+    });
     const target = path();
     if (target === applied) return;
     const image = nativeImage.createFromPath(target);
@@ -78,6 +83,7 @@ export function createAppIcon({
     if (!isValidAppIcon(id)) throw Error('Invalid app icon');
     await preferences.save({ appIcon: id });
     apply();
+    await persist(appIconPath(id));
     return options();
   }
   return { path, apply, options, select };
