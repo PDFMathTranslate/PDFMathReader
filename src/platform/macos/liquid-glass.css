@@ -121,6 +121,9 @@
 [data-interface-style='liquid-glass'] .app.desktop[data-platform='darwin'] .toolbar-actions {
   gap: 8px;
 }
+
+/* One shared toolbar blur avoids per-button SVG/filter allocations while the
+   recurring controls retain their CSS gradient, rims, and shadows. */
 [data-interface-style='liquid-glass']
   .app.desktop[data-platform='darwin']
   :is(
@@ -135,6 +138,11 @@
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 90%),
     0 1px 3px rgb(0 0 0 / 4%);
+}
+[data-interface-style='liquid-glass']
+  .app.desktop[data-platform='darwin']
+  .compare-header
+  :is(.icon-button, .compare-control) {
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   backdrop-filter: blur(18px) saturate(140%);
 }

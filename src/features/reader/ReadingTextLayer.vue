@@ -36,8 +36,9 @@ let layer,
   boxKey,
   overlay,
   highlights,
-  frameHost;
-let unbindSelection;
+  frameHost,
+  layoutZoom = 1;
+let unbindSelection, retentionTimer;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
 const topicSentenceClassifier = inject('topicSentenceClassifier', null);
@@ -70,7 +71,8 @@ function drawEmphasis() {
   if (!host.value) return;
   clearEmphasis();
   if (!rendered || !props.active) return;
-  const pageBounds = host.value.getBoundingClientRect();
+  const pageBounds = host.value.getBoundingClientRect(),
+    overlayScale = host.value.pdfTextScale || 1;
   if (props.emphasizeInformation) {
     const boxes = [];
     for (const mark of host.value.querySelectorAll('.pdf-information-keyword')) {
@@ -78,10 +80,10 @@ function drawEmphasis() {
       range.selectNodeContents(mark);
       for (const r of range.getClientRects())
         boxes.push({
-          x: r.left - pageBounds.left,
-          y: r.top - pageBounds.top,
-          width: r.width,
-          height: r.height,
+          x: (r.left - pageBounds.left) / overlayScale,
+          y: (r.top - pageBounds.top) / overlayScale,
+          width: r.width / overlayScale,
+          height: r.height / overlayScale,
         });
     }
     highlights = window.document.createElement('div');
@@ -115,10 +117,10 @@ function drawEmphasis() {
   overlay.setAttribute('aria-hidden', 'true');
   for (const r of mergeInformationRects(
     rects.map((r) => ({
-      x: r.left - pageBounds.left,
-      y: r.top - pageBounds.top,
-      width: r.width,
-      height: r.height,
+      x: (r.left - pageBounds.left) / overlayScale,
+      y: (r.top - pageBounds.top) / overlayScale,
+      width: r.width / overlayScale,
+      height: r.height / overlayScale,
     })),
   )) {
     const rect = window.document.createElement('div');
@@ -133,9 +135,12 @@ function drawEmphasis() {
   }
   host.value.append(overlay);
 }
+function refreshEmphasis() {
+  if (!overlay && !highlights) drawEmphasis();
+}
 onMounted(() => {
   frameHost = host.value?.parentElement;
-  frameHost?.addEventListener('pdf-frame-presented', drawEmphasis);
+  frameHost?.addEventListener('pdf-frame-presented', refreshEmphasis);
 });
 function emphasize() {
   if (!rendered || !host.value || !layer || !props.active) return;
@@ -220,16 +225,60 @@ watch(
   emphasize,
   { flush: 'post' },
 );
+// Zoom changes geometry, not the text stream. Keeping it outside the async
+// construction watcher also avoids cancelling a layer while fonts are loading.
+function updateTextViewport() {
+  if (!page || !host.value || !layer || !rendered) return;
+  // Text geometry is linear in zoom. Transform its original layout as a unit
+  // instead of remeasuring every run and rebuilding all highlight rectangles.
+  const scale = props.zoom / layoutZoom;
+  host.value.pdfTextScale = scale;
+  host.value.style.transform = scale === 1 ? '' : `scale(${scale})`;
+}
+watch(() => props.zoom, updateTextViewport, { flush: 'post' });
 watch(
   () => [
     props.document,
     props.pageNumber,
-    props.zoom,
     props.active,
     props.obscuredBoxes,
     watermarkRemoval?.version.value,
   ],
   async () => {
+    clearTimeout(retentionTimer);
+    // Retain completed and in-flight text in the bounded virtual page window.
+    // A transient hide during zoom must not restart font measurement.
+    if (
+      !props.active &&
+      layer &&
+      currentDocument === props.document &&
+      currentPage === props.pageNumber
+    ) {
+      clearEmphasis();
+      // Keep only the brief hide/show transition, not a window full of hidden
+      // DOM text. A page genuinely scrolled away releases its native layout.
+      retentionTimer = setTimeout(() => {
+        if (props.active) return;
+        generation++;
+        unbindSelection?.();
+        unbindSelection = null;
+        layer?.cancel();
+        layer = null;
+        rendered = false;
+        host.value?.replaceChildren();
+      }, 250);
+      return;
+    }
+    const nextBoxKey = JSON.stringify([props.obscuredBoxes || [], watermarkRemoval?.version.value]);
+    if (
+      props.active &&
+      layer &&
+      !rendered &&
+      currentDocument === props.document &&
+      currentPage === props.pageNumber &&
+      boxKey === nextBoxKey
+    )
+      return;
     const id = ++generation;
     if (!props.active || !props.document) {
       unbindSelection?.();
@@ -254,16 +303,14 @@ watch(
         rendered = false;
       }
       const viewport = page.getViewport({ scale: props.zoom });
-      host.value.style.setProperty('--total-scale-factor', props.zoom);
       host.value.style.setProperty('--scale-round-x', '1px');
       host.value.style.setProperty('--scale-round-y', '1px');
-      const nextBoxKey = JSON.stringify([
-        props.obscuredBoxes || [],
-        watermarkRemoval?.version.value,
-      ]);
       if (layer && rendered && boxKey === nextBoxKey) {
-        layer.update({ viewport });
-        emphasize();
+        updateTextViewport();
+        // Zoom only repositions the existing text nodes. Keep their emphasis
+        // markup and DOI anchors so native selection and link targets survive;
+        // the overlay boxes still need their screen geometry refreshed.
+        drawEmphasis();
         return;
       }
       boxKey = nextBoxKey;
@@ -273,6 +320,10 @@ watch(
       layer?.cancel();
       clearEmphasis();
       host.value.replaceChildren();
+      layoutZoom = props.zoom;
+      host.value.pdfTextScale = 1;
+      host.value.style.transform = '';
+      host.value.style.setProperty('--total-scale-factor', layoutZoom);
       layer = new runtime.TextLayer({
         textContentSource: page.streamTextContent(),
         container: host.value,
@@ -285,6 +336,8 @@ watch(
       const watermark = await hidden;
       if (id !== generation) return;
       rendered = true;
+      // The zoom may have changed while the text stream was being rendered.
+      updateTextViewport();
       if (watermark)
         for (const span of rendering.textDivs)
           if (watermark.matches(span.textContent)) span.remove();
@@ -314,11 +367,12 @@ watch(
   { flush: 'post', immediate: true },
 );
 onBeforeUnmount(() => {
+  clearTimeout(retentionTimer);
   generation++;
   unbindSelection?.();
   layer?.cancel();
   clearEmphasis();
-  frameHost?.removeEventListener('pdf-frame-presented', drawEmphasis);
+  frameHost?.removeEventListener('pdf-frame-presented', refreshEmphasis);
 });
 </script>
 <template>

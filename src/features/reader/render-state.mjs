@@ -9,7 +9,7 @@ export function createRenderState() {
   const thumbnailHeight = ref(800);
   const thumbnailHighlight = ref(null);
   const pageTasks = new Map();
-  const bitmapFrames = new BitmapCache({ maxBytes: 64 * 1024 * 1024, maxEntries: 96 });
+  const bitmapFrames = new BitmapCache({ maxBytes: 32 * 1024 * 1024, maxEntries: 96 });
   const bitmapIds = new WeakMap();
   const bitmapId = 0;
   const thumbnailEpoch = 0;

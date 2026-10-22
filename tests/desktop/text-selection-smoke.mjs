@@ -348,6 +348,41 @@ export async function verifyTextSelection(window, recents) {
       ? '/tmp/pdfmathreader-text-selection-chinese.png'
       : '/tmp/pdfmathreader-text-selection.png';
     await writeFile(screenshot, (await window.webContents.capturePage()).toPNG());
+
+    // A pure zoom must preserve the live text nodes. Re-running DOI
+    // linkification normalizes every span and adds avoidable work even when
+    // the text and settings are unchanged.
+    const zoomProbe = await evaluate(
+      `(()=>{const span=document.querySelector('.reading-text-layer span');if(!span)throw Error('Missing text span for zoom probe');const selection=window.getSelection(),walker=document.createTreeWalker(span,NodeFilter.SHOW_TEXT),node=walker.nextNode();if(!node)throw Error('Missing text node for zoom probe');const range=document.createRange(),end=Math.min(5,node.length);range.setStart(node,0);range.setEnd(node,end);selection.removeAllRanges();selection.addRange(range);const probe={span,selectionText:range.toString(),normalizations:0,width:span.getBoundingClientRect().width};const normalize=span.normalize;probe.restoreNormalize=normalize;span.normalize=function(){probe.normalizations++;return normalize.call(this)};window.__readingTextLayerZoomProbe=probe;return {selectionText:probe.selectionText,width:probe.width};})()`,
+    );
+    const initialZoom = await evaluate('window.previewRenderDiagnostics?.().readingView?.zoom');
+    window.webContents.send('reader:action', 'zoom-in');
+    await waitFor(
+      `(()=>{const d=window.previewRenderDiagnostics?.(),zoom=d?.readingView?.zoom;return d?.readingView?.fit==='manual'&&Number.isFinite(zoom)&&zoom>${JSON.stringify(initialZoom)}+0.05;})()`,
+      'pure zoom update',
+    );
+    const zoomResult = await evaluate(
+      `(()=>{const probe=window.__readingTextLayerZoomProbe,selection=window.getSelection();return {sameSpan:probe?.span===document.querySelector('.reading-text-layer span'),selectionText:selection?.toString()||'',selectionConnected:!!selection?.anchorNode?.isConnected,normalizations:probe?.normalizations??-1,width:probe?.span?.getBoundingClientRect().width,zoom:window.previewRenderDiagnostics().zoom};})()`,
+    );
+    assert.equal(zoomResult.sameSpan, true, 'pure zoom keeps the text span node');
+    assert.ok(
+      Math.abs(zoomResult.width / zoomProbe.width - zoomResult.zoom / initialZoom) < 0.01,
+      'zoomed text geometry scales with the PDF page',
+    );
+    assert.equal(
+      zoomResult.selectionText,
+      zoomProbe.selectionText,
+      'pure zoom keeps the native selection text',
+    );
+    assert.equal(zoomResult.selectionConnected, true, 'pure zoom keeps the selection anchor');
+    assert.equal(
+      zoomResult.normalizations,
+      0,
+      'pure zoom skips redundant DOI linkification and span normalization',
+    );
+    await evaluate(
+      `(()=>{const probe=window.__readingTextLayerZoomProbe;if(probe?.span&&probe.restoreNormalize)probe.span.normalize=probe.restoreNormalize;probe?.span?.ownerDocument?.getSelection?.()?.removeAllRanges?.();delete window.__readingTextLayerZoomProbe;return true;})()`,
+    );
     console.log(
       'Text selection smoke passed:',
       JSON.stringify({
@@ -359,6 +394,8 @@ export async function verifyTextSelection(window, recents) {
         crossedBetweenLineWhitespace: true,
         blankPastShortLineEndings: true,
         excludedOtherColumn: true,
+        zoomPreservedTextNodesAndSelection: true,
+        zoomSkippedLinkification: true,
       }),
     );
   } catch (error) {

@@ -11,7 +11,8 @@ function drawSelection(document) {
     const boxes = [];
     if (selection?.rangeCount && !selection.isCollapsed) {
       const selected = selection.getRangeAt(0);
-      const bounds = host.getBoundingClientRect();
+      const bounds = host.getBoundingClientRect(),
+        scale = host.pdfTextScale || 1;
       for (const span of textRuns.get(host)()) {
         if (!host.contains(span) || !selected.intersectsNode(span)) continue;
         const range = document.createRange();
@@ -24,10 +25,10 @@ function drawSelection(document) {
           if (!rect.width || !rect.height) continue;
           const box = document.createElement('div');
           Object.assign(box.style, {
-            left: `${rect.left - bounds.left}px`,
-            top: `${rect.top - bounds.top}px`,
-            width: `${rect.width}px`,
-            height: `${rect.height}px`,
+            left: `${(rect.left - bounds.left) / scale}px`,
+            top: `${(rect.top - bounds.top) / scale}px`,
+            width: `${rect.width / scale}px`,
+            height: `${rect.height / scale}px`,
           });
           boxes.push(box);
         }

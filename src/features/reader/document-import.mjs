@@ -195,6 +195,40 @@ export function createDocumentImport({
       activity.performanceRecorder.pages(session.pdf.numPages);
       session.bytes = undefined;
       if (session.pendingPDFTask === task) session.pendingPDFTask = undefined;
+      // Geometry and recent-history/cache I/O are independent. Start page
+      // requests now instead of serializing their worker round trips behind
+      // native persistence before the first screen can be mounted.
+      const geometryDocument = session.pdf;
+      const pageGeometryReady = (async () => {
+        const list = [];
+        for (let first = 1; first <= geometryDocument.numPages; first += 16) {
+          const numbers = Array.from(
+              { length: Math.min(16, geometryDocument.numPages - first + 1) },
+              (_, i) => first + i,
+            ),
+            batch = await Promise.all(numbers.map((n) => geometryDocument.getPage(n)));
+          if (token !== session.epoch) return [];
+          for (let i = 0; i < batch.length; i++) {
+            const v = batch[i].getViewport({ scale: 1 });
+            list.push(
+              reactive({
+                number: numbers[i],
+                width: v.width,
+                height: v.height,
+                status: 'idle',
+                blocks: [],
+                cached: false,
+                translationModel: '',
+                dwell: 0,
+              }),
+            );
+          }
+        }
+        return list;
+      })();
+      // Persistence may finish later; attach a rejection observer immediately
+      // while the original promise still propagates errors at the await below.
+      void pageGeometryReady.catch(() => {});
       // The recent entry carries the document's own reading view, kernel and service.
       let saved, remembered;
       if (window.previewRecents)
@@ -227,30 +261,8 @@ export function createDocumentImport({
         !cachedVersion && preferences.documentOpenMode.value === 'manual';
       session.title.value = (shell.testMode ? 'TEST — ' : '') + file.name;
       view.active.value = 1;
-      const list = [];
-      for (let first = 1; first <= session.pdf.numPages; first += 16) {
-        const numbers = Array.from(
-            { length: Math.min(16, session.pdf.numPages - first + 1) },
-            (_, i) => first + i,
-          ),
-          batch = await Promise.all(numbers.map((n) => session.pdf.getPage(n)));
-        if (token !== session.epoch) return;
-        for (let i = 0; i < batch.length; i++) {
-          const v = batch[i].getViewport({ scale: 1 });
-          list.push(
-            reactive({
-              number: numbers[i],
-              width: v.width,
-              height: v.height,
-              status: 'idle',
-              blocks: [],
-              cached: false,
-              translationModel: '',
-              dwell: 0,
-            }),
-          );
-        }
-      }
+      const list = await pageGeometryReady;
+      if (token !== session.epoch) return;
       activity.performanceRecorder.mark('pageGeometry');
       annotations.annotationKey.value = session.currentRecentId || session.pdf.fingerprints[0];
       try {

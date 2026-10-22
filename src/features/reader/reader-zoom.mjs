@@ -3,6 +3,7 @@ import { nextTick } from 'vue';
 import { captureLayoutMotion } from './layout-motion.mjs';
 
 export function createReaderZoom({ renderState, preferences, motion, session, view, actions }) {
+  let lastZoomRenderRequest = -Infinity;
   function captureZoomAnchor() {
     const el = view.reader.value,
       host = renderState.pageEls.get(view.active.value);
@@ -64,6 +65,11 @@ export function createReaderZoom({ renderState, preferences, motion, session, vi
   function scheduleZoomRender() {
     clearTimeout(motion.zoomRenderTimer);
     const generation = ++motion.zoomRenderGeneration;
+    const now = performance.now();
+    // Single clicks should paint on the next frame; key-repeat bursts retain
+    // the trailing debounce so intermediate scales do not waste raster work.
+    const delay = now - lastZoomRenderRequest > 180 ? 16 : 70;
+    lastZoomRenderRequest = now;
     motion.zoomRenderTimer = setTimeout(async () => {
       motion.zoomRenderTimer = 0;
       if (
@@ -80,7 +86,7 @@ export function createReaderZoom({ renderState, preferences, motion, session, vi
       } finally {
         if (generation === motion.zoomRenderGeneration) motion.zoomTargetPending = false;
       }
-    }, 70);
+    }, delay);
   }
 
   async function applyRequestedZoom(request) {

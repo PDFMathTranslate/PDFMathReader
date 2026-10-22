@@ -124,10 +124,11 @@ function fixture() {
       return translated ? this.translatedOptions : this.options;
     },
   };
+  const motion = { pinching: { value: false }, zoomTargetPending: false };
   const renderer = createCanvasRendering({
     renderState: state,
     session: { pdf, pages: { value: pages } },
-    motion: { pinching: { value: false } },
+    motion,
     preferences,
     tfidfWeighting,
     fontSubstitution,
@@ -150,6 +151,7 @@ function fixture() {
     fontSubstitution,
     view,
     renderer,
+    motion,
     restore() {
       globalThis.document = oldDocument;
       globalThis.devicePixelRatio = oldRatio;
@@ -191,7 +193,7 @@ test('inactive readers drop duplicate frames immediately and release PDF page ca
   f.pdfPages[0].cleanup = () => cleanups++;
   try {
     await f.renderer.draw(f.pdfPages[0], target, 1);
-    assert.ok(f.state.bitmapFrames.size > 0);
+    assert.equal(f.state.bitmapFrames.size, 0, 'visible pages do not retain a duplicate frame');
     f.activity.foreground.value = false;
     f.renderer.suspendRendering();
     assert.equal(f.state.bitmapFrames.size, 0);
@@ -291,7 +293,7 @@ test('prefetch uses only the bounded frame cache and presents immediately on vis
     assert.ok(f.state.canvasEls.get(1).width > 0);
     assert.equal(f.state.canvasEls.get(2).width, 0);
     assert.equal(f.state.canvasEls.get(3).width, 0);
-    assert.equal(f.state.bitmapFrames.size, 3);
+    assert.equal(f.state.bitmapFrames.size, 2);
     f.state.visiblePages.add(2);
     f.pdfPages[1].render = () => {
       throw Error('Warm frame must not rerender');
@@ -301,6 +303,32 @@ test('prefetch uses only the bounded frame cache and presents immediately on vis
     f.state.visiblePages.delete(1);
     await f.renderer.renderPages();
     assert.equal(f.state.canvasEls.get(1).width, 0);
+  } finally {
+    f.restore();
+  }
+});
+
+test('visible frame disposal does not consume offscreen prefetch frames', async () => {
+  const f = fixture();
+  const visibleTarget = f.state.canvasEls.get(1),
+    prefetchTarget = f.state.canvasEls.get(2);
+  f.state.visiblePages.delete(2);
+  try {
+    await f.renderer.draw(f.pdfPages[0], visibleTarget, 1);
+    assert.ok(visibleTarget.width > 0);
+    assert.equal(f.state.bitmapFrames.size, 0);
+
+    await f.renderer.draw(f.pdfPages[1], prefetchTarget, 1);
+    assert.equal(prefetchTarget.width, 0);
+    assert.equal(f.state.bitmapFrames.size, 1);
+
+    f.state.visiblePages.add(2);
+    f.pdfPages[1].render = () => {
+      throw Error('A retained prefetch frame must be reusable');
+    };
+    assert.equal(await f.renderer.draw(f.pdfPages[1], prefetchTarget, 1), true);
+    assert.ok(prefetchTarget.width > 0);
+    assert.equal(f.state.bitmapFrames.size, 0);
   } finally {
     f.restore();
   }
@@ -437,13 +465,16 @@ test('a visible page that stays empty is retried a bounded number of times', asy
 test('a cached frame is not trusted once its canvas has been emptied', async () => {
   const f = fixture(),
     target = f.state.canvasEls.get(1);
+  let renders = 0;
   try {
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
     target.width = target.height = 0;
     f.pdfPages[0].render = () => {
-      throw Error('The shared bitmap must be reused');
+      renders++;
+      return { promise: Promise.resolve(), cancel() {} };
     };
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 1), true);
+    assert.equal(renders, 1);
     assert.ok(target.width > 0);
   } finally {
     f.restore();
@@ -466,7 +497,7 @@ test('bionic render keys separate canvas, task, and bitmap reuse', async () => {
     assert.equal(options.length, 1);
     assert.equal(options[0].bionicGlyphs, 'bionic:fixed:2');
     assert.equal(f.state.canvasCache.get(target).bionicKey, 'bionic:fixed:2');
-    assert.ok([...f.state.bitmapFrames.keys()].some((key) => key.endsWith(':bionic:fixed:2')));
+    assert.equal(f.state.bitmapFrames.size, 0);
 
     f.preferences.bionicFixedLength.value = 3;
     assert.equal(await f.renderer.draw(page, target, 1), true);
@@ -554,7 +585,7 @@ for (const mode of ['fixed', 'root']) {
       f.preferences.bionicOriginalOnly.value = true;
       await f.renderer.renderPages();
       assert.equal(f.state.canvasCache.get(target).bionicKey, '');
-      assert.equal(translatedOptions.length, 2, 'warm plain translation frame is reused');
+      assert.equal(translatedOptions.length, 3, 'visible frames are redrawn after the key changes');
       f.view.showTranslations.value = false;
       await f.renderer.renderPages();
       assert.equal(f.state.canvasCache.get(target).bionicKey, `bionic:${mode}:3`);
@@ -653,7 +684,7 @@ test('an in-flight bionic frame cannot present after settings change', async () 
   }
 });
 
-test('a settled frame replaces its scroll preview and serves later previews', async () => {
+test('a settled visible frame does not retain its scroll preview', async () => {
   const f = fixture();
   f.state.visiblePages = new Set([1]);
   let renders = 0;
@@ -668,11 +699,11 @@ test('a settled frame replaces its scroll preview and serves later previews', as
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10, true), true);
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10), true);
     assert.equal(renders, 2);
-    assert.equal(f.state.bitmapFrames.size, 1);
+    assert.equal(f.state.bitmapFrames.size, 0);
     f.renderer.releaseCanvas(target);
     assert.equal(await f.renderer.draw(f.pdfPages[0], target, 10, true), true);
-    assert.equal(renders, 2);
-    assert.equal(target.width, 2000);
+    assert.equal(renders, 3);
+    assert.ok(target.width > 0);
   } finally {
     f.restore();
   }
@@ -716,6 +747,83 @@ test('local fonts follow the shown document and refresh their warm frames', asyn
     await f.renderer.renderPages();
     assert.equal(translatedOptions.at(-1).fontSubstitution, 'translated-fonts');
     assert.equal(f.state.canvasCache.get(target).filter, 'font:|PingFang|');
+  } finally {
+    f.restore();
+  }
+});
+
+test('long sessions bound PDF drawing caches and touch recently used pages', async () => {
+  const f = fixture();
+  const cleaned = [];
+  const pages = Array.from({ length: 30 }, (_, n) => ({
+    ...f.pdfPages[0],
+    cleanup: () => cleaned.push(n),
+  }));
+  try {
+    const target = f.state.canvasEls.get(1);
+    for (const page of pages.slice(0, 24)) await f.renderer.draw(page, target, 1);
+    await f.renderer.draw(pages[0], target, 1);
+    for (const page of pages.slice(24)) await f.renderer.draw(page, target, 1);
+    assert.deepEqual(cleaned, [1, 2, 3, 4, 5, 6]);
+    f.renderer.resetBitmaps();
+    assert.equal(cleaned.length, 30, 'reset cleans the remaining drawing caches');
+    assert.equal(new Set(cleaned).size, 30);
+  } finally {
+    f.restore();
+  }
+});
+
+test('settled rendering prefetches only two nearby pages beyond visible pages', async () => {
+  const f = fixture();
+  f.state.visiblePages = new Set([1]);
+  for (let number = 4; number <= 12; number++) {
+    f.pages.push({ number, blocks: [] });
+    f.pdfPages.push({ ...f.pdfPages[0] });
+    f.state.renderWindow.value.add(number);
+    f.state.canvasEls.set(number, { ...f.state.canvasEls.get(2) });
+  }
+  let requested = [];
+  const getPage = f.pdf.getPage;
+  f.pdf.getPage = async (number) => {
+    requested.push(number);
+    return getPage(number);
+  };
+  try {
+    await f.renderer.renderPages();
+    assert.deepEqual(requested, [1, 2, 3]);
+    assert.ok(f.state.canvasEls.get(1).width > 0);
+    assert.equal(f.state.bitmapFrames.size, 2);
+  } finally {
+    f.restore();
+  }
+});
+
+test('zoom anchor scrolling paints at settled quality and skips intermediate prefetch', async () => {
+  const f = fixture();
+  f.motion.zoomTargetPending = true;
+  f.state.previewScrolling = true;
+  f.state.visiblePages = new Set([1]);
+  f.view.zoom.value = 20;
+  const requested = [];
+  const getPage = f.pdf.getPage;
+  f.pdf.getPage = async (number) => {
+    requested.push(number);
+    return getPage(number);
+  };
+  try {
+    await f.renderer.renderPages();
+    assert.deepEqual(requested, [1]);
+    const target = f.state.canvasEls.get(1);
+    const sharp = f.state.canvasCache.get(target).dpr;
+    f.motion.zoomTargetPending = false;
+    f.state.previewScrolling = false;
+    await f.renderer.renderPages();
+    assert.equal(f.state.canvasCache.get(target).dpr, sharp);
+    assert.equal(
+      f.state.renderMetrics.pageFrames,
+      1,
+      'settling must not repaint a lower-quality zoom preview',
+    );
   } finally {
     f.restore();
   }

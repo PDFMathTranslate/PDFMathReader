@@ -23,7 +23,7 @@ export function createCanvasRendering({
 }) {
   let paintRetryTimer;
   let bitmapEpoch = 0;
-  let trackedPages = new WeakSet();
+  let trackedPages = new WeakMap();
   const renderedPages = new Set();
 
   function suspendRendering() {
@@ -56,7 +56,7 @@ export function createCanvasRendering({
     // closing the document. PDF.js defers it while a render is still settling.
     for (const reference of renderedPages) reference.deref()?.cleanup?.();
     renderedPages.clear();
-    trackedPages = new WeakSet();
+    trackedPages = new WeakMap();
     // Bitmap eviction must retain the mounted sidebar window so foreground
     // resume can repaint it even when its scroll position has not changed.
     for (const canvas of [...renderState.canvasEls.values(), ...renderState.thumbEls.values()])
@@ -141,7 +141,7 @@ export function createCanvasRendering({
         .filter(([n, c]) => c !== canvas && !renderState.visiblePages.has(n))
         .sort(([a], [b]) => Math.abs(b - view.active.value) - Math.abs(a - view.active.value));
       for (const [, other] of candidates) {
-        if (bytes <= 128 * 1024 * 1024) break;
+        if (bytes <= 64 * 1024 * 1024) break;
         bytes -= other.width * other.height * 4;
         releaseCanvas(other);
       }
@@ -160,8 +160,12 @@ export function createCanvasRendering({
     if (canvas.width !== frame.width) canvas.width = frame.width;
     if (canvas.height !== frame.height) canvas.height = frame.height;
     const context = canvas.getContext('2d');
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    // A full-frame copy replaces transparent pixels too; avoid clearing the
+    // same large backing store immediately before overwriting all its pixels.
+    const composite = context.globalCompositeOperation;
+    context.globalCompositeOperation = 'copy';
     context.drawImage(frame, 0, 0);
+    context.globalCompositeOperation = composite;
     canvas.pdfFrame = geometry;
     if (canvas.closest('.page')) {
       // Percentages also let the existing pinch preview follow the page size.
@@ -211,11 +215,26 @@ export function createCanvasRendering({
     const currentDraw = () =>
       epoch === bitmapEpoch && activity.foreground.value && canvas.isConnected;
     // Tracking cleanup must not keep replaced translation documents alive.
-    if (!trackedPages.has(page)) {
-      trackedPages.add(page);
-      renderedPages.add(new WeakRef(page));
+    let reference = trackedPages.get(page);
+    if (reference) renderedPages.delete(reference);
+    else {
+      reference = new WeakRef(page);
+      trackedPages.set(page, reference);
     }
-    const number = Number(canvas.closest('.page')?.dataset.page);
+    renderedPages.add(reference);
+    // PDF.js keeps operator lists and decoded images after a page scrolls out.
+    // Bound those caches as well as our bitmaps; cleanup defers active renders.
+    while (renderedPages.size > 24) {
+      const oldest = renderedPages.values().next().value;
+      renderedPages.delete(oldest);
+      const previous = oldest.deref();
+      if (previous) {
+        trackedPages.delete(previous);
+        previous.cleanup?.();
+      }
+    }
+    const number = Number(canvas.closest('.page')?.dataset.page),
+      isVisiblePage = () => Number.isFinite(number) && renderState.visiblePages.has(number);
     if (number && !renderState.renderWindow.value.has(number)) return false;
     const normalizedBionic = normalizeBionicReading({
         mode: preferences?.bionicReading?.value,
@@ -310,14 +329,19 @@ export function createCanvasRendering({
         ? renderPixelRatio(geometry.width, geometry.height, devicePixelRatio, true)
         : dpr,
       sharp = sharpDpr > dpr && renderState.bitmapFrames.get(frameKey(sharpDpr)),
-      reusable = sharp || renderState.bitmapFrames.get(key);
+      reusable = sharp || renderState.bitmapFrames.get(key),
+      reusableKey = sharp ? frameKey(sharpDpr) : key;
     if (reusable) {
       renderState.renderMetrics.cacheHits++;
-      if (!number || renderState.visiblePages.has(number))
+      const visible = isVisiblePage();
+      if (!number || visible) {
         presentFrame(canvas, reusable, page, scale, sharp ? sharpDpr : dpr);
+        if (visible && renderState.bitmapFrames.get(reusableKey) === reusable)
+          renderState.bitmapFrames.delete(reusableKey);
+      }
       return true;
     }
-    if (number && renderState.visiblePages.has(number) && !canvas.width) {
+    if (isVisiblePage() && !canvas.width) {
       const fallback = renderState.bitmapFrames.get(frameKey(previewDpr));
       if (fallback) presentFrame(canvas, fallback, page, scale, previewDpr);
     }
@@ -376,9 +400,9 @@ export function createCanvasRendering({
           bionicPreferenceKey(number, translated) !== bionicKey
         )
           return false;
-        if (!number || renderState.visiblePages.has(number))
-          presentFrame(canvas, frame, page, scale, dpr);
-        renderState.bitmapFrames.set(key, frame);
+        const visible = isVisiblePage();
+        if (!number || visible) presentFrame(canvas, frame, page, scale, dpr);
+        if (!visible) renderState.bitmapFrames.set(key, frame);
         if (number && dpr > previewDpr) renderState.bitmapFrames.delete(frameKey(previewDpr));
         return true;
       } catch (e) {
@@ -488,7 +512,7 @@ export function createCanvasRendering({
           page,
           renderState.canvasEls.get(p.number),
           view.zoom.value,
-          renderState.previewScrolling && !force,
+          renderState.previewScrolling && !force && !motion.zoomTargetPending,
           !!(p.mathDocument && translated),
         );
         if (token !== renderState.renderEpoch) return;
@@ -505,7 +529,7 @@ export function createCanvasRendering({
         0,
       );
       for (const candidate of [...ordered].reverse()) {
-        if (bytes <= 128 * 1024 * 1024) break;
+        if (bytes <= 64 * 1024 * 1024) break;
         if (renderState.visiblePages.has(candidate.number)) continue;
         const canvas = renderState.canvasEls.get(candidate.number);
         if (!canvas) continue;
@@ -531,9 +555,17 @@ export function createCanvasRendering({
           await paint(visible[next++]);
       }),
     );
-    for (const source of ordered) {
+    // Virtualization mounts several rows for stable scrolling, but rasterizing
+    // all of them wastes CPU and bitmap memory before the reader reaches them.
+    let prefetched = 0;
+    // A zoom already requests sharp visible frames. Do not rasterize two
+    // additional pages at every intermediate scale while the anchor settles.
+    for (const source of motion.zoomTargetPending ? [] : ordered) {
       if (token !== renderState.renderEpoch) return;
-      if (!renderState.visiblePages.has(source.number)) await paint(source);
+      if (!renderState.visiblePages.has(source.number)) {
+        if (prefetched++ >= 2) break;
+        await paint(source);
+      }
     }
     if (token !== renderState.renderEpoch) return;
     // Nothing else repaints a visible page that came out empty until the next scroll or zoom.
