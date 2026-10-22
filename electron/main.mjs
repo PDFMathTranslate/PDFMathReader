@@ -38,6 +38,7 @@ import { createAppIcon } from './main/services/app-icon.mjs';
 import { createCompanionServer } from './main/services/companion-server.mjs';
 import {
   configureEPUBSupport,
+  isEPUBPath,
   readSystemPDF,
   validateSystemPDF,
   pdfLaunchPaths,
@@ -323,6 +324,8 @@ else {
     return error;
   };
   const claimCompanionID = async (id, target, notificationTarget = target, options = {}) => {
+    // Companion transfer and revision locks operate on source PDF files only.
+    if (isEPUBPath(recents?.path(id))) return { available: false };
     if (!id || !companion?.claimDesktopDocument) return { available: false };
     const state = registry.stateFor(target);
     if (state?.companionDocumentId === id && state.companionSessionID)
@@ -422,6 +425,7 @@ else {
   };
   const claimCompanionPath = async (path, target, notificationTarget = target, options = {}) => {
     if (typeof path !== 'string' || !path) return { available: false };
+    if (isEPUBPath(path)) return { available: false };
     let id = recentIDForPath(path);
     let prepared;
     if (!id && companion?.claimDesktopDocument && recents?.prepare) {
