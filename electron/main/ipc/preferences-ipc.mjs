@@ -42,6 +42,7 @@ const SETTINGS_PREFERENCES = [
   'documentLanguageDetection',
   'topicSentenceDetection',
   'tocGenerationEnabled',
+  'outlineTopicSentencesEnabled',
   'translationCompareEnabled',
   'watermarkRemovalEnabled',
   'recentMagicZoomEnabled',

@@ -94,6 +94,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.documentLanguageDetection,
       bindings.preferences.topicSentenceDetection,
       bindings.preferences.tocGenerationEnabled,
+      bindings.preferences.outlineTopicSentencesEnabled,
       bindings.preferences.translationCompareEnabled,
       bindings.preferences.watermarkRemovalEnabled,
       bindings.preferences.recentMagicZoomEnabled,

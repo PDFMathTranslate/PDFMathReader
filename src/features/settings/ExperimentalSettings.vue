@@ -10,6 +10,7 @@ import RemoteKernelSettings from './RemoteKernelSettings.vue';
 import CompanionDiscoverySettings from './CompanionDiscoverySettings.vue';
 import FormulaOcrSettings from './FormulaOcrSettings.vue';
 import TocGenerationSettings from './TocGenerationSettings.vue';
+import OutlineTopicSentenceSettings from './OutlineTopicSentenceSettings.vue';
 import TranslationCompareSettings from './TranslationCompareSettings.vue';
 import WatermarkRemovalSettings from './WatermarkRemovalSettings.vue';
 import RecentMagicZoomSettings from './RecentMagicZoomSettings.vue';
@@ -27,6 +28,7 @@ const categoryLabels = computed(() => settingsCategoryLabels(currentUILanguage.v
       <div class="settings-section-body">
         <FormulaOcrSettings />
         <TocGenerationSettings v-if="languagePreferences" />
+        <OutlineTopicSentenceSettings v-if="languagePreferences" />
         <WatermarkRemovalSettings v-if="languagePreferences" />
         <RecentMagicZoomSettings v-if="languagePreferences" />
         <TopicSentenceSettings v-if="languagePreferences" />

@@ -14,6 +14,7 @@ import { createMotionState } from '../features/reader/motion-state.mjs';
 import { createTranslationQueueState } from '../features/translation/queue-state.mjs';
 import { createPreferenceState } from '../features/settings/preference-state.mjs';
 import { createTopicSentenceClassifier } from '../features/translation/topic-sentence-classifier.mjs';
+import { useOutlineTopicSentences } from '../features/reader/outline-topic-sentences.mjs';
 import { createReaderFeatures } from './reader-features.mjs';
 
 import { menuLabel } from '../../shared/i18n/menu.mjs';
@@ -330,7 +331,9 @@ export function useReaderWindow() {
     context: () => ({
       document: session.pdf,
       epoch: session.epoch,
-      enabled: preferences.topicSentenceDetection.value && emphasizeTopicSentences.value,
+      enabled:
+        preferences.topicSentenceDetection.value &&
+        (emphasizeTopicSentences.value || preferences.outlineTopicSentencesEnabled.value),
       token: preferences.jevApiToken.value,
     }),
     api: featureActions.api,
@@ -341,7 +344,12 @@ export function useReaderWindow() {
     isTopicSentence: topicSentenceClassifier.isTopicSentence,
   });
   watch(
-    [preferences.topicSentenceDetection, preferences.jevApiToken, emphasizeTopicSentences],
+    [
+      preferences.topicSentenceDetection,
+      preferences.jevApiToken,
+      emphasizeTopicSentences,
+      preferences.outlineTopicSentencesEnabled,
+    ],
     () => {
       topicSentenceClassifier.invalidate();
       topicSentenceRevision.value++;
@@ -434,6 +442,17 @@ export function useReaderWindow() {
     model = ref(''),
     reading = ref(t('reading.ready')),
     showTranslations = ref(true);
+  provide(
+    'outlineTopicSentences',
+    useOutlineTopicSentences({
+      session,
+      pages,
+      outline: documentOutline,
+      enabled: preferences.outlineTopicSentencesEnabled,
+      visible: computed(() => sidebar.value && sidebarMode.value === 'outline'),
+      locale: uiLanguage,
+    }),
+  );
   window.previewCurrentFileKind = () =>
     showTranslations.value &&
     pages.value.some((page) => !!page.mathDocument || hasParagraphTranslation(page))

@@ -34,6 +34,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.topicSentenceDetection.value = saved.topicSentenceDetection;
     if (typeof saved.tocGenerationEnabled === 'boolean')
       preferences.tocGenerationEnabled.value = saved.tocGenerationEnabled;
+    if (typeof saved.outlineTopicSentencesEnabled === 'boolean')
+      preferences.outlineTopicSentencesEnabled.value = saved.outlineTopicSentencesEnabled;
     if (typeof saved.translationCompareEnabled === 'boolean')
       preferences.translationCompareEnabled.value = saved.translationCompareEnabled;
     if (typeof saved.watermarkRemovalEnabled === 'boolean')
@@ -205,6 +207,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         documentLanguageDetection: preferences.documentLanguageDetection.value,
         topicSentenceDetection: preferences.topicSentenceDetection.value,
         tocGenerationEnabled: preferences.tocGenerationEnabled.value,
+        outlineTopicSentencesEnabled: preferences.outlineTopicSentencesEnabled.value,
         translationCompareEnabled: preferences.translationCompareEnabled.value,
         watermarkRemovalEnabled: preferences.watermarkRemovalEnabled.value,
         recentMagicZoomEnabled: preferences.recentMagicZoomEnabled.value,

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { computed, watch, ref, nextTick, onMounted, onBeforeUnmount, inject } from 'vue';
 import { t, uiLanguage } from '../../i18n/index.mjs';
 import { annotationSections, annotationChapters } from '../annotations/annotation-browser.mjs';
 import { platform, AppSegmentedControl, AppSegment } from '../../ui/controls.mjs';
@@ -79,8 +79,28 @@ const visibleOutline = computed(() =>
       ),
   ),
 );
+// Experimental: first sentences of body paragraphs, keyed by the outline entry
+// that owns them. The optional Jev classifier can reject non-topic sentences.
+const outlineTopicSentences = inject('outlineTopicSentences', null);
+const topicSentenceClassifier = inject('topicSentenceClassifier', null);
+const topicSentences = computed(() => {
+  const sections = outlineTopicSentences?.value;
+  if (!sections?.size || props.mode !== 'outline') return new Map();
+  const classify = topicSentenceClassifier?.isTopicSentence;
+  void topicSentenceClassifier?.revision?.value;
+  if (typeof classify !== 'function') return sections;
+  const kept = new Map();
+  for (const [id, items] of sections) {
+    const accepted = items.filter((item) => classify(item.paragraph, item.sentence) !== false);
+    if (accepted.length) kept.set(id, accepted);
+  }
+  return kept;
+});
 function hasChildren(item) {
-  return props.outline.some((child) => child.id.startsWith(item.id + '.'));
+  return (
+    topicSentences.value.has(item.id) ||
+    props.outline.some((child) => child.id.startsWith(item.id + '.'))
+  );
 }
 function toggleOutline(item) {
   const next = new Set(collapsed.value);
@@ -289,37 +309,52 @@ watch(
           </button>
         </template>
       </div>
-      <div
-        v-for="item in visibleOutline"
-        :key="item.id"
-        class="sidebar-outline-row"
-        :style="{ paddingLeft: 6 + Math.min(item.depth, 8) * 12 + 'px' }"
+      <template v-for="item in visibleOutline" :key="item.id"
+        ><div
+          class="sidebar-outline-row"
+          :style="{ paddingLeft: 6 + Math.min(item.depth, 8) * 12 + 'px' }"
+        >
+          <button
+            v-if="hasChildren(item)"
+            class="sidebar-outline-toggle"
+            :aria-expanded="!collapsed.has(item.id)"
+            :aria-label="
+              t(collapsed.has(item.id) ? 'sidebar.expand' : 'sidebar.collapse', {
+                title: item.title,
+              })
+            "
+            @click="toggleOutline(item)"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4 2 4 4-4 4" /></svg></button
+          ><span v-else class="sidebar-outline-spacer"></span>
+          <button
+            class="sidebar-outline-item"
+            :class="{
+              'sidebar-outline-top-level': hasNestedOutline && item.depth === 0,
+              'sidebar-outline-read': readChapters.has(item.id),
+            }"
+            :disabled="!item.page && !hasChildren(item)"
+            @click="item.page && $event.detail < 2 && emit('page', item.page)"
+            @dblclick="hasChildren(item) && toggleOutline(item)"
+          >
+            <span>{{ item.title }}</span
+            ><small v-if="item.page">{{ item.page }}</small>
+          </button>
+        </div>
+        <template v-if="!collapsed.has(item.id)">
+          <button
+            v-for="topic in topicSentences.get(item.id)"
+            :key="topic.id"
+            class="sidebar-outline-topic"
+            :style="{ paddingLeft: 28 + Math.min(item.depth + 1, 8) * 12 + 'px' }"
+            :title="topic.sentence"
+            @click="emit('page', topic.page)"
+          >
+            <span>{{ topic.sentence }}</span
+            ><small>{{ topic.page }}</small>
+          </button>
+        </template></template
       >
-        <button
-          v-if="hasChildren(item)"
-          class="sidebar-outline-toggle"
-          :aria-expanded="!collapsed.has(item.id)"
-          :aria-label="
-            t(collapsed.has(item.id) ? 'sidebar.expand' : 'sidebar.collapse', { title: item.title })
-          "
-          @click="toggleOutline(item)"
-        >
-          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4 2 4 4-4 4" /></svg></button
-        ><span v-else class="sidebar-outline-spacer"></span>
-        <button
-          class="sidebar-outline-item"
-          :class="{
-            'sidebar-outline-top-level': hasNestedOutline && item.depth === 0,
-            'sidebar-outline-read': readChapters.has(item.id),
-          }"
-          :disabled="!item.page && !hasChildren(item)"
-          @click="item.page && $event.detail < 2 && emit('page', item.page)"
-          @dblclick="hasChildren(item) && toggleOutline(item)"
-        >
-          <span>{{ item.title }}</span
-          ><small v-if="item.page">{{ item.page }}</small>
-        </button>
-      </div>
     </div>
     <div v-show="mode === 'annotations'" class="sidebar-annotations-view">
       <div class="annotation-browser-controls">
@@ -615,6 +650,36 @@ watch(
 }
 .sidebar-outline-top-level span {
   font-weight: 700;
+}
+.sidebar-outline-topic {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 4px 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar-outline-topic span {
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.sidebar-outline-topic small {
+  flex-shrink: 0;
+}
+.sidebar-outline-topic:hover {
+  background: var(--chrome-pressed);
+  color: var(--text);
 }
 .sidebar-outline-item.sidebar-outline-read {
   color: var(--text-secondary);
