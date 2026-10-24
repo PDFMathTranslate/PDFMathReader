@@ -162,11 +162,9 @@ export function createReaderCommands({
     } else if (action === 'zoom-in') actions.readerZoom.changeZoom(0.1);
     else if (action === 'zoom-out') actions.readerZoom.changeZoom(-0.1);
     else if (action === 'page-previous') {
-      if (session.pages.value.length)
-        actions.pageNavigation.go(view.active.value - 1, { animate: true });
+      if (session.pages.value.length) actions.pageNavigation.step(-1);
     } else if (action === 'page-next') {
-      if (session.pages.value.length)
-        actions.pageNavigation.go(view.active.value + 1, { animate: true });
+      if (session.pages.value.length) actions.pageNavigation.step(1);
     } else if (action === 'page-first' || action === 'page-last') {
       if (session.pages.value.length)
         actions.pageNavigation.go(action === 'page-first' ? 1 : session.pages.value.length, {

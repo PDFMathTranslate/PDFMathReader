@@ -106,5 +106,31 @@ export function createPageNavigation({
       }
     }
   }
-  return { cancelPageScroll, interruptPageScroll, animatePageScroll, go };
+
+  // Step by layout row so two- and four-column layouts move a whole row of pages.
+  function stepTarget(delta) {
+    const { rows, frames } = view.pageLayout.value,
+      row = frames[view.active.value - 1]?.row;
+    if (row == null) return view.active.value + delta;
+    return rows[row + delta] ? rows[row + delta].start + 1 : null;
+  }
+
+  function canStep(delta) {
+    return session.pages.value.length > 0 && stepTarget(delta) != null;
+  }
+
+  function step(delta, options = { animate: true }) {
+    const target = stepTarget(delta);
+    if (target != null) return go(target, options);
+  }
+
+  return {
+    cancelPageScroll,
+    interruptPageScroll,
+    animatePageScroll,
+    go,
+    step,
+    canStep,
+    stepTarget,
+  };
 }

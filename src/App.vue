@@ -82,6 +82,8 @@ const {
   fullscreen,
   glossaries,
   go,
+  step,
+  canStep,
   headerDoubleClick,
   hideNavigatorLater,
   holdNavigator,
@@ -465,6 +467,8 @@ const copyToastDetail = computed(() =>
         :zoom-entry-input="zoomEntryInput"
         :active="active"
         :go="go"
+        :step="step"
+        :can-step="canStep"
         :submit-page="submitPage"
         :bind-page-input="(element) => (pageInput = element)"
         v-model:zoom-entry="zoomEntry"

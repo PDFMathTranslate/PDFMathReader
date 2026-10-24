@@ -16,6 +16,8 @@ defineProps([
   'zoomEntryInput',
   'active',
   'go',
+  'step',
+  'canStep',
   'submitPage',
   'bindPageInput',
 ]);
@@ -123,8 +125,8 @@ const pageEntry = defineModel('pageEntry');
         <component
           :is="platform === 'win32' ? AppButton : 'button'"
           :aria-label="t('navigator.previousPage')"
-          :disabled="active <= 1"
-          @click="go(active - 1, { animate: true })"
+          :disabled="active <= 1 || !canStep(-1)"
+          @click="step(-1)"
         >
           <svg
             class="floating-tool-icon"
@@ -172,8 +174,8 @@ const pageEntry = defineModel('pageEntry');
         <component
           :is="platform === 'win32' ? AppButton : 'button'"
           :aria-label="t('navigator.nextPage')"
-          :disabled="active >= pages.length"
-          @click="go(active + 1, { animate: true })"
+          :disabled="active >= pages.length || !canStep(1)"
+          @click="step(1)"
         >
           <svg
             class="floating-tool-icon"
