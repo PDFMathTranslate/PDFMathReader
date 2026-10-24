@@ -232,6 +232,36 @@ test('suspends all windows and restores a visible window once with its snapshot'
   assert.equal(state.serviceMode, null);
 });
 
+test('restores an unminimized window even while macOS reports it occluded', async (t) => {
+  const active = fakeWindow({ minimized: true, visible: false });
+  const inactive = fakeWindow({ minimized: false, visible: false });
+  let suspended = 0;
+  const resumed = [];
+  const { service } = harness(
+    [
+      [active, {}],
+      [inactive, {}],
+    ],
+    {
+      activeFor: (target) => (target === inactive ? active : target),
+      suspend: () => suspended++,
+      resume: (window) => resumed.push(window),
+    },
+  );
+  t.after(() => service.stop());
+
+  service.update();
+  await waitFor(() => suspended === 2);
+
+  // Deminiaturized, but isVisible() is still false (occluded or another Space).
+  active.minimized = false;
+  service.update();
+  await waitFor(() => resumed.length === 1);
+  assert.deepEqual(resumed, [active]);
+  // The hidden inactive tab keeps its suspension until it is selected.
+  assert.equal(await observed(() => resumed.length > 1), false);
+});
+
 test('stopping during prepare cancels the pending suspension', async (t) => {
   const target = fakeWindow({ minimized: true, visible: false });
   const state = {};

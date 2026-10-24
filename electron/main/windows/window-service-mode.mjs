@@ -28,7 +28,15 @@ export function createWindowServiceMode({
       })
     );
   };
-  const visible = (target) => target.isVisible() && !target.isMinimized();
+  // macOS isVisible() is also false while a window is occluded or on another
+  // Space, so a restored window may never look "visible" when its events fire.
+  // Any non-minimized window that is not an inactive tab (or hidden settings
+  // window) is on screen from the user's point of view and needs its renderer.
+  const visible = (target) => {
+    if (target.isMinimized()) return false;
+    if (target.isVisible()) return true;
+    return !registry.stateFor(target)?.settingsOwner && activeFor(target) === target;
+  };
   const restore = (target, state) => {
     if (state.serviceMode?.phase !== 'suspended') return;
     const saved = state.serviceMode;
