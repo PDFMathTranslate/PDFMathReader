@@ -25,6 +25,8 @@ const entries = [
   ['fit-width', 'Fit Width', 'View', 'view-fit-width', '0'],
   ['fit-height', 'Fit Height', 'View', 'view-fit-height', '9'],
   ['sidebar', 'Toggle Sidebar', 'View', 'view-sidebar', 'B'],
+  ['annotations', 'Show Highlights and Comments', 'View', 'view-annotations'],
+  ['crop:toggle', 'Trim Margins', 'View', 'crop-toggle'],
   ['crop:x:more', 'Crop More Horizontally', 'View', 'crop-x-more'],
   ['crop:x:less', 'Crop Less Horizontally', 'View', 'crop-x-less'],
   ['crop:y:more', 'Crop More Vertically', 'View', 'crop-y-more'],

@@ -172,6 +172,8 @@ export function createReaderCommands({
         });
     } else if (action === 'sidebar') {
       if (session.pages.value.length) actions.readerFit.toggleSidebar();
+    } else if (action === 'annotations') {
+      if (session.pages.value.length) shell.showAnnotations.value = !shell.showAnnotations.value;
     } else if (action === 'settings') {
       if (shell.settingsWindowMode) actions.settingsNavigation.openSettings();
       else

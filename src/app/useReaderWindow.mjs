@@ -607,6 +607,16 @@ export function useReaderWindow() {
 
   // Display-only, total fraction removed symmetrically from each axis.
   const pageCrop = ref({ x: 0, y: 0 });
+  // Mirrors the View menu checkboxes for annotations and Trim Margins.
+  watch(
+    () => ({
+      annotations: showAnnotations.value,
+      annotationsAvailable: annotations.value.length > 0,
+      crop: pageCrop.value.x > 0 || pageCrop.value.y > 0,
+    }),
+    (state) => void window.previewActions?.viewState?.(state)?.catch(() => {}),
+    { immediate: true },
+  );
   const compactParagraphPage = createParagraphCompaction({
     enabled: computed(
       () =>

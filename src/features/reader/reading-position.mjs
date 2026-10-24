@@ -24,12 +24,29 @@ export function createReadingPosition({
     return host?.closest('.page-wrap') || host;
   }
 
+  // Last non-zero crop of this document, so Trim Margins can switch it back on.
+  let trimmedCrop = null;
+  function toggledCrop() {
+    const { x, y } = readerView.pageCrop.value;
+    if (x || y) {
+      trimmedCrop = { x, y, epoch: session.epoch };
+      return { x: 0, y: 0 };
+    }
+    if (trimmedCrop?.epoch === session.epoch) return { x: trimmedCrop.x, y: trimmedCrop.y };
+    const defaults = {
+      x: preferences.defaultPageCropX.value,
+      y: preferences.defaultPageCropY.value,
+    };
+    return defaults.x || defaults.y ? defaults : { x: 0.1, y: 0.1 };
+  }
+
   async function changeCrop(action) {
     if (!session.pages.value.length) return;
     const view = readingView(),
       token = session.epoch;
     if (!view) return;
     if (action === 'crop:reset') readerView.pageCrop.value = { x: 0, y: 0 };
+    else if (action === 'crop:toggle') readerView.pageCrop.value = toggledCrop();
     else {
       const [, axis, step] = action.split(':');
       if (!['x', 'y'].includes(axis)) return;

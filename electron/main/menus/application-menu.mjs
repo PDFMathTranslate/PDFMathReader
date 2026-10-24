@@ -135,6 +135,19 @@ export function createApplicationMenu({
       translateAllPages.enabled = !!registry.stateFor(target)?.performance.hasDocument;
     const stopAllTasks = item('translation-stop-all-tasks');
     if (stopAllTasks) stopAllTasks.enabled = !!registry.stateFor(target)?.performance.hasDocument;
+    // Checkbox state mirrors the renderer; Electron flips it locally on click.
+    const viewState = registry.stateFor(target)?.viewState;
+    const hasDocument = !!registry.stateFor(target)?.performance.hasDocument;
+    const annotationsItem = item('view-annotations');
+    if (annotationsItem) {
+      annotationsItem.enabled = hasDocument && !!viewState?.annotationsAvailable;
+      annotationsItem.checked = viewState?.annotations !== false;
+    }
+    const cropToggle = item('crop-toggle');
+    if (cropToggle) {
+      cropToggle.enabled = hasDocument;
+      cropToggle.checked = hasDocument && !!viewState?.crop;
+    }
     const state = registry.stateFor(target)?.preferences;
     if (!state) return;
     const layout = item('layout-' + (state.direction || 'vertical'));
@@ -487,12 +500,34 @@ export function createApplicationMenu({
           command('Fit Height', accelerator('9'), 'fit-height', 'view-fit-height'),
           command('Toggle Sidebar', accelerator('B'), 'sidebar', 'view-sidebar'),
           { type: 'separator' },
-          { id: 'view-crop', label: 'Page Crop', enabled: false },
-          command('Crop More Horizontally', undefined, 'crop:x:more', 'crop-x-more'),
-          command('Crop Less Horizontally', undefined, 'crop:x:less', 'crop-x-less'),
-          command('Crop More Vertically', undefined, 'crop:y:more', 'crop-y-more'),
-          command('Crop Less Vertically', undefined, 'crop:y:less', 'crop-y-less'),
-          command('Reset Crop', undefined, 'crop:reset', 'crop-reset'),
+          {
+            ...command(
+              'Show Highlights and Comments',
+              undefined,
+              'annotations',
+              'view-annotations',
+            ),
+            type: 'checkbox',
+            checked: true,
+            enabled: false,
+          },
+          {
+            id: 'view-crop',
+            label: 'Page Crop',
+            submenu: [
+              {
+                ...command('Trim Margins', undefined, 'crop:toggle', 'crop-toggle'),
+                type: 'checkbox',
+                checked: false,
+              },
+              { type: 'separator' },
+              command('Crop More Horizontally', undefined, 'crop:x:more', 'crop-x-more'),
+              command('Crop Less Horizontally', undefined, 'crop:x:less', 'crop-x-less'),
+              command('Crop More Vertically', undefined, 'crop:y:more', 'crop-y-more'),
+              command('Crop Less Vertically', undefined, 'crop:y:less', 'crop-y-less'),
+              command('Reset Crop', undefined, 'crop:reset', 'crop-reset'),
+            ],
+          },
           { type: 'separator' },
           { id: 'view-layout', label: 'Layout', enabled: false },
           ...['vertical', 'horizontal'].map((direction) => ({

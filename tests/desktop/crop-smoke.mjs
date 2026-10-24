@@ -80,13 +80,13 @@ export async function verifyCrop(window, recents) {
     );
     const menu = Menu.getApplicationMenu();
     const viewItems = menu.getMenuItemById('view-menu').submenu.items;
-    const cropTitle = viewItems.findIndex((item) => item.id === 'view-crop');
-    assert.equal(viewItems[cropTitle].enabled, false);
-    assert.equal(viewItems[cropTitle].submenu, null);
+    assert.ok(viewItems.some((item) => item.id === 'view-annotations'));
+    const cropMenu = viewItems.find((item) => item.id === 'view-crop');
     assert.deepEqual(
-      viewItems.slice(cropTitle + 1, cropTitle + 6).map((item) => item.id),
-      ['crop-x-more', 'crop-x-less', 'crop-y-more', 'crop-y-less', 'crop-reset'],
+      cropMenu.submenu.items.filter((item) => item.type !== 'separator').map((item) => item.id),
+      ['crop-toggle', 'crop-x-more', 'crop-x-less', 'crop-y-more', 'crop-y-less', 'crop-reset'],
     );
+    assert.equal(menu.getMenuItemById('crop-toggle').checked, false);
     async function command(id) {
       menu.getMenuItemById(id).click();
       await pause(500);
@@ -108,6 +108,14 @@ export async function verifyCrop(window, recents) {
     await command('crop-y-more');
     state = await geometry();
     assert.equal(state.view.cropY, 0.05);
+    assert.equal(menu.getMenuItemById('crop-toggle').checked, true);
+    await command('crop-toggle');
+    state = await geometry();
+    assert.deepEqual([state.view.cropX, state.view.cropY], [0, 0]);
+    assert.equal(menu.getMenuItemById('crop-toggle').checked, false);
+    await command('crop-toggle');
+    state = await geometry();
+    assert.deepEqual([state.view.cropX, state.view.cropY], [0.05, 0.05]);
     assert.ok(Math.abs(state.height - (state.fullHeight - 2) * 0.95 - 2) < 2);
     assert.ok(
       await evaluate(`getComputedStyle(document.querySelector('.page-wrap')).boxShadow!=='none'`),

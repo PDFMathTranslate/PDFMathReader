@@ -19,6 +19,24 @@ export function registerWindowIPC({
     menu.updateMenu(target);
     return true;
   });
+  handle('window:view-state', (event, value) => {
+    const target = trustedWindow(event);
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      !['annotations', 'annotationsAvailable', 'crop'].every(
+        (key) => typeof value[key] === 'boolean',
+      )
+    )
+      throw Error('Invalid view state.');
+    registry.stateFor(target).viewState = {
+      annotations: value.annotations,
+      annotationsAvailable: value.annotationsAvailable,
+      crop: value.crop,
+    };
+    if (target === registry.focusedWindow()) menu.updateMenu(target);
+    return true;
+  });
   handle('window:register-options', (event, value) => {
     const target = trustedWindow(event);
     const options = {};
