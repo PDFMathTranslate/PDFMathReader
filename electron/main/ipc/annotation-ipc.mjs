@@ -1,6 +1,8 @@
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createAIDiscussionService } from '../services/ai-discussion.mjs';
 import { clipboard, dialog, Menu, ShareMenu, shell } from 'electron';
+import { writeFile } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 
 export function registerAnnotationIPC({
   handle,
@@ -143,6 +145,31 @@ export function registerAnnotationIPC({
     if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
       throw Error('Invalid share text.');
     new ShareMenu({ texts: [text] }).popup({ window: target });
+    return true;
+  });
+  handle('previewAnnotations:export', async (event, { text, name, format } = {}) => {
+    const target = trustedWindow(event);
+    if (typeof text !== 'string' || text.length > 20 * 1024 * 1024)
+      throw Error('Invalid annotation export.');
+    if (typeof name !== 'string' || !name.trim() || name.length > 255)
+      throw Error('Invalid annotation export name.');
+    const markdown = format === 'markdown' || format === 'markdown-outline';
+    if (!markdown && format !== 'text') throw Error('Invalid annotation export format.');
+    // Default to the folder that holds the open document when it has a real path.
+    const source = registry.stateFor(target)?.unkeyedAnnotationSource;
+    const file = basename(name);
+    const defaultPath =
+      source?.reliable && typeof source.path === 'string'
+        ? join(dirname(source.path), file)
+        : join(app.getPath('documents'), file);
+    const { canceled, filePath } = await dialog.showSaveDialog(target, {
+      defaultPath,
+      filters: markdown
+        ? [{ name: 'Markdown', extensions: ['md'] }]
+        : [{ name: 'Plain Text', extensions: ['txt'] }],
+    });
+    if (canceled || !filePath) return false;
+    await writeFile(filePath, text, 'utf8');
     return true;
   });
   handle('previewAnnotations:handover', async (event, text) => {

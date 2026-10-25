@@ -706,3 +706,108 @@ for (const [locale, value] of Object.entries({
   es: 'Volver a abrir la pestaña cerrada',
 }))
   menuMessages[locale]['Reopen Closed Tab'] = value;
+
+const annotationExportKeys = [
+  'Export Annotations',
+  'As Markdown List',
+  'As Markdown Nested by Outline',
+  'As Plain Text',
+  'Annotations Exported',
+];
+for (const [locale, labels] of Object.entries({
+  en: annotationExportKeys,
+  'zh-CN': ['导出批注', 'Markdown 列表', '按目录层级的 Markdown', '纯文本', '已导出批注'],
+  'zh-TW': ['匯出註解', 'Markdown 清單', '依目錄層級的 Markdown', '純文字', '已匯出註解'],
+  ja: [
+    '注釈を書き出す',
+    'Markdown リスト',
+    'アウトライン階層付き Markdown',
+    'プレーンテキスト',
+    '注釈を書き出しました',
+  ],
+  ko: [
+    '주석 내보내기',
+    'Markdown 목록',
+    '개요별 중첩 Markdown',
+    '일반 텍스트',
+    '주석을 내보냈습니다',
+  ],
+  fr: [
+    'Exporter les annotations',
+    'Liste Markdown',
+    'Markdown hiérarchisé selon le plan',
+    'Texte brut',
+    'Annotations exportées',
+  ],
+  es: [
+    'Exportar anotaciones',
+    'Lista Markdown',
+    'Markdown anidado según el esquema',
+    'Texto sin formato',
+    'Anotaciones exportadas',
+  ],
+  de: [
+    'Anmerkungen exportieren',
+    'Markdown-Liste',
+    'Markdown nach Gliederung verschachtelt',
+    'Reiner Text',
+    'Anmerkungen exportiert',
+  ],
+  pt: [
+    'Exportar anotações',
+    'Lista Markdown',
+    'Markdown aninhado pelo sumário',
+    'Texto simples',
+    'Anotações exportadas',
+  ],
+  ru: [
+    'Экспорт заметок',
+    'Список Markdown',
+    'Markdown по структуре оглавления',
+    'Обычный текст',
+    'Заметки экспортированы',
+  ],
+  ar: [
+    'تصدير التعليقات التوضيحية',
+    'قائمة Markdown',
+    'Markdown متداخل حسب المخطط',
+    'نص عادي',
+    'تم تصدير التعليقات التوضيحية',
+  ],
+  arz: [
+    'تصدير التعليقات',
+    'قائمة Markdown',
+    'Markdown متداخل حسب الفهرس',
+    'نص عادي',
+    'التعليقات اتصدّرت',
+  ],
+  hi: [
+    'एनोटेशन निर्यात करें',
+    'Markdown सूची',
+    'रूपरेखा के अनुसार नेस्टेड Markdown',
+    'सादा टेक्स्ट',
+    'एनोटेशन निर्यात किए गए',
+  ],
+  bn: [
+    'টীকা রপ্তানি করুন',
+    'Markdown তালিকা',
+    'রূপরেখা অনুযায়ী নেস্টেড Markdown',
+    'সাধারণ টেক্সট',
+    'টীকা রপ্তানি হয়েছে',
+  ],
+  ur: [
+    'حاشیے برآمد کریں',
+    'Markdown فہرست',
+    'خاکے کے مطابق Markdown',
+    'سادہ متن',
+    'حاشیے برآمد ہو گئے',
+  ],
+  pcm: [
+    'Export Notes',
+    'Markdown List',
+    'Markdown wey follow Outline',
+    'Plain Text',
+    'Notes don export',
+  ],
+}))
+  annotationExportKeys.forEach((key, index) => (menuMessages[locale][key] = labels[index]));

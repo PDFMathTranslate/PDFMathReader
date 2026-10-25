@@ -111,6 +111,10 @@ export function createApplicationMenu({
   };
 
   const focusedWindow = () => registry.focusedWindow();
+  const annotationsExportable = (target) => {
+    const state = registry.stateFor(target);
+    return !!state?.performance.hasDocument && !!state?.viewState?.annotationsAvailable;
+  };
   const updateMenu = (target) => {
     refreshApplications(target);
     const external = (applicationMenu || Menu.getApplicationMenu())?.getMenuItemById(
@@ -138,6 +142,8 @@ export function createApplicationMenu({
     // Checkbox state mirrors the renderer; Electron flips it locally on click.
     const viewState = registry.stateFor(target)?.viewState;
     const hasDocument = !!registry.stateFor(target)?.performance.hasDocument;
+    const exportAnnotations = item('file-export-annotations');
+    if (exportAnnotations) exportAnnotations.enabled = annotationsExportable(target);
     const annotationsItem = item('view-annotations');
     if (annotationsItem) {
       annotationsItem.enabled = hasDocument && !!viewState?.annotationsAvailable;
@@ -407,6 +413,31 @@ export function createApplicationMenu({
             label: 'Continue Reading in Another App',
             enabled: !!documentPath(focusedWindow()),
             submenu: externalApplicationItems(),
+          },
+          {
+            id: 'file-export-annotations',
+            label: 'Export Annotations',
+            enabled: annotationsExportable(focusedWindow()),
+            submenu: [
+              command(
+                'As Markdown List',
+                undefined,
+                'export-annotations:markdown',
+                'file-export-annotations-markdown',
+              ),
+              command(
+                'As Markdown Nested by Outline',
+                undefined,
+                'export-annotations:markdown-outline',
+                'file-export-annotations-outline',
+              ),
+              command(
+                'As Plain Text',
+                undefined,
+                'export-annotations:text',
+                'file-export-annotations-text',
+              ),
+            ],
           },
           ...(['darwin', 'win32', 'linux'].includes(platform)
             ? [

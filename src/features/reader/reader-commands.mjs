@@ -1,5 +1,6 @@
 import { paraphrasePrompt } from '../../../shared/reader/ai-paraphrase.mjs';
 import { requestGlossaryTerm } from '../settings/quick-glossary.mjs';
+import { annotationExportName, formatAnnotations } from '../annotations/annotation-export.mjs';
 import { selectionSearchQuery } from '../search/document-search.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
@@ -23,6 +24,7 @@ export function createReaderCommands({
   shell,
   view,
   search,
+  annotations,
   actions,
 }) {
   initializeShortcutState();
@@ -86,6 +88,11 @@ export function createReaderCommands({
           actions.rootActions.notifyCopy(t('copy.failed'));
         }
       })();
+      return;
+    }
+    if (action.startsWith('export-annotations:')) {
+      if (shell.settingsWindowMode || !annotations?.annotations.value.length) return;
+      void exportAnnotations(action.slice(19));
       return;
     }
     if (action === 'translate-all-pages') {
@@ -193,6 +200,31 @@ export function createReaderCommands({
       actions.pageNavigation.go(
         Math.max(1, Math.ceil((session.pages.value.length * Number(action.split(':')[1])) / 100)),
       );
+  }
+
+  async function exportAnnotations(format) {
+    try {
+      const title = session.title.value.replace(/^TEST — /, '');
+      const text = formatAnnotations(annotations.annotations.value, {
+        format,
+        outline: shell.documentOutline.value,
+        title,
+      });
+      const name = annotationExportName(title, format);
+      if (window.previewAnnotations?.export) {
+        const saved = await window.previewAnnotations.export({ text, name, format });
+        if (saved)
+          actions.rootActions.notifyCopy(menuLabel('Annotations Exported', uiLanguage.value));
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+      link.download = name;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (error) {
+      actions.rootActions.notifyCopy(error.message || 'Could not export annotations.', 4500);
+    }
   }
 
   function keyboard(e) {

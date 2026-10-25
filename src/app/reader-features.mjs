@@ -424,6 +424,7 @@ export function createReaderFeatures({
     shell,
     view,
     search,
+    annotations,
   });
   const readerPopovers = createReaderPopovers({
     session,

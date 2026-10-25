@@ -127,6 +127,7 @@ contextBridge.exposeInMainWorld(
     clean: (bytes) => ipcRenderer.invoke('previewAnnotations:clean', bytes),
     handover: (text) => ipcRenderer.invoke('previewAnnotations:handover', text),
     share: (text) => ipcRenderer.invoke('previewAnnotations:share', text),
+    export: (value) => ipcRenderer.invoke('previewAnnotations:export', value),
   }),
 );
 
