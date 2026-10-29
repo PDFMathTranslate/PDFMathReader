@@ -38,7 +38,7 @@ let layer,
   highlights,
   frameHost,
   layoutZoom = 1;
-let unbindSelection, retentionTimer;
+let unbindSelection, retentionTimer, selectionRelease;
 const originals = new WeakMap();
 const emphasisKeys = new WeakMap();
 const topicSentenceClassifier = inject('topicSentenceClassifier', null);
@@ -246,6 +246,10 @@ watch(
   ],
   async () => {
     clearTimeout(retentionTimer);
+    if (selectionRelease) {
+      host.value?.ownerDocument.removeEventListener('selectionchange', selectionRelease);
+      selectionRelease = null;
+    }
     // Retain completed and in-flight text in the bounded virtual page window.
     // A transient hide during zoom must not restart font measurement.
     if (
@@ -259,6 +263,32 @@ watch(
       // DOM text. A page genuinely scrolled away releases its native layout.
       retentionTimer = setTimeout(() => {
         if (props.active) return;
+        const selection = host.value?.ownerDocument.getSelection();
+        if (selection?.rangeCount && selection.getRangeAt(0).intersectsNode(host.value)) {
+          // Release the retained layer as soon as the selection moves away.
+          selectionRelease = () => {
+            const current = host.value?.ownerDocument.getSelection();
+            if (
+              host.value &&
+              current?.rangeCount &&
+              current.getRangeAt(0).intersectsNode(host.value)
+            )
+              return;
+            host.value?.ownerDocument.removeEventListener('selectionchange', selectionRelease);
+            selectionRelease = null;
+            if (!props.active) {
+              generation++;
+              unbindSelection?.();
+              unbindSelection = null;
+              layer?.cancel();
+              layer = null;
+              rendered = false;
+              host.value?.replaceChildren();
+            }
+          };
+          host.value.ownerDocument.addEventListener('selectionchange', selectionRelease);
+          return;
+        }
         generation++;
         unbindSelection?.();
         unbindSelection = null;
@@ -368,6 +398,8 @@ watch(
 );
 onBeforeUnmount(() => {
   clearTimeout(retentionTimer);
+  if (selectionRelease)
+    host.value?.ownerDocument.removeEventListener('selectionchange', selectionRelease);
   generation++;
   unbindSelection?.();
   layer?.cancel();

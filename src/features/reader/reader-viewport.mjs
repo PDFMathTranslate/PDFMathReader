@@ -2,6 +2,15 @@ import { visibleReaderWindow } from './reader-layout.mjs';
 
 export function createReaderViewport({ renderState, session, motion, view, activity, actions }) {
   function setRenderWindow(numbers) {
+    // A native range needs its page nodes to remain mounted while scrolling.
+    const selection = renderState.layoutElement.value?.ownerDocument?.getSelection();
+    if (selection?.rangeCount) {
+      const range = selection.getRangeAt(0);
+      for (const [number, page] of renderState.pageEls)
+        if (page.isConnected && range.intersectsNode(page) && !numbers.includes(number))
+          numbers.push(number);
+      numbers.sort((a, b) => a - b);
+    }
     const current = renderState.renderWindow.value;
     if (current.size !== numbers.length || numbers.some((n) => !current.has(n)))
       renderState.renderWindow.value = new Set(numbers);

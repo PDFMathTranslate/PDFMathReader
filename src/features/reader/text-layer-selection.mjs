@@ -136,6 +136,24 @@ export function bindTextLayerSelection(host, getSpans) {
   const document = host.ownerDocument;
   const view = document.defaultView;
   let gesture;
+  let scrollFrame, pointer;
+  const scroller = host.closest('.reader');
+  function autoScroll() {
+    scrollFrame = 0;
+    if (!gesture || !pointer || !scroller) return;
+    const bounds = scroller.getBoundingClientRect();
+    const edge = 48;
+    const speed =
+      pointer.y < bounds.top + edge
+        ? -Math.min(24, (bounds.top + edge - pointer.y) / 3)
+        : pointer.y > bounds.bottom - edge
+          ? Math.min(24, (pointer.y - bounds.bottom + edge) / 3)
+          : 0;
+    if (!speed) return;
+    scroller.scrollTop += speed;
+    extend({ clientX: pointer.x, clientY: pointer.y, preventDefault() {} }, false);
+    scrollFrame = view.requestAnimationFrame(autoScroll);
+  }
   // A caret in PDF whitespace must follow the nearest visual run rather than
   // jump to a later DOM node in another column.
   function caret(x, y) {
@@ -196,8 +214,10 @@ export function bindTextLayerSelection(host, getSpans) {
       .getSelection()
       ?.setBaseAndExtent(anchor.node, anchor.offset, anchor.node, anchor.offset);
   }
-  function extend(event) {
+  function extend(event, scheduleScroll = true) {
     if (!gesture) return;
+    pointer = { x: event.clientX, y: event.clientY };
+    if (scheduleScroll && !scrollFrame) scrollFrame = view.requestAnimationFrame(autoScroll);
     const focus = caret(event.clientX, event.clientY);
     if (!focus || !gesture.node.isConnected) return;
     event.preventDefault();
@@ -205,7 +225,12 @@ export function bindTextLayerSelection(host, getSpans) {
       .getSelection()
       ?.setBaseAndExtent(gesture.node, gesture.offset, focus.node, focus.offset);
   }
-  const finish = () => (gesture = null);
+  const finish = () => {
+    gesture = null;
+    pointer = null;
+    view.cancelAnimationFrame(scrollFrame);
+    scrollFrame = 0;
+  };
   host.addEventListener('mousedown', begin, true);
   textRuns.set(host, getSpans);
   document.addEventListener('mousemove', extend);
@@ -228,6 +253,7 @@ export function bindTextLayerSelection(host, getSpans) {
   layers.set(host, end);
   if (!listeners) installSharedListeners(document);
   return () => {
+    finish();
     host.removeEventListener('mousedown', begin, true);
     document.removeEventListener('mousemove', extend);
     document.removeEventListener('mouseup', finish);
