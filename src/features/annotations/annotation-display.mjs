@@ -1,3 +1,5 @@
+import { normalizeCrop } from '../../../shared/reader/crop-geometry.mjs';
+
 // Whole-page translation follows the displayed PDF; paragraph flags only apply
 // to the independently rendered Ultra fast overlays.
 export function annotationDisplaysTranslation(page, showTranslations, block) {
@@ -31,23 +33,27 @@ export function annotationLineRects(rects) {
 
 // Keep every marker on the same page rail, with a screen-space edge inset.
 export function annotationRailX(pageWidth, textRight, zoom, crop = { x: 0, y: 0 }) {
+  const normalized = normalizeCrop(crop);
   const size = 34 / zoom,
     gap = 8 / zoom,
-    left = (pageWidth * crop.x) / 2,
-    right = pageWidth - left,
+    left = pageWidth * normalized.left,
+    right = pageWidth * (1 - normalized.right),
     limit = Math.max(left, right - size - gap);
-  return crop.x ? limit : Math.max(left, Math.min(limit, textRight + gap));
+  return normalized.left || normalized.right
+    ? limit
+    : Math.max(left, Math.min(limit, textRight + gap));
 }
 
 // Pack markers down the shared rail, then pull back from the page bottom.
-export function annotationNotePositions(notes, pageHeight, zoom, cropY = 0) {
+export function annotationNotePositions(notes, pageHeight, zoom, crop = 0) {
+  const normalized = normalizeCrop(typeof crop === 'number' ? { y: crop } : crop);
   const sorted = notes
     .map((n) => ({ ...n }))
     .sort((a, b) => a.y - b.y || String(a.id).localeCompare(String(b.id)));
   const size = 34 / zoom,
     gap = 6 / zoom,
-    top = (pageHeight * cropY) / 2,
-    bottom = pageHeight - top;
+    top = pageHeight * normalized.top,
+    bottom = pageHeight * (1 - normalized.bottom);
   for (let i = 0; i < sorted.length; i++)
     sorted[i].y = Math.max(sorted[i].y, i ? sorted[i - 1].y + size + gap : top);
   if (sorted.length) {

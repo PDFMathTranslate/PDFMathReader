@@ -9,6 +9,7 @@ import {
   freeTranslationPrompt,
   selectTranslationProvider,
 } from '../translation/translation-provider.mjs';
+import { translationServiceLabel } from '../translation/translation-versions.mjs';
 import { readingAssistRequest } from '../translation/reading-assist.mjs';
 import { createTranslationCache } from '../translation/translation-cache.mjs';
 import { classifyTopicSentence } from '../translation/topic-sentence.mjs';
@@ -143,7 +144,11 @@ export function registerTranslationRoutes(
       });
       const hit = await cache.lookup(model, { reuseTranslations, forceRetranslation });
       if (hit) {
-        void translationVersions?.record(cacheScope, { engine: 'pdf_inspector', language });
+        void translationVersions?.record(cacheScope, {
+          engine: 'pdf_inspector',
+          language,
+          ...(hit.reused === false ? { service: translationServiceLabel(provider) } : {}),
+        });
         return res.json({ ...hit.result, model: hit.model, cached: true });
       }
       if (cacheOnly) return res.sendStatus(204);
@@ -213,7 +218,11 @@ export function registerTranslationRoutes(
         await writeFile(temp, JSON.stringify(result));
         await rename(temp, path);
         await cache.remember(model, key).catch(() => {});
-        void translationVersions?.record(cacheScope, { engine: 'pdf_inspector', language });
+        void translationVersions?.record(cacheScope, {
+          engine: 'pdf_inspector',
+          language,
+          service: translationServiceLabel(provider),
+        });
         res.setHeader('X-Translation-Outcome', 'success');
         res.json({ ...result, cached: false });
       } catch (e) {

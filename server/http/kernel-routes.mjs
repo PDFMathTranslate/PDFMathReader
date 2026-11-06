@@ -2,6 +2,7 @@ import express from 'express';
 import { createHash, randomBytes } from 'node:crypto';
 import { isTranslationLanguageSupported } from '../../shared/translation/languages.mjs';
 import { mathProviderOutcome } from '../translation/provider-outcome.mjs';
+import { translationServiceLabel } from '../translation/translation-versions.mjs';
 import { normalizeRemoteKernelUrl } from '../kernels/remote-kernel.mjs';
 
 const MAX_JEV_TOKEN_CHARACTERS = 4096;
@@ -260,8 +261,16 @@ export function registerKernelRoutes(
             },
           });
           if (!bytes) return res.sendStatus(204);
-          // A returned page, cached or newly translated, makes this kernel and language a reopenable version.
-          void translationVersions?.record(cacheScope, { engine, language });
+          // The runner has written a successful fresh result before returning
+          // it, and marks compatible/legacy hits so we do not attribute a
+          // result from another service to the current selection.
+          void translationVersions?.record(cacheScope, {
+            engine,
+            language,
+            ...(bytes.translationReused === false
+              ? { service: translationServiceLabel(provider) }
+              : {}),
+          });
           const report = {
             ...job.timing,
             queueMs,

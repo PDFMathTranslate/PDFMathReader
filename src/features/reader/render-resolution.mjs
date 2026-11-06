@@ -1,3 +1,16 @@
+import { normalizeCrop } from '../../../shared/reader/crop-geometry.mjs';
+
+export {
+  CROP_MAX,
+  CROP_SIDES,
+  cropFromView,
+  cropIsActive,
+  cropSidesValid,
+  cropViewFields,
+  normalizeCrop,
+  setCropAxis,
+} from '../../../shared/reader/crop-geometry.mjs';
+
 // Prioritize readable visible pages while bounding individual backing stores.
 // The smaller budget still fits a fit-width Retina page at full ratio, so its
 // scroll preview or prefetch is not drawn a second time once it settles.
@@ -18,13 +31,16 @@ export function scrollPixelRatio(width, height, screenRatio = 1) {
 // Render the retained area, rather than spending the bitmap budget on margins
 // that the crop frame hides. Coordinates remain in the original page space.
 export function renderFrame(width, height, crop = { x: 0, y: 0 }) {
-  const x = Math.max(0, Math.min(0.8, Number(crop.x) || 0));
-  const y = Math.max(0, Math.min(0.8, Number(crop.y) || 0));
+  const normalized = normalizeCrop(crop),
+    x = normalized.left,
+    y = normalized.top,
+    right = normalized.right,
+    bottom = normalized.bottom;
   return {
-    x: (width * x) / 2,
-    y: (height * y) / 2,
-    width: width * (1 - x),
-    height: height * (1 - y),
+    x: width * x,
+    y: height * y,
+    width: width * (1 - x - right),
+    height: height * (1 - y - bottom),
     fullWidth: width,
     fullHeight: height,
   };

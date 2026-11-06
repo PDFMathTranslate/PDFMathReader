@@ -27,6 +27,7 @@ const entries = [
   ['sidebar', 'Toggle Sidebar', 'View', 'view-sidebar', 'B'],
   ['annotations', 'Show Highlights and Comments', 'View', 'view-annotations'],
   ['crop:toggle', 'Trim Margins', 'View', 'crop-toggle'],
+  ['crop:interactive', 'Adjust Crop…', 'View', 'crop-interactive'],
   ['crop:x:more', 'Crop More Horizontally', 'View', 'crop-x-more'],
   ['crop:x:less', 'Crop Less Horizontally', 'View', 'crop-x-less'],
   ['crop:y:more', 'Crop More Vertically', 'View', 'crop-y-more'],
@@ -76,8 +77,8 @@ export function shortcutCatalog(platform) {
     if (id === 'page-next') defaults = ['PageDown', 'Shift+Down', 'Shift+Right'];
     if (id === 'previous-tab') defaults = ['Control+Shift+Tab'];
     if (id === 'next-tab') defaults = ['Control+Tab'];
-    if (id === 'page-first') defaults = ['Home'];
-    if (id === 'page-last') defaults = ['End'];
+    if (id === 'page-first') defaults = platform === 'darwin' ? ['Command+Up', 'Home'] : ['Home'];
+    if (id === 'page-last') defaults = platform === 'darwin' ? ['Command+Down', 'End'] : ['End'];
     if (id === 'zoom-in')
       defaults.push(
         commandAccelerator(platform, 'Plus'),

@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname, basename } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { CROP_MAX } from '../../../shared/reader/crop-geometry.mjs';
 const contentHashPattern = /^[a-f0-9]{64}$/;
 async function fileHash(path) {
   try {
@@ -24,6 +25,14 @@ const readingViewFields = [
   'columns',
   'sidebar',
   'showTranslations',
+];
+const readingViewCropFields = [
+  'cropX',
+  'cropY',
+  'cropLeft',
+  'cropRight',
+  'cropTop',
+  'cropBottom',
 ];
 const translationStatusFields = [
   'totalPages',
@@ -59,7 +68,7 @@ export function validateReadingView(view) {
   if (
     keys.length !==
       readingViewFields.length +
-        ['sidebarMode', 'cropX', 'cropY'].filter((key) => Object.hasOwn(view, key)).length ||
+        ['sidebarMode', ...readingViewCropFields].filter((key) => Object.hasOwn(view, key)).length ||
     readingViewFields.some((key) => !Object.hasOwn(view, key))
   )
     throw Error('Invalid recent document view.');
@@ -89,15 +98,27 @@ export function validateReadingView(view) {
     !['thumbnails', 'outline', 'annotations'].includes(view.sidebarMode)
   )
     throw Error('Invalid recent document sidebar mode.');
-  for (const key of ['cropX', 'cropY'])
+  for (const key of readingViewCropFields)
     if (
       Object.hasOwn(view, key) &&
-      (!Number.isFinite(view[key]) || view[key] < 0 || view[key] > 0.8)
+      (!Number.isFinite(view[key]) || view[key] < 0 || view[key] > CROP_MAX)
     )
       throw Error('Invalid page crop.');
+  if (
+    (Object.hasOwn(view, 'cropLeft') || Object.hasOwn(view, 'cropRight')) &&
+    (view.cropLeft || 0) + (view.cropRight || 0) > CROP_MAX
+  )
+    throw Error('Invalid page crop.');
+  if (
+    (Object.hasOwn(view, 'cropTop') || Object.hasOwn(view, 'cropBottom')) &&
+    (view.cropTop || 0) + (view.cropBottom || 0) > CROP_MAX
+  )
+    throw Error('Invalid page crop.');
   return {
     ...Object.fromEntries(
-      ['cropX', 'cropY'].filter((key) => Object.hasOwn(view, key)).map((key) => [key, view[key]]),
+      readingViewCropFields
+        .filter((key) => Object.hasOwn(view, key))
+        .map((key) => [key, view[key]]),
     ),
     ...(Object.hasOwn(view, 'sidebarMode') ? { sidebarMode: view.sidebarMode } : {}),
     page: view.page,

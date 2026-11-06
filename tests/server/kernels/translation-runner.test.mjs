@@ -225,6 +225,7 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     );
     const first = await data.translate({ id, bytes });
     assert.equal(first.cached, false);
+    assert.equal(first.translationReused, false);
     const runner = createTranslationRunner({
       root: data.root,
       baseCacheDir: join(data.root, 'cache'),
@@ -245,6 +246,7 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     assert.equal(hit.cached, true);
     assert.equal(hit.layoutKey, first.layoutKey);
     assert.equal(hit.translationModel, 'test-model');
+    assert.equal(hit.translationReused, false);
     assert.deepEqual(Buffer.from(hit), Buffer.from(first));
     // Strict mode still reopens the same model's artifact without kernel discovery.
     const exact = await runner.translate({
@@ -313,6 +315,7 @@ for (const id of ['pdf_math_fast', 'pdf_math_precise']) {
     });
     assert.equal(hit.layoutKey, first.layoutKey);
     assert.equal(hit.translationModel, 'test-model');
+    assert.equal(hit.translationReused, true);
     // A reused index entry never satisfies strict mode, even for the same model name.
     assert.equal(
       await unavailable.translate({ ...request, model: 'test-model', reuseTranslations: false }),

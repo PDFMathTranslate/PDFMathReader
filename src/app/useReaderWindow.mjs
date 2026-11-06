@@ -44,6 +44,7 @@ import {
 import { createPerformanceRecorder } from '../features/developer/performance-recorder.mjs';
 
 import { formatPercentValue } from '../ui/inputs/scrub-input.mjs';
+import { cropIsActive, normalizeCrop } from '../../shared/reader/crop-geometry.mjs';
 
 import { uiLanguage, t } from '../i18n/index.mjs';
 import { createKernelState } from '../features/settings/kernel-state.mjs';
@@ -624,14 +625,15 @@ export function useReaderWindow() {
     immersivePointer,
   } = immersiveState;
 
-  // Display-only, total fraction removed symmetrically from each axis.
-  const pageCrop = ref({ x: 0, y: 0 });
+  // Display-only crop state.  x/y remain aliases for legacy commands and
+  // persisted views; the side values allow the crop dialog to be asymmetric.
+  const pageCrop = ref(normalizeCrop());
   // Mirrors the View menu checkboxes for annotations and Trim Margins.
   watch(
     () => ({
       annotations: showAnnotations.value,
       annotationsAvailable: annotations.value.length > 0,
-      crop: pageCrop.value.x > 0 || pageCrop.value.y > 0,
+      crop: cropIsActive(pageCrop.value),
     }),
     (state) => void window.previewActions?.viewState?.(state)?.catch(() => {}),
     { immediate: true },

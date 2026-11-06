@@ -1,5 +1,11 @@
 import { nextTick } from 'vue';
 import { t } from '../../i18n/index.mjs';
+import {
+  cropFromView,
+  cropViewFields,
+  normalizeCrop,
+  setCropAxis,
+} from '../../../shared/reader/crop-geometry.mjs';
 
 export function createReadingPosition({
   session,
@@ -11,12 +17,17 @@ export function createReadingPosition({
   annotations,
   actions,
 }) {
+  function currentCrop() {
+    return normalizeCrop(readerView.pageCrop.value);
+  }
+
   function croppedPage(p) {
     p = actions.rootActions.displayedPage(p);
+    const crop = currentCrop();
     return {
       number: p.number,
-      width: p.width * (1 - readerView.pageCrop.value.x),
-      height: p.height * (1 - readerView.pageCrop.value.y),
+      width: p.width * (1 - crop.left - crop.right),
+      height: p.height * (1 - crop.top - crop.bottom),
     };
   }
 
@@ -27,51 +38,48 @@ export function createReadingPosition({
   // Last non-zero crop of this document, so Trim Margins can switch it back on.
   let trimmedCrop = null;
   function toggledCrop() {
-    const { x, y } = readerView.pageCrop.value;
-    if (x || y) {
-      trimmedCrop = { x, y, epoch: session.epoch };
-      return { x: 0, y: 0 };
+    const crop = currentCrop();
+    if (crop.x || crop.y) {
+      trimmedCrop = { ...crop, epoch: session.epoch };
+      return normalizeCrop();
     }
-    if (trimmedCrop?.epoch === session.epoch) return { x: trimmedCrop.x, y: trimmedCrop.y };
+    if (trimmedCrop?.epoch === session.epoch) return normalizeCrop(trimmedCrop);
     const defaults = {
       x: preferences.defaultPageCropX.value,
       y: preferences.defaultPageCropY.value,
     };
-    return defaults.x || defaults.y ? defaults : { x: 0.1, y: 0.1 };
+    return defaults.x || defaults.y ? normalizeCrop(defaults) : normalizeCrop({ x: 0.1, y: 0.1 });
   }
 
-  async function changeCrop(action) {
+  async function applyCrop(crop) {
     if (!session.pages.value.length) return;
     const view = readingView(),
       token = session.epoch;
     if (!view) return;
-    if (action === 'crop:reset') readerView.pageCrop.value = { x: 0, y: 0 };
-    else if (action === 'crop:toggle') readerView.pageCrop.value = toggledCrop();
-    else {
-      const [, axis, step] = action.split(':');
-      if (!['x', 'y'].includes(axis)) return;
-      readerView.pageCrop.value = {
-        ...readerView.pageCrop.value,
-        [axis]: Math.max(
-          0,
-          Math.min(
-            0.8,
-            Math.round((readerView.pageCrop.value[axis] + (step === 'more' ? 0.05 : -0.05)) * 100) /
-              100,
-          ),
-        ),
-      };
-    }
+    const nextCrop = normalizeCrop(crop);
+    readerView.pageCrop.value = nextCrop;
     await nextTick();
     if (token !== session.epoch) return;
     await restoreReadingView({
       ...view,
-      cropX: readerView.pageCrop.value.x,
-      cropY: readerView.pageCrop.value.y,
+      ...cropViewFields(nextCrop),
     });
     actions.readerViewport.viewportPages();
     actions.readerViewport.scheduleViewport();
     scheduleReadingSave();
+  }
+
+  async function changeCrop(action) {
+    const crop = currentCrop();
+    if (action === 'crop:reset') return applyCrop();
+    if (action === 'crop:toggle') return applyCrop(toggledCrop());
+    const [, axis, step] = action.split(':');
+    if (!['x', 'y'].includes(axis)) return;
+    const next = Math.max(
+      0,
+      Math.min(0.8, Math.round((crop[axis] + (step === 'more' ? 0.05 : -0.05)) * 100) / 100),
+    );
+    return applyCrop(setCropAxis(crop, axis, next));
   }
 
   function readingView() {
@@ -99,8 +107,7 @@ export function createReadingPosition({
       sidebar: readerView.sidebar.value,
       sidebarMode: shell.sidebarMode.value,
       showTranslations: readerView.showTranslations.value,
-      cropX: readerView.pageCrop.value.x,
-      cropY: readerView.pageCrop.value.y,
+      ...cropViewFields(currentCrop()),
     };
     session.lastReadingView = view;
     return view;
@@ -132,14 +139,12 @@ export function createReadingPosition({
   }
 
   async function restoreReadingView(view) {
-    readerView.pageCrop.value = {
-      x:
-        view?.cropX ??
-        (preferences.defaultPageCropEnabled.value ? preferences.defaultPageCropX.value : 0),
-      y:
-        view?.cropY ??
-        (preferences.defaultPageCropEnabled.value ? preferences.defaultPageCropY.value : 0),
-    };
+    readerView.pageCrop.value = cropFromView(
+      view,
+      preferences.defaultPageCropEnabled.value
+        ? { x: preferences.defaultPageCropX.value, y: preferences.defaultPageCropY.value }
+        : { x: 0, y: 0 },
+    );
     shell.sidebarMode.value =
       view?.sidebarMode === 'outline' && shell.documentOutline.value.length
         ? 'outline'
@@ -185,5 +190,6 @@ export function createReadingPosition({
     saveReadingView,
     scheduleReadingSave,
     restoreReadingView,
+    applyCrop,
   };
 }

@@ -180,6 +180,18 @@ export async function verifyNativeSettings(reader, windows) {
     await mkdir(join(cacheFixtureRoot, 'documents', id), { recursive: true });
     await writeFile(join(cacheFixtureRoot, 'documents', id, 'result.pdf'), Buffer.alloc(n * 1024));
   }
+  const taggedCache = '6'.repeat(64);
+  await writeFile(join(cacheFixtureRoot, 'documents', taggedCache + '.generation'), 'fixture');
+  await mkdir(join(cacheFixtureRoot, 'documents', taggedCache, 'versions'), { recursive: true });
+  await writeFile(
+    join(cacheFixtureRoot, 'documents', taggedCache, 'versions', 'fixture.json'),
+    JSON.stringify({
+      version: 1,
+      versions: [
+        { engine: 'pdf_math_fast', language: 'Japanese', service: 'OpenAI', updatedAt: 1 },
+      ],
+    }),
+  );
   await mkdir(join(cacheFixtureRoot, '.cache-management'), { recursive: true });
   await writeFile(
     join(cacheFixtureRoot, '.cache-management', 'document-index.json'),
@@ -199,6 +211,13 @@ export async function verifyNativeSettings(reader, windows) {
   assert.equal(
     await evaluate(settings, `document.querySelector('.document-cache-name').textContent`),
     'Cache fixture 6.pdf',
+  );
+  assert.deepEqual(
+    await evaluate(
+      settings,
+      `[...document.querySelectorAll('.document-cache-row:first-of-type .document-cache-tag')].map(el => el.textContent.trim())`,
+    ),
+    ['Fast', 'Japanese', 'OpenAI'],
   );
   await evaluate(settings, `document.querySelector('.document-cache-row button').click()`);
   await wait(

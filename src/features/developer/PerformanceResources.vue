@@ -3,6 +3,7 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
 import { AppButton, AppSwitch, AppPopUpButton, AppPopUpButtonItem } from '../../ui/controls.mjs';
 import { t, uiLanguage, advancedOptionText } from '../../i18n/index.mjs';
 import { GPU_INFERENCE_OPTION } from '../../../shared/gpu-inference.mjs';
+import { translationLanguageLabel } from '../../../shared/translation/languages.mjs';
 const props = defineProps({
   reduceResourceUsage: Boolean,
   reduceBackgroundFrameRate: { type: Boolean, default: true },
@@ -290,6 +291,14 @@ const documentSize = (value) =>
   new Intl.NumberFormat(uiLanguage.value, { maximumFractionDigits: 1 }).format(
     value / (1024 * 1024),
   ) + ' MB';
+const kernelLabel = (engine) => {
+  const key = {
+    pdf_inspector: 'engine.ultraFast',
+    pdf_math_fast: 'engine.fast',
+    pdf_math_precise: 'engine.precise',
+  }[engine];
+  return key ? t(key) : engine;
+};
 function applyCache(result) {
   bytes.value = result.bytes;
   documents.value = Array.isArray(result.documents) ? result.documents.slice(0, 5) : [];
@@ -478,9 +487,24 @@ onBeforeUnmount(() => {
       <div class="document-cache-list" aria-labelledby="document-cache-heading">
         <h4 id="document-cache-heading">{{ documentText(0) }}</h4>
         <div v-for="entry in documents" :key="entry.id" class="document-cache-row">
-          <span class="document-cache-name" :title="entry.name || documentText(2)">{{
-            entry.name || documentText(2) + ' ' + entry.id.slice(0, 8)
-          }}</span>
+          <div class="document-cache-details">
+            <span class="document-cache-name" :title="entry.name || documentText(2)">{{
+              entry.name || documentText(2) + ' ' + entry.id.slice(0, 8)
+            }}</span>
+            <div
+              v-for="(version, index) in entry.versions || []"
+              :key="index"
+              class="document-cache-tags"
+            >
+              <span v-if="version.engine" class="document-cache-tag">{{
+                kernelLabel(version.engine)
+              }}</span>
+              <span v-if="version.language" class="document-cache-tag">{{
+                translationLanguageLabel(version.language, uiLanguage)
+              }}</span>
+              <span v-if="version.service" class="document-cache-tag">{{ version.service }}</span>
+            </div>
+          </div>
           <span class="muted document-cache-size">{{ documentSize(entry.bytes) }}</span>
           <AppButton
             :disabled="busy"
@@ -519,6 +543,25 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow-wrap: anywhere;
   user-select: text;
+}
+.document-cache-details {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.document-cache-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.document-cache-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--control-fill, #8080801c);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .document-cache-size {
   white-space: nowrap;

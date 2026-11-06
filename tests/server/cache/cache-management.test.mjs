@@ -61,6 +61,51 @@ test('protects active work and clears scoped cache files without following links
   }
 });
 
+test('cache stats include known translation versions for each document', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'cache-management-versions-'));
+  const id = 'b'.repeat(64);
+  await mkdir(join(root, 'documents', id, 'math', 'g1'), { recursive: true });
+  await writeFile(join(root, 'documents', id, 'math', 'g1', 'page.pdf'), 'cached');
+  const manager = createCacheManager({
+    directory: root,
+    sweepIntervalMs: 0,
+    documentCache: { names: async () => new Map([[id, 'paper.pdf']]) },
+    translationVersions: {
+      list: async (documentHash) => {
+        assert.equal(documentHash, id);
+        return [
+          {
+            engine: 'pdf_math_fast',
+            language: 'Chinese',
+            service: 'SiliconFlow free',
+            updatedAt: 1,
+          },
+        ];
+      },
+    },
+  });
+  t.after(async () => {
+    await manager.close();
+    await rm(root, { recursive: true, force: true });
+  });
+  const result = await manager.start();
+  assert.deepEqual(result.documents, [
+    {
+      id,
+      name: 'paper.pdf',
+      bytes: Buffer.byteLength('cached'),
+      versions: [
+        {
+          engine: 'pdf_math_fast',
+          language: 'Chinese',
+          service: 'SiliconFlow free',
+          updatedAt: 1,
+        },
+      ],
+    },
+  ]);
+});
+
 test('eviction indexes atomic writes and preserves complete PDF/layout groups', () => {
   const file = (name, mtimeMs = 0) => ({ path: join('/cache', name), size: 1, mtimeMs });
   const files = [

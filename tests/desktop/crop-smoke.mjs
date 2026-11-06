@@ -84,7 +84,15 @@ export async function verifyCrop(window, recents) {
     const cropMenu = viewItems.find((item) => item.id === 'view-crop');
     assert.deepEqual(
       cropMenu.submenu.items.filter((item) => item.type !== 'separator').map((item) => item.id),
-      ['crop-toggle', 'crop-x-more', 'crop-x-less', 'crop-y-more', 'crop-y-less', 'crop-reset'],
+      [
+        'crop-interactive',
+        'crop-toggle',
+        'crop-x-more',
+        'crop-x-less',
+        'crop-y-more',
+        'crop-y-less',
+        'crop-reset',
+      ],
     );
     assert.equal(menu.getMenuItemById('crop-toggle').checked, false);
     async function command(id) {
@@ -155,11 +163,70 @@ export async function verifyCrop(window, recents) {
     state = await geometry();
     assert.equal(state.view.cropX, 0);
     assert.equal(state.view.cropY, 0);
+    await command('crop-interactive');
+    await wait(`document.querySelector('.crop-dialog[open] canvas')?.width > 0`);
+    await wait(`!document.querySelector('.crop-dialog .crop-status')`);
+    await writeFile(
+      join(tmpdir(), 'pdfmathreader-crop-dialog.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    await evaluate(
+      `(()=>{const handle=document.querySelector('.crop-handle.left');handle.focus();for(let i=0;i<10;i++) handle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));})()`,
+    );
+    const drag = await evaluate(
+      `(()=>{const frame=document.querySelector('.crop-preview').getBoundingClientRect(), handle=document.querySelector('.crop-handle.right').getBoundingClientRect(); return { x: Math.round(handle.x + handle.width / 2), y: Math.round(handle.y + handle.height / 2), distance: Math.round(frame.width * .05) };})()`,
+    );
+    window.webContents.sendInputEvent({ type: 'mouseMove', x: drag.x, y: drag.y });
+    await pause(50);
+    window.webContents.sendInputEvent({
+      type: 'mouseDown',
+      x: drag.x,
+      y: drag.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await pause(50);
+    window.webContents.sendInputEvent({
+      type: 'mouseMove',
+      x: drag.x - drag.distance,
+      y: drag.y,
+      button: 'left',
+    });
+    await pause(50);
+    window.webContents.sendInputEvent({
+      type: 'mouseUp',
+      x: drag.x - drag.distance,
+      y: drag.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await pause(100);
+    await evaluate(
+      `([...document.querySelectorAll('.crop-dialog button')].find(b=>b.textContent.trim()==='Apply')).click()`,
+    );
+    await wait(`!document.querySelector('.crop-dialog[open]')`);
+    state = await geometry();
+    assert.ok(Math.abs(state.view.cropLeft - 0.1) < 0.001);
+    assert.ok(Math.abs(state.view.cropRight - 0.05) < 0.01);
+    assert.ok(Math.abs(state.x + (state.fullWidth - 2) * 0.1) < 2);
+    await evaluate('window.previewSaveReadingView()');
+    Menu.getApplicationMenu().getMenuItemById('file-close-document').click();
+    await wait('window.previewRenderDiagnostics().totalPages===0');
+    await pause(400);
+    await evaluate(`document.querySelector('[data-recent-id="${id}"]').click();true`);
+    await wait(
+      `window.previewRenderDiagnostics?.()?.totalPages===2&&!window.previewRenderDiagnostics().opening`,
+    );
+    state = await geometry();
+    assert.ok(Math.abs(state.view.cropLeft - 0.1) < 0.001);
+    assert.ok(Math.abs(state.view.cropRight - 0.05) < 0.01);
+    await command('crop-reset');
     assert.deepEqual(await readFile(path), Buffer.from(original));
     // Opening defaults must crop only the view; alignment must update the source.
     const freshFolder = await mkdtemp(join(folder, 'defaults-')),
-      freshPath = join(freshFolder, 'Portrait and landscape.pdf');
-    await writeFile(freshPath, original);
+      freshPath = join(freshFolder, 'Portrait and landscape.pdf'),
+      freshOriginal = Buffer.concat([Buffer.from(original), Buffer.from('\n')]);
+    await writeFile(freshPath, freshOriginal);
     await recents.remember(freshPath);
     const freshId = recents.list()[0].id;
     await evaluate(
@@ -187,7 +254,7 @@ export async function verifyCrop(window, recents) {
     state = await geometry();
     assert.equal(state.view.cropX, 0.5);
     assert.equal(state.view.cropY, 0.2);
-    assert.deepEqual(await readFile(freshPath), Buffer.from(original));
+    assert.deepEqual(await readFile(freshPath), freshOriginal);
     await evaluate('window.previewSaveReadingView()');
     await evaluate(
       `window.previewPreferences.save({defaultPageCropX:.1,defaultPageCropY:.1,autoAlignDocumentWidth:true})`,

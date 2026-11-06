@@ -150,6 +150,8 @@ export function createApplicationMenu({
       annotationsItem.checked = viewState?.annotations !== false;
     }
     const cropToggle = item('crop-toggle');
+    const cropInteractive = item('crop-interactive');
+    if (cropInteractive) cropInteractive.enabled = hasDocument;
     if (cropToggle) {
       cropToggle.enabled = hasDocument;
       cropToggle.checked = hasDocument && !!viewState?.crop;
@@ -546,6 +548,8 @@ export function createApplicationMenu({
             id: 'view-crop',
             label: 'Page Crop',
             submenu: [
+              command('Adjust Crop…', undefined, 'crop:interactive', 'crop-interactive'),
+              { type: 'separator' },
               {
                 ...command('Trim Margins', undefined, 'crop:toggle', 'crop-toggle'),
                 type: 'checkbox',

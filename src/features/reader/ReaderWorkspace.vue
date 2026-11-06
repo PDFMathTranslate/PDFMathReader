@@ -5,6 +5,7 @@ import SidebarNavigation from './SidebarNavigation.vue';
 import PageGallery from './PageGallery.vue';
 import { AppButton } from '../../ui/controls.mjs';
 import ReaderPage from './ReaderPage.vue';
+import CropDialog from './CropDialog.vue';
 import { useRecentMagicZoom } from '../library/useRecentMagicZoom.mjs';
 const recentView = ref('gallery');
 const preferences = inject('documentLanguagePreferences', null);
@@ -477,6 +478,15 @@ const hoveredParagraph = defineModel('hoveredParagraph');
       :draw-page="drawPage"
       :release-canvas="releaseCanvas"
       :navigate="navigateFromSidebar"
+    />
+    <CropDialog
+      :pages="pages"
+      :active="active"
+      :pdf="pdf"
+      :crop="pageCrop"
+      :draw-page="drawPage"
+      :release-canvas="releaseCanvas"
+      :reader-action="readerAction"
     />
   </div>
 </template>

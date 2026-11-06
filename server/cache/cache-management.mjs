@@ -114,6 +114,8 @@ export function createCacheManager({
   now = () => Date.now(),
   documentCache = null,
   documentNames,
+  translationVersions = null,
+  documentVersions,
 } = {}) {
   if (typeof directory !== 'string' || !directory.trim())
     throw Error('A cache directory is required.');
@@ -417,16 +419,33 @@ export function createCacheManager({
         : typeof documentCache?.names === 'function'
           ? await documentCache.names()
           : new Map();
+    const listVersions =
+      typeof translationVersions?.list === 'function'
+        ? (id) => translationVersions.list(id)
+        : typeof documentVersions === 'function'
+          ? documentVersions
+          : null;
     const totals = new Map();
     for (const file of files) {
       const id = documentIdForFile(root, file.path);
       if (!id) continue;
       totals.set(id, (totals.get(id) || 0) + file.size);
     }
-    return [...totals]
+    const largest = [...totals]
       .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
       .slice(0, 5)
       .map(([id, bytes]) => ({ id, name: names.get(id) ?? null, bytes }));
+    if (!listVersions) return largest;
+    return Promise.all(
+      largest.map(async (entry) => {
+        let versions = [];
+        try {
+          const listed = await listVersions(entry.id);
+          if (Array.isArray(listed)) versions = listed;
+        } catch {}
+        return { ...entry, versions };
+      }),
+    );
   }
 
   async function stats() {

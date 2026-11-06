@@ -116,6 +116,10 @@ test('shortcutAction preserves default aliases on macOS and Windows', () => {
     'page-previous',
   );
   assert.equal(shortcutAction('darwin', keyEvent('PageDown')), 'page-next');
+  assert.equal(shortcutAction('darwin', keyEvent('ArrowUp', { meta: true })), 'page-first');
+  assert.equal(shortcutAction('darwin', keyEvent('ArrowDown', { meta: true })), 'page-last');
+  assert.equal(shortcutAction('darwin', keyEvent('Home')), 'page-first');
+  assert.equal(shortcutAction('darwin', keyEvent('End')), 'page-last');
   assert.equal(
     shortcutAction('win32', keyEvent('ArrowRight', { code: 'ArrowRight', shift: true })),
     'page-next',

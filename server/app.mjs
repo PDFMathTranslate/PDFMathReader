@@ -168,6 +168,7 @@ export async function startServer({
   const cacheManager = createCacheManager({
     directory: cacheDir,
     documentCache,
+    translationVersions,
     limitMB: cacheLimitMB,
     isBusy: () =>
       proxyJobs.size > 0 ||

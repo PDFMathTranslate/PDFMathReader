@@ -16,6 +16,7 @@ import { useAnnotationEditor } from './useAnnotationEditor.mjs';
 import { useAnnotationGestures } from './useAnnotationGestures.mjs';
 import { useAnnotationMotion } from './useAnnotationMotion.mjs';
 import { useAnnotationSelection } from './useAnnotationSelection.mjs';
+import { normalizeCrop } from '../../../shared/reader/crop-geometry.mjs';
 const innerWidth = window.innerWidth,
   innerHeight = window.innerHeight;
 // Popups are teleported outside .app, so carry the platform with them.
@@ -54,6 +55,7 @@ const props = defineProps({
   translated: Boolean,
   selectedAnnotation: String,
 });
+const cropGeometry = computed(() => normalizeCrop(props.crop));
 const emit = defineEmits(['change', 'notice', 'rail', 'search-document']);
 // Translated geometry belongs to the kernel and language that produced it, so another
 // version shows only the note marker, positioned on the source text.
@@ -189,7 +191,7 @@ const noteRail = computed(() => {
           : b.sourceBox) || b;
       right = Math.max(right, box.x + box.width);
     }
-  return annotationRailX(props.page.width, right, props.zoom, props.crop);
+  return annotationRailX(props.page.width, right, props.zoom, cropGeometry.value);
 });
 watch(noteRail, (x) => emit('rail', x), { immediate: true });
 function baseNoteRect(a) {
@@ -199,8 +201,8 @@ function baseNoteRect(a) {
   const line = foreign(a) ? a.sourceRect || a.rects[0] : a.rects[0],
     anchor = box || line,
     markerSize = 34 / props.zoom,
-    top = (props.page.height * props.crop.y) / 2,
-    bottom = props.page.height - top;
+    top = props.page.height * cropGeometry.value.top,
+    bottom = props.page.height * (1 - cropGeometry.value.bottom);
   return {
     x: noteRail.value,
     y: Math.max(
@@ -221,7 +223,7 @@ const notePositions = computed(() =>
       .map((a) => ({ id: a.id, y: baseNoteRect(a).y })),
     props.page.height,
     props.zoom,
-    props.crop.y,
+    cropGeometry.value,
   ),
 );
 function noteRect(a) {

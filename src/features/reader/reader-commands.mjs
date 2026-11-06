@@ -139,6 +139,15 @@ export function createReaderCommands({
       if (!shell.settingsWindowMode) void actions.tocGeneration.startTocGeneration();
       return;
     }
+    if (action === 'crop:interactive') {
+      if (session.pages.value.length && !shell.settingsWindowMode)
+        window.dispatchEvent(new Event('reader:adjust-crop'));
+      return;
+    }
+    if (action === 'crop:apply') {
+      void actions.readingPosition.applyCrop(selectionText);
+      return;
+    }
     if (action.startsWith('crop:')) {
       void actions.readingPosition.changeCrop(action);
       return;

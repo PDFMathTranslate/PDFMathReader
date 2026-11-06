@@ -19,6 +19,7 @@ import {
 import PageTranslationStatus from '../translation/PageTranslationStatus.vue';
 import { paragraphDisplayText } from '../../../shared/translation/spacing.mjs';
 import { topicParagraphBoxes } from '../translation/topic-sentences.mjs';
+import { cropIsActive, normalizeCrop } from '../../../shared/reader/crop-geometry.mjs';
 const props = defineProps({
   page: Object,
   crop: { type: Object, default: () => ({ x: 0, y: 0 }) },
@@ -49,6 +50,7 @@ const translationFont = inject('translationFont', null);
 const customFont = computed(() =>
   props.engine === 'pdf_inspector' ? translationFont?.value || '' : '',
 );
+const cropGeometry = computed(() => normalizeCrop(props.crop));
 function mapAnnotation(a, inverse = false) {
   const cuts = props.page.paragraphCompaction;
   if (!cuts || a.page !== props.page.number) return a;
@@ -82,7 +84,7 @@ const linkRail = computed(() => {
       return box ? box.x + box.width : 0;
     }),
   );
-  return annotationRailX(props.page.width, right, props.zoom, props.crop);
+  return annotationRailX(props.page.width, right, props.zoom, cropGeometry.value);
 });
 function quickLinkStyle(button, index) {
   const box =
@@ -284,13 +286,13 @@ function fit(el, b) {
   <div
     class="page-wrap"
     dir="ltr"
-    :class="{ cropped: crop.x || crop.y }"
+    :class="{ cropped: cropIsActive(cropGeometry) }"
     :style="{
       left: frame.x + 'px',
       top: frame.y + 'px',
       width: frame.width + 'px',
       height: frame.height + 'px',
-      overflow: crop.x || crop.y ? 'clip' : undefined,
+      overflow: cropIsActive(cropGeometry) ? 'clip' : undefined,
       justifyItems: 'start',
     }"
   >
@@ -302,8 +304,8 @@ function fit(el, b) {
         '--page-zoom': zoom,
         width: p.width * zoom + 'px',
         height: p.height * zoom + 'px',
-        left: (-p.width * crop.x * zoom) / 2 + 'px',
-        top: (-p.height * crop.y * zoom) / 2 + 'px',
+        left: -p.width * cropGeometry.left * zoom + 'px',
+        top: -p.height * cropGeometry.top * zoom + 'px',
       }"
     >
       <canvas width="0" height="0"></canvas>
@@ -439,7 +441,7 @@ function fit(el, b) {
           <ReadingAnnotations
             :host="() => host"
             :page="p"
-            :crop="crop"
+            :crop="cropGeometry"
             :zoom="zoom"
             :annotations="displayAnnotations"
             :selected-annotation="selectedAnnotation"

@@ -207,6 +207,17 @@ export function createTranslationRunner({
             : saved.key;
           result.cached = true;
           result.translationModel = saved.model;
+          // A legacy request index has no provenance bit. Keep that unknown
+          // state distinct from a known compatible reuse so callers do not
+          // attribute an old artifact to the currently selected service.
+          result.translationReused =
+            indexPath === compatibleRequestPath
+              ? true
+              : saved.reused === true
+                ? true
+                : saved.reused === false
+                  ? false
+                  : null;
           step('cacheLookup');
           emitTiming({
             engine: id,
@@ -260,6 +271,7 @@ export function createTranslationRunner({
         result.layoutKey = remoteLayoutKey;
         result.cached = true;
         result.translationModel = REMOTE_MODEL;
+        result.translationReused = null;
         step('cacheLookup');
         emitTiming({
           engine: id,
@@ -323,6 +335,7 @@ export function createTranslationRunner({
             translated.layoutKey = remoteLayoutKey;
             translated.cached = false;
             translated.translationModel = REMOTE_MODEL;
+            translated.translationReused = null;
             step('outputAndCache');
             emitTiming({
               engine: id,
@@ -405,6 +418,7 @@ export function createTranslationRunner({
       result.layoutKey = layoutKey(hit.key);
       result.cached = true;
       result.translationModel = hit.model;
+      result.translationReused = hit.reused === true ? true : hit.reused === false ? false : null;
       step('cacheLookup');
       emitTiming({
         engine: id,
@@ -430,6 +444,8 @@ export function createTranslationRunner({
         result.layoutKey = layoutKey(queuedHit.key);
         result.cached = true;
         result.translationModel = queuedHit.model;
+        result.translationReused =
+          queuedHit.reused === true ? true : queuedHit.reused === false ? false : null;
         emitTiming({
           engine: id,
           cached: true,
@@ -664,6 +680,7 @@ export function createTranslationRunner({
         result.layoutKey = layoutKey(key);
         result.cached = false;
         result.translationModel = model;
+        result.translationReused = false;
         step('outputAndCache');
         emitTiming({
           engine: id,
