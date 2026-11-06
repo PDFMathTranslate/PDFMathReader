@@ -148,21 +148,29 @@ const keySelect = (event, tab, index) => {
   min-width: 0;
   height: 28px;
   padding: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   box-sizing: border-box;
   border-radius: 14px;
   background: var(--tab-track, rgba(0, 0, 0, 0.055));
   -webkit-app-region: no-drag;
 }
 
+.window-tab-track::-webkit-scrollbar {
+  display: none;
+}
+
 .window-tab {
   position: relative;
   display: flex;
-  flex: 1 1 0;
+  flex: 1 0 100px;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  min-width: 100px;
   height: 24px;
   padding: 0 26px;
+  box-sizing: border-box;
   border-radius: 12px;
   color: var(--tab-text, rgba(0, 0, 0, 0.55));
   font-size: 12px;
