@@ -82,6 +82,11 @@ async function open() {
     const scale = Math.min(600 / viewport.width, 780 / viewport.height);
     if (!(await props.drawPage(pdfPage, canvas.value, scale, true)))
       throw Error('Preview unavailable');
+    if (token !== generation || !dialog.value?.open) return;
+    // drawPage sets fixed CSS dimensions for non-reader canvases. The dialog
+    // owns the preview size so the bitmap and crop handles share one frame.
+    canvas.value.style.removeProperty('width');
+    canvas.value.style.removeProperty('height');
   } catch (error) {
     if (token === generation) failed.value = true;
   } finally {
@@ -289,6 +294,8 @@ header p {
   box-shadow: 0 2px 10px #0003;
 }
 canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;

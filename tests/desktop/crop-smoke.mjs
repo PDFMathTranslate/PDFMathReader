@@ -166,6 +166,34 @@ export async function verifyCrop(window, recents) {
     await command('crop-interactive');
     await wait(`document.querySelector('.crop-dialog[open] canvas')?.width > 0`);
     await wait(`!document.querySelector('.crop-dialog .crop-status')`);
+    async function assertPreviewAlignment() {
+      const bounds = await evaluate(`(() => {
+        const rect = selector => {
+          const {left, top, width, height} = document.querySelector(selector).getBoundingClientRect();
+          return {left, top, width, height};
+        };
+        return {frame: rect('.crop-preview'), canvas: rect('.crop-preview canvas'), selection: rect('.crop-selection'), stage: rect('.crop-stage')};
+      })()`);
+      for (const part of ['canvas', 'selection'])
+        for (const key of ['left', 'top', 'width', 'height'])
+          assert.ok(
+            Math.abs(bounds[part][key] - bounds.frame[key]) < 1,
+            `${part} ${key} must match the uncropped page frame`,
+          );
+      assert.ok(bounds.frame.left >= bounds.stage.left);
+      assert.ok(bounds.frame.top >= bounds.stage.top);
+      assert.ok(bounds.frame.left + bounds.frame.width <= bounds.stage.left + bounds.stage.width);
+      assert.ok(bounds.frame.top + bounds.frame.height <= bounds.stage.top + bounds.stage.height);
+    }
+    await assertPreviewAlignment();
+    const originalBounds = window.getBounds();
+    window.setSize(760, 620);
+    await pause(250);
+    await assertPreviewAlignment();
+    window.setBounds(originalBounds);
+    await pause(250);
+    await assertPreviewAlignment();
+
     await writeFile(
       join(tmpdir(), 'pdfmathreader-crop-dialog.png'),
       (await window.webContents.capturePage()).toPNG(),
