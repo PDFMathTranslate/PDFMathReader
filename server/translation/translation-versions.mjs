@@ -22,9 +22,7 @@ function serviceLabel(value) {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value !== 'string') return null;
   const label = value.trim();
-  return label && label.length <= MAX_SERVICE_LENGTH && !/[\r\n\0]/.test(label)
-    ? label
-    : null;
+  return label && label.length <= MAX_SERVICE_LENGTH && !/[\r\n\0]/.test(label) ? label : null;
 }
 
 // Provider objects contain cache identities and, for some services, live
@@ -79,9 +77,7 @@ export function createTranslationVersions({ directory, documentCache, now = () =
   async function read(path) {
     try {
       const saved = JSON.parse(await readFile(path, 'utf8'));
-      return Array.isArray(saved?.versions)
-        ? saved.versions.map(normalize).filter(Boolean)
-        : [];
+      return Array.isArray(saved?.versions) ? saved.versions.map(normalize).filter(Boolean) : [];
     } catch {
       return [];
     }

@@ -26,14 +26,7 @@ const readingViewFields = [
   'sidebar',
   'showTranslations',
 ];
-const readingViewCropFields = [
-  'cropX',
-  'cropY',
-  'cropLeft',
-  'cropRight',
-  'cropTop',
-  'cropBottom',
-];
+const readingViewCropFields = ['cropX', 'cropY', 'cropLeft', 'cropRight', 'cropTop', 'cropBottom'];
 const translationStatusFields = [
   'totalPages',
   'completedPages',
@@ -68,7 +61,8 @@ export function validateReadingView(view) {
   if (
     keys.length !==
       readingViewFields.length +
-        ['sidebarMode', ...readingViewCropFields].filter((key) => Object.hasOwn(view, key)).length ||
+        ['sidebarMode', ...readingViewCropFields].filter((key) => Object.hasOwn(view, key))
+          .length ||
     readingViewFields.some((key) => !Object.hasOwn(view, key))
   )
     throw Error('Invalid recent document view.');

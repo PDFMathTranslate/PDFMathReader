@@ -13,7 +13,10 @@ const hash = 'a'.repeat(64);
 test('translation service metadata exposes labels, never provider identities', () => {
   assert.equal(translationServiceLabel({ id: 'openai', key: 'secret' }), 'OpenAI compatible');
   assert.equal(translationServiceLabel({ id: 'siliconflow-free' }), 'SiliconFlow free');
-  assert.equal(translationServiceLabel({ id: 'custom-0a1b2c3d4e5f', key: 'secret' }), 'custom-0a1b2c3d4e5f');
+  assert.equal(
+    translationServiceLabel({ id: 'custom-0a1b2c3d4e5f', key: 'secret' }),
+    'custom-0a1b2c3d4e5f',
+  );
   assert.equal(translationServiceLabel({ id: 'secret-value with spaces' }), undefined);
 });
 
