@@ -6,6 +6,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { startServer } from './index.mjs';
+import { FREE_ENDPOINTS } from './translation/translation-provider.mjs';
 const dir = await mkdtemp(join(tmpdir(), 'preview-integration-'));
 let active = 0,
   peak = 0,
@@ -19,9 +20,14 @@ const backend = await startServer({
   kernelDiagnostic: (message) => console.log(message),
   enginesRoot: join(homedir(), 'Library/Application Support/PDFMathReader/engines'),
   getApiKey: () => 'simulation-only',
-  providerFetch: async (_url, options) => {
-    assert.equal(options.headers.Authorization, 'Bearer simulation-only');
-    assert.equal(JSON.parse(options.body).stream, false);
+  // Raw PDF requests carry no service selection, so they use the default free channel.
+  providerFetch: async (url, options) => {
+    const endpoint = FREE_ENDPOINTS.find((base) => url.startsWith(base));
+    assert.ok(endpoint, `Unexpected provider URL ${url}`);
+    if (url === endpoint + '/check' || url === endpoint + '/config')
+      return Response.json({ status: 'ok', qps: 100 });
+    assert.equal(url, endpoint);
+    assert.equal(options.headers.Authorization, undefined);
     if (failProvider)
       return new Response(JSON.stringify({ error: { message: 'synthetic 401' } }), {
         status: 401,
@@ -32,26 +38,7 @@ const backend = await startServer({
     peak = Math.max(peak, active);
     try {
       await new Promise((r) => setTimeout(r, 400));
-      return new Response(
-        JSON.stringify({
-          id: 'mock',
-          object: 'chat.completion',
-          created: 1,
-          model: 'mock',
-          choices: [
-            {
-              index: 0,
-              finish_reason: 'stop',
-              message: {
-                role: 'assistant',
-                content: 'Texte traduit pour ce paragraphe scientifique.',
-              },
-            },
-          ],
-          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-        }),
-        { headers: { 'Content-Type': 'application/json' } },
-      );
+      return Response.json({ content: 'Texte traduit pour ce paragraphe scientifique.' });
     } finally {
       active--;
     }
@@ -146,7 +133,7 @@ try {
     { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: bytes },
   );
   assert.equal(failure.status, 422);
-  assert.match((await failure.json()).error, /rejected the configured API key/);
+  assert.match((await failure.json()).error, /SiliconFlow free service request failed \(401\)/);
   assert.ok(Date.now() - started < 15000);
   result.providerFailureVisible = true;
   failProvider = false;

@@ -334,7 +334,7 @@ def emit_precise_progress(event):
 # tag name (<样式 id='1'>) or requote it. Only tags that carry a numeric id are treated as
 # placeholders; their closing tags are matched by the same name.
 PRECISE_RICH_TEXT_LEFT = re.compile(
-    r"<\s*([^\s<>/='\"]+)\s+id\s*=\s*(['\"]?)\s*(\d+)\s*\2\s*>", re.IGNORECASE
+    r"<\s*([^\s<>/='\"]+)\s+id\s*=\s*(\\?['\"]|)\s*(\d+)\s*\2\s*>", re.IGNORECASE
 )
 
 
@@ -359,18 +359,29 @@ def precise_composition_text(obj):
     """Plain text of a BabelDOC paragraph composition: styled runs and formulas inline."""
     if obj is None:
         return ""
+    if isinstance(obj, dict):
+        # BabelDOC 0.7 exposes the IL as materialized JSON rather than objects.
+        field = obj.get
+    else:
+
+        def field(name):
+            return getattr(obj, name, None)
+
     for name in ("pdf_line", "pdf_formula", "pdf_same_style_characters"):
-        value = getattr(obj, name, None)
+        value = field(name)
         if value is not None:
-            return "".join(
-                precise_composition_text(c) for c in getattr(value, "pdf_character", []) or []
+            characters = (
+                value.get("pdf_character")
+                if isinstance(value, dict)
+                else getattr(value, "pdf_character", None)
             )
+            return "".join(precise_composition_text(c) for c in characters or [])
     for name in ("pdf_character", "pdf_same_style_unicode_characters"):
-        value = getattr(obj, name, None)
+        value = field(name)
         if value is not None:
             return precise_composition_text(value)
     # PdfCharacter stores char_unicode; PdfSameStyleUnicodeCharacters stores unicode.
-    return getattr(obj, "char_unicode", None) or getattr(obj, "unicode", None) or ""
+    return field("char_unicode") or field("unicode") or ""
 
 
 # pdf2zh's converter reads formulas with this pattern and skips IDs it does not own.
@@ -535,6 +546,289 @@ def layout_box(values, source_page, kind):
         matrix = source_page.transformation_matrix * source_page.rotation_matrix
     rect = pymupdf.Rect(*values) * matrix
     return {"x": rect.x0, "y": rect.y0, "width": max(1, rect.width), "height": max(1, rect.height)}
+
+
+PRECISE_FORMULA_LABELS = ("formula", "isolate_formula", "equation")
+
+
+def precise_python_il_capture(selected, box, write_sidecar):
+    """pdf2zh-next 2.8 / BabelDOC 0.6: hook the Python IL midend classes."""
+    from babeldoc.format.pdf.document_il.midend.il_translator import ILTranslator
+    from babeldoc.format.pdf.document_il.midend.il_translator_llm_only import (
+        ILTranslatorLLMOnly,
+    )
+    from babeldoc.format.pdf.document_il.midend.typesetting import Typesetting
+
+    records = []
+    pending = []
+    # Parsed translation text per paragraph, taken before typesetting splits it into lines.
+    parsed = {}
+
+    def values(rect):
+        return (rect.x, rect.y, rect.x2, rect.y2)
+
+    def wrap_translate(original):
+        def translate(self, docs):
+            for page in docs.page:
+                for para in page.pdf_paragraph:
+                    if para.box and (
+                        (para.unicode or "").strip()
+                        or str(para.layout_label or "").lower() in PRECISE_FORMULA_LABELS
+                    ):
+                        pending.append(
+                            (
+                                para,
+                                {
+                                    "id": f"precise-{selected}-{para.debug_id or len(pending)}",
+                                    "page": selected,
+                                    "text": para.unicode or "",
+                                    "sourceBox": box(values(para.box)),
+                                    "fontSize": getattr(para.pdf_style, "font_size", None) or 12,
+                                    "layoutLabel": para.layout_label,
+                                    "layoutSource": "babeldoc.document_il",
+                                    "nativePageNumber": page.page_number,
+                                },
+                            )
+                        )
+            return original(self, docs)
+
+        return translate
+
+    ILTranslator.translate = wrap_translate(ILTranslator.translate)
+    ILTranslatorLLMOnly.translate = wrap_translate(ILTranslatorLLMOnly.translate)
+    original_parse_output = ILTranslator.parse_translate_output
+
+    # Both translators funnel LLM output through this parser; it typesets each
+    # <style id='N'> run with that source span's original PDF style.
+    def parse_translate_output(self, input_text, output, *positional, **kwargs):
+        return original_parse_output(
+            self,
+            input_text,
+            precise_canonical_rich_text_tags(output),
+            *positional,
+            **kwargs,
+        )
+
+    ILTranslator.parse_translate_output = parse_translate_output
+    original_post_translate = ILTranslator.post_translate_paragraph
+
+    def post_translate_paragraph(self, paragraph, *positional, **kwargs):
+        changed = original_post_translate(self, paragraph, *positional, **kwargs)
+        if changed:
+            parsed[id(paragraph)] = "".join(
+                precise_composition_text(c) for c in paragraph.pdf_paragraph_composition
+            )
+        return changed
+
+    ILTranslator.post_translate_paragraph = post_translate_paragraph
+    original_typeset = Typesetting.typesetting_document
+
+    def typeset(self, docs):
+        result = original_typeset(self, docs)
+        for para, record in pending:
+            record["translationOutput"] = para.unicode
+            # The PDF shows the parsed runs; para.unicode still holds the raw placeholders.
+            record["translation"] = parsed.get(id(para)) or para.unicode or record["text"]
+            record["translatedBox"] = box(values(para.box))
+            records.append(record)
+        pending.clear()
+        parsed.clear()
+        write_sidecar(records)
+        return result
+
+    Typesetting.typesetting_document = typeset
+
+
+def precise_source_characters(characters, consumed, region, source):
+    """Indices of the parsed characters BabelDOC grouped into one paragraph.
+
+    Paragraphs never leave their layout region, and their source text is the
+    region's characters in content order, so match it there without whitespace.
+    """
+    if not region:
+        return []
+    candidates = []
+    for index, character in enumerate(characters):
+        rect = character["box"]
+        if (
+            index not in consumed
+            and region["x"] - 1 <= (rect["x"] + rect["x2"]) / 2 <= region["x2"] + 1
+            and region["y"] - 1 <= (rect["y"] + rect["y2"]) / 2 <= region["y2"] + 1
+        ):
+            candidates.append(index)
+    target = re.sub(r"\s+", "", source or "")
+    if not target:
+        return candidates
+    stream, owners = [], []
+    for index in candidates:
+        for char in re.sub(r"\s+", "", characters[index].get("char_unicode") or ""):
+            stream.append(char)
+            owners.append(index)
+    start = "".join(stream).find(target)
+    if start >= 0:
+        return sorted(set(owners[start : start + len(target)]))
+    # Reading order can differ from content order; accept an in-order subsequence.
+    chosen, matched = [], 0
+    for char, index in zip(stream, owners):
+        if matched < len(target) and char == target[matched]:
+            chosen.append(index)
+            matched += 1
+    return sorted(set(chosen)) if matched >= 0.8 * len(target) else []
+
+
+def precise_rust_il_records(selected, parsed, typeset, tracking, box):
+    """Reader paragraphs from BabelDOC 0.7 IL snapshots taken around one Rust run.
+
+    `parsed` holds the page characters before layout, `typeset` the final paragraphs
+    with their translated boxes, and `tracking` (translate_tracking.json) the source
+    text BabelDOC sent for each translated paragraph.
+    """
+
+    def values(rect):
+        return (rect["x"], rect["y"], rect["x2"], rect["y2"])
+
+    trackers = {}
+    for page in tracking.get("page") or []:
+        for item in page.get("paragraph") or []:
+            trackers.setdefault(item.get("output"), []).append(item)
+    characters = {
+        page.get("page_number"): [
+            c for c in page.get("pdf_character") or [] if c.get("box") and c.get("char_unicode")
+        ]
+        for page in parsed.get("page") or []
+    }
+    records = []
+    for page in typeset.get("page") or []:
+        page_characters = characters.get(page.get("page_number"), [])
+        regions = {layout.get("id"): layout.get("box") for layout in page.get("page_layout") or []}
+        consumed = set()
+        entries = []
+        for para in page.get("pdf_paragraph") or []:
+            output = para.get("unicode")
+            translation = "".join(
+                precise_composition_text(c) for c in para.get("pdf_paragraph_composition") or []
+            )
+            label = para.get("layout_label")
+            if not para.get("box") or not (
+                (output or translation).strip()
+                or str(label or "").lower() in PRECISE_FORMULA_LABELS
+            ):
+                continue
+            queue = trackers.get(output) if output is not None else None
+            tracker = queue.pop(0) if queue else None
+            if tracker:
+                source = tracker.get("pdf_unicode")
+            elif output is None:
+                # Untranslated paragraphs (formulas) keep their own characters.
+                source = translation
+            else:
+                source = None
+            entries.append((para, output, translation, source))
+        chosen = {}
+        # Exact source text first, so geometric fallbacks only see leftover characters.
+        for index, (para, _, _, source) in sorted(
+            enumerate(entries), key=lambda item: item[1][3] is None
+        ):
+            region = regions.get(para.get("layout_id")) if source is not None else para["box"]
+            chosen[index] = precise_source_characters(page_characters, consumed, region, source)
+            consumed.update(chosen[index])
+        for index, (para, output, translation, source) in enumerate(entries):
+            picked = [page_characters[i]["box"] for i in chosen[index]]
+            source_rect = (
+                (
+                    min(r["x"] for r in picked),
+                    min(r["y"] for r in picked),
+                    max(r["x2"] for r in picked),
+                    max(r["y2"] for r in picked),
+                )
+                if picked
+                else values(para["box"])
+            )
+            if source is None:
+                source = "".join(page_characters[i]["char_unicode"] for i in chosen[index])
+            style = para.get("pdf_style") or {}
+            records.append(
+                {
+                    "id": f"precise-{selected}-{para.get('debug_id') or len(records)}",
+                    "page": selected,
+                    "text": source,
+                    "sourceBox": box(source_rect),
+                    "fontSize": style.get("font_size") or 12,
+                    "layoutLabel": para.get("layout_label"),
+                    "layoutSource": "babeldoc.document_il",
+                    "nativePageNumber": page.get("page_number"),
+                    "translationOutput": output,
+                    "translation": translation or output or source,
+                    "translatedBox": box(values(para["box"])),
+                }
+            )
+    return records
+
+
+def precise_rust_il_capture(selected, box, write_sidecar):
+    """pdf2zh-next 2.10 / BabelDOC 0.7: the IL midend runs inside Rust's run_part.
+
+    The native document is mutably borrowed for the whole run, so snapshot it just
+    before and after, and read the source text from translate_tracking.json.
+    """
+    import tempfile
+
+    from babeldoc import _rust_il
+    from babeldoc.rust_debug_service import RustDebugSerializerService
+    from babeldoc.rust_translation_service import RustTranslatorService
+
+    # Rust parses <style id='N'> runs from the returned text, as 0.6's parser did.
+    def canonical(original):
+        def translate(self, *positional, **kwargs):
+            return precise_canonical_rich_text_tags(original(self, *positional, **kwargs))
+
+        return translate
+
+    RustTranslatorService.translate = canonical(RustTranslatorService.translate)
+    RustTranslatorService.llm_translate = canonical(RustTranslatorService.llm_translate)
+
+    def snapshot(document, path):
+        document.write_debug_json(str(path))
+        return RustDebugSerializerService().materialize_document(path.read_text(encoding="utf-8"))
+
+    class CapturedDocument:
+        def __init__(self, document):
+            self._document = document
+
+        def __getattr__(self, name):
+            return getattr(self._document, name)
+
+        def run_part(self, *positional, **kwargs):
+            config = positional[1] if len(positional) > 1 else kwargs["config"]
+            with tempfile.TemporaryDirectory() as directory:
+                parsed = snapshot(self._document, Path(directory) / "parsed.json")
+                result = self._document.run_part(*positional, **kwargs)
+                typeset = snapshot(self._document, Path(directory) / "typeset.json")
+            tracking = Path(config.get_working_file_path("translate_tracking.json"))
+            tracking = json.loads(tracking.read_text(encoding="utf-8")) if tracking.exists() else {}
+            write_sidecar(precise_rust_il_records(selected, parsed, typeset, tracking, box))
+            return result
+
+    original_parse = _rust_il.parse_prepared_pdf_product
+
+    def parse_prepared_pdf_product(*positional, **kwargs):
+        document = original_parse(*positional, **kwargs)
+        return None if document is None else CapturedDocument(document)
+
+    _rust_il.parse_prepared_pdf_product = parse_prepared_pdf_product
+
+
+def install_precise_capture(selected, box, write_sidecar):
+    import importlib.util
+
+    try:
+        legacy = importlib.util.find_spec("babeldoc.format.pdf.document_il.midend.il_translator")
+    except ModuleNotFoundError:
+        legacy = None
+    if legacy is not None:
+        precise_python_il_capture(selected, box, write_sidecar)
+    else:
+        precise_rust_il_capture(selected, box, write_sidecar)
 
 
 def install_glossary(kind, entries):
@@ -729,6 +1023,22 @@ def main(capture_only=False):
 
     def box(values):
         return layout_box(values, source_page, kind)
+
+    def write_sidecar(paragraphs):
+        Path(sidecar).write_text(
+            json.dumps(
+                {
+                    "schema": 2,
+                    "engine": kind,
+                    "page": selected,
+                    "width": source_page.rect.width,
+                    "height": source_page.rect.height,
+                    "paragraphs": paragraphs,
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
 
     if kind == "pdf_math_fast":
         from pdf2zh.converter import TranslateConverter
@@ -1203,104 +1513,7 @@ def main(capture_only=False):
         timings["workerTotal"] = (perf_counter() - STARTED) * 1000
         Path(sidecar + ".timing.json").write_text(json.dumps(timings), encoding="utf-8")
     else:
-        from babeldoc.format.pdf.document_il.midend.il_translator import ILTranslator
-        from babeldoc.format.pdf.document_il.midend.il_translator_llm_only import (
-            ILTranslatorLLMOnly,
-        )
-        from babeldoc.format.pdf.document_il.midend.typesetting import Typesetting
-
-        pending = []
-        # Parsed translation text per paragraph, taken before typesetting splits it into lines.
-        parsed = {}
-
-        def values(rect):
-            return (rect.x, rect.y, rect.x2, rect.y2)
-
-        def wrap_translate(original):
-            def translate(self, docs):
-                for page in docs.page:
-                    for para in page.pdf_paragraph:
-                        if para.box and (
-                            (para.unicode or "").strip()
-                            or str(para.layout_label or "").lower()
-                            in ("formula", "isolate_formula", "equation")
-                        ):
-                            pending.append(
-                                (
-                                    para,
-                                    {
-                                        "id": f"precise-{selected}-{para.debug_id or len(pending)}",
-                                        "page": selected,
-                                        "text": para.unicode or "",
-                                        "sourceBox": box(values(para.box)),
-                                        "fontSize": getattr(para.pdf_style, "font_size", None)
-                                        or 12,
-                                        "layoutLabel": para.layout_label,
-                                        "layoutSource": "babeldoc.document_il",
-                                        "nativePageNumber": page.page_number,
-                                    },
-                                )
-                            )
-                return original(self, docs)
-
-            return translate
-
-        ILTranslator.translate = wrap_translate(ILTranslator.translate)
-        ILTranslatorLLMOnly.translate = wrap_translate(ILTranslatorLLMOnly.translate)
-        original_parse_output = ILTranslator.parse_translate_output
-
-        # Both translators funnel LLM output through this parser; it typesets each
-        # <style id='N'> run with that source span's original PDF style.
-        def parse_translate_output(self, input_text, output, *positional, **kwargs):
-            return original_parse_output(
-                self,
-                input_text,
-                precise_canonical_rich_text_tags(output),
-                *positional,
-                **kwargs,
-            )
-
-        ILTranslator.parse_translate_output = parse_translate_output
-        original_post_translate = ILTranslator.post_translate_paragraph
-
-        def post_translate_paragraph(self, paragraph, *positional, **kwargs):
-            changed = original_post_translate(self, paragraph, *positional, **kwargs)
-            if changed:
-                parsed[id(paragraph)] = "".join(
-                    precise_composition_text(c) for c in paragraph.pdf_paragraph_composition
-                )
-            return changed
-
-        ILTranslator.post_translate_paragraph = post_translate_paragraph
-        original_typeset = Typesetting.typesetting_document
-
-        def typeset(self, docs):
-            result = original_typeset(self, docs)
-            for para, record in pending:
-                record["translationOutput"] = para.unicode
-                # The PDF shows the parsed runs; para.unicode still holds the raw placeholders.
-                record["translation"] = parsed.get(id(para)) or para.unicode or record["text"]
-                record["translatedBox"] = box(values(para.box))
-                records.append(record)
-            pending.clear()
-            parsed.clear()
-            Path(sidecar).write_text(
-                json.dumps(
-                    {
-                        "schema": 2,
-                        "engine": kind,
-                        "page": selected,
-                        "width": source_page.rect.width,
-                        "height": source_page.rect.height,
-                        "paragraphs": records,
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-            return result
-
-        Typesetting.typesetting_document = typeset
+        install_precise_capture(selected, box, write_sidecar)
         if capture_only:
             return
         import pdf2zh_next.high_level as precise_high_level
@@ -1329,20 +1542,7 @@ def main(capture_only=False):
     if status not in (None, 0):
         sys.exit(status)
     if records or not Path(sidecar).exists():
-        Path(sidecar).write_text(
-            json.dumps(
-                {
-                    "schema": 2,
-                    "engine": kind,
-                    "page": selected,
-                    "width": source_page.rect.width,
-                    "height": source_page.rect.height,
-                    "paragraphs": records,
-                },
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
+        write_sidecar(records)
     source_pdf.close()
 
 

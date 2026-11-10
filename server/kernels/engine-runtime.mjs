@@ -38,6 +38,7 @@ export const definitions = {
     updateSpec: 'pdf2zh-next',
     gitSpec:
       'pdf2zh-next @ git+https://github.com/PDFMathTranslate-next/PDFMathTranslate-next.git@main',
+    constraints: ['bitstring<5'],
   },
 };
 
@@ -400,12 +401,16 @@ export function createEngineRuntime({
             { env, timeout: 300000, maxBuffer: 1024 * 1024 },
             { kernel: id, name: 'uv' },
           );
+        const constraints = join(root, `${id}-constraints.txt`);
+        if (definitions[id].constraints)
+          await writeFile(constraints, definitions[id].constraints.join('\n') + '\n');
         const pipArgs = [
           'pip',
           'install',
           ...(reinstall === true
             ? ['--upgrade', '--reinstall', ...(source === 'git' ? ['--refresh'] : [])]
             : []),
+          ...(definitions[id].constraints ? ['--constraints', constraints] : []),
           '--python',
           python(id),
           ...(state.available && state.ocrAvailable === false && reinstall !== true
