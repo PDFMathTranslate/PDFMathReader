@@ -64,6 +64,22 @@ export function createReaderTasks({
     ].sort((a, b) => a - b);
   }
 
+  // Reading order for the backend queue: the explicitly requested pages first,
+  // then the current reading scope (visible page, pages ahead, pages behind).
+  function priorityOrder(pages) {
+    const total = session.pages.value.length;
+    const scope = actions.translationScope?.readingTranslationPages?.();
+    const order = new Set();
+    for (const value of [
+      ...(Array.isArray(pages) ? pages : []),
+      ...(Array.isArray(scope) ? scope : []),
+    ]) {
+      const number = pageNumber(value);
+      if (number >= 1 && number <= total) order.add(number);
+    }
+    return [...order];
+  }
+
   function defaultScope() {
     const scope = actions.translationScope?.readingTranslationPages?.();
     const pages = normalizeNumbers(scope);
@@ -183,9 +199,12 @@ export function createReaderTasks({
     const allLayout = sameDocument && sameSettings ? new Set(current.layoutPages) : new Set();
     requestedPages.forEach((number) => allPages.add(number));
     requestedLayout.forEach((number) => allLayout.add(number));
+    const priority = priorityOrder(pages || requestedPages);
     return {
       pages: [...allPages].sort((a, b) => a - b),
       layoutPages: [...allLayout].sort((a, b) => a - b),
+      priority,
+      priorityKey: priority.join(','),
       settings: requestedSettings,
       settingsKey: requestedSettingsKey,
     };
@@ -209,6 +228,8 @@ export function createReaderTasks({
     ) {
       next.pages.forEach((number) => activeSubmission.pages.add(number));
       next.layoutPages.forEach((number) => activeSubmission.layoutPages.add(number));
+      activeSubmission.priority = next.priority;
+      activeSubmission.priorityKey = next.priorityKey;
       return activeSubmission.promise;
     }
     if (
@@ -216,7 +237,8 @@ export function createReaderTasks({
       current.documentId === documentId &&
       current.settingsKey === next.settingsKey &&
       next.pages.every((number) => current.pages.has(number)) &&
-      next.layoutPages.every((number) => current.layoutPages.has(number))
+      next.layoutPages.every((number) => current.layoutPages.has(number)) &&
+      (current.priorityKey == null || current.priorityKey === next.priorityKey)
     )
       return snapshot();
 
@@ -231,6 +253,8 @@ export function createReaderTasks({
       settings: cloneValue(next.settings, {}),
       pages: new Set(next.pages),
       layoutPages: new Set(next.layoutPages),
+      priority: next.priority,
+      priorityKey: next.priorityKey,
       generation,
       cancelled: false,
       promise: null,
@@ -260,6 +284,7 @@ export function createReaderTasks({
             return null;
           const pages = [...item.pages].sort((a, b) => a - b);
           const layoutPages = [...item.layoutPages].sort((a, b) => a - b);
+          const { priority, priorityKey } = item;
           const result = await api()('/api/reader-tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -268,6 +293,7 @@ export function createReaderTasks({
               settings: item.settings,
               pages: withHeights(pages),
               layoutPages: withHeights(layoutPages),
+              priority,
             }),
           });
           if (!result?.id) throw Error('Reader translation task did not return an id');
@@ -286,6 +312,7 @@ export function createReaderTasks({
             settings: cloneValue(item.settings, {}),
             pages: new Set(pages),
             layoutPages: new Set(layoutPages),
+            priorityKey,
             state: result.state,
             completed: result.completed,
             total: result.total,
@@ -297,7 +324,8 @@ export function createReaderTasks({
           const layoutChanged =
             layoutPages.length !== item.layoutPages.size ||
             layoutPages.some((number) => !item.layoutPages.has(number));
-          if (!pagesChanged && !layoutChanged) return snapshot();
+          if (!pagesChanged && !layoutChanged && priorityKey === item.priorityKey)
+            return snapshot();
           // A same-settings caller grew the target while the POST was in
           // flight. The server upsert keeps this task id and adds the new
           // scope on the next iteration.

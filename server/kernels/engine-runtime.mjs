@@ -34,14 +34,17 @@ export const definitions = {
   pdf_math_precise: {
     label: 'PDF Math · Precise',
     package: 'pdf2zh-next',
-    spec: 'pdf2zh-next==2.8.2',
+    spec: 'pdf2zh-next==2.10.2',
     updateSpec: 'pdf2zh-next',
     gitSpec:
       'pdf2zh-next @ git+https://github.com/PDFMathTranslate-next/PDFMathTranslate-next.git@main',
   },
 };
 
-export function createLimiter(max = 4, { label = 'limiter', now = () => Date.now() } = {}) {
+export function createLimiter(
+  max = 4,
+  { label = 'limiter', now = () => Date.now(), ceiling = 12 } = {},
+) {
   let active = 0,
     nextTaskId = 0;
   const waiting = [],
@@ -89,7 +92,7 @@ export function createLimiter(max = 4, { label = 'limiter', now = () => Date.now
   }
   return {
     setMax(n) {
-      max = Math.max(1, Math.min(12, Number(n) || 4));
+      max = Math.max(1, Math.min(ceiling, Number(n) || 4));
       drain();
     },
     snapshot,

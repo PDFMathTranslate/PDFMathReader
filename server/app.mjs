@@ -7,7 +7,7 @@ import { createDocumentCache } from './documents/document-cache.mjs';
 import { createDocumentStore, isDocumentId, MAX_DOCUMENT_BYTES } from './documents/documents.mjs';
 import { createCompanionDocumentStore } from './documents/companion-document-store.mjs';
 import { createLayoutExtraction } from './documents/layout-extraction.mjs';
-import { extractTextWithPositionsAsync } from './documents/pdf-extractor.mjs';
+import { extractTextWithPositionsAsync, prewarmPdfJs } from './documents/pdf-extractor.mjs';
 import { createPerformanceTracker } from './diagnostics/performance.mjs';
 import { createDeveloperDiagnostics } from './diagnostics/developer-diagnostics.mjs';
 import {
@@ -53,6 +53,7 @@ import { registerProviderModelRoutes } from './http/provider-model-routes.mjs';
 import { registerReaderTaskRoutes } from './http/reader-task-routes.mjs';
 import { createFormulaOcrService } from './formula/formula-ocr-service.mjs';
 import { createReaderTasks } from './translation/reader-tasks.mjs';
+import { createAdaptiveLimits } from './translation/adaptive-limits.mjs';
 
 export async function startServer({
   port = 5173,
@@ -121,6 +122,7 @@ export async function startServer({
   const documentCache = createDocumentCache(cacheDir);
   const translationVersions = createTranslationVersions({ directory: cacheDir, documentCache });
   const providerLimiter = createLimiter(4, { label: 'provider' });
+  const adaptiveLimits = createAdaptiveLimits();
   const pageLimiter = createLimiter(2, { label: 'kernel-pages' });
   const proxyJobs = new Map();
   const kernelReports = [];
@@ -173,6 +175,7 @@ export async function startServer({
     isBusy: () =>
       proxyJobs.size > 0 ||
       providerLimiter.snapshot().tasks.length > 0 ||
+      adaptiveLimits.snapshots().some((snapshot) => snapshot.tasks.length > 0) ||
       pageLimiter.snapshot().tasks.length > 0 ||
       (engines.tasks?.().length || 0) > 0 ||
       (readerTasks?.active?.() || 0) > 0,
@@ -188,7 +191,11 @@ export async function startServer({
     proxyJobs,
     proxyUrl: () => `${origin}/kernel-proxy/v1`,
   });
-  const diagnosticQueues = () => [pageLimiter.snapshot(), providerLimiter.snapshot()];
+  const diagnosticQueues = () => [
+    pageLimiter.snapshot(),
+    providerLimiter.snapshot(),
+    ...adaptiveLimits.snapshots(),
+  ];
   const diagnosticTasks = () => {
     const tasks = [...(engines.tasks?.() || [])];
     for (const queue of diagnosticQueues()) tasks.push(...queue.tasks);
@@ -252,6 +259,7 @@ export async function startServer({
     maxDocumentBytes: MAX_DOCUMENT_BYTES,
     translationVersions,
     onDocumentDelete: (id) => readerTasks.cancelForDocument(id),
+    onDocumentOpen: () => void prewarmPdfJs(),
   });
   registerKernelRoutes(app, {
     engines,
@@ -288,6 +296,7 @@ export async function startServer({
     providerRuntime,
     getApiKey,
     translationVersions,
+    adaptiveLimits,
   });
   registerReaderTaskRoutes(app, { readerTasks });
 

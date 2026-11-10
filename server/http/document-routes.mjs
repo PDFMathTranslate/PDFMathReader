@@ -64,6 +64,7 @@ export function registerDocumentRoutes(
     maxDocumentBytes,
     translationVersions,
     onDocumentDelete,
+    onDocumentOpen,
   },
 ) {
   app.post(
@@ -79,6 +80,7 @@ export function registerDocumentRoutes(
           .register(entry.documentHash, req.headers['x-document-name'])
           .catch(() => {});
         res.status(201).json({ id });
+        onDocumentOpen?.(id);
       } catch (e) {
         if (e?.status) return res.status(e.status).json({ error: e.message });
         res.status(400).json({ error: e.message });

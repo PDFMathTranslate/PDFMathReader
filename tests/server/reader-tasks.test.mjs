@@ -89,7 +89,7 @@ async function serveInspector() {
   const documents = new Map([
     ['doc-a', { id: 'doc-a', bytes: Buffer.from('%PDF-a'), documentHash: 'a'.repeat(64) }],
   ]);
-  const calls = { layout: [], continuation: [], translate: [] };
+  const calls = { layout: [], continuation: [], translate: [], batches: [] };
   const layouts = new Map([
     [
       1,
@@ -131,12 +131,15 @@ async function serveInspector() {
       calls.continuation.push(body);
       return Response.json({ status: 'classified', combine: true });
     }
-    if (parsed.pathname === '/api/translate') {
-      calls.translate.push(body);
+    if (parsed.pathname === '/api/translate-batch') {
+      calls.batches.push(body);
+      for (const item of body.items) calls.translate.push({ ...body, text: item.text });
       return Response.json({
-        translation: body.text.toUpperCase(),
-        model: 'test-model',
-        cached: false,
+        results: body.items.map((item) => ({
+          translation: item.text.toUpperCase(),
+          model: 'test-model',
+          cached: false,
+        })),
       });
     }
     throw Error(`Unexpected internal request: ${parsed.pathname}`);
@@ -343,6 +346,44 @@ test('inspector groups cross-page fragments and deduplicates the provider call',
     assert.equal(second.paragraphs[0].paragraphIndex, 1);
     assert.equal(first.paragraphs[0].paragraphTranslation, 'ALPHABETA');
     assert.equal(second.paragraphs[0].paragraphTranslation, 'ALPHABETA');
+  } finally {
+    await close();
+  }
+});
+
+test('queued pages follow the latest reading priority', async () => {
+  const { service, calls, close } = await serve({ delayMs: 20 });
+  try {
+    const task = service.create({
+      documentId: 'doc-a',
+      settings: settings(),
+      pages: [1, 2, 3, 4, 5].map(page),
+      priority: [3, 4, 5, 2, 1],
+    });
+    for (let attempt = 0; service.page(task.id, 3).state !== 'running' && attempt < 100; attempt++)
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    // The reader jumped back to page 1 while page 3 was running.
+    service.create({
+      documentId: 'doc-a',
+      settings: settings(),
+      pages: [page(1)],
+      priority: [1, 2],
+    });
+    assert.equal((await waitForStatus(service, task)).state, 'complete');
+    assert.deepEqual(
+      calls.filter((call) => !call.cacheOnly).map((call) => call.page),
+      [3, 1, 2, 4, 5],
+    );
+    assert.throws(
+      () =>
+        service.create({
+          documentId: 'doc-a',
+          settings: settings(),
+          pages: [page(1)],
+          priority: [0],
+        }),
+      /Invalid priority/,
+    );
   } finally {
     await close();
   }

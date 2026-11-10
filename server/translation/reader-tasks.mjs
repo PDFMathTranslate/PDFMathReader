@@ -183,6 +183,19 @@ function normalizePages(value, label, maximum) {
   return [...pages.values()].sort((a, b) => a.number - b.number);
 }
 
+function normalizePriority(value) {
+  if (value === undefined) return null;
+  if (
+    !Array.isArray(value) ||
+    value.length > MAX_READER_LAYOUT_PAGES ||
+    value.some((number) => !Number.isInteger(number) || number < 1 || number > PAGE_NUMBER_LIMIT)
+  )
+    throw statusError('Invalid priority.');
+  const ranks = new Map();
+  for (const number of value) if (!ranks.has(number)) ranks.set(number, ranks.size);
+  return ranks;
+}
+
 function safeError(error) {
   if (error?.name === 'AbortError') return 'Task cancelled.';
   const message = String(error?.message || error || 'Translation failed.')
@@ -235,18 +248,6 @@ function setProgress(page, value) {
   if (typeof progress.percent === 'number')
     progress.percent = Math.max(0, Math.min(100, progress.percent));
   page.progress = progress;
-}
-
-function mapLimit(items, limit, worker) {
-  let next = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    for (;;) {
-      const index = next++;
-      if (index >= items.length) return;
-      await worker(items[index], index);
-    }
-  });
-  return Promise.all(workers);
 }
 
 export function createReaderTasks({
@@ -513,28 +514,58 @@ export function createReaderTasks({
     });
   }
 
-  async function translateText(task, group) {
-    const settings = task.settings;
-    const requestTranslation = (cacheOnly) =>
-      request(task, '/api/translate', {
+  function applyGroupTranslation(group, data) {
+    const rawParts = splitParagraphTranslation(
+      data.translation,
+      group.members.map((member) => member.block),
+    );
+    const displayParts = rawParts.map((part) => paragraphDisplayText(part));
+    const displayTranslation = displayParts.join('');
+    let displayOffset = 0;
+    group.members.forEach((member, index) => {
+      const block = member.block;
+      block.translation = rawParts[index] || ' ';
+      block.cached = data.cached === true;
+      block.translationModel = data.model || '';
+      block.paragraphTranslation = data.translation;
+      block.paragraphDisplayTranslation = displayTranslation;
+      block.paragraphDisplayOffset = displayOffset;
+      displayOffset += displayParts[index].length;
+      block.status = 'ready';
+      block.translated = true;
+      block.error = '';
+    });
+  }
+
+  // One request carries every untranslated group of a page; the backend packs
+  // them into a few model calls and answers each item separately.
+  async function translateGroups(task, pending) {
+    try {
+      const response = await request(task, '/api/translate-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
           bodyForSettings(task, {
-            cacheOnly,
-            text: group.text,
-            language: settings.language,
-            concurrency: settings.concurrency,
+            items: pending.map(({ group }) => ({ text: group.text })),
+            language: task.settings.language,
+            concurrency: task.settings.concurrency,
           }),
         ),
       });
-    let response = await requestTranslation(true);
-    if (response.status === 204) response = await requestTranslation(false);
-    if (!response.ok) throw Error(await responseError(response));
-    const result = await responseJSON(response);
-    if (typeof result?.translation !== 'string' || !result.translation.trim())
-      throw Error('Empty translation.');
-    return result;
+      if (!response.ok) throw Error(await responseError(response));
+      const results = (await responseJSON(response))?.results;
+      if (!Array.isArray(results) || results.length !== pending.length)
+        throw Error('Invalid batch translation response.');
+      pending.forEach((entry, index) => {
+        const result = results[index];
+        if (typeof result?.translation === 'string' && result.translation.trim()) {
+          applyGroupTranslation(entry.group, result);
+          entry.resolve(result);
+        } else entry.reject(Error(safeError(result?.error || 'Empty translation.')));
+      });
+    } catch (error) {
+      for (const entry of pending) entry.reject(error);
+    }
   }
 
   async function requestInspector(task, page) {
@@ -547,13 +578,31 @@ export function createReaderTasks({
         if (!groups.has(group.id)) groups.set(group.id, group);
       }),
     );
+    if (task.controller.signal.aborted) throw abortError();
+    const pending = [];
+    const translations = [...groups.values()].map((group) => {
+      // Groups spanning pages are translated once and shared by both pages.
+      const key = `${group.id}\0${group.text}`;
+      const previous = task.groupTranslations.get(key);
+      if (previous) return { group, promise: previous };
+      const entry = { group };
+      const promise = new Promise((resolveGroup, rejectGroup) => {
+        entry.resolve = resolveGroup;
+        entry.reject = rejectGroup;
+      });
+      promise.catch(() => {});
+      task.groupTranslations.set(key, promise);
+      assignGroupSourceMetadata(group);
+      pending.push(entry);
+      return { group, promise };
+    });
+    if (pending.length) await translateGroups(task, pending);
     const failures = [];
-    await mapLimit([...groups.values()], task.settings.concurrency, async (group) => {
-      if (task.controller.signal.aborted) throw abortError();
+    for (const { group, promise } of translations) {
       try {
-        await translateGroupOnce(task, group);
+        await promise;
       } catch (error) {
-        if (error?.name === 'AbortError') throw error;
+        if (error?.name === 'AbortError' || task.controller.signal.aborted) throw abortError();
         const message = safeError(error);
         failures.push(message);
         for (const member of group.members) {
@@ -561,44 +610,11 @@ export function createReaderTasks({
           member.block.error = message;
         }
       }
-    });
+    }
     if (failures.length) throw Error(failures[0]);
     const path = join(task.tempDir, `page-${page.number}.json`);
     await writeFile(path, JSON.stringify({ paragraphs: layout.blocks }));
     return { kind: 'inspector', path };
-  }
-
-  function translateGroupOnce(task, group) {
-    const key = `${group.id}\0${group.text}`;
-    const previous = task.groupTranslations.get(key);
-    if (previous) return previous;
-    const promise = (async () => {
-      assignGroupSourceMetadata(group);
-      const data = await translateText(task, group);
-      const rawParts = splitParagraphTranslation(
-        data.translation,
-        group.members.map((member) => member.block),
-      );
-      const displayParts = rawParts.map((part) => paragraphDisplayText(part));
-      const displayTranslation = displayParts.join('');
-      let displayOffset = 0;
-      group.members.forEach((member, index) => {
-        const block = member.block;
-        block.translation = rawParts[index] || ' ';
-        block.cached = data.cached === true;
-        block.translationModel = data.model || '';
-        block.paragraphTranslation = data.translation;
-        block.paragraphDisplayTranslation = displayTranslation;
-        block.paragraphDisplayOffset = displayOffset;
-        displayOffset += displayParts[index].length;
-        block.status = 'ready';
-        block.translated = true;
-        block.error = '';
-      });
-      return data;
-    })();
-    task.groupTranslations.set(key, promise);
-    return promise;
   }
 
   async function processPage(task, page) {
@@ -650,6 +666,22 @@ export function createReaderTasks({
     task.resolveDone?.();
   }
 
+  // Pages run in the renderer's latest reading order: the visible page first,
+  // then pages ahead. Pages outside the latest scope keep insertion order.
+  function nextQueuedPage(task) {
+    let best = null,
+      bestRank = Infinity;
+    for (const candidate of task.pages.values()) {
+      if (candidate.state !== 'queued') continue;
+      const rank = task.priority.get(candidate.number) ?? Infinity;
+      if (!best || rank < bestRank) {
+        best = candidate;
+        bestRank = rank;
+      }
+    }
+    return best;
+  }
+
   function pump(task) {
     if (task.state !== 'running') {
       for (const page of task.pages.values()) if (page.state === 'queued') page.state = 'cancelled';
@@ -658,7 +690,7 @@ export function createReaderTasks({
     }
     if (!task.ready) return;
     while (task.running < task.settings.pageConcurrency) {
-      const page = [...task.pages.values()].find((candidate) => candidate.state === 'queued');
+      const page = nextQueuedPage(task);
       if (!page) break;
       page.state = 'running';
       page.progress = { stage: 'Queued', percent: 0 };
@@ -771,9 +803,11 @@ export function createReaderTasks({
       MAX_READER_LAYOUT_PAGES,
     );
     if (!pages.length) throw statusError('At least one page is required.');
+    const priority = normalizePriority(input.priority);
     const key = canonicalKey(documentId, settings);
     const previous = byKey.get(key);
     if (previous && previous.state !== 'cancelled' && previous.state !== 'failed') {
+      if (priority) previous.priority = priority;
       const added = addPages(previous, pages, layoutPages);
       if (added && previous.state === 'complete') {
         resetDone(previous);
@@ -807,6 +841,7 @@ export function createReaderTasks({
       layoutLoads: new Map(),
       layoutPages: [],
       groupTranslations: new Map(),
+      priority: priority || new Map(),
       continuation: null,
       continuationEpoch: 0,
       controller: new AbortController(),

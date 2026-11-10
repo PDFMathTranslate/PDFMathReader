@@ -10,8 +10,8 @@ export function hasNativeInspector(platform = process.platform, arch = process.a
       : platform === 'linux' && ['x64', 'arm64'].includes(arch);
 }
 
-let native, pdfjs, recoveryWarned;
-export async function extractPdfJsPositions(bytes, pages) {
+let native, pdfjs, recoveryWarned, prewarm;
+function loadPdfJs() {
   pdfjs ??= (async () => {
     if (!globalThis.DOMMatrix) globalThis.DOMMatrix = (await import('@thednp/dommatrix')).default;
     const module = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -22,7 +22,45 @@ export async function extractPdfJsPositions(bytes, pages) {
     ).href;
     return { module, root };
   })();
-  const { module, root } = await pdfjs;
+  return pdfjs;
+}
+
+function blankPdf() {
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>',
+  ];
+  let body = '%PDF-1.4\n';
+  const offsets = objects.map((object, index) => {
+    const offset = body.length;
+    body += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    return offset;
+  });
+  const xref = body.length;
+  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) body += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(body, 'latin1');
+}
+
+// Scanned-page recovery cold-loads pdf.js and its fake worker on first use,
+// which costs most of a second. Warm it in the background once a document is
+// open so the first scanned page does not pay that cost on the reading path.
+export function prewarmPdfJs({ extract = extractPdfJsPositions } = {}) {
+  prewarm ??= new Promise((resolveWarm) => {
+    const timer = setTimeout(() => {
+      extract(blankPdf(), [1])
+        .catch(() => {})
+        .then(() => resolveWarm());
+    }, 0);
+    timer.unref?.();
+  });
+  return prewarm;
+}
+
+export async function extractPdfJsPositions(bytes, pages) {
+  const { module, root } = await loadPdfJs();
   const task = module.getDocument({
     data: new Uint8Array(bytes),
     isEvalSupported: false,
