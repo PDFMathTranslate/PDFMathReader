@@ -1,4 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import {
+  CUSTOM_CREDENTIAL_BUCKET,
+  customSelectionValues,
+  customServiceDescriptors,
+  isCustomServiceId,
+} from '../../../shared/translation/custom-services.mjs';
 import { isProviderConfigured } from '../../../shared/translation/provider-groups.mjs';
 import { normalizeTranslationServiceSchema } from '../../../shared/translation/service-schema.mjs';
 
@@ -32,6 +38,12 @@ export function createDeveloperTestRunner({
     const schema = normalizeTranslationServiceSchema(raw, engine);
     const credentials = await loadCredentials();
     const config = settings.translationServices?.[engine] || {};
+    const customServices = settings.customTranslationServices;
+    schema.services = [
+      ...schema.services,
+      ...customServiceDescriptors(engine, schema.services, customServices),
+    ];
+    const customValues = (id) => customSelectionValues(id, customServices, credentials) || {};
     const selected =
       schema.services.find((service) => service.id === config.id)?.id ||
       schema.services[0]?.id ||
@@ -40,7 +52,9 @@ export function createDeveloperTestRunner({
     const providers = schema.services.map((service) => ({
       id: service.id,
       label: service.label,
-      configured: isProviderConfigured(service, config, credentials?.[engine] || {}),
+      configured: isCustomServiceId(service.id)
+        ? ['key', 'base_url', 'model'].every((field) => customValues(service.id)[field])
+        : isProviderConfigured(service, config, credentials?.[engine] || {}),
     }));
     return {
       public: {
@@ -57,6 +71,7 @@ export function createDeveloperTestRunner({
       reader,
       settings,
       credentials,
+      customValues,
       schema,
       config,
     };
@@ -64,6 +79,7 @@ export function createDeveloperTestRunner({
   function selection(ctx, id) {
     const service = ctx.schema.services.find((item) => item.id === id);
     if (!service) throw Error('The selected provider is not available for this kernel.');
+    if (isCustomServiceId(id)) return { id, values: ctx.customValues(id) };
     const saved =
       ctx.config.profiles?.[id]?.values || (ctx.config.id === id ? ctx.config.values : {}) || {};
     const secret = ctx.credentials?.[ctx.public.engine]?.[id] || {};
@@ -81,7 +97,10 @@ export function createDeveloperTestRunner({
   }
   const sanitize = (value, ctx) => {
     let result = String(value || '');
-    const secrets = Object.values(ctx.credentials?.[ctx.public.engine] || {})
+    const secrets = [
+      ...Object.values(ctx.credentials?.[ctx.public.engine] || {}),
+      ...Object.values(ctx.credentials?.[CUSTOM_CREDENTIAL_BUCKET] || {}),
+    ]
       .flatMap((values) => Object.values(values))
       .filter((value) => typeof value === 'string' && value);
     for (const secret of secrets) result = result.replaceAll(secret, '[redacted]');
