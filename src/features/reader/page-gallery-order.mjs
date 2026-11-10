@@ -25,6 +25,12 @@ export function pastePages(count, pages, after) {
   return order;
 }
 
+// Leaves `pages` out; null when nothing would be removed or no page would remain.
+export function deletePages(count, pages) {
+  const order = sequence(count).filter((page) => !pages.includes(page));
+  return order.length && order.length < count ? order : null;
+}
+
 export function menuGap(count, pages, action) {
   if (action === 'move-first') return 0;
   if (action === 'move-last') return count;

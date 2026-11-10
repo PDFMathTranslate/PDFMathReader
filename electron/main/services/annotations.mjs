@@ -1,6 +1,11 @@
 /* eslint-disable no-control-regex */
 
-import { arrangePageAnnotations, transformPageAnnotations } from './page-edit-annotations.mjs';
+import {
+  arrangePageAnnotations,
+  copiedPageAnnotations,
+  insertPageAnnotations,
+  transformPageAnnotations,
+} from './page-edit-annotations.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { mkdir, open, readFile, unlink, stat } from 'node:fs/promises';
@@ -16,6 +21,9 @@ const MAX_TEXT_LENGTH = 100000;
 const MAX_RECT_COUNT = 256;
 const MAX_COORDINATE = 1000000;
 const MAX_PDF_BYTES = 200 * 1024 * 1024;
+// Page edits keep the PDF they replaced so the latest ones can be undone.
+const PAGE_HISTORY_DEPTH = 20;
+const PAGE_HISTORY_BYTES = 256 * 1024 * 1024;
 const MANAGED_PREFIX = 'PDFMathReader:';
 const HEX_COLOR = /^#[\da-f]{6}(?:[\da-f]{2})?$/i;
 const TRANSLATION_ENGINES = new Set(['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise']);
@@ -158,6 +166,14 @@ function clone(value) {
       ? { translationVersion: { ...annotation.translationVersion } }
       : {}),
   }));
+}
+
+function canonical(value) {
+  return JSON.stringify(value, (_, item) =>
+    item && typeof item === 'object' && !Array.isArray(item)
+      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : item,
+  );
 }
 
 function keyDigest(key) {
@@ -417,6 +433,9 @@ export async function createAnnotationStore(root) {
   if (typeof root !== 'string' || !root) invalid('Invalid annotation storage directory.');
   await mkdir(root, { recursive: true });
   let writes = Promise.resolve();
+  let pageHistory = [];
+  // Pages copied in any window, kept as their own PDF so they paste into any document.
+  let pageClipboard = null;
   const settingsPath = join(root, 'annotation-settings.json');
   let settings = { counts: {}, deleteHintShown: false };
   try {
@@ -500,25 +519,69 @@ export async function createAnnotationStore(root) {
     writes = operation.catch(() => {});
     return operation;
   }
-  async function editPages(value, rawSource) {
+  function pageEditRequest(value) {
     const key = validateAnnotationKey(value?.key),
       items = validateAnnotations(value?.annotations),
       nativeRefs = value?.nativeRefs || [];
-    if (!['rotate', 'align-width', 'align-height', 'arrange'].includes(value?.action))
-      invalid('Invalid page edit action.');
-    if (value.action === 'arrange' && !Array.isArray(value.order)) invalid('Invalid page order.');
     if (
       !Array.isArray(nativeRefs) ||
       nativeRefs.some((ref) => typeof ref !== 'string' || !/^\d+ \d+ R$/.test(ref))
     )
       invalid('Invalid annotation native references.');
+    return { key, items, nativeRefs };
+  }
+  async function readOriginal(key, source) {
+    const original =
+      source.path && source.reliable
+        ? await readFile(source.path)
+        : (await readIfPresent(cachePath(key))) || source.bytes;
+    if (!original) throw Error('No PDF source available for editing.');
+    return original;
+  }
+  // Copies pages without the annotations the app manages; those travel as annotation records
+  // and are embedded again wherever the pages are pasted.
+  function copyPages(value, rawSource) {
+    const { key, items, nativeRefs } = pageEditRequest(value),
+      pages = value?.pages;
+    if (!Array.isArray(pages) || !pages.length) invalid('Invalid copied pages.');
+    const operation = writes.then(async () => {
+      const original = await readOriginal(key, sourceValue(rawSource));
+      const { extractPDFPages } = await import('./page-edits.mjs');
+      const { bytes, sizes } = await extractPDFPages(
+        await embedAnnotations(original, [], [...nativeRefs]),
+        pages,
+      );
+      pageClipboard = {
+        id: randomUUID(),
+        bytes,
+        sizes,
+        annotations: copiedPageAnnotations(items, pages),
+      };
+      return pageClipboardInfo();
+    });
+    writes = operation.catch(() => {});
+    return operation;
+  }
+  function pageClipboardInfo() {
+    return pageClipboard
+      ? {
+          id: pageClipboard.id,
+          count: pageClipboard.sizes.length,
+          sizes: pageClipboard.sizes.map((size) => ({ ...size })),
+        }
+      : null;
+  }
+  async function editPages(value, rawSource) {
+    const { key, items, nativeRefs } = pageEditRequest(value);
+    if (!['rotate', 'align-width', 'align-height', 'arrange', 'insert'].includes(value?.action))
+      invalid('Invalid page edit action.');
+    if (value.action === 'arrange' && !Array.isArray(value.order)) invalid('Invalid page order.');
+    const copied = value.action === 'insert' ? pageClipboard : null;
+    if (value.action === 'insert' && (!copied || copied.id !== value.clipboard))
+      invalid('The copied pages are no longer available.');
     const operation = writes.then(async () => {
       const source = sourceValue(rawSource);
-      const original =
-        source.path && source.reliable
-          ? await readFile(source.path)
-          : (await readIfPresent(cachePath(key))) || source.bytes;
-      if (!original) throw Error('No PDF source available for editing.');
+      const original = await readOriginal(key, source);
       const { editPDFPages } = await import('./page-edits.mjs');
       // Pasted pages must not carry copies of annotations the app already manages; the
       // save below embeds those again from `updated`.
@@ -526,14 +589,74 @@ export async function createAnnotationStore(root) {
         value.action === 'arrange'
           ? await embedAnnotations(original, [], [...nativeRefs])
           : original,
-        { action: value.action, page: value.page, order: value.order },
+        {
+          action: value.action,
+          page: value.page,
+          order: value.order,
+          at: value.at,
+          pages: copied?.bytes,
+        },
       );
       const updated =
         value.action === 'arrange'
           ? arrangePageAnnotations(items, value.order, randomUUID)
-          : transformPageAnnotations(items, result.transforms);
+          : copied
+            ? insertPageAnnotations(
+                items,
+                value.at,
+                copied.sizes.length,
+                copied.annotations,
+                randomUUID,
+              )
+            : transformPageAnnotations(items, result.transforms);
       await performSave(key, updated, source, [...nativeRefs], result.bytes);
+      rememberPageEdit({
+        key,
+        action: value.action,
+        order: value.action === 'arrange' ? [...value.order] : (result.order ?? null),
+        bytes: original,
+        annotations: items,
+        nativeRefs: [...nativeRefs],
+        after: canonical(updated),
+      });
       return { bytes: new Uint8Array(await readFile(cachePath(key))), annotations: updated };
+    });
+    writes = operation.catch(() => {});
+    return operation;
+  }
+  function rememberPageEdit(entry) {
+    pageHistory.push(entry);
+    const own = pageHistory.filter((item) => item.key === entry.key);
+    if (own.length > PAGE_HISTORY_DEPTH) pageHistory.splice(pageHistory.indexOf(own[0]), 1);
+    let total = pageHistory.reduce((sum, item) => sum + item.bytes.byteLength, 0);
+    while (pageHistory.length > 1 && total > PAGE_HISTORY_BYTES)
+      total -= pageHistory.shift().bytes.byteLength;
+  }
+  // Restores the PDF and annotations from before the latest page edit. Annotation changes made
+  // since then would be lost, so the history is dropped instead (`stale`).
+  function undoPageEdit(value, rawSource) {
+    const key = validateAnnotationKey(value?.key);
+    const operation = writes.then(async () => {
+      const index = pageHistory.findLastIndex((item) => item.key === key);
+      if (index < 0) return { undone: false };
+      const entry = pageHistory[index];
+      let current = [];
+      try {
+        current = JSON.parse(await readFile(metadataPath(key), 'utf8')).annotations || [];
+      } catch {}
+      if (canonical(current) !== entry.after) {
+        pageHistory = pageHistory.filter((item) => item.key !== key);
+        return { undone: false, stale: true };
+      }
+      await performSave(key, entry.annotations, rawSource, entry.nativeRefs, entry.bytes);
+      pageHistory.splice(index, 1);
+      return {
+        undone: true,
+        action: entry.action,
+        order: entry.order,
+        bytes: new Uint8Array(await readFile(cachePath(key))),
+        annotations: entry.annotations,
+      };
     });
     writes = operation.catch(() => {});
     return operation;
@@ -567,6 +690,9 @@ export async function createAnnotationStore(root) {
     loadState,
     save,
     editPages,
+    undoPageEdit,
+    copyPages,
+    pageClipboardInfo,
     palette,
     markDeleteHint,
     metadataPath,

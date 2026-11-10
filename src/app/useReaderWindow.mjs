@@ -809,7 +809,7 @@ export function useReaderWindow() {
     }
   });
 
-  const { pageEditing, editDocumentPages } = createPageEdits({
+  const { pageEditing, editDocumentPages, undoDocumentPages, copyDocumentPages } = createPageEdits({
     session,
     pages,
     loading,
@@ -1442,6 +1442,8 @@ export function useReaderWindow() {
     zoomEntry,
     zoomInput,
     editDocumentPages,
+    undoDocumentPages,
+    copyDocumentPages,
     pageEditing,
   };
 }

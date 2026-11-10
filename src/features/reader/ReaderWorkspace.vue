@@ -112,6 +112,8 @@ defineProps([
   'drawPage',
   'releaseCanvas',
   'editPages',
+  'undoPages',
+  'copyPages',
   'pageEditing',
 ]);
 const sidebarLeaving = defineModel('sidebarLeaving');
@@ -481,6 +483,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
       :release-canvas="releaseCanvas"
       :navigate="navigateFromSidebar"
       :edit-pages="editPages"
+      :undo-pages="undoPages"
+      :copy-pages="copyPages"
       :editing="pageEditing"
     />
     <CropDialog

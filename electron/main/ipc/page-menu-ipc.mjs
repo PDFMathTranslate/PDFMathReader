@@ -8,6 +8,7 @@ const PAGE_MENU_ACTIONS = [
   'move-earlier',
   'move-later',
   'move-last',
+  'delete',
 ];
 
 // The renderer describes the selection; the menu returns the chosen action name only.
@@ -40,6 +41,12 @@ export function registerPageMenuIPC({ handle, trustedWindow, registry, menuLabel
         item('move-earlier', 'Move Earlier', { enabled: !value.first }),
         item('move-later', 'Move Later', { enabled: !value.last }),
         item('move-last', 'Move to End', { enabled: !value.last }),
+        { type: 'separator' },
+        item('delete', count > 1 ? 'Delete Pages' : 'Delete Page', {
+          accelerator: 'Backspace',
+          registerAccelerator: false,
+          enabled: !!value.remove,
+        }),
       ];
       const callback = () => resolve(PAGE_MENU_ACTIONS.includes(selected) ? selected : null);
       if (

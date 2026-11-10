@@ -39,9 +39,9 @@ export async function verifyPageGallery(window, recents) {
     );
   }
   const tile = (number) => `document.querySelector('[data-gallery-page="${number}"]')`;
-  const key = (letter) =>
+  const key = (letter, metaKey = true) =>
     run(
-      `document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'${letter}',metaKey:true,bubbles:true,cancelable:true}))`,
+      `document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'${letter}',metaKey:${metaKey},bubbles:true,cancelable:true}))`,
     );
   const popup = Menu.prototype.popup;
   try {
@@ -102,6 +102,7 @@ export async function verifyPageGallery(window, recents) {
         'Move Earlier:true',
         'Move Later:false',
         'Move to End:false',
+        'Delete Page:true',
       ],
     );
     assert.equal(await run(`${tile(1)}.getAttribute('aria-selected')`), 'true');
@@ -133,7 +134,45 @@ export async function verifyPageGallery(window, recents) {
     assert.equal(await run(`${tile(3)}.getAttribute('aria-selected')`), 'true');
     await wait(`!document.querySelector('.page-gallery-ghost')`);
     await wait(`[...document.querySelectorAll('.page-gallery-tile canvas')].every(c=>c.width>0)`);
-    console.log('Page gallery copy, paste, context-menu move and drag passed.');
+
+    // Delete with the key and from the menu, then undo back to the dragged order.
+    await key('Backspace', false);
+    await saved([600, 500, 400, 600]);
+    assert.equal(await run(`${tile(3)}.getAttribute('aria-selected')`), 'true');
+    Menu.prototype.popup = function (options) {
+      this.items.find((item) => item.label === 'Delete Page').click();
+      options.callback?.();
+    };
+    await run(
+      `${tile(1)}.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}))`,
+    );
+    await saved([500, 400, 600]);
+    Menu.prototype.popup = popup;
+    await key('z');
+    await saved([600, 500, 400, 600]);
+    assert.equal(await run(`${tile(1)}.getAttribute('aria-selected')`), 'true');
+    await key('z');
+    await saved([600, 500, 300, 400, 600]);
+    assert.equal(await run(`${tile(3)}.getAttribute('aria-selected')`), 'true');
+    await key('z');
+    await saved([300, 600, 500, 400, 600]);
+    await wait(`[...document.querySelectorAll('.page-gallery-tile canvas')].every(c=>c.width>0)`);
+
+    // A copied page that was deleted pastes back from the shared page clipboard, the path
+    // pages copied in another document take; undo removes it again.
+    await run(`${tile(1)}.focus();${tile(1)}.click()`);
+    await key('c');
+    await key('Backspace', false);
+    await saved([600, 500, 400, 600]);
+    await key('v');
+    await saved([600, 300, 500, 400, 600]);
+    assert.equal(await run(`${tile(2)}.getAttribute('aria-selected')`), 'true');
+    await wait(`[...document.querySelectorAll('.page-gallery-tile canvas')].every(c=>c.width>0)`);
+    await key('z');
+    await saved([600, 500, 400, 600]);
+    console.log(
+      'Page gallery copy, paste, shared-clipboard paste, context-menu move, drag, delete and undo passed.',
+    );
     app.exit(0);
   } finally {
     Menu.prototype.popup = popup;

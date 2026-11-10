@@ -241,6 +241,8 @@ const {
   draw,
   releaseCanvas,
   editDocumentPages,
+  undoDocumentPages,
+  copyDocumentPages,
   pageEditing,
   translationCompare,
 } = useReaderWindow();
@@ -440,6 +442,8 @@ const copyToastDetail = computed(() =>
         :draw-page="draw"
         :release-canvas="releaseCanvas"
         :edit-pages="editDocumentPages"
+        :undo-pages="undoDocumentPages"
+        :copy-pages="copyDocumentPages"
         :page-editing="pageEditing"
         v-model:sidebar-leaving="sidebarLeaving"
         v-model:sidebar-mode="sidebarMode"

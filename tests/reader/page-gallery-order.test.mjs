@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { buildGalleryLayout } from '../../src/features/reader/page-gallery-layout.mjs';
 import {
   arrangedPositions,
+  deletePages,
   dropGap,
   menuGap,
   movePages,
@@ -65,4 +66,12 @@ test('the drop gap follows the nearest cell edge', () => {
   assert.equal(end.x, layout.frames[2].cellX + layout.frames[2].cellWidth);
   assert.equal(dropGap(layout, 9999, layout.rows[1].top + 5).gap, 6);
   assert.equal(dropGap(layout, 9999, layout.height + 200).gap, 7);
+});
+
+test('deleting pages keeps at least one page', () => {
+  assert.deepEqual(deletePages(5, [2, 4]), [1, 3, 5]);
+  assert.deepEqual(deletePages(2, [1]), [2]);
+  assert.equal(deletePages(3, [1, 2, 3]), null);
+  assert.equal(deletePages(3, []), null);
+  assert.equal(deletePages(3, [9]), null);
 });

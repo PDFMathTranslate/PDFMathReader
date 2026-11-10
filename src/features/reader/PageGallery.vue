@@ -9,6 +9,7 @@ import {
 import { GALLERY_EASE, fadeOut, flyPage, rippleTiles, snapshot } from './page-gallery-motion.mjs';
 import {
   arrangedPositions,
+  deletePages,
   dropGap,
   menuGap,
   movePages,
@@ -18,8 +19,10 @@ import { pageGalleryLabel } from './page-gallery-labels.mjs';
 
 // Contact-sheet view of every page. It opens from a double-clicked sidebar thumbnail and
 // closes into the reader at the double-clicked tile; both directions move the page itself.
-// Pages can be selected together, dragged into a new place, copied and pasted; every
-// arrangement is saved to the document through `editPages`.
+// Pages can be selected together, dragged into a new place, copied, pasted and deleted; every
+// arrangement is saved to the document through `editPages`, and ⌘Z reverts the latest one.
+// Copied pages also go to the page clipboard every window shares, so they paste into other
+// documents too.
 const props = defineProps({
   pages: { type: Array, default: () => [] },
   active: Number,
@@ -30,6 +33,8 @@ const props = defineProps({
   releaseCanvas: Function,
   navigate: Function,
   editPages: Function,
+  undoPages: Function,
+  copyPages: Function,
   editing: Boolean,
 });
 
@@ -38,7 +43,8 @@ const open = ref(false),
   selected = ref(1),
   // Selected pages; `selected` is the focused one among them.
   marked = shallowRef(new Set([1])),
-  // Copied page numbers, in order.
+  // Copied page numbers, in order. They are pasted from this document while the shared page
+  // clipboard still holds this copy (`clipboardId`).
   clipboard = shallowRef([]),
   // While an arrangement is saved, the gallery shows it from these page sizes.
   held = shallowRef(null),
@@ -61,6 +67,9 @@ let controller,
   drag = null,
   swallowClick = false,
   clipboardKeyAt = -Infinity,
+  clipboardId = null,
+  copyTicket = 0,
+  copying = Promise.resolve(),
   inset = 0;
 
 const shown = computed(() => held.value ?? props.pages);
@@ -318,10 +327,19 @@ function focusSelected() {
 
 // Copying, pasting and moving ---------------------------------------------------------------
 
-function copyPages() {
+function copySelection() {
   const pages = markedPages();
   if (busy.value || !pages.length) return;
   clipboard.value = pages;
+  clipboardId = null;
+  const ticket = ++copyTicket;
+  if (props.copyPages)
+    copying = props
+      .copyPages(pages)
+      .catch(() => null)
+      .then((info) => {
+        if (ticket === copyTicket) clipboardId = info?.id ?? null;
+      });
   if (still()) return;
   for (const page of pages)
     frameElement(page)?.animate(
@@ -330,17 +348,53 @@ function copyPages() {
     );
 }
 
+// The shared page clipboard, or null.
+async function sharedClipboard() {
+  await copying;
+  try {
+    return (await window.previewDocuments?.pageClipboard?.()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Pages copied elsewhere (another document, or this one before it was reloaded) are inserted
+// from the shared clipboard; this document's own copy is pasted as an arrangement, also when
+// it never reached the shared clipboard.
+function foreignCopy(info) {
+  if (!info) return false;
+  return !clipboard.value.length || (clipboardId !== null && info.id !== clipboardId);
+}
+
 // Pastes after the last selected page; `duplicate` pastes the selection itself when nothing
 // has been copied.
-function paste({ duplicate = false } = {}) {
+async function paste({ duplicate = false } = {}) {
+  if (busy.value) return;
+  const pdf = props.pdf,
+    info = await sharedClipboard();
+  if (busy.value || !open.value || pdf !== props.pdf) return;
   const pages = markedPages(),
-    source = clipboard.value.length ? clipboard.value : duplicate ? pages : [];
-  if (busy.value || !source.length) return;
-  const after = pages.at(-1) ?? selected.value;
+    after = pages.at(-1) ?? selected.value;
+  if (foreignCopy(info)) return void insert(info, after);
+  const source = clipboard.value.length ? clipboard.value : duplicate ? pages : [];
+  if (!source.length) return;
   void arrange(
     pastePages(shown.value.length, source, after),
     span(after + 1, after + source.length),
   );
+}
+
+function insert(info, after) {
+  const count = shown.value.length,
+    order = [
+      ...Array.from({ length: after }, (_, index) => index + 1),
+      ...Array(info.count).fill(null),
+      ...Array.from({ length: count - after }, (_, index) => after + index + 1),
+    ];
+  void arrange(order, span(after + 1, after + info.count), {
+    sizes: info.sizes,
+    edit: () => props.editPages('insert', { order, at: after, clipboard: info.id }),
+  });
 }
 
 function move(action) {
@@ -348,6 +402,15 @@ function move(action) {
     gap = pages.length ? menuGap(shown.value.length, pages, action) : null,
     order = gap === null ? null : movePages(shown.value.length, pages, gap);
   if (!busy.value && order) void arrange(order, positions(order, pages));
+}
+
+// The page after the deleted ones takes the selection.
+function remove() {
+  const pages = markedPages(),
+    order = pages.length ? deletePages(shown.value.length, pages) : null;
+  if (busy.value || !order) return;
+  const after = order.findIndex((page) => page > pages[0]);
+  void arrange(order, [after < 0 ? order.length : after + 1]);
 }
 
 function positions(order, pages) {
@@ -362,21 +425,25 @@ async function contextMenu(number) {
   const pages = markedPages(),
     count = shown.value.length,
     pdf = props.pdf;
+  const info = await sharedClipboard();
+  if (busy.value || !open.value || pdf !== props.pdf) return;
   let action;
   try {
     action = await window.previewDocuments.pageMenu({
       count: pages.length,
-      paste: clipboard.value.length,
+      paste: foreignCopy(info) ? info.count : clipboard.value.length,
       first: !movePages(count, pages, 0),
       last: !movePages(count, pages, count),
+      remove: !!deletePages(count, pages),
     });
   } catch (error) {
     console.warn('Page gallery menu', error);
     return;
   }
   if (!action || !open.value || leaving.value || busy.value || pdf !== props.pdf) return;
-  if (action === 'copy') copyPages();
+  if (action === 'copy') copySelection();
   else if (action === 'paste') paste();
+  else if (action === 'delete') remove();
   else move(action);
 }
 
@@ -386,13 +453,14 @@ function clipboardEvent(event, action) {
   event.preventDefault();
   event.stopPropagation();
   if (performance.now() - clipboardKeyAt < 500) return;
-  if (action === 'copy') copyPages();
+  if (action === 'copy') copySelection();
   else paste();
 }
 
 // Saves `order` and shows it at once: tiles keep their bitmaps and slide into place while
-// the document is rewritten underneath.
-async function arrange(order, next, { from } = {}) {
+// the document is rewritten underneath. Null positions are pages inserted from the shared
+// clipboard by `edit`, shown at `sizes` until they are drawn.
+async function arrange(order, next, { from, sizes = [], edit } = {}) {
   if (!order || busy.value || props.editing || !props.editPages || !open.value) return false;
   const before = shown.value,
     previous = { marked: marked.value, selected: selected.value, anchor };
@@ -405,11 +473,13 @@ async function arrange(order, next, { from } = {}) {
   await pumpDone;
   const shots = new Map();
   for (const [number, canvas] of canvases) if (canvas.width) shots.set(number, snapshot(canvas));
-  held.value = order.map((page, index) => ({
-    number: index + 1,
-    width: before[page - 1].width,
-    height: before[page - 1].height,
-  }));
+  const kept = new Set(order);
+  for (const [number, rect] of rects) if (!kept.has(number)) vanish(shots.get(number), rect);
+  let inserted = 0;
+  held.value = order.map((page, index) => {
+    const size = page ? before[page - 1] : sizes[inserted++];
+    return { number: index + 1, width: size.width, height: size.height };
+  });
   mark(next);
   await nextTick();
   const scrollTop = root.value?.scrollTop;
@@ -429,7 +499,7 @@ async function arrange(order, next, { from } = {}) {
   focusSelected();
   let saved = false;
   try {
-    saved = (await props.editPages('arrange', { order })) === true;
+    saved = (await (edit ? edit() : props.editPages('arrange', { order }))) === true;
   } catch (error) {
     console.warn('Page gallery', error);
   }
@@ -454,6 +524,114 @@ async function arrange(order, next, { from } = {}) {
   void pump();
   focusSelected();
   return saved;
+}
+
+// Reverts the latest page edit. After an arrangement, each page slides back from the tile
+// that showed it and the selection follows its pages; deleted pages return selected.
+async function undo() {
+  if (busy.value || props.editing || !props.undoPages || !open.value) return;
+  const before = shown.value,
+    previous = markedPages(),
+    rects = new Map(),
+    shots = new Map();
+  busy.value = true;
+  for (const number of canvases.keys()) {
+    const rect = frameElement(number)?.getBoundingClientRect();
+    if (rect) rects.set(number, rect);
+  }
+  await pumpDone;
+  for (const [number, canvas] of canvases) if (canvas.width) shots.set(number, snapshot(canvas));
+  held.value = before;
+  let result = null;
+  try {
+    result = await props.undoPages();
+  } catch (error) {
+    console.warn('Page gallery', error);
+  }
+  if (result?.order) {
+    const seen = new Set();
+    result.order.forEach((page, index) => {
+      if ((!page || seen.has(page)) && rects.has(index + 1))
+        vanish(shots.get(index + 1), rects.get(index + 1));
+      seen.add(page);
+    });
+  }
+  held.value = null;
+  busy.value = false;
+  const count = props.pages.length;
+  if (!count) return void dismiss();
+  if (!result) {
+    for (const number of canvases.keys()) pending.add(number);
+    return void pump();
+  }
+  const order = result.order,
+    origin = new Map();
+  if (order)
+    order.forEach((page, index) => !page || origin.has(page) || origin.set(page, index + 1));
+  else for (let page = 1; page <= Math.min(count, before.length); page++) origin.set(page, page);
+  const restored = span(1, count).filter((page) => !origin.has(page)),
+    followed = [...new Set(previous.map((position) => (order ? order[position - 1] : position)))]
+      .filter((page) => page >= 1 && page <= count)
+      .sort((a, b) => a - b);
+  mark(
+    order && restored.length
+      ? restored
+      : followed.length
+        ? followed
+        : [Math.min(selected.value, count)],
+  );
+  clipboard.value = order
+    ? [...new Set(clipboard.value.map((position) => order[position - 1]).filter(Boolean))]
+    : count === before.length
+      ? clipboard.value
+      : [];
+  await nextTick();
+  const scrollTop = root.value?.scrollTop;
+  revealRow(selected.value);
+  const scrolled = root.value?.scrollTop !== scrollTop;
+  await nextTick();
+  for (const [number, canvas] of canvases) {
+    props.releaseCanvas?.(canvas);
+    const shot = order && shots.get(origin.get(number));
+    if (shot) {
+      canvas.width = shot.width;
+      canvas.height = shot.height;
+      canvas.getContext('2d').drawImage(shot, 0, 0);
+    }
+  }
+  if (order) {
+    const from = new Map();
+    if (!scrolled)
+      for (const [page, position] of origin)
+        if (rects.has(position)) from.set(page, rects.get(position));
+    settle(span(1, count), from);
+  }
+  for (const number of canvases.keys()) pending.add(number);
+  void pump();
+  focusSelected();
+}
+
+function vanish(shot, rect) {
+  if (!shot || still()) return;
+  shot.className = 'page-gallery-flight';
+  Object.assign(shot.style, {
+    left: rect.left + 'px',
+    top: rect.top + 'px',
+    width: rect.width + 'px',
+    height: rect.height + 'px',
+    transformOrigin: '50% 50%',
+  });
+  document.body.append(shot);
+  void shot
+    .animate(
+      [
+        { opacity: 1, transform: 'none' },
+        { opacity: 0, transform: 'scale(0.82)' },
+      ],
+      { duration: 220, easing: GALLERY_EASE, fill: 'forwards' },
+    )
+    .finished.catch(() => {})
+    .finally(() => shot.remove());
 }
 
 // Moved pages slide from where they were (or from the dragged stack), copies appear in place.
@@ -678,9 +856,11 @@ function keydown(event) {
   if ((event.metaKey || event.ctrlKey) && !event.altKey) {
     const key = event.key.toLowerCase();
     if (key === 'a') marked.value = new Set(span(1, shown.value.length));
-    else if (key === 'c') copyPages();
+    else if (key === 'c') copySelection();
     else if (key === 'v') paste();
     else if (key === 'd') paste({ duplicate: true });
+    else if (key === 'z' && !event.shiftKey) void undo();
+    else if (key === 'backspace' || key === 'delete') remove();
     else return;
     if (key === 'c' || key === 'v') clipboardKeyAt = performance.now();
     return stop(event);
@@ -692,6 +872,7 @@ function keydown(event) {
   }
   if (event.key === 'Escape') void choose(props.active, { navigate: false });
   else if (event.key === 'Enter' || event.key === ' ') void choose(selected.value);
+  else if (event.key === 'Backspace' || event.key === 'Delete') remove();
   else if (MOVES.includes(event.key)) {
     const next = galleryStep(layout.value, selected.value, event.key);
     if (event.shiftKey) {
@@ -710,6 +891,7 @@ watch(
   () => {
     if (busy.value) return;
     clipboard.value = [];
+    clipboardId = null;
     dismiss();
   },
 );

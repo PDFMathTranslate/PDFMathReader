@@ -1,4 +1,4 @@
-import { degrees, PDFDocument } from 'pdf-lib';
+import { degrees, PDFArray, PDFDict, PDFDocument, PDFName, PDFRef, PDFStream } from 'pdf-lib';
 
 const BOXES = [
   ['MediaBox', 'getMediaBox', 'setMediaBox'],
@@ -69,7 +69,7 @@ function selectModal(records, key) {
 }
 
 function validateAction(action) {
-  if (!['rotate', 'align-width', 'align-height', 'arrange'].includes(action))
+  if (!['rotate', 'align-width', 'align-height', 'arrange', 'insert'].includes(action))
     throw Error('Invalid page edit action.');
 }
 
@@ -81,17 +81,37 @@ function validatePageNumber(page, count) {
 export const MAX_ARRANGED_PAGES = 10000;
 
 // `order` lists the source page numbers in their new sequence. A page may repeat (a pasted
-// copy) but none may be dropped, so arranging never deletes content.
+// copy) or be left out (deleted), but at least one page must remain.
 export function validatePageOrder(order, count) {
-  if (!Array.isArray(order) || order.length < count || order.length > MAX_ARRANGED_PAGES)
+  if (!Array.isArray(order) || !order.length || order.length > MAX_ARRANGED_PAGES)
     throw Error('Invalid page order.');
-  const seen = new Set();
-  for (const page of order) {
-    validatePageNumber(page, count);
-    seen.add(page);
-  }
-  if (seen.size !== count) throw Error('Invalid page order.');
+  for (const page of order) validatePageNumber(page, count);
   return order;
+}
+
+// Deleted pages may still be named by outline entries, links or the structure tree, so their
+// own content is cleared; whatever nothing reaches any more is left out of the saved file.
+function discardPages(pdf, pages) {
+  for (const page of pages)
+    for (const key of ['Contents', 'Resources', 'Annots', 'Thumb', 'PieceInfo'])
+      page.node.delete(PDFName.of(key));
+  const { context } = pdf,
+    reachable = new Set(),
+    stack = Object.values(context.trailerInfo).filter(Boolean);
+  while (stack.length) {
+    const value = stack.pop();
+    if (value instanceof PDFRef) {
+      const tag = value.toString();
+      if (reachable.has(tag)) continue;
+      reachable.add(tag);
+      const target = context.lookup(value);
+      if (target) stack.push(target);
+    } else if (value instanceof PDFDict) stack.push(...value.values());
+    else if (value instanceof PDFArray) stack.push(...value.asArray());
+    else if (value instanceof PDFStream) stack.push(value.dict);
+  }
+  for (const [ref] of context.enumerateIndirectObjects())
+    if (!reachable.has(ref.toString())) context.delete(ref);
 }
 
 // Original pages keep their objects, so outline entries and links still find them; only
@@ -113,15 +133,55 @@ async function arrangePages(pdf, order) {
   const sequence = order.map((page, index) => (repeated[index] ? copies[copy++] : pages[page - 1]));
   for (let index = pages.length - 1; index >= 0; index--) pdf.removePage(index);
   for (const page of sequence) pdf.addPage(page);
+  const dropped = pages.filter((_, index) => !seen.has(index + 1));
+  if (dropped.length) discardPages(pdf, dropped);
 }
 
-export async function editPDFPages(bytes, { action, page, order } = {}) {
+// Copies `pages` into a standalone PDF that can be pasted into any document later.
+export async function extractPDFPages(bytes, pages) {
+  if (!(bytes instanceof Uint8Array)) throw TypeError('PDF bytes must be a Uint8Array.');
+  const source = await PDFDocument.load(new Uint8Array(bytes), { updateMetadata: false });
+  const count = source.getPageCount();
+  validatePageOrder(pages, count);
+  const pdf = await PDFDocument.create({ updateMetadata: false });
+  for (const page of await pdf.copyPages(
+    source,
+    pages.map((page) => page - 1),
+  ))
+    pdf.addPage(page);
+  const sizes = pages.map((page) => {
+    const { width, height } = displayedGeometry(source.getPage(page - 1));
+    return { width, height };
+  });
+  return { bytes: new Uint8Array(await pdf.save()), sizes };
+}
+
+// Inserts every page of the PDF `pages` before position `at + 1`. The returned order names the
+// earlier page at each position, or null for an inserted one.
+async function insertPages(pdf, pages, at) {
+  const count = pdf.getPageCount();
+  if (!Number.isSafeInteger(at) || at < 0 || at > count) throw Error('Invalid page position.');
+  if (!(pages instanceof Uint8Array)) throw TypeError('Copied pages must be a Uint8Array.');
+  const source = await PDFDocument.load(new Uint8Array(pages), { updateMetadata: false });
+  if (count + source.getPageCount() > MAX_ARRANGED_PAGES) throw Error('Too many pages.');
+  const copies = await pdf.copyPages(source, source.getPageIndices());
+  copies.forEach((page, index) => pdf.insertPage(at + index, page));
+  return Array.from({ length: count + copies.length }, (_, index) =>
+    index < at ? index + 1 : index < at + copies.length ? null : index + 1 - copies.length,
+  );
+}
+
+export async function editPDFPages(bytes, { action, page, order, at, pages: inserted } = {}) {
   validateAction(action);
   if (!(bytes instanceof Uint8Array)) throw TypeError('PDF bytes must be a Uint8Array.');
   const pdf = await PDFDocument.load(new Uint8Array(bytes), { updateMetadata: false });
   if (action === 'arrange') {
     await arrangePages(pdf, order);
     return { bytes: new Uint8Array(await pdf.save()), transforms: [] };
+  }
+  if (action === 'insert') {
+    const arranged = await insertPages(pdf, inserted, at);
+    return { bytes: new Uint8Array(await pdf.save()), transforms: [], order: arranged };
   }
   const pages = pdf.getPages();
   const before = pages.map(displayedGeometry);

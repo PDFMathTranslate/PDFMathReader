@@ -783,6 +783,116 @@ for (const [locale, values] of Object.entries(pageArrangeLabels))
       Object.fromEntries(pageArrangeLabels.en.map((key, index) => [key, values[index]])),
     );
 
+// Deleting pages and undoing page edits in the gallery.
+const pageUndoLabels = {
+  en: [
+    'Delete Page',
+    'Delete Pages',
+    'Page Edit Undone',
+    'Nothing to Undo',
+    'Can’t Undo: Annotations Changed',
+  ],
+  'zh-CN': ['删除页面', '删除页面', '已撤销页面编辑', '没有可撤销的操作', '批注已更改，无法撤销'],
+  'zh-TW': ['刪除頁面', '刪除頁面', '已還原頁面編輯', '沒有可還原的操作', '註解已變更，無法還原'],
+  ja: [
+    'ページを削除',
+    'ページを削除',
+    'ページの編集を取り消しました',
+    '取り消せる操作はありません',
+    '注釈が変更されたため取り消せません',
+  ],
+  ko: [
+    '페이지 삭제',
+    '페이지 삭제',
+    '페이지 편집을 실행 취소함',
+    '실행 취소할 항목 없음',
+    '주석이 변경되어 실행 취소할 수 없음',
+  ],
+  fr: [
+    'Supprimer la page',
+    'Supprimer les pages',
+    'Modification des pages annulée',
+    'Rien à annuler',
+    'Annulation impossible : annotations modifiées',
+  ],
+  es: [
+    'Eliminar página',
+    'Eliminar páginas',
+    'Edición de páginas deshecha',
+    'Nada que deshacer',
+    'No se puede deshacer: las anotaciones cambiaron',
+  ],
+  pt: [
+    'Apagar página',
+    'Apagar páginas',
+    'Edição de páginas desfeita',
+    'Nada para desfazer',
+    'Não é possível desfazer: as anotações mudaram',
+  ],
+  de: [
+    'Seite löschen',
+    'Seiten löschen',
+    'Seitenänderung widerrufen',
+    'Nichts zum Widerrufen',
+    'Widerrufen nicht möglich: Anmerkungen geändert',
+  ],
+  ru: [
+    'Удалить страницу',
+    'Удалить страницы',
+    'Изменение страниц отменено',
+    'Нечего отменять',
+    'Нельзя отменить: аннотации изменены',
+  ],
+  ar: [
+    'حذف الصفحة',
+    'حذف الصفحات',
+    'تم التراجع عن تعديل الصفحات',
+    'لا يوجد ما يمكن التراجع عنه',
+    'تعذّر التراجع: تغيّرت التعليقات التوضيحية',
+  ],
+  arz: [
+    'امسح الصفحة',
+    'امسح الصفحات',
+    'اتلغى تعديل الصفحات',
+    'مفيش حاجة تتلغي',
+    'مينفعش تتلغي: التعليقات اتغيرت',
+  ],
+  hi: [
+    'पृष्ठ हटाएँ',
+    'पृष्ठ हटाएँ',
+    'पृष्ठ संपादन पूर्ववत किया गया',
+    'पूर्ववत करने के लिए कुछ नहीं',
+    'पूर्ववत नहीं हो सकता: टिप्पणियाँ बदल गईं',
+  ],
+  bn: [
+    'পৃষ্ঠা মুছুন',
+    'পৃষ্ঠাগুলি মুছুন',
+    'পৃষ্ঠা সম্পাদনা পূর্বাবস্থায় ফেরানো হয়েছে',
+    'পূর্বাবস্থায় ফেরানোর কিছু নেই',
+    'পূর্বাবস্থায় ফেরানো যাবে না: টীকা বদলেছে',
+  ],
+  ur: [
+    'صفحہ حذف کریں',
+    'صفحات حذف کریں',
+    'صفحے کی ترمیم واپس لے لی گئی',
+    'واپس لینے کو کچھ نہیں',
+    'واپس نہیں ہو سکتا: حاشیے بدل گئے',
+  ],
+  pcm: [
+    'Delete Page',
+    'Delete Pages',
+    'Page change don cancel',
+    'Nothing to cancel',
+    'No fit cancel: annotations don change',
+  ],
+};
+for (const [locale, values] of Object.entries(pageUndoLabels))
+  if (menuMessages[locale])
+    Object.assign(
+      menuMessages[locale],
+      Object.fromEntries(pageUndoLabels.en.map((key, index) => [key, values[index]])),
+    );
+
 // Other languages fall back to the English label.
 for (const [locale, value] of Object.entries({
   en: 'Generate Table of Contents',

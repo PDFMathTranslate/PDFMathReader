@@ -51,11 +51,12 @@ export function registerDocumentIPC({
       };
     }
   });
-  handle('documents:editPages', async (event, value) => {
+  async function replaceDocument(event, value, edit) {
     const target = trustedWindow(event);
     const state = registry.stateFor(target);
     const source = registry.annotationSourceForWindow(state, value?.key);
-    const result = await annotations.editPages(value, source);
+    const result = await edit(value, source);
+    if (!result.bytes) return result;
     if (source) source.bytes = Buffer.from(result.bytes);
     let ticket;
     if (source?.path && source.reliable) {
@@ -63,6 +64,20 @@ export function registerDocumentIPC({
       state.tickets.set(ticket, source.path);
     }
     return { ...result, ticket };
+  }
+  handle('documents:editPages', (event, value) =>
+    replaceDocument(event, value, annotations.editPages),
+  );
+  handle('documents:undoPageEdit', (event, value) =>
+    replaceDocument(event, value, annotations.undoPageEdit),
+  );
+  handle('documents:copyPages', (event, value) => {
+    const state = registry.stateFor(trustedWindow(event));
+    return annotations.copyPages(value, registry.annotationSourceForWindow(state, value?.key));
+  });
+  handle('documents:pageClipboard', (event) => {
+    trustedWindow(event);
+    return annotations.pageClipboardInfo();
   });
   handle('documents:closed', async (event) => {
     const target = trustedWindow(event);
