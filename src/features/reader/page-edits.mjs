@@ -22,33 +22,36 @@ export function createPageEdits({
 }) {
   const pageEditing = ref(false);
 
-  async function editDocumentPages(action) {
+  // `order` is required by `arrange`: the source page of every position in the new document.
+  async function editDocumentPages(action, { order } = {}) {
     if (
       pageEditing.value ||
       loading.value ||
       !pages.value.length ||
       !window.previewDocuments?.editPages
     )
-      return;
+      return false;
     pageEditing.value = true;
     const token = session.epoch;
-    const view = readingView();
+    let view = readingView();
+    if (view && order) view = { ...view, page: Math.max(1, order.indexOf(view.page) + 1) };
     const name = title.value.replace(/^TEST — /, '');
     try {
       await flushAnnotations();
       await saveReadingView();
-      if (token !== session.epoch) return;
+      if (token !== session.epoch) return false;
       const result = await window.previewDocuments.editPages({
         key: annotationKey.value,
         action,
         page: active.value,
+        ...(order ? { order: [...order] } : {}),
         annotations: JSON.parse(JSON.stringify(annotations.value)).map((annotation) => {
           delete annotation.animateUntil;
           return annotation;
         }),
         nativeRefs: [...annotationNativeRefs.value],
       });
-      if (token !== session.epoch) return;
+      if (token !== session.epoch) return false;
       await importFile(
         new File([result.bytes], name, { type: 'application/pdf' }),
         result.ticket,
@@ -61,8 +64,10 @@ export function createPageEdits({
         await saveReadingView();
       }
       notifyCopy(menuLabel('Page Changes Saved', uiLanguage.value));
+      return true;
     } catch (cause) {
       error.value = cause.message;
+      return false;
     } finally {
       pageEditing.value = false;
     }

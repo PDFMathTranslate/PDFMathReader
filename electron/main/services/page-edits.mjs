@@ -69,7 +69,7 @@ function selectModal(records, key) {
 }
 
 function validateAction(action) {
-  if (action !== 'rotate' && action !== 'align-width' && action !== 'align-height')
+  if (!['rotate', 'align-width', 'align-height', 'arrange'].includes(action))
     throw Error('Invalid page edit action.');
 }
 
@@ -78,10 +78,51 @@ function validatePageNumber(page, count) {
     throw Error('Invalid page edit page.');
 }
 
-export async function editPDFPages(bytes, { action, page } = {}) {
+export const MAX_ARRANGED_PAGES = 10000;
+
+// `order` lists the source page numbers in their new sequence. A page may repeat (a pasted
+// copy) but none may be dropped, so arranging never deletes content.
+export function validatePageOrder(order, count) {
+  if (!Array.isArray(order) || order.length < count || order.length > MAX_ARRANGED_PAGES)
+    throw Error('Invalid page order.');
+  const seen = new Set();
+  for (const page of order) {
+    validatePageNumber(page, count);
+    seen.add(page);
+  }
+  if (seen.size !== count) throw Error('Invalid page order.');
+  return order;
+}
+
+// Original pages keep their objects, so outline entries and links still find them; only
+// repeated pages are copied.
+async function arrangePages(pdf, order) {
+  const pages = pdf.getPages();
+  validatePageOrder(order, pages.length);
+  const seen = new Set();
+  const repeated = order.map((page) => {
+    if (seen.has(page)) return true;
+    seen.add(page);
+    return false;
+  });
+  const copies = await pdf.copyPages(
+    pdf,
+    order.filter((_, index) => repeated[index]).map((page) => page - 1),
+  );
+  let copy = 0;
+  const sequence = order.map((page, index) => (repeated[index] ? copies[copy++] : pages[page - 1]));
+  for (let index = pages.length - 1; index >= 0; index--) pdf.removePage(index);
+  for (const page of sequence) pdf.addPage(page);
+}
+
+export async function editPDFPages(bytes, { action, page, order } = {}) {
   validateAction(action);
   if (!(bytes instanceof Uint8Array)) throw TypeError('PDF bytes must be a Uint8Array.');
   const pdf = await PDFDocument.load(new Uint8Array(bytes), { updateMetadata: false });
+  if (action === 'arrange') {
+    await arrangePages(pdf, order);
+    return { bytes: new Uint8Array(await pdf.save()), transforms: [] };
+  }
   const pages = pdf.getPages();
   const before = pages.map(displayedGeometry);
   const transforms = before.map((geometry, index) => ({

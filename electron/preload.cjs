@@ -80,6 +80,7 @@ contextBridge.exposeInMainWorld(
     next: () => ipcRenderer.invoke('documents:next'),
     claim: (file) => ipcRenderer.invoke('documents:claim', webUtils.getPathForFile(file)),
     editPages: (value) => ipcRenderer.invoke('documents:editPages', value),
+    pageMenu: (value) => ipcRenderer.invoke('documents:pageMenu', value),
     closed: () => ipcRenderer.invoke('documents:closed'),
     saveView: (view) => ipcRenderer.invoke('documents:view', view),
     open: async (file) => {

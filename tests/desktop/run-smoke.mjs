@@ -68,6 +68,8 @@ export async function runDesktopSmoke({
     await (await import('./ultrafast-columns-smoke.mjs')).verifyUltraFastColumns(window, recents);
   else if (smoke === 'page-edits')
     await (await import('./page-edits-smoke.mjs')).verifyPageEdits(window, recents);
+  else if (smoke === 'page-gallery')
+    await (await import('./page-gallery-smoke.mjs')).verifyPageGallery(window, recents);
   else if (smoke === 'cache-progress')
     await (await import('./cache-progress-smoke.mjs')).verifyCacheProgress(window);
   else if (smoke === 'quick-links')

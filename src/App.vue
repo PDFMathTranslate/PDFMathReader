@@ -240,6 +240,8 @@ const {
   epubEnabled,
   draw,
   releaseCanvas,
+  editDocumentPages,
+  pageEditing,
   translationCompare,
 } = useReaderWindow();
 const windowTabs = useWindowTabs();
@@ -437,6 +439,8 @@ const copyToastDetail = computed(() =>
         :create-quick-return="createQuickReturn"
         :draw-page="draw"
         :release-canvas="releaseCanvas"
+        :edit-pages="editDocumentPages"
+        :page-editing="pageEditing"
         v-model:sidebar-leaving="sidebarLeaving"
         v-model:sidebar-mode="sidebarMode"
         v-model:sidebar-drag="motion.sidebarDrag"

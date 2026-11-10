@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 
-import { transformPageAnnotations } from './page-edit-annotations.mjs';
+import { arrangePageAnnotations, transformPageAnnotations } from './page-edit-annotations.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { mkdir, open, readFile, unlink, stat } from 'node:fs/promises';
@@ -504,8 +504,9 @@ export async function createAnnotationStore(root) {
     const key = validateAnnotationKey(value?.key),
       items = validateAnnotations(value?.annotations),
       nativeRefs = value?.nativeRefs || [];
-    if (!['rotate', 'align-width', 'align-height'].includes(value?.action))
+    if (!['rotate', 'align-width', 'align-height', 'arrange'].includes(value?.action))
       invalid('Invalid page edit action.');
+    if (value.action === 'arrange' && !Array.isArray(value.order)) invalid('Invalid page order.');
     if (
       !Array.isArray(nativeRefs) ||
       nativeRefs.some((ref) => typeof ref !== 'string' || !/^\d+ \d+ R$/.test(ref))
@@ -519,8 +520,18 @@ export async function createAnnotationStore(root) {
           : (await readIfPresent(cachePath(key))) || source.bytes;
       if (!original) throw Error('No PDF source available for editing.');
       const { editPDFPages } = await import('./page-edits.mjs');
-      const result = await editPDFPages(original, { action: value.action, page: value.page });
-      const updated = transformPageAnnotations(items, result.transforms);
+      // Pasted pages must not carry copies of annotations the app already manages; the
+      // save below embeds those again from `updated`.
+      const result = await editPDFPages(
+        value.action === 'arrange'
+          ? await embedAnnotations(original, [], [...nativeRefs])
+          : original,
+        { action: value.action, page: value.page, order: value.order },
+      );
+      const updated =
+        value.action === 'arrange'
+          ? arrangePageAnnotations(items, value.order, randomUUID)
+          : transformPageAnnotations(items, result.transforms);
       await performSave(key, updated, source, [...nativeRefs], result.bytes);
       return { bytes: new Uint8Array(await readFile(cachePath(key))), annotations: updated };
     });

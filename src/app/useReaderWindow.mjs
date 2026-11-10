@@ -1441,5 +1441,7 @@ export function useReaderWindow() {
     zoom,
     zoomEntry,
     zoomInput,
+    editDocumentPages,
+    pageEditing,
   };
 }

@@ -111,6 +111,8 @@ defineProps([
   'createQuickReturn',
   'drawPage',
   'releaseCanvas',
+  'editPages',
+  'pageEditing',
 ]);
 const sidebarLeaving = defineModel('sidebarLeaving');
 const sidebarMode = defineModel('sidebarMode');
@@ -478,6 +480,8 @@ const hoveredParagraph = defineModel('hoveredParagraph');
       :draw-page="drawPage"
       :release-canvas="releaseCanvas"
       :navigate="navigateFromSidebar"
+      :edit-pages="editPages"
+      :editing="pageEditing"
     />
     <CropDialog
       :pages="pages"

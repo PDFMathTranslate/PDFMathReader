@@ -3,7 +3,7 @@
 // clips it, while the real destination stays hidden until the copy lands.
 export const GALLERY_EASE = 'cubic-bezier(0.2, 0.85, 0.25, 1)';
 
-function snapshot(source) {
+export function snapshot(source) {
   if (source instanceof HTMLCanvasElement && source.width && source.height) {
     const copy = document.createElement('canvas');
     copy.width = source.width;

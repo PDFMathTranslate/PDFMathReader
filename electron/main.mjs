@@ -77,6 +77,7 @@ import { createApplicationMenu } from './main/menus/application-menu.mjs';
 import { registerAnnotationIPC } from './main/ipc/annotation-ipc.mjs';
 import { registerCredentialsIPC } from './main/ipc/credentials-ipc.mjs';
 import { registerDocumentIPC } from './main/ipc/document-ipc.mjs';
+import { registerPageMenuIPC } from './main/ipc/page-menu-ipc.mjs';
 import { registerPerformanceIPC } from './main/ipc/performance-ipc.mjs';
 import { registerPreferencesIPC } from './main/ipc/preferences-ipc.mjs';
 import { registerQuickLinksIPC } from './main/ipc/quick-links-ipc.mjs';
@@ -899,6 +900,17 @@ else {
         companionOwnership,
         flushCompanionPersistence: () =>
           Promise.all([annotations?.flush?.(), quickLinks?.flush?.(), recents?.flush?.()]),
+      });
+      registerPageMenuIPC({
+        handle: handleMeasuredIPC,
+        trustedWindow: registry.trustedWindow,
+        registry,
+        menuLabel,
+        locale: (target) =>
+          resolveUILanguage(
+            registry.stateFor(target)?.preferences?.uiLanguage || 'en',
+            app.getPreferredSystemLanguages()[0] || app.getLocale(),
+          ),
       });
       registerWindowIPC({
         handle: handleMeasuredIPC,

@@ -70,6 +70,45 @@ test('page edits persist to the original PDF and annotation metadata before reso
       ),
     );
     assert.deepEqual(await readFile(path), before);
+    const arranged = await store.editPages(
+      {
+        key: 'document',
+        action: 'arrange',
+        order: [3, 1, 2, 3],
+        annotations: rotated.annotations,
+        nativeRefs: [],
+      },
+      { path, reliable: true },
+    );
+    const reordered = await PDFDocument.load(await readFile(path));
+    assert.equal(reordered.getPageCount(), 4);
+    assert.equal(reordered.getPage(0).getRotation().angle, 90);
+    assert.equal(reordered.getPage(3).getRotation().angle, 90);
+    assert.equal(reordered.getPage(1).getRotation().angle, 0);
+    assert.deepEqual(
+      arranged.annotations.map(({ page }) => page),
+      [1, 4],
+    );
+    assert.equal(arranged.annotations[0].id, 'note');
+    assert.notEqual(arranged.annotations[1].id, 'note');
+    assert.deepEqual(arranged.annotations[1].rects, arranged.annotations[0].rects);
+    const embedded = (await importPDFAnnotations(await readFile(path))).annotations;
+    assert.deepEqual(embedded.map(({ page }) => page).sort(), [1, 4]);
+    const kept = await readFile(path);
+    for (const order of [[1, 2, 3], [1, 2, 3, 4, 99], 'nope'])
+      await assert.rejects(
+        store.editPages(
+          {
+            key: 'document',
+            action: 'arrange',
+            order,
+            annotations: arranged.annotations,
+            nativeRefs: [],
+          },
+          { path, reliable: true },
+        ),
+      );
+    assert.deepEqual(await readFile(path), kept);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
