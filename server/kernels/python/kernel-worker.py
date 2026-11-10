@@ -336,9 +336,13 @@ def emit_precise_progress(event):
 PRECISE_RICH_TEXT_LEFT = re.compile(
     r"<\s*([^\s<>/='\"]+)\s+id\s*=\s*(\\?['\"]|)\s*(\d+)\s*\2\s*>", re.IGNORECASE
 )
+# Small models sometimes drop the id and rename the pair (<code>…</code>, <i>…</i>).
+PRECISE_UNNUMBERED_PAIR = re.compile(r"<\s*([^\s<>/='\"]+)\s*>(.*?)<\s*/\s*\1\s*>", re.DOTALL)
+PRECISE_SINGLE_PROMPT_MARKER = "Now translate the following text:"
+PRECISE_BATCH_PROMPT_MARKER = "## Here is the input:"
 
 
-def precise_canonical_rich_text_tags(text):
+def precise_canonical_rich_text_tags(text, source=None):
     """Rewrite placeholder tags to the form BabelDOC's parse_translate_output matches."""
     if not isinstance(text, str):
         return text
@@ -348,11 +352,76 @@ def precise_canonical_rich_text_tags(text):
     if "<" not in text:
         return text
     names = {match.group(1) for match in PRECISE_RICH_TEXT_LEFT.finditer(text)}
-    if not names:
+    if names:
+        text = PRECISE_RICH_TEXT_LEFT.sub(lambda match: f"<style id='{match.group(3)}'>", text)
+        closing = "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
+        text = re.sub(rf"<\s*/\s*(?:{closing})\s*>", "</style>", text, flags=re.IGNORECASE)
+    return precise_number_unnamed_rich_text(text, source)
+
+
+def precise_number_unnamed_rich_text(text, source):
+    """Give id-less tag pairs the source style ids the translation dropped, in order."""
+    if not isinstance(source, str) or "<" not in text:
         return text
-    text = PRECISE_RICH_TEXT_LEFT.sub(lambda match: f"<style id='{match.group(3)}'>", text)
-    closing = "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
-    return re.sub(rf"<\s*/\s*(?:{closing})\s*>", "</style>", text, flags=re.IGNORECASE)
+    present = {match.group(3) for match in PRECISE_RICH_TEXT_LEFT.finditer(text)}
+    missing = [
+        match.group(3)
+        for match in PRECISE_RICH_TEXT_LEFT.finditer(source)
+        if match.group(3) not in present
+    ]
+    pairs = [
+        match
+        for match in PRECISE_UNNUMBERED_PAIR.finditer(text)
+        if not re.search(rf"<\s*/?\s*{re.escape(match.group(1))}\s*>", source)
+    ]
+    if not missing or len(pairs) != len(dict.fromkeys(missing)):
+        return text
+    ids = iter(dict.fromkeys(missing))
+    pieces, end = [], 0
+    for match in pairs:
+        pieces += [text[end : match.start()], f"<style id='{next(ids)}'>{match.group(2)}</style>"]
+        end = match.end()
+    return "".join(pieces) + text[end:]
+
+
+def precise_restore_rich_text(prompt, output):
+    """Canonicalize a translator reply against the paragraph(s) in its prompt."""
+    if not isinstance(output, str) or not isinstance(prompt, str):
+        return precise_canonical_rich_text_tags(output)
+    if PRECISE_BATCH_PROMPT_MARKER in prompt:
+        restored = precise_restore_batch_rich_text(prompt, output)
+        if restored is not None:
+            return restored
+        return precise_canonical_rich_text_tags(output)
+    source = prompt.rsplit(PRECISE_SINGLE_PROMPT_MARKER, 1)[-1]
+    return precise_canonical_rich_text_tags(output, source)
+
+
+def precise_restore_batch_rich_text(prompt, output):
+    """Per-item repair of BabelDOC's JSON batch reply; None if it is not that shape."""
+    decoder = json.JSONDecoder()
+    try:
+        tail = prompt.split(PRECISE_BATCH_PROMPT_MARKER, 1)[1]
+        inputs, _ = decoder.raw_decode(tail[tail.index("[") :])
+        start = output.index("[")
+        items, length = decoder.raw_decode(output[start:])
+    except (ValueError, IndexError):
+        return None
+    if not isinstance(inputs, list) or not isinstance(items, list):
+        return None
+    sources = {str(item.get("id")): item.get("input") for item in inputs if isinstance(item, dict)}
+    changed = False
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get("output"), str):
+            continue
+        fixed = precise_canonical_rich_text_tags(item["output"], sources.get(str(item.get("id"))))
+        if fixed != item["output"]:
+            item["output"] = fixed
+            changed = True
+    if not changed:
+        return None
+    replacement = json.dumps(items, ensure_ascii=False)
+    return output[:start] + replacement + output[start + length :]
 
 
 def precise_composition_text(obj):
@@ -604,7 +673,7 @@ def precise_python_il_capture(selected, box, write_sidecar):
         return original_parse_output(
             self,
             input_text,
-            precise_canonical_rich_text_tags(output),
+            precise_canonical_rich_text_tags(output, input_text),
             *positional,
             **kwargs,
         )
@@ -780,7 +849,8 @@ def precise_rust_il_capture(selected, box, write_sidecar):
     # Rust parses <style id='N'> runs from the returned text, as 0.6's parser did.
     def canonical(original):
         def translate(self, *positional, **kwargs):
-            return precise_canonical_rich_text_tags(original(self, *positional, **kwargs))
+            prompt = positional[0] if positional else kwargs.get("text", kwargs.get("prompt"))
+            return precise_restore_rich_text(prompt, original(self, *positional, **kwargs))
 
         return translate
 

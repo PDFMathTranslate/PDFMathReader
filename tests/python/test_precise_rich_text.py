@@ -1,6 +1,7 @@
 """Translated BabelDOC rich-text tags are rewritten to the form its parser accepts."""
 
 import ast
+import json
 from pathlib import Path
 import re
 import unittest
@@ -15,6 +16,9 @@ nodes = [
         and node.name
         in {
             "precise_canonical_rich_text_tags",
+            "precise_number_unnamed_rich_text",
+            "precise_restore_rich_text",
+            "precise_restore_batch_rich_text",
             "precise_composition_text",
             "fast_formula_placeholders",
         }
@@ -22,14 +26,22 @@ nodes = [
     or (
         isinstance(node, ast.Assign)
         and any(
-            getattr(target, "id", None) in {"PRECISE_RICH_TEXT_LEFT", "FAST_FORMULA_PLACEHOLDER"}
+            getattr(target, "id", None)
+            in {
+                "PRECISE_RICH_TEXT_LEFT",
+                "PRECISE_UNNUMBERED_PAIR",
+                "PRECISE_SINGLE_PROMPT_MARKER",
+                "PRECISE_BATCH_PROMPT_MARKER",
+                "FAST_FORMULA_PLACEHOLDER",
+            }
             for target in node.targets
         )
     )
 ]
-namespace = {"re": re}
+namespace = {"re": re, "json": json}
 exec(compile(ast.Module(body=nodes, type_ignores=[]), str(worker), "exec"), namespace)
 canonical = namespace["precise_canonical_rich_text_tags"]
+restore = namespace["precise_restore_rich_text"]
 composition_text = namespace["precise_composition_text"]
 fast_formulas = namespace["fast_formula_placeholders"]
 
@@ -54,6 +66,53 @@ class PreciseRichTextTests(unittest.TestCase):
     def test_doubled_formula_braces_become_one_placeholder(self):
         self.assertEqual(canonical("见 {{v1}} 与 {{ v 2 }}"), "见 {v1} 与 { v 2 }")
         self.assertEqual(canonical("集合 {a, b}"), "集合 {a, b}")
+
+    def test_dropped_id_is_restored_from_source(self):
+        source = "an acute <style id='1'>dictator’s dilemma</style> (Francisco, 2005)"
+        self.assertEqual(
+            canonical("一个尖锐的<code>独裁者困境</code>（Francisco, 2005）", source),
+            "一个尖锐的<style id='1'>独裁者困境</style>（Francisco, 2005）",
+        )
+        self.assertEqual(
+            canonical(
+                "<i>甲</i>与<style id='2'>乙</style>和<em>丙</em>",
+                "<style id='1'>a</style> <style id='2'>b</style> <style id='3'>c</style>",
+            ),
+            "<style id='1'>甲</style>与<style id='2'>乙</style>和<style id='3'>丙</style>",
+        )
+
+    def test_unmatched_or_literal_tags_are_left_alone(self):
+        source = "<style id='1'>a</style> and <style id='2'>b</style>"
+        self.assertEqual(canonical("<code>甲</code>与乙", source), "<code>甲</code>与乙")
+        literal = "use <code>x</code> and <style id='1'>y</style>"
+        self.assertEqual(canonical("用 <code>x</code> 和 y", literal), "用 <code>x</code> 和 y")
+
+    def test_single_prompt_uses_text_after_marker(self):
+        prompt = "Keep tags (e.g. <style id='9'>) …\nNow translate the following text:\nan <style id='1'>acute</style> dilemma"
+        self.assertEqual(
+            restore(prompt, "一个<code>尖锐</code>困境"), "一个<style id='1'>尖锐</style>困境"
+        )
+
+    def test_batch_reply_is_repaired_per_item(self):
+        example = '"input": "{v1}<style id=\'2\'>hello</style>, world!"'
+        inputs = [
+            {"id": 1, "input": "plain text"},
+            {"id": 2, "input": "an <style id='1'>acute dictator’s dilemma</style>"},
+        ]
+        prompt = f"Example {example}\n## Here is the input:\n{json.dumps(inputs)}"
+        reply = json.dumps(
+            [{"id": 1, "output": "纯文本"}, {"id": 2, "output": "一个<code>独裁者困境</code>"}],
+            ensure_ascii=False,
+        )
+        self.assertEqual(
+            json.loads(restore(prompt, reply)),
+            [
+                {"id": 1, "output": "纯文本"},
+                {"id": 2, "output": "一个<style id='1'>独裁者困境</style>"},
+            ],
+        )
+        untouched = json.dumps([{"id": 1, "output": "纯文本"}], ensure_ascii=False)
+        self.assertEqual(restore(prompt, untouched), untouched)
 
     def test_composition_text_joins_styled_runs_and_formulas(self):
         def node(**fields):
