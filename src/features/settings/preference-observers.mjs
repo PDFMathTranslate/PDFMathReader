@@ -102,6 +102,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.forceSmoothScrolling,
       bindings.preferences.smoothScrollingMouseOnly,
       bindings.preferences.paragraphContinuationDetection,
+      bindings.preferences.skipReferences,
       bindings.preferences.jevApiToken,
       bindings.preferences.remoteKernelEnabled,
       bindings.preferences.remoteKernelUrl,
@@ -159,6 +160,11 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.pruneTranslationQueue();
       bindings.settle();
     }
+  });
+  watch(bindings.preferences.skipReferences, () => {
+    if (bindings.preferences.loadingPreferences || bindings.settingsWindowMode) return;
+    bindings.resetTranslations();
+    bindings.settle();
   });
   watch(bindings.showKernelToolbarShortcut, (value) =>
     localStorage.setItem('showKernelToolbarShortcut', String(value)),

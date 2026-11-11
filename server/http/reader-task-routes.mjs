@@ -47,6 +47,10 @@ export function registerReaderTaskRoutes(app, { readerTasks }) {
     if (page.state === 'failed')
       return res.status(422).json({ error: page.error || 'Page failed.' });
     if (page.resultKind === 'empty') return res.sendStatus(204);
+    if (page.resultKind === 'skipped') {
+      res.setHeader('X-Reader-Page-Skipped', 'references');
+      return res.sendStatus(204);
+    }
     if (!page.resultPath) return res.status(404).json({ error: 'Page result unavailable.' });
     try {
       await stat(page.resultPath);

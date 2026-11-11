@@ -50,6 +50,7 @@ const SETTINGS_PREFERENCES = [
   'forceSmoothScrolling',
   'smoothScrollingMouseOnly',
   'paragraphContinuationDetection',
+  'skipReferences',
   'jevApiToken',
   'remoteKernelEnabled',
   'remoteKernelUrl',

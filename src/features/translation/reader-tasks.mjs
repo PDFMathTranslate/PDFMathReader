@@ -130,6 +130,7 @@ export function createReaderTasks({
       forceRetranslation: translationState.forceRetranslation === true,
       remoteKernel: remoteKernel(),
       paragraphContinuationDetection: valueOf(preferences.paragraphContinuationDetection, false),
+      ...(valueOf(preferences.skipReferences, false) === true ? { skipReferences: true } : {}),
       jevApiToken: valueOf(preferences.jevApiToken, ''),
       glossary: provider.activeGlossary?.value || [],
       advancedOptions,
@@ -294,6 +295,7 @@ export function createReaderTasks({
               pages: withHeights(pages),
               layoutPages: withHeights(layoutPages),
               priority,
+              pageCount: session.pages.value.length,
             }),
           });
           if (!result?.id) throw Error('Reader translation task did not return an id');
@@ -364,7 +366,12 @@ export function createReaderTasks({
       '/api/reader-tasks/' + encodeURIComponent(current.id) + '/pages/' + page,
     );
     if (response.status === 202) return null;
-    if (response.status === 204) return { kind: 'empty', response };
+    if (response.status === 204)
+      return {
+        kind: 'empty',
+        skipped: response.headers.get('X-Reader-Page-Skipped') === 'references',
+        response,
+      };
     const contentType = response.headers.get('content-type') || '';
     if (!response.ok) {
       let message = response.statusText || 'Reader translation task failed';
@@ -441,6 +448,7 @@ export function createReaderTasks({
         taskSettings.paragraphContinuationDetection,
         (value) => typeof value === 'boolean',
       );
+      assign('skipReferences', taskSettings.skipReferences === true);
       assign('jevApiToken', taskSettings.jevApiToken, (value) => typeof value === 'string');
 
       const remote = taskSettings.remoteKernel;

@@ -18,6 +18,7 @@ export function createPreferenceState() {
   const forceSmoothScrolling = ref(false);
   const smoothScrollingMouseOnly = ref(false);
   const paragraphContinuationDetection = ref(false);
+  const skipReferences = ref(false);
   const jevApiToken = ref('');
   const remoteKernelEnabled = ref(false);
   const remoteKernelUrl = ref('');
@@ -113,6 +114,7 @@ export function createPreferenceState() {
     forceSmoothScrolling,
     smoothScrollingMouseOnly,
     paragraphContinuationDetection,
+    skipReferences,
     jevApiToken,
     remoteKernelEnabled,
     remoteKernelUrl,

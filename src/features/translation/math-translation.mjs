@@ -45,7 +45,7 @@ export function createMathTranslation({
       p.blocks = [];
       p.status = 'ready';
       p.translationActivity = '';
-      p.message = t('pageStatus.noReadableText');
+      p.message = result.skipped ? '' : t('pageStatus.noReadableText');
       return;
     }
     if (result.kind !== 'math') throw Error('Reader translation task returned an unexpected page');

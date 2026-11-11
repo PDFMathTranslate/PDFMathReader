@@ -72,6 +72,7 @@ const DEFAULT_PREFERENCES = {
   forceSmoothScrolling: false,
   smoothScrollingMouseOnly: false,
   paragraphContinuationDetection: false,
+  skipReferences: false,
   jevApiToken: '',
   remoteKernelEnabled: false,
   remoteKernelUrl: '',
@@ -156,6 +157,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         forceSmoothScrolling: true,
         smoothScrollingMouseOnly: true,
         paragraphContinuationDetection: true,
+        skipReferences: true,
         jevApiToken: 'custom-test-token',
         remoteKernelEnabled: true,
         remoteKernelUrl: 'http://127.0.0.1:8890',
@@ -194,6 +196,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ tfidfWeightingEnabled: 'true' }));
     assert.throws(() => preferences.save({ forceSmoothScrolling: 'true' }));
     assert.throws(() => preferences.save({ paragraphContinuationDetection: 'true' }));
+    assert.throws(() => preferences.save({ skipReferences: 'true' }));
     assert.throws(() => preferences.save({ jevApiToken: 123 }));
     assert.throws(() => preferences.save({ remoteKernelEnabled: 'true' }));
     assert.throws(() => preferences.save({ remoteKernelUrl: 123 }));

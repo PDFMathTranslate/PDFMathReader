@@ -50,6 +50,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.forceSmoothScrolling.value = saved.forceSmoothScrolling;
     if (typeof saved.paragraphContinuationDetection === 'boolean')
       preferences.paragraphContinuationDetection.value = saved.paragraphContinuationDetection;
+    if (typeof saved.skipReferences === 'boolean')
+      preferences.skipReferences.value = saved.skipReferences;
     if (typeof saved.jevApiToken === 'string') preferences.jevApiToken.value = saved.jevApiToken;
     if (typeof saved.remoteKernelEnabled === 'boolean')
       preferences.remoteKernelEnabled.value = saved.remoteKernelEnabled;
@@ -215,6 +217,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         forceSmoothScrolling: preferences.forceSmoothScrolling.value,
         smoothScrollingMouseOnly: preferences.smoothScrollingMouseOnly.value,
         paragraphContinuationDetection: preferences.paragraphContinuationDetection.value,
+        skipReferences: preferences.skipReferences.value,
         jevApiToken: preferences.jevApiToken.value,
         remoteKernelEnabled: preferences.remoteKernelEnabled.value,
         remoteKernelUrl: preferences.remoteKernelUrl.value,

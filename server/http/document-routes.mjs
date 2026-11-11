@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { paragraphs } from '../documents/layout.mjs';
+import { createReferencesLocator } from '../documents/references-start.mjs';
 
 const LAYOUT_CACHE_SCHEMA = 4;
 const DOCUMENT_HASH_PATTERN = /^[0-9a-f]{64}$/;
@@ -181,6 +182,25 @@ export function registerDocumentRoutes(
           performanceTracker.recordLayout(performanceTracker.now() - layoutStarted);
         }
       }),
+  );
+
+  const referencesLocator = createReferencesLocator({
+    extractPage: (entry, page) => layoutExtraction.extractPage(entry, page),
+  });
+  // The page where the reference list starts, searched up to `page`, or null.
+  app.post('/api/references-start', express.json({ limit: '16kb' }), async (req, res) =>
+    cacheManager.runTask('layout', async () => {
+      try {
+        const entry = documentRequest(req);
+        if (entry.error) return res.status(entry.error.status).json({ error: entry.error.message });
+        const { page, pageCount } = req.body;
+        if (!Number.isInteger(page) || !Number.isInteger(pageCount) || page < 1 || page > pageCount)
+          return res.status(400).json({ error: 'Invalid page' });
+        res.json({ page: await referencesLocator.referencesStart(entry, { page, pageCount }) });
+      } catch (e) {
+        res.status(422).json({ error: e.message });
+      }
+    }),
   );
   return { documentRequest };
 }

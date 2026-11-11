@@ -162,3 +162,20 @@ test('restores a task snapshot without submitting a duplicate task', async () =>
   assert.equal(result.taskId, 'restored-task');
   assert.equal(result.settingsKey, snapshot.settingsKey);
 });
+
+test('sends the page count and the skip-references setting only when enabled', async () => {
+  const f = fixture();
+  const first = f.tasks.submitScope({ pages: [1], layoutPages: [1] });
+  await waitFor(() => f.gates.length === 1);
+  f.gates[0].resolve(response('task-1', f.gates[0].body));
+  await first;
+  assert.equal(f.posts[0].pageCount, 3);
+  assert.equal('skipReferences' in f.posts[0].settings, false);
+
+  f.preferences.skipReferences = ref(true);
+  const second = f.tasks.submitScope({ pages: [2], layoutPages: [2] });
+  await waitFor(() => f.gates.length === 2);
+  f.gates[1].resolve(response('task-2', f.gates[1].body));
+  await second;
+  assert.equal(f.posts[1].settings.skipReferences, true);
+});

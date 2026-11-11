@@ -7,6 +7,7 @@ import { pipeline } from 'node:stream/promises';
 import { isTranslationLanguageSupported } from '../../shared/translation/languages.mjs';
 import { paragraphDisplayText } from '../../shared/translation/spacing.mjs';
 import { splitParagraphTranslation } from '../../shared/translation/paragraph-fragments.mjs';
+import { blocksBeforeReferences } from '../../shared/translation/references-section.mjs';
 
 export const MAX_READER_TASKS = 32;
 // A full-document task may cover a long book. Keep the bound high enough for
@@ -118,6 +119,7 @@ function validateSettings(value) {
     'reuseTranslations',
     'forceRetranslation',
     'paragraphContinuationDetection',
+    'skipReferences',
   ]) {
     if (value[name] !== undefined && typeof value[name] !== 'boolean')
       throw statusError(`Invalid ${name}.`);
@@ -151,6 +153,7 @@ function validateSettings(value) {
     forceRetranslation: value.forceRetranslation === true,
     remoteKernel: value.remoteKernel === null ? undefined : clone(value.remoteKernel),
     paragraphContinuationDetection: value.paragraphContinuationDetection === true,
+    ...(value.skipReferences === true ? { skipReferences: true } : {}),
     jevApiToken: value.jevApiToken || '',
     glossary: clone(value.glossary || []),
     advancedOptions: clone(value.advancedOptions || {}),
@@ -248,6 +251,13 @@ function setProgress(page, value) {
   if (typeof progress.percent === 'number')
     progress.percent = Math.max(0, Math.min(100, progress.percent));
   page.progress = progress;
+}
+
+function normalizePageCount(value) {
+  if (value === undefined) return 0;
+  if (!Number.isInteger(value) || value < 1 || value > PAGE_NUMBER_LIMIT)
+    throw statusError('Invalid pageCount.');
+  return value;
 }
 
 export function createReaderTasks({
@@ -568,12 +578,13 @@ export function createReaderTasks({
     }
   }
 
-  async function requestInspector(task, page) {
+  async function requestInspector(task, page, { untilReferences = false } = {}) {
     const layout = await layoutFor(task, page.number);
+    const blocks = untilReferences ? blocksBeforeReferences(layout.blocks) : layout.blocks;
     const continuation = await continuationFor(task);
     const groups = new Map();
     await Promise.all(
-      layout.blocks.map(async (block) => {
+      blocks.map(async (block) => {
         const group = normalizeGroup(layout, block, await continuation.groupFor(layout, block));
         if (!groups.has(group.id)) groups.set(group.id, group);
       }),
@@ -613,16 +624,39 @@ export function createReaderTasks({
     }
     if (failures.length) throw Error(failures[0]);
     const path = join(task.tempDir, `page-${page.number}.json`);
-    await writeFile(path, JSON.stringify({ paragraphs: layout.blocks }));
+    await writeFile(path, JSON.stringify({ paragraphs: blocks }));
     return { kind: 'inspector', path };
+  }
+
+  // The page where the reference list starts, if it starts at or before this page.
+  async function referencesStart(task, page) {
+    if (!task.settings.skipReferences || !task.pageCount || page.number > task.pageCount)
+      return null;
+    try {
+      const result = await requestJSON(task, '/api/references-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: task.documentId,
+          page: page.number,
+          pageCount: task.pageCount,
+        }),
+      });
+      return Number.isInteger(result?.page) ? result.page : null;
+    } catch (error) {
+      if (error?.name === 'AbortError' || task.controller.signal.aborted) throw abortError();
+      return null;
+    }
   }
 
   async function processPage(task, page) {
     const entry = documents.getEntry(task.documentId);
     if (!entry) throw statusError('Document unavailable.', 404);
+    const references = await referencesStart(task, page);
+    if (references !== null && references < page.number) return { kind: 'skipped' };
     page.progress = { stage: 'Translating', percent: 0 };
     return task.settings.engine === 'pdf_inspector'
-      ? requestInspector(task, page)
+      ? requestInspector(task, page, { untilReferences: references === page.number })
       : requestMath(task, page);
   }
 
@@ -804,10 +838,12 @@ export function createReaderTasks({
     );
     if (!pages.length) throw statusError('At least one page is required.');
     const priority = normalizePriority(input.priority);
+    const pageCount = normalizePageCount(input.pageCount);
     const key = canonicalKey(documentId, settings);
     const previous = byKey.get(key);
     if (previous && previous.state !== 'cancelled' && previous.state !== 'failed') {
       if (priority) previous.priority = priority;
+      if (pageCount) previous.pageCount = pageCount;
       const added = addPages(previous, pages, layoutPages);
       if (added && previous.state === 'complete') {
         resetDone(previous);
@@ -832,6 +868,7 @@ export function createReaderTasks({
       key,
       documentId,
       settings,
+      pageCount,
       state: 'running',
       ready: false,
       pages: new Map(),

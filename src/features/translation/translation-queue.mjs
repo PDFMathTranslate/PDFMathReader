@@ -71,7 +71,7 @@ export function createTranslationQueue({
       page.translationActivity = '';
       page.blocks = [];
       page.status = 'ready';
-      page.message = t('pageStatus.noReadableText');
+      page.message = result.skipped ? '' : t('pageStatus.noReadableText');
       return true;
     }
     if (result?.kind !== 'inspector') return false;
