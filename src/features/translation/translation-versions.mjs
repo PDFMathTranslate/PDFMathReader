@@ -1,6 +1,6 @@
 import { nextTick } from 'vue';
 import { isCustomServiceId } from '../../../shared/translation/custom-services.mjs';
-import { withSelectedService } from './translation-services.mjs';
+import { loadTranslationServiceSchema, withSelectedService } from './translation-services.mjs';
 
 export const sameVersion = (a, b) =>
   !!a && !!b && a.engine === b.engine && a.language === b.language;
@@ -40,28 +40,41 @@ export function createTranslationVersions({ session, preferences, provider, acti
     language: preferences.language.value,
   });
 
+  async function engineState(engine) {
+    return actions.backendRequests.api('/api/engines/' + engine);
+  }
+
   async function usable(version, token) {
     if (version.engine === 'pdf_inspector') return true;
     try {
-      const state = await actions.backendRequests.api('/api/engines/' + version.engine);
+      const state = await engineState(version.engine);
       return token === session.epoch && state?.available === true;
     } catch {
       return false;
     }
   }
 
-  function knownService(service) {
-    return (
-      !isCustomServiceId(service) ||
-      preferences.customTranslationServices.value.some((item) => item.id === service)
-    );
+  // A remembered service is restored only when the kernel can still run it as configured.
+  async function selectableService(engine, service) {
+    if (typeof service !== 'string') return false;
+    if (isCustomServiceId(service))
+      return preferences.customTranslationServices.value.some((item) => item.id === service);
+    try {
+      const state = await engineState(engine);
+      const schema = await loadTranslationServiceSchema(engine, state?.version || '');
+      return provider
+        .serviceOptionsFor(engine, schema.services || [])
+        .some((option) => option.value === service);
+    } catch {
+      return false;
+    }
   }
 
   async function applyVersion({ engine, language = preferences.language.value, service }) {
     const serviceChanged =
       typeof service === 'string' &&
-      knownService(service) &&
-      provider.selectedServiceId(engine) !== service;
+      provider.selectedServiceId(engine) !== service &&
+      (await selectableService(engine, service));
     if (sameVersion({ engine, language }, current()) && !serviceChanged) return;
     // The kernel, language and service observers reset translations and cancel the
     // document that is opening. Setting them while preferences are loading skips them.
@@ -98,7 +111,8 @@ export function createTranslationVersions({ session, preferences, provider, acti
     for (const version of documentOpenOrder(versions, current(), restored)) {
       if (token !== session.epoch) return null;
       if (!(await usable(version, token))) continue;
-      await applyVersion(version);
+      // A cached version names the backend that produced it, not a selectable service.
+      await applyVersion({ engine: version.engine, language: version.language });
       return token === session.epoch ? version : null;
     }
     return null;

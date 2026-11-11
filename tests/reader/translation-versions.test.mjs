@@ -34,3 +34,49 @@ test('a remembered kernel opens only its own cached versions', () => {
   assert.deepEqual(documentOpenOrder([precise, inspector], fast, true), []);
   assert.deepEqual(documentOpenOrder([precise, fast], fast, false), [fast, precise]);
 });
+
+test('reopening never selects a backend label or an unconfigured remembered service', async () => {
+  const { ref } = await import('vue');
+  const { createTranslationVersions } =
+    await import('../../src/features/translation/translation-versions.mjs');
+  const custom = 'custom-6cc99f22cbb4';
+  const preferences = {
+    engine: ref('pdf_math_fast'),
+    language: ref('Chinese'),
+    customTranslationServices: ref([
+      { id: custom, name: 'Local', base_url: 'http://x/v1', model: 'm' },
+    ]),
+    translationServices: ref({ pdf_math_fast: { id: custom, values: {}, profiles: {} } }),
+    loadingPreferences: false,
+  };
+  const provider = {
+    selectedServiceId: (kernel) => preferences.translationServices.value[kernel]?.id || 'auto',
+    serviceOptionsFor: () => [{ value: 'auto' }, { value: custom }],
+  };
+  const session = { epoch: 1 };
+  const api = async (path) =>
+    path.endsWith('/translation-versions')
+      ? { versions: [{ ...fast, service: 'openailiked' }] }
+      : { available: true, version: '1' };
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ services: [{ id: 'auto' }, { id: 'openailiked', fields: [] }] }),
+  });
+  try {
+    const versions = createTranslationVersions({
+      session,
+      preferences,
+      provider,
+      actions: { backendRequests: { api }, kernelSettings: { checkEngine() {} } },
+    });
+    await versions.openCachedVersion('doc', 1, { engine: 'pdf_math_fast', service: 'openailiked' });
+    assert.equal(preferences.translationServices.value.pdf_math_fast.id, custom);
+
+    preferences.translationServices.value = { pdf_math_fast: { id: 'auto', values: {} } };
+    await versions.openCachedVersion('doc', 1, { engine: 'pdf_math_fast', service: custom });
+    assert.equal(preferences.translationServices.value.pdf_math_fast.id, custom);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
