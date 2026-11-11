@@ -49,13 +49,13 @@ See [PDFMathReader-iOS](https://github.com/PDFMathTranslate/PDFMathReader-iOS) f
 
 | Date       | Feature                                                                                                                                                                          | Contributor                        |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2026-11-11 | [option to skip translating reference sections](https://github.com/PDFMathTranslate/PDFMathReader/commit/a71b05dfb198ffb24fe736c14b5349c4b10a0577)                               | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [delete, undo and cross-document paste for gallery pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/e89280989baae4fda29141012bc466c341f9d831)                     | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [sort, copy and paste pages in gallery mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/b07e41c93405ecfaeb08e7709e75c23f8271812b)                                  | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [speed up ultra fast translation](https://github.com/PDFMathTranslate/PDFMathReader/commit/567de99b8dfe5cd490fb148a766c8f1d31e178e8)                                             | [@reycn](https://github.com/reycn) |
 | 2026-11-06 | [improve reader navigation cropping and cache details](https://github.com/PDFMathTranslate/PDFMathReader/commit/4ed276f8a5443d95afd7960cf0ab96aa4288ca55)                        | [@reycn](https://github.com/reycn) |
 | 2026-10-26 | [export annotations as Markdown list, outline-nested Markdown, or plain text](https://github.com/PDFMathTranslate/PDFMathReader/commit/126147f2a6e0f41045f79a22e510e5fd105fa13a) | [@reycn](https://github.com/reycn) |
 | 2026-10-25 | [experimental topic sentences in outline](https://github.com/PDFMathTranslate/PDFMathReader/commit/39b310aedfbd25b3b6378d852446f606480d39aa)                                     | [@reycn](https://github.com/reycn) |
-| 2026-10-25 | [wrap annotations / trim toggle under menu-view](https://github.com/PDFMathTranslate/PDFMathReader/commit/f075160cbef236f583def0608dcd6160c696653b)                              | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
