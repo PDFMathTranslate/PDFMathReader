@@ -22,6 +22,8 @@ export function createDocumentImport({
   view,
   actions,
 }) {
+  let importGeneration = 0;
+
   async function recoverHighlightedText(document, items) {
     for (const number of new Set(
       items.filter((a) => a.nativeRef && a.kind === 'highlight' && !a.text).map((a) => a.page),
@@ -130,6 +132,7 @@ export function createDocumentImport({
     shell.selectedParagraph.value = null;
     actions.documentLifecycle.cancel();
     const token = session.epoch;
+    const generation = ++importGeneration;
     const release = actions.documentLifecycle.releaseDocument();
     actions.canvasRendering.resetBitmaps();
     renderState.renderMetrics.openedAt = performance.now();
@@ -376,12 +379,12 @@ export function createDocumentImport({
         await window.previewDocuments?.closed();
       }
     } finally {
-      if (token === session.epoch) {
+      if (generation === importGeneration) {
         session.documentOpening.value = false;
         session.restoringView.value = false;
         session.loading.value = false;
-        actions.readingPosition.scheduleReadingSave();
       }
+      if (token === session.epoch) actions.readingPosition.scheduleReadingSave();
     }
   }
 
