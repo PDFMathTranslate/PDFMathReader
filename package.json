@@ -24,12 +24,14 @@
   "dependencies": {
     "@firecrawl/pdf-inspector": "latest",
     "@glass-sdk/liquid-glass": "0.0.2",
-    "@modelcontextprotocol/server": "2.3.1",
     "@thednp/dommatrix": "3.1.2",
     "express": "^5.1.0",
     "onnxruntime-node": "1.22.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289"
+  },
+  "overrides": {
+    "@modelcontextprotocol/server": "2.3.1"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
