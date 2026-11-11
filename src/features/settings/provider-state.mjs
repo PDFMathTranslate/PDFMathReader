@@ -6,7 +6,10 @@ import {
   translationLanguageLabel,
   normalizeTranslationLanguage,
 } from '../../../shared/translation/languages.mjs';
-import { withSharedOpenAIKey } from '../../../shared/translation/provider-groups.mjs';
+import {
+  withSharedOpenAIKey,
+  withSharedSubscriptionModel,
+} from '../../../shared/translation/provider-groups.mjs';
 import { configuredMenuServices } from '../../../shared/commands/menu-options.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { createTranslationServiceHistoryTracker } from '../../../shared/translation/provider-history.mjs';
@@ -270,6 +273,15 @@ export function createProviderState({ preferences, engine, configured }) {
           translationServices.value = next;
         },
         { deep: true },
+      );
+      watch(
+        translationServices,
+        (next, previous) => {
+          const loading = preferences.loadingPreferences || preferences.applyingSavedSettings;
+          const shared = withSharedSubscriptionModel(next, loading ? next : (previous ?? next));
+          if (shared !== next) translationServices.value = shared;
+        },
+        { deep: true, immediate: true },
       );
       watch(projectedProfiles, (next, previous) => {
         if (preferences.loadingPreferences || !previous) return;

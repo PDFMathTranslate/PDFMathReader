@@ -103,3 +103,44 @@ export function withSharedOpenAIKey(services, credentials = {}, configured = fal
   );
   return { ...credentials, openai: { ...shared, ...credentials.openai } };
 }
+
+const SUBSCRIPTION = 'chatgpt-subscription';
+const SUBSCRIPTION_KERNELS = ['pdf_inspector', 'pdf_math_fast', 'pdf_math_precise'];
+function subscriptionModel(config) {
+  const model =
+    config?.profiles?.[SUBSCRIPTION]?.values?.model ??
+    (config?.id === SUBSCRIPTION ? config?.values?.model : undefined);
+  return typeof model === 'string' && model.trim() ? model : '';
+}
+
+// The ChatGPT account is app-wide, so its model follows it into every kernel. A model
+// changed in one kernel is copied to the others; kernels without one inherit it.
+export function withSharedSubscriptionModel(services, previous = services) {
+  if (!record(services)) return services;
+  const changed = SUBSCRIPTION_KERNELS.find(
+    (kernel) =>
+      subscriptionModel(services[kernel]) &&
+      subscriptionModel(services[kernel]) !== subscriptionModel(previous?.[kernel]),
+  );
+  const model = subscriptionModel(
+    services[changed || SUBSCRIPTION_KERNELS.find((kernel) => subscriptionModel(services[kernel]))],
+  );
+  if (!model) return services;
+  let next = services;
+  for (const kernel of SUBSCRIPTION_KERNELS) {
+    const current = subscriptionModel(services[kernel]);
+    if (current === model || (!changed && current)) continue;
+    const config = record(services[kernel]) ? services[kernel] : {};
+    const profiles = record(config.profiles) ? config.profiles : {};
+    if (next === services) next = { ...services };
+    next[kernel] = {
+      ...config,
+      profiles: {
+        ...profiles,
+        [SUBSCRIPTION]: { values: { ...profiles[SUBSCRIPTION]?.values, model } },
+      },
+      ...(config.id === SUBSCRIPTION ? { values: { ...config.values, model } } : {}),
+    };
+  }
+  return next;
+}
