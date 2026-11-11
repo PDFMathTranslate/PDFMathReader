@@ -30,6 +30,9 @@
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289"
   },
+  "overrides": {
+    "@modelcontextprotocol/server": "2.3.1"
+  },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
     "@eslint/js": "10.0.1",
