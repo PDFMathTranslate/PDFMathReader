@@ -10,6 +10,7 @@ import { createCanvasRendering } from '../features/reader/canvas-rendering.mjs';
 import { createWatermarkRemoval } from '../features/reader/watermark-removal.mjs';
 import { createTfidfWeighting } from '../features/reader/tfidf-weighting.mjs';
 import { createFontSubstitution } from '../features/reader/font-substitution.mjs';
+import { createTranslationCover } from '../features/reader/translation-cover.mjs';
 import { loadPDFRuntime } from '../features/reader/pdf-runtime.mjs';
 import { createReaderViewport } from '../features/reader/reader-viewport.mjs';
 import { createThumbnails } from '../features/reader/reader-thumbnails.mjs';
@@ -178,6 +179,14 @@ export function createReaderFeatures({
       void canvasRendering.renderPages(false, true);
     },
   });
+  const translationCover = createTranslationCover({
+    preferences,
+    loadRuntime: loadPDFRuntime,
+    onToggle: () => {
+      canvasRendering.resetBitmaps();
+      void canvasRendering.renderPages(false, true);
+    },
+  });
   const canvasRendering = createCanvasRendering({
     renderState,
     session,
@@ -186,6 +195,7 @@ export function createReaderFeatures({
     watermarkRemoval,
     tfidfWeighting,
     fontSubstitution,
+    translationCover,
     actions: createLazyPort({
       rootActions: () => rootActions,
       readerViewport: () => readerViewport,

@@ -40,6 +40,8 @@ export function createPreferencePersistence({ preferences, session, view, provid
       preferences.translationCompareEnabled.value = saved.translationCompareEnabled;
     if (typeof saved.watermarkRemovalEnabled === 'boolean')
       preferences.watermarkRemovalEnabled.value = saved.watermarkRemovalEnabled;
+    if (typeof saved.coverOriginalText === 'boolean')
+      preferences.coverOriginalText.value = saved.coverOriginalText;
     if (typeof saved.recentMagicZoomEnabled === 'boolean')
       preferences.recentMagicZoomEnabled.value = saved.recentMagicZoomEnabled;
     if (typeof saved.tfidfWeightingEnabled === 'boolean')
@@ -212,6 +214,7 @@ export function createPreferencePersistence({ preferences, session, view, provid
         outlineTopicSentencesEnabled: preferences.outlineTopicSentencesEnabled.value,
         translationCompareEnabled: preferences.translationCompareEnabled.value,
         watermarkRemovalEnabled: preferences.watermarkRemovalEnabled.value,
+        coverOriginalText: preferences.coverOriginalText.value,
         recentMagicZoomEnabled: preferences.recentMagicZoomEnabled.value,
         tfidfWeightingEnabled: preferences.tfidfWeightingEnabled.value,
         forceSmoothScrolling: preferences.forceSmoothScrolling.value,

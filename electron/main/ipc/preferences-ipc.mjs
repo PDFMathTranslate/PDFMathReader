@@ -45,6 +45,7 @@ const SETTINGS_PREFERENCES = [
   'outlineTopicSentencesEnabled',
   'translationCompareEnabled',
   'watermarkRemovalEnabled',
+  'coverOriginalText',
   'recentMagicZoomEnabled',
   'tfidfWeightingEnabled',
   'forceSmoothScrolling',

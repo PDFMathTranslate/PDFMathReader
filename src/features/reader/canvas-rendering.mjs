@@ -20,6 +20,7 @@ export function createCanvasRendering({
   watermarkRemoval,
   tfidfWeighting,
   fontSubstitution,
+  translationCover,
 }) {
   let paintRetryTimer;
   let bitmapEpoch = 0;
@@ -245,6 +246,15 @@ export function createCanvasRendering({
     // drawn, and cached, apart from the plain page. Thumbnails stay unmodified.
     const removal = watermarkRemoval?.enabled() ? await watermarkRemoval.renderOptions(page) : null;
     if (!currentDraw()) return false;
+    const coverSource =
+      number && translated && translationCover?.enabled() && session.pages.value[number - 1];
+    const cover = coverSource
+      ? await translationCover.renderOptions(
+          page,
+          actions.rootActions.displayedPage(coverSource).blocks,
+        )
+      : null;
+    if (!currentDraw()) return false;
     const plannedBionicOnly = bionicOnlyKey(number, translated, normalizedBionic),
       plannedTfidf = plannedBionicKey.endsWith('tfidf');
     const bionic = plannedBionicOnly
@@ -257,7 +267,7 @@ export function createCanvasRendering({
     if (!currentDraw()) return false;
     // Local fonts replace the shown document's text faces, never a thumbnail's.
     const fonts = number ? fontSubstitution?.renderOptions(translated) : null;
-    const filter = [removal?.key, fonts?.key].filter(Boolean).join('+'),
+    const filter = [removal?.key, fonts?.key, cover?.key].filter(Boolean).join('+'),
       bionicKey = [bionic?.key, tfidf?.key].filter(Boolean).join('+'),
       glyphs = mergeGlyphPlans(bionic?.render?.bionicGlyphs, tfidf?.plan);
     if (
@@ -352,11 +362,26 @@ export function createCanvasRendering({
     frame.pdfFrame = geometry;
     frame.pdfFilter = filter;
     frame.pdfBionicKey = bionicKey;
+    const transform = [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
+      skip = removal?.render?.operationsFilter;
+    let covered = 0;
+    // pdf.js asks about each operator right before running it, in order: the cover is
+    // painted there, between the page's scan and the translation drawn over it.
+    const operationsFilter = cover
+      ? (index) => {
+          if (covered < cover.at.length && index >= cover.at[covered]) {
+            covered++;
+            cover.paint(frame.getContext('2d'), scale, transform);
+          }
+          return skip ? skip(index) : true;
+        }
+      : skip;
     const task = page.render({
       canvasContext: frame.getContext('2d'),
       viewport,
-      transform: [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
+      transform,
       ...removal?.render,
+      ...(operationsFilter ? { operationsFilter } : {}),
       ...fonts?.render,
       ...(glyphs ? { bionicGlyphs: glyphs } : {}),
     });

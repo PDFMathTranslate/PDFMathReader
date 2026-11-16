@@ -67,6 +67,7 @@ const DEFAULT_PREFERENCES = {
   outlineTopicSentencesEnabled: false,
   translationCompareEnabled: false,
   watermarkRemovalEnabled: false,
+  coverOriginalText: false,
   recentMagicZoomEnabled: false,
   tfidfWeightingEnabled: false,
   forceSmoothScrolling: false,
@@ -152,6 +153,7 @@ test('partial saves keep every current setting and unknown key', async () => {
         outlineTopicSentencesEnabled: true,
         translationCompareEnabled: true,
         watermarkRemovalEnabled: true,
+        coverOriginalText: true,
         recentMagicZoomEnabled: true,
         tfidfWeightingEnabled: true,
         forceSmoothScrolling: true,
@@ -192,6 +194,7 @@ test('partial saves keep every current setting and unknown key', async () => {
     assert.throws(() => preferences.save({ tocGenerationEnabled: 'true' }));
     assert.throws(() => preferences.save({ translationCompareEnabled: 'true' }));
     assert.throws(() => preferences.save({ watermarkRemovalEnabled: 'true' }));
+    assert.throws(() => preferences.save({ coverOriginalText: 'true' }));
     assert.throws(() => preferences.save({ recentMagicZoomEnabled: 'true' }));
     assert.throws(() => preferences.save({ tfidfWeightingEnabled: 'true' }));
     assert.throws(() => preferences.save({ forceSmoothScrolling: 'true' }));

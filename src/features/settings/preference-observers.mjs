@@ -97,6 +97,7 @@ export function installReaderPreferenceObservers({ bindings }) {
       bindings.preferences.outlineTopicSentencesEnabled,
       bindings.preferences.translationCompareEnabled,
       bindings.preferences.watermarkRemovalEnabled,
+      bindings.preferences.coverOriginalText,
       bindings.preferences.recentMagicZoomEnabled,
       bindings.preferences.tfidfWeightingEnabled,
       bindings.preferences.forceSmoothScrolling,

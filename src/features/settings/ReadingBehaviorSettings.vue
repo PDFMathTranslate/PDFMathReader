@@ -4,6 +4,7 @@ import { AppSegment, AppSegmentedControl, AppSwitch } from '../../ui/controls.mj
 import { t, uiLanguage } from '../../i18n/index.mjs';
 import SmoothScrollingSettings from './SmoothScrollingSettings.vue';
 import SkipReferencesSettings from './SkipReferencesSettings.vue';
+import CoverOriginalTextSettings from './CoverOriginalTextSettings.vue';
 const optimizeParagraphGaps = defineModel('optimizeParagraphGaps');
 const reducePadding = defineModel('reducePadding');
 const windowMode = defineModel('windowMode');
@@ -123,6 +124,7 @@ const title = computed(
         <span id="reduce-padding-label">{{ t('appearance.reducePadding') }}</span>
         <AppSwitch v-model="reducePadding" aria-labelledby="reduce-padding-label" />
       </div>
+      <CoverOriginalTextSettings />
       <SmoothScrollingSettings />
       <SkipReferencesSettings />
     </div>

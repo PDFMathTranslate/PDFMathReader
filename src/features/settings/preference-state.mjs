@@ -13,6 +13,7 @@ export function createPreferenceState() {
   const outlineTopicSentencesEnabled = ref(false);
   const translationCompareEnabled = ref(false);
   const watermarkRemovalEnabled = ref(false);
+  const coverOriginalText = ref(false);
   const recentMagicZoomEnabled = ref(false);
   const tfidfWeightingEnabled = ref(false);
   const forceSmoothScrolling = ref(false);
@@ -109,6 +110,7 @@ export function createPreferenceState() {
     outlineTopicSentencesEnabled,
     translationCompareEnabled,
     watermarkRemovalEnabled,
+    coverOriginalText,
     recentMagicZoomEnabled,
     tfidfWeightingEnabled,
     forceSmoothScrolling,
