@@ -361,15 +361,16 @@ export function createApplicationMenu({
   };
 
   const rebuild = () => {
+    const appName = smoke ? app.name : 'PDFMathReader';
     const template = [
       {
         id: 'app-menu',
-        label: smoke ? app.name : 'PDFMathReader',
+        label: appName,
         submenu: [
-          { id: 'app-about', role: 'about' },
+          { id: 'app-about', role: 'about', label: `About ${appName}` },
           command('Settings…', accelerator(','), 'settings', 'app-settings'),
           { type: 'separator' },
-          { id: 'app-quit', role: 'quit' },
+          { id: 'app-quit', role: 'quit', label: `Quit ${appName}` },
         ],
       },
       {
@@ -479,13 +480,13 @@ export function createApplicationMenu({
         submenu: [
           command('Preference', undefined, 'preferences', 'edit-preferences'),
           { type: 'separator' },
-          { role: 'undo' },
-          { role: 'redo' },
+          { role: 'undo', label: 'Undo' },
+          { role: 'redo', label: 'Redo' },
           { type: 'separator' },
-          { role: 'cut' },
-          { role: 'copy' },
-          { role: 'paste' },
-          { role: 'selectAll' },
+          { role: 'cut', label: 'Cut' },
+          { role: 'copy', label: 'Copy' },
+          { role: 'paste', label: 'Paste' },
+          { role: 'selectAll', label: 'Select All' },
           { type: 'separator' },
           {
             ...command('Rotate Current Page', undefined, 'page-edit:rotate', 'edit-rotate-page'),
@@ -585,7 +586,7 @@ export function createApplicationMenu({
               (target || focusedWindow())?.webContents.send('reader:action', 'columns:' + columns),
           })),
           { type: 'separator' },
-          { id: 'view-fullscreen', role: 'togglefullscreen' },
+          { id: 'view-fullscreen', role: 'togglefullscreen', label: 'Toggle Full Screen' },
         ],
       },
       {
@@ -667,11 +668,11 @@ export function createApplicationMenu({
               label: 'Window',
               role: 'windowMenu',
               submenu: [
-                { id: 'window-minimize', role: 'minimize' },
-                { id: 'window-zoom', role: 'zoom' },
+                { id: 'window-minimize', role: 'minimize', label: 'Minimize' },
+                { id: 'window-zoom', role: 'zoom', label: 'Zoom' },
                 ...tabMenuItems(),
                 { type: 'separator' },
-                { id: 'window-front', role: 'front' },
+                { id: 'window-front', role: 'front', label: 'Bring All to Front' },
               ],
             },
           ]),

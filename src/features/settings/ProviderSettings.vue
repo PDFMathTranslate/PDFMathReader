@@ -459,6 +459,24 @@ const freeThanks = computed(
     })[uiLanguage.value] ||
     'Thank you to SiliconFlow for providing this free translation service. No API key is required.',
 );
+const kernelApiKeyOverrideLabels = {
+  en: 'Kernel API key (optional override)',
+  'zh-CN': '此内核的密钥（可选覆盖）',
+  'zh-TW': '此核心的金鑰（可選覆寫）',
+  ja: 'カーネル API キー（任意の上書き）',
+  ko: '커널 API 키(선택적 재정의)',
+  fr: 'Clé API du noyau (remplacement facultatif)',
+  es: 'Clave API del núcleo (sustitución opcional)',
+  de: 'Kernel-API-Schlüssel (optionale Überschreibung)',
+  pt: 'Chave API do kernel (substituição opcional)',
+  ru: 'Ключ API ядра (необязательная замена)',
+  ar: 'مفتاح API للنواة (تجاوز اختياري)',
+  arz: 'مفتاح API للنواة (استبدال اختياري)',
+  hi: 'कर्नेल API कुंजी (वैकल्पिक ओवरराइड)',
+  bn: 'কার্নেল API কী (ঐচ্ছিক ওভাররাইড)',
+  ur: 'کرنل API کلید (اختیاری متبادل)',
+  pcm: 'Kernel API key (optional override)',
+};
 function fieldLabel(field) {
   if (
     accountVisible.value &&
@@ -466,9 +484,7 @@ function fieldLabel(field) {
     /api_key|^key$/i.test(field.id) &&
     props.sharedOpenAIConfigured
   )
-    return uiLanguage.value.startsWith('zh')
-      ? '此内核的密钥（可选覆盖）'
-      : 'Kernel API key (optional override)';
+    return kernelApiKeyOverrideLabels[uiLanguage.value] || kernelApiKeyOverrideLabels.en;
   return field.required ? `${field.label} *` : field.label;
 }
 function fieldValue(field, serviceId = selectedProviderId.value) {

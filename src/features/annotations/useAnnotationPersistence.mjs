@@ -1,4 +1,5 @@
 import { ref, onBeforeUnmount } from 'vue';
+import { t } from '../../i18n/index.mjs';
 
 export function useAnnotationPersistence(notifyCopy) {
   const annotations = ref([]),
@@ -22,7 +23,11 @@ export function useAnnotationPersistence(notifyCopy) {
     else localStorage.setItem('annotations:' + key, JSON.stringify(annotations));
     if (!annotationSaved.has(key)) {
       annotationSaved.add(key);
-      notifyCopy(window.previewAnnotations ? '批注已自动保存' : '批注已自动保存到此浏览器');
+      notifyCopy(
+        window.previewAnnotations
+          ? t('annotations.autoSaved')
+          : t('annotations.autoSavedToBrowser'),
+      );
     }
   }
   function enqueueAnnotationWrite(snapshot) {
@@ -31,7 +36,7 @@ export function useAnnotationPersistence(notifyCopy) {
     return write;
   }
   function reportAnnotationFailure(error) {
-    notifyCopy('批注保存失败：' + error.message, 5000);
+    notifyCopy(t('annotations.saveFailed', { error: error.message }), 5000);
   }
   function saveAnnotations(value) {
     annotations.value = value;

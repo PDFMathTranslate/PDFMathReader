@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, inject } from 'vue';
-import { uiLanguage } from '../../i18n/index.mjs';
+import { t, uiLanguage } from '../../i18n/index.mjs';
 import {
   informationRunRanges,
   informationTextSegments,
@@ -412,7 +412,7 @@ onBeforeUnmount(() => {
     ref="host"
     class="reading-text-layer textLayer"
     :class="{ 'topic-layer-only': !selectable }"
-    aria-label="Selectable document text"
+    :aria-label="t('reader.selectableDocumentText')"
     @click="followDoi"
   ></div>
 </template>

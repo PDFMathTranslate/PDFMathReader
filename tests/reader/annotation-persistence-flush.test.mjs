@@ -60,7 +60,10 @@ test('flush retries the latest captured annotation snapshot after a failed save'
     assert.equal(calls[0].key, 'document-before-close');
     assert.deepEqual(calls[0].nativeRefs, [{ id: 'native-reference' }]);
     assert.equal('animateUntil' in calls[0].annotations[0], false);
-    assert.deepEqual(notices, [['批注保存失败：offline', 5000], ['批注已自动保存']]);
+    assert.deepEqual(notices, [
+      ['Could not save annotations: offline', 5000],
+      ['Annotations saved automatically'],
+    ]);
   } finally {
     f.cleanup();
     globalThis.window = originalWindow;
@@ -88,8 +91,8 @@ test('flush rejects when the retry of the latest annotation snapshot fails', asy
 
     assert.equal(attempts, 2);
     assert.deepEqual(notices, [
-      ['批注保存失败：still offline', 5000],
-      ['批注保存失败：still offline', 5000],
+      ['Could not save annotations: still offline', 5000],
+      ['Could not save annotations: still offline', 5000],
     ]);
   } finally {
     f.cleanup();

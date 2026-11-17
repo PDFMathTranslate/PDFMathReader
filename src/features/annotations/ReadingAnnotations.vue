@@ -3,6 +3,7 @@ import { paraphrasePrompt } from '../../../shared/reader/ai-paraphrase.mjs';
 import { requestGlossaryTerm, normalizeGlossaryTerm } from '../settings/quick-glossary.mjs';
 import { menuLabel } from '../../../shared/i18n/menu.mjs';
 import { t, uiLanguage } from '../../i18n/index.mjs';
+import { ANNOTATION_MENU_LABELS } from '../../../shared/i18n/annotation-menu-labels.mjs';
 import { ref, computed, inject, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { ownsTranslationGeometry } from '../translation/translation-versions.mjs';
 import {
@@ -124,7 +125,7 @@ const editorController = useAnnotationEditor({
 const { editor, draft, comment, commit } = editorController;
 
 const colors = ['#FFFF00', '#00FF00', '#00FFFF', '#FF0000', '#AF52DE'];
-const colorNames = ['荧光黄', '荧光绿', '荧光青', '荧光红', '紫色'];
+const colorNames = ['yellow', 'green', 'cyan', 'red', 'purple'];
 const highlightOpacity = 0.42;
 const favorite = ref('#00FFFF');
 try {
@@ -450,7 +451,7 @@ function hint() {
   if (localStorage.getItem('annotationDeleteHint')) return;
   localStorage.setItem('annotationDeleteHint', '1');
   void window.previewAnnotations?.markDeleteHint?.().catch(() => {});
-  emit('notice', { text: '甩动两次，或连续按两次 Delete 删除', ...pointer.value });
+  emit('notice', { text: t('annotations.deleteHint'), ...pointer.value });
 }
 function key(e) {
   if (e.repeat && ['Delete', 'Backspace'].includes(e.key)) return;
@@ -551,7 +552,10 @@ async function openContextMenu(a, event) {
       const current = props.annotations.find((item) => item.id === a.id);
       if (name && current) await action(name, current);
     } catch (error) {
-      emit('notice', { text: '无法打开菜单：' + error.message, ...pointer.value });
+      emit('notice', {
+        text: t('annotations.openMenuFailed', { error: error.message }),
+        ...pointer.value,
+      });
     }
     return;
   }
@@ -618,8 +622,7 @@ async function action(name, a = menu.value?.a) {
       return;
     }
     if (name === '和人工智能讨论' || name === 'Paraphrase via AI chats...') {
-      if (!window.previewAnnotations?.handover)
-        throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
+      if (!window.previewAnnotations?.handover) throw Error(t('annotations.desktopAIOnly'));
       const result = await window.previewAnnotations.handover(
         name === 'Paraphrase via AI chats...' ? paraphrasePrompt(a.text, a.comment) : text,
       );
@@ -627,10 +630,10 @@ async function action(name, a = menu.value?.a) {
         emit('notice', {
           text:
             result.delivery === 'prefilled'
-              ? `已请求 ${result.client} 将选中文本填入新对话，请检查后发送`
+              ? t('annotations.aiHandoverPrefilled', { client: result.client })
               : result.delivery === 'pasted'
-                ? `已向 ${result.client} 对话输入框粘贴上下文，请检查后发送`
-                : `已打开 ${result.client}，上下文已复制。请点击对话输入框并粘贴；自动粘贴需要允许 PDFMathReader 使用辅助功能。`,
+                ? t('annotations.aiHandoverPasted', { client: result.client })
+                : t('annotations.aiHandoverCopied', { client: result.client }),
           ...pointer.value,
         });
       return;
@@ -638,7 +641,7 @@ async function action(name, a = menu.value?.a) {
     if (name === 'Paraphrase') {
       assistController?.abort();
       const controller = (assistController = new AbortController());
-      const result = { title: 'Paraphrase', text: '', busy: true, error: '' };
+      const result = { title: t('annotations.paraphrase'), text: '', busy: true, error: '' };
       assistance.value = result;
       try {
         const response = await fetch('/api/reading-assist', {
@@ -648,7 +651,7 @@ async function action(name, a = menu.value?.a) {
           signal: controller.signal,
         });
         const data = await response.json();
-        if (!response.ok) throw Error(data.error || '请求失败');
+        if (!response.ok) throw Error(data.error || t('annotations.requestFailed'));
         result.text = data.text;
       } catch (e) {
         if (e.name !== 'AbortError') result.error = e.message;
@@ -661,10 +664,16 @@ async function action(name, a = menu.value?.a) {
     await (
       window.previewClipboard?.writeText || navigator.clipboard.writeText.bind(navigator.clipboard)
     )(text);
-    emit('notice', { text: name === '分享' ? '已复制分享内容' : '已复制', ...pointer.value });
+    emit('notice', {
+      text: name === '分享' ? t('annotations.sharedContentCopied') : t('copy.copied'),
+      ...pointer.value,
+    });
   } catch (e) {
     if (e.name !== 'AbortError')
-      emit('notice', { text: '无法完成操作：' + e.message, ...pointer.value });
+      emit('notice', {
+        text: t('annotations.operationFailed', { error: e.message }),
+        ...pointer.value,
+      });
   }
 }
 onMounted(() => {
@@ -761,7 +770,9 @@ watch(
         }"
         :aria-hidden="erasing.has(a.id) || undefined"
         :tabindex="erasing.has(a.id) ? -1 : 0"
-        :aria-label="a.kind === 'comment' ? '查看批注：' + a.comment : a.text"
+        :aria-label="
+          a.kind === 'comment' ? t('annotations.viewCommentWithText', { text: a.comment }) : a.text
+        "
         @pointerdown.stop="down(a, $event)"
         @pointermove="move"
         @pointerup="finishGesture($event)"
@@ -780,7 +791,7 @@ watch(
           'annotation-comment-note': a.kind === 'comment' || !!a.comment?.trim(),
           'annotation-erasing': erasing.has(a.id),
         }"
-        title="查看批注"
+        :title="t('annotations.viewComment')"
         :style="{
           ...position(noteRect(a)),
           ...motionStyle(a, noteRect(a)),
@@ -824,7 +835,7 @@ watch(
         :aria-label="assistance.title"
       >
         <strong>{{ assistance.title }}</strong>
-        <p v-if="assistance.busy" role="status">正在处理…</p>
+        <p v-if="assistance.busy" role="status">{{ t('annotations.processing') }}</p>
         <p v-else>{{ assistance.error || assistance.text }}</p>
         <button
           @click="
@@ -832,7 +843,7 @@ watch(
             assistance = null;
           "
         >
-          关闭
+          {{ t('annotations.close') }}
         </button>
       </section>
     </div>
@@ -848,12 +859,21 @@ watch(
         @pointermove="touch"
         @keydown="touch"
       >
-        <div class="annotation-toolbar-actions" role="toolbar" aria-label="文字批注">
+        <div
+          class="annotation-toolbar-actions"
+          role="toolbar"
+          :aria-label="t('annotations.textAnnotationToolbar')"
+        >
           <button
             v-for="(c, i) in colors"
             :key="i"
-            :aria-label="colorNames[i]"
-            :title="colorNames[i] + ' (' + (i + 1) + ')'"
+            :aria-label="t('annotations.colors.' + colorNames[i])"
+            :title="
+              t('annotations.colorWithShortcut', {
+                color: t('annotations.colors.' + colorNames[i]),
+                shortcut: i + 1,
+              })
+            "
             :aria-keyshortcuts="String(i + 1)"
             :aria-pressed="selection?.id ? selection.color?.toUpperCase() === c : undefined"
             @click="add('highlight', c)"
@@ -865,7 +885,7 @@ watch(
             /></button
           ><button
             v-if="false"
-            aria-label="自定义高亮颜色"
+            :aria-label="t('annotations.customHighlightColor')"
             @click="
               clearTimeout(timer);
               colorInput.click();
@@ -883,8 +903,8 @@ watch(
             :value="favorite"
             @change="add('highlight', $event.target.value)"
           /><span class="annotation-separator" /><button
-            aria-label="添加批注"
-            :title="'添加批注 (' + (colors.length + 1) + ')'"
+            :aria-label="t('annotations.addComment')"
+            :title="t('annotations.addCommentWithShortcut', { shortcut: colors.length + 1 })"
             :aria-keyshortcuts="String(colors.length + 1)"
             @click="comment(selection?.id ? selection : undefined)"
           >
@@ -908,8 +928,16 @@ watch(
             v-if="selection?.id"
             class="annotation-delete"
             :class="{ 'annotation-delete-armed': deleteArmed }"
-            :aria-label="deleteArmed ? '确认删除高亮' : '删除高亮'"
-            :title="deleteArmed ? '单击删除高亮' : '单击确认删除高亮'"
+            :aria-label="
+              t(deleteArmed ? 'annotations.confirmDeleteHighlight' : 'annotations.deleteHighlight')
+            "
+            :title="
+              t(
+                deleteArmed
+                  ? 'annotations.clickDeleteHighlight'
+                  : 'annotations.clickConfirmDeleteHighlight',
+              )
+            "
             @click="deleteArmed ? deleteFromToolbar() : armToolbarDelete()"
           >
             <svg
@@ -932,7 +960,11 @@ watch(
             </svg>
           </button>
         </div>
-        <section v-if="toolbarComment" class="annotation-toolbar-comment" aria-label="评论">
+        <section
+          v-if="toolbarComment"
+          class="annotation-toolbar-comment"
+          :aria-label="t('annotations.comment')"
+        >
           <p>{{ toolbarComment }}</p>
         </section>
       </div></Transition
@@ -946,10 +978,19 @@ watch(
         :style="readerPoint()"
       >
         <header class="annotation-reader-header">
-          <span
-            >{{ opened.origin === 'translation' ? '译文' : '原文'
-            }}{{ opened.kind === 'highlight' ? '高亮' : '批注' }}</span
-          ><button @click="opened = null" aria-label="关闭">
+          <span>{{
+            t('annotations.annotationTitle', {
+              origin: t(
+                opened.origin === 'translation'
+                  ? 'annotations.translation'
+                  : 'annotations.original',
+              ),
+              kind: t(
+                opened.kind === 'highlight' ? 'annotations.highlight' : 'annotations.comment',
+              ),
+            })
+          }}</span
+          ><button @click="opened = null" :aria-label="t('annotations.close')">
             <svg
               viewBox="0 0 16 16"
               fill="none"
@@ -971,7 +1012,7 @@ watch(
         </p>
         <time>{{
           opened.dateUnknown && !opened.modifiedAt
-            ? '日期未知'
+            ? t('annotations.dateUnknown')
             : new Date(opened.modifiedAt || opened.createdAt).toLocaleString()
         }}</time>
       </div></Transition
@@ -989,13 +1030,19 @@ watch(
           :style="editorPoint()"
           role="dialog"
           aria-modal="true"
-          aria-label="添加批注"
+          :aria-label="t('annotations.addComment')"
           @submit.prevent="commit"
         >
-          <textarea v-model="draft" placeholder="输入评论…" aria-label="评论" />
+          <textarea
+            v-model="draft"
+            :placeholder="t('annotations.commentPlaceholder')"
+            :aria-label="t('annotations.comment')"
+          />
           <div>
-            <button type="button" @click="editor = null">关闭</button
-            ><button type="submit" :disabled="!draft.trim()">保存 ⌘↵</button>
+            <button type="button" @click="editor = null">{{ t('annotations.close') }}</button
+            ><button type="submit" :disabled="!draft.trim()">
+              {{ t('annotations.saveWithShortcut') }}
+            </button>
           </div>
         </form>
       </div></Transition
@@ -1028,13 +1075,7 @@ watch(
         role="menuitem"
         @click="action(name)"
       >
-        {{
-          name === 'glossary-selection'
-            ? menuLabel('Add to translation glossary...', uiLanguage)
-            : name === '在文档内搜索'
-              ? t('toolbar.searchDocument')
-              : menuLabel(name, uiLanguage)
-        }}
+        {{ menuLabel(ANNOTATION_MENU_LABELS[name] || name, uiLanguage) }}
       </button>
     </div>
     <div v-if="confirming" :data-platform="popupPlatform" class="annotation-ui annotation-modal">
@@ -1043,17 +1084,33 @@ watch(
         class="annotation-confirm annotation-delete-confirm"
         role="alertdialog"
         aria-modal="true"
-        :aria-label="`删除这条${confirming.kind === 'highlight' ? '高亮' : '批注'}？`"
+        :aria-label="
+          t('annotations.confirmDelete', {
+            kind: t(
+              confirming.kind === 'highlight' ? 'annotations.highlight' : 'annotations.comment',
+            ),
+          })
+        "
         @keydown.tab.prevent="
           confirmPopup
             .querySelectorAll('button')
             [$event.target === confirmPopup.querySelector('button') ? 1 : 0].focus()
         "
       >
-        <p>删除这条{{ confirming.kind === 'highlight' ? '高亮' : '批注' }}？</p>
+        <p>
+          {{
+            t('annotations.confirmDelete', {
+              kind: t(
+                confirming.kind === 'highlight' ? 'annotations.highlight' : 'annotations.comment',
+              ),
+            })
+          }}
+        </p>
         <div class="annotation-confirm-actions">
-          <button @click="confirming = null">取消</button
-          ><button class="annotation-confirm-destructive" @click="remove(confirming)">删除</button>
+          <button @click="confirming = null">{{ t('annotations.cancel') }}</button
+          ><button class="annotation-confirm-destructive" @click="remove(confirming)">
+            {{ t('annotations.delete') }}
+          </button>
         </div>
       </section>
     </div>

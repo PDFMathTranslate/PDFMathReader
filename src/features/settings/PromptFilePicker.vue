@@ -10,12 +10,22 @@ const busy = ref(false),
 const labels = computed(
   () =>
     ({
+      en: ['Choose file…', 'Clear', 'No file selected'],
       'zh-CN': ['选择文件…', '清除', '未选择文件'],
       'zh-TW': ['選擇檔案…', '清除', '尚未選擇檔案'],
       ja: ['ファイルを選択…', 'クリア', 'ファイル未選択'],
       ko: ['파일 선택…', '지우기', '선택한 파일 없음'],
       fr: ['Choisir un fichier…', 'Effacer', 'Aucun fichier sélectionné'],
       es: ['Elegir archivo…', 'Borrar', 'Ningún archivo seleccionado'],
+      de: ['Datei auswählen…', 'Löschen', 'Keine Datei ausgewählt'],
+      pt: ['Escolher ficheiro…', 'Limpar', 'Nenhum ficheiro selecionado'],
+      ru: ['Выбрать файл…', 'Очистить', 'Файл не выбран'],
+      ar: ['اختيار ملف…', 'مسح', 'لم يتم اختيار ملف'],
+      arz: ['اختار ملف…', 'امسح', 'مفيش ملف متختار'],
+      hi: ['फ़ाइल चुनें…', 'साफ़ करें', 'कोई फ़ाइल नहीं चुनी गई'],
+      bn: ['ফাইল বেছে নিন…', 'মুছুন', 'কোনো ফাইল নির্বাচিত নেই'],
+      ur: ['فائل منتخب کریں…', 'صاف کریں', 'کوئی فائل منتخب نہیں کی گئی'],
+      pcm: ['Choose file…', 'Clear', 'No file don choose'],
     })[uiLanguage.value] || ['Choose file…', 'Clear', 'No file selected'],
 );
 async function choose() {

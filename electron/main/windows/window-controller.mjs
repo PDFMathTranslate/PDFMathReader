@@ -554,8 +554,8 @@ export function createWindowController({
           click: () => target.webContents.send('reader:action', 'copy-email', email),
         })),
         ...(links.length || emails.length ? [{ type: 'separator' }] : []),
-        { role: 'copy' },
-        { role: 'selectAll' },
+        { role: 'copy', label: menuLabel('Copy', locale) },
+        { role: 'selectAll', label: menuLabel('Select All', locale) },
         { type: 'separator' },
         {
           label: menuLabel('Add to translation glossary...', locale),
@@ -575,7 +575,7 @@ export function createWindowController({
             target.webContents.send('reader:action', 'paraphrase-selection', params.selectionText),
         });
         template.push({
-          label: 'AI Chat…',
+          label: menuLabel('AI Chat…', locale),
           click: () =>
             target.webContents.send('reader:action', 'chat-selection', params.selectionText),
         });
@@ -587,7 +587,7 @@ export function createWindowController({
         template.push(
           { type: 'separator' },
           {
-            label: 'Look Up Selection',
+            label: menuLabel('Look Up Selection', locale),
             click: () => target.webContents.showDefinitionForSelection(),
           },
         );
@@ -596,11 +596,11 @@ export function createWindowController({
       template.push(
         { type: 'separator' },
         {
-          label: 'Search on Google',
+          label: menuLabel('Search on Google', locale),
           click: () => void shellApi.openExternal(`https://www.google.com/search?q=${query}`),
         },
         {
-          label: 'Search on Google Scholar',
+          label: menuLabel('Search on Google Scholar', locale),
           click: () => void shellApi.openExternal(`https://scholar.google.com/scholar?q=${query}`),
         },
       );

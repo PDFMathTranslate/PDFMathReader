@@ -41,12 +41,13 @@ export function createAIDiscussionService({ platform = process.platform, runFile
     return CLIENTS.filter((_, index) => available[index]);
   }
 
-  async function open(client, text) {
+  async function open(client, text, label = (message) => message) {
     if (!CLIENTS.includes(client)) throw Error('Invalid AI client.');
     if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
       throw Error('Invalid discussion text.');
-    if (platform !== 'darwin') throw Error('本机 AI 对话目前仅支持 macOS。');
-    if (!(await installed(client))) throw Error(`未找到本机 ${client}，请先安装。`);
+    if (platform !== 'darwin') throw Error(label('Local AI chat is only available on macOS.'));
+    if (!(await installed(client)))
+      throw Error(label('{client} was not found. Install it first.').replace('{client}', client));
     if (client === 'Claude' && text.length <= 14000) {
       await runFile(
         '/usr/bin/open',

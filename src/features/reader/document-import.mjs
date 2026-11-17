@@ -246,7 +246,7 @@ export function createDocumentImport({
           if (error?.companionLock || error?.code === 'DOCUMENT_LOCKED') {
             if (token === session.epoch) {
               await actions.documentLifecycle.closeDocumentNow().catch(() => {});
-              feedback.error.value = error.message || 'This document is open on another device.';
+              feedback.error.value = error.message || t('reader.documentOpenOnAnotherDevice');
             }
             return;
           }
@@ -291,7 +291,7 @@ export function createDocumentImport({
           ),
         ];
       } catch (e) {
-        feedback.error.value = '无法读取批注：' + e.message;
+        feedback.error.value = t('annotations.readFailed', { error: e.message });
       }
       if (token !== session.epoch) return;
       await recoverHighlightedText(session.pdf, annotations.annotations.value);

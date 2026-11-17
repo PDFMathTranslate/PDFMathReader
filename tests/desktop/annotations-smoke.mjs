@@ -35,6 +35,7 @@ export async function verifyAnnotations(window, recents) {
         ),
     );
   }
+  const menuText = { 复制: 'Copy', 修改: 'Edit Comment…', 删除: 'Delete' };
   async function contextAction(selector, action, kind = 'comment') {
     const dispatch = `document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:300,clientY:300}))`;
     if (process.platform !== 'darwin') {
@@ -42,7 +43,7 @@ export async function verifyAnnotations(window, recents) {
       await wait(`!!document.querySelector('.annotation-menu')`);
       if (action)
         await run(
-          `Array.from(document.querySelectorAll('.annotation-menu button')).find(b=>b.textContent===${JSON.stringify(action)}).click()`,
+          `Array.from(document.querySelectorAll('.annotation-menu button')).find(b=>b.textContent===${JSON.stringify(menuText[action])}).click()`,
         );
       else
         await run(
@@ -63,15 +64,17 @@ export async function verifyAnnotations(window, recents) {
       assert.deepEqual(
         captured.menu.items.filter((i) => i.type !== 'separator').map((i) => i.label),
         kind === 'comment'
-          ? ['复制', '分享', '和人工智能讨论', '修改', '删除']
+          ? ['Copy', 'Share', 'AI Chat…', 'Paraphrase via AI chats...', 'Edit Comment…', 'Delete']
           : [
-              '复制',
-              '分享',
+              'Copy',
+              'Share',
               'Search in Document',
-              '谷歌搜索',
-              '谷歌学术搜索',
-              '和人工智能讨论',
-              '删除',
+              'Add to translation glossary...',
+              'Search on Google',
+              'Search on Google Scholar',
+              'AI Chat…',
+              'Paraphrase via AI chats...',
+              'Delete',
             ],
       );
       assert.equal(
@@ -79,7 +82,7 @@ export async function verifyAnnotations(window, recents) {
         false,
         'macOS has no custom context menu',
       );
-      if (action) captured.menu.items.find((i) => i.label === action).click();
+      if (action) captured.menu.items.find((i) => i.label === menuText[action]).click();
       captured.options.callback();
       await pause(100);
     } finally {
@@ -135,17 +138,17 @@ export async function verifyAnnotations(window, recents) {
   await select();
   assert.equal(await run(`document.querySelectorAll('.annotation-toolbar button').length`), 6);
   assert.equal(
-    await run(`document.querySelector('[aria-label="紫色"]').getAttribute('aria-keyshortcuts')`),
+    await run(`document.querySelector('[aria-label="Purple"]').getAttribute('aria-keyshortcuts')`),
     '5',
   );
   assert.equal(
     await run(
-      `document.querySelector('[aria-label="添加批注"]').getAttribute('aria-keyshortcuts')`,
+      `document.querySelector('[aria-label="Add comment"]').getAttribute('aria-keyshortcuts')`,
     ),
     '6',
   );
   const commentIcon = await run(
-    `(()=>{const el=document.querySelector('[aria-label="添加批注"] .annotation-comment-icon'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {tag:el.tagName,paths:el.querySelectorAll('path').length,stroke:s.stroke,width:r.width,height:r.height};})()`,
+    `(()=>{const el=document.querySelector('[aria-label="Add comment"] .annotation-comment-icon'),s=getComputedStyle(el),r=el.getBoundingClientRect();return {tag:el.tagName,paths:el.querySelectorAll('path').length,stroke:s.stroke,width:r.width,height:r.height};})()`,
   );
   assert.equal(commentIcon.tag, 'svg');
   assert.equal(commentIcon.paths, 2);
@@ -177,7 +180,7 @@ export async function verifyAnnotations(window, recents) {
     }
     await run(`document.documentElement.dataset.appearance='light'`);
     await capture('palette');
-    await run(`document.querySelector('[aria-label="添加批注"]').click()`);
+    await run(`document.querySelector('[aria-label="Add comment"]').click()`);
     await wait(`!!document.querySelector('.annotation-editor textarea')`);
     await run(`(()=>{const t=document.querySelector('.annotation-editor textarea');
       t.value='气死毛咕噜 😅';t.dispatchEvent(new Event('input',{bubbles:true}));
@@ -196,9 +199,9 @@ export async function verifyAnnotations(window, recents) {
     app.exit(0);
     return;
   }
-  await run(`document.querySelector('[aria-label="荧光黄"]').click()`);
+  await run(`document.querySelector('[aria-label="Fluorescent yellow"]').click()`);
   await wait(`!!document.querySelector('.annotation-highlight')`);
-  await wait(`document.querySelector('.copy-toast')?.textContent.includes('自动保存')`);
+  await wait(`document.querySelector('.copy-toast')?.textContent.includes('saved automatically')`);
   assert.equal(
     await run(`getComputedStyle(document.querySelector('.annotation-highlight')).borderRadius`),
     '6px',
@@ -263,7 +266,7 @@ export async function verifyAnnotations(window, recents) {
     let confirmed = false;
     dialog.showMessageBox = async (target, options) => {
       assert.equal(target, window);
-      assert.deepEqual(options.buttons, ['取消', '删除']);
+      assert.deepEqual(options.buttons, ['Cancel', 'Delete']);
       confirmed = true;
       return { response: 0 };
     };
@@ -314,7 +317,7 @@ export async function verifyAnnotations(window, recents) {
     (await window.webContents.capturePage()).toPNG(),
   );
 
-  await run(`document.querySelector('.annotation-reader [aria-label="关闭"]').click()`);
+  await run(`document.querySelector('.annotation-reader [aria-label="Close"]').click()`);
   await wait(`!document.querySelector('.annotation-reader')`);
   await run(`document.querySelector('.annotation-note').click()`);
   await wait(
@@ -379,7 +382,7 @@ export async function verifyAnnotations(window, recents) {
   );
   await wait(`!document.querySelector('.annotation-highlight')`);
   await select();
-  await run(`document.querySelector('[aria-label="荧光绿"]').click()`);
+  await run(`document.querySelector('[aria-label="Fluorescent green"]').click()`);
   await wait(`!!document.querySelector('.annotation-highlight')`);
   await run(
     `(()=>{const h=document.querySelector('.annotation-highlight');h.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1,clientX:200,clientY:200}));for(const x of [220,180])h.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:1,clientX:x,clientY:200}));return true;})()`,
@@ -487,7 +490,7 @@ export async function verifyAnnotations(window, recents) {
       await run(`document.querySelector('.annotation-reader time').textContent`),
       /2025/,
     );
-    await run(`document.querySelector('.annotation-reader [aria-label="关闭"]').click()`);
+    await run(`document.querySelector('.annotation-reader [aria-label="Close"]').click()`);
     await wait(`!!document.querySelector('.annotation-note')`);
     await contextAction('.annotation-note', '删除');
     await wait(`!!document.querySelector('.annotation-confirm')`);

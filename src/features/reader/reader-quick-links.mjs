@@ -1,5 +1,6 @@
 import { quickLinkAnchor, quickLinkBox } from './quick-links.mjs';
 import { sameVersion } from '../translation/translation-versions.mjs';
+import { t } from '../../i18n/index.mjs';
 
 export function createReaderQuickLinks({
   session,
@@ -65,7 +66,7 @@ export function createReaderQuickLinks({
           );
       } catch {
         shell.quickLinks.value = shell.quickLinks.value.filter((l) => l.id !== link.id);
-        actions.rootActions.notifyCopy('快捷链接保存失败');
+        actions.rootActions.notifyCopy(t('reader.quickLinksSaveFailed'));
         return;
       }
     }

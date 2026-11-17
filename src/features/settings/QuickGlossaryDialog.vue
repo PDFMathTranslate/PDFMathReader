@@ -14,6 +14,7 @@ import {
   GLOSSARY_REQUEST,
   normalizeGlossaryTerm,
 } from './quick-glossary.mjs';
+import { quickGlossaryLabel } from './quick-glossary-labels.mjs';
 const libraries = defineModel({ type: Array, required: true });
 const preferences = inject('documentLanguagePreferences', null);
 const dialog = ref(null);
@@ -26,6 +27,23 @@ const error = ref('');
 const title = computed(() =>
   menuLabel('Add to translation glossary...', uiLanguage.value).replace(/(?:\.\.\.|…)$/, ''),
 );
+const labels = computed(() => {
+  const language = uiLanguage.value;
+  return {
+    hint: quickGlossaryLabel('hint', language),
+    sourceTerm: quickGlossaryLabel('sourceTerm', language),
+    targetTerm: quickGlossaryLabel('targetTerm', language),
+    glossary: quickGlossaryLabel('glossary', language),
+    unnamedGlossary: quickGlossaryLabel('unnamedGlossary', language),
+    disabledSuffix: quickGlossaryLabel('disabledSuffix', language),
+    newGlossary: quickGlossaryLabel('newGlossary', language),
+    replaceWarning: quickGlossaryLabel('replaceWarning', language),
+    cancel: quickGlossaryLabel('cancel', language),
+    save: quickGlossaryLabel('save', language),
+    defaultSource: quickGlossaryLabel('defaultSource', language),
+    defaultTarget: quickGlossaryLabel('defaultTarget', language),
+  };
+});
 const duplicate = computed(() =>
   libraries.value
     .find((library) => library.id === libraryId.value)
@@ -49,7 +67,7 @@ function save() {
       libraryId: libraryId.value === newLibraryId ? '' : libraryId.value,
       source: source.value,
       target: target.value,
-      newLibraryName: `${preferences?.sourceLanguage?.value || 'Source'} → ${preferences?.language?.value || 'Translation'}`,
+      newLibraryName: `${preferences?.sourceLanguage?.value || labels.value.defaultSource} → ${preferences?.language?.value || labels.value.defaultTarget}`,
     });
     dialog.value.close();
   } catch (cause) {
@@ -71,25 +89,30 @@ onBeforeUnmount(() => window.removeEventListener(GLOSSARY_REQUEST, open));
       <form @submit.prevent="save">
         <header>
           <h2>{{ title }}</h2>
-          <p>Choose how this term should appear in new translations.</p>
+          <p>{{ labels.hint }}</p>
         </header>
         <div class="glossary-fields">
           <label class="glossary-field">
-            <span>Source term</span>
-            <AppTextField v-model="source" required maxlength="500" aria-label="Source term" />
+            <span>{{ labels.sourceTerm }}</span>
+            <AppTextField
+              v-model="source"
+              required
+              maxlength="500"
+              :aria-label="labels.sourceTerm"
+            />
           </label>
           <label class="glossary-field">
-            <span>Target term</span>
+            <span>{{ labels.targetTerm }}</span>
             <AppTextField
               ref="targetInput"
               v-model="target"
               required
               maxlength="500"
-              aria-label="Target term"
+              :aria-label="labels.targetTerm"
             />
           </label>
           <div class="glossary-field">
-            <span id="quick-glossary-library-label">Glossary</span>
+            <span id="quick-glossary-library-label">{{ labels.glossary }}</span>
             <AppPopUpButton
               v-model="libraryId"
               :teleport-to="false"
@@ -100,21 +123,26 @@ onBeforeUnmount(() => window.removeEventListener(GLOSSARY_REQUEST, open));
                 :key="library.id"
                 :value="library.id"
               >
-                {{ library.name || 'Unnamed glossary'
-                }}{{ library.enabled ? '' : ' (will be enabled)' }}
+                {{ library.name || labels.unnamedGlossary
+                }}{{ library.enabled ? '' : labels.disabledSuffix }}
               </AppPopUpButtonItem>
-              <AppPopUpButtonItem :value="newLibraryId">New glossary</AppPopUpButtonItem>
+              <AppPopUpButtonItem :value="newLibraryId">{{
+                labels.newGlossary
+              }}</AppPopUpButtonItem>
             </AppPopUpButton>
           </div>
         </div>
         <p v-if="duplicate" class="glossary-message">
-          Saving will replace the existing target term.
+          {{ labels.replaceWarning }}
         </p>
         <p v-if="error" class="glossary-error" role="alert">{{ error }}</p>
         <footer>
-          <AppButton type="button" @click="dialog.close()">Cancel</AppButton>
-          <AppButton type="submit" variant="prominent" :disabled="!source.trim() || !target.trim()"
-            >Save</AppButton
+          <AppButton type="button" @click="dialog.close()">{{ labels.cancel }}</AppButton>
+          <AppButton
+            type="submit"
+            variant="prominent"
+            :disabled="!source.trim() || !target.trim()"
+            >{{ labels.save }}</AppButton
           >
         </footer>
       </form>

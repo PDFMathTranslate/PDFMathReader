@@ -6,6 +6,7 @@ import {
   MENU_EXTRA_PAGE_EDIT_LABELS,
   MENU_EXTRA_QUIT_LABELS,
 } from './menu-extra.mjs';
+import { MENU_CONTEXT_MESSAGES } from './menu-context.mjs';
 import { MENU_TAB_KEYS, MENU_TAB_LABELS } from './menu-tabs.mjs';
 
 const menuMessages = {
@@ -1076,3 +1077,5 @@ for (const [locale, labels] of Object.entries({
   ],
 }))
   annotationExportKeys.forEach((key, index) => (menuMessages[locale][key] = labels[index]));
+for (const [locale, messages] of Object.entries(MENU_CONTEXT_MESSAGES))
+  for (const [key, value] of Object.entries(messages)) menuMessages[locale][key] ??= value;

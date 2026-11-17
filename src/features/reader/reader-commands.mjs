@@ -33,7 +33,7 @@ export function createReaderCommands({
       actions.rootActions.notifyCopy(
         typeof selectionText === 'string' && selectionText.trim()
           ? selectionText
-          : 'This document is open on another device.',
+          : t('reader.documentOpenOnAnotherDevice'),
         5000,
       );
       return;
@@ -42,7 +42,7 @@ export function createReaderCommands({
       actions.rootActions.notifyCopy(
         typeof selectionText === 'string' && selectionText.trim()
           ? selectionText
-          : 'Could not save this document. It remains open here; try closing again.',
+          : t('reader.documentSaveFailedWhileOpen'),
         6000,
       );
       return;
@@ -56,22 +56,21 @@ export function createReaderCommands({
       if (!text) return;
       void (async () => {
         try {
-          if (!window.previewAnnotations?.handover)
-            throw Error('请在桌面客户端中使用本机 ChatGPT、Claude 或 Gemini。');
+          if (!window.previewAnnotations?.handover) throw Error(t('annotations.desktopAIOnly'));
           const result = await window.previewAnnotations.handover(
             action === 'paraphrase-selection' ? paraphrasePrompt(text) : text,
           );
           if (result.cancelled) return;
           actions.rootActions.notifyCopy(
             result.delivery === 'prefilled'
-              ? `已请求 ${result.client} 将选中文本填入新对话，请检查后发送`
+              ? t('annotations.aiHandoverPrefilled', { client: result.client })
               : result.delivery === 'pasted'
-                ? `已向 ${result.client} 对话输入框粘贴上下文，请检查后发送`
-                : `已打开 ${result.client}，上下文已复制，请在对话输入框中粘贴。`,
+                ? t('annotations.aiHandoverPasted', { client: result.client })
+                : t('annotations.aiHandoverCopied', { client: result.client }),
             4500,
           );
         } catch (error) {
-          actions.rootActions.notifyCopy(error.message || '无法打开 AI Chat。', 4500);
+          actions.rootActions.notifyCopy(error.message || t('annotations.aiChatOpenFailed'), 4500);
         }
       })();
       return;
@@ -232,7 +231,7 @@ export function createReaderCommands({
       link.click();
       setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     } catch (error) {
-      actions.rootActions.notifyCopy(error.message || 'Could not export annotations.', 4500);
+      actions.rootActions.notifyCopy(error.message || t('reader.exportAnnotationsFailed'), 4500);
     }
   }
 

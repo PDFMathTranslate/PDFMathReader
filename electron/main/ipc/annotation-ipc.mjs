@@ -1,3 +1,4 @@
+import { ANNOTATION_MENU_LABELS } from '../../../shared/i18n/annotation-menu-labels.mjs';
 import { popupGlassMenu } from '../services/glass-menu.mjs';
 import { createAIDiscussionService } from '../services/ai-discussion.mjs';
 import { clipboard, dialog, Menu, ShareMenu, shell } from 'electron';
@@ -17,6 +18,11 @@ export function registerAnnotationIPC({
   runFile,
 }) {
   const aiDiscussion = createAIDiscussionService({ runFile, clipboard });
+  const localeFor = (target) =>
+    resolveUILanguage(
+      registry.stateFor(target)?.preferences?.uiLanguage || 'en',
+      app.getPreferredSystemLanguages()[0] || app.getLocale(),
+    );
   handle('previewAnnotations:prepare', async (event, value) => {
     const target = trustedWindow(event);
     if (!(value instanceof Uint8Array) || value.byteLength > 200 * 1024 * 1024)
@@ -32,10 +38,14 @@ export function registerAnnotationIPC({
   handle('previewAnnotations:confirmDelete', async (event, kind) => {
     const target = trustedWindow(event);
     if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
+    const locale = localeFor(target);
     const { response } = await dialog.showMessageBox(target, {
       type: 'warning',
-      message: `删除这条${kind === 'highlight' ? '高亮' : '批注'}？`,
-      buttons: ['取消', '删除'],
+      message: menuLabel(
+        kind === 'highlight' ? 'Delete this highlight?' : 'Delete this comment?',
+        locale,
+      ),
+      buttons: [menuLabel('Cancel', locale), menuLabel('Delete', locale)],
       defaultId: 0,
       cancelId: 0,
       noLink: true,
@@ -62,41 +72,32 @@ export function registerAnnotationIPC({
     if (!['highlight', 'comment'].includes(kind)) throw Error('Invalid annotation kind.');
     return new Promise((resolve) => {
       let selected = null;
-      const item = (label, displayLabel = label) => ({
+      const locale = localeFor(target);
+      const item = (
+        label,
+        displayLabel = menuLabel(ANNOTATION_MENU_LABELS[label] || label, locale),
+      ) => ({
         label: displayLabel,
         click: () => {
           selected = label;
         },
       });
-      const locale = resolveUILanguage(
-        registry.stateFor(target)?.preferences?.uiLanguage || 'en',
-        app.getPreferredSystemLanguages()[0] || app.getLocale(),
-      );
       const template =
         scope === 'sidebar'
-          ? [item('复制', menuLabel('Copy', locale)), item('删除', menuLabel('Delete', locale))]
+          ? [item('复制'), item('删除')]
           : [
               item('复制'),
               item('分享'),
               ...(kind === 'highlight'
                 ? [
-                    item(
-                      '在文档内搜索',
-                      menuLabel(
-                        'Search in Document',
-                        resolveUILanguage(
-                          registry.stateFor(target)?.preferences?.uiLanguage || 'en',
-                          app.getPreferredSystemLanguages()[0] || app.getLocale(),
-                        ),
-                      ),
-                    ),
-                    item('glossary-selection', menuLabel('Add to translation glossary...', locale)),
+                    item('在文档内搜索'),
+                    item('glossary-selection'),
                     item('谷歌搜索'),
                     item('谷歌学术搜索'),
                   ]
                 : []),
               item('和人工智能讨论'),
-              item('Paraphrase via AI chats...', menuLabel('Paraphrase via AI chats...', locale)),
+              item('Paraphrase via AI chats...'),
               { type: 'separator' },
               ...(kind === 'comment' ? [item('修改')] : []),
               item('删除'),
@@ -176,10 +177,13 @@ export function registerAnnotationIPC({
     const target = trustedWindow(event);
     if (typeof text !== 'string' || !text.trim() || text.length > 1000000)
       throw Error('Invalid handover text.');
-    if (process.platform !== 'darwin') throw Error('本机 AI 对话目前仅支持 macOS。');
+    const locale = localeFor(target);
+    const label = (text) => menuLabel(text, locale);
+    if (process.platform !== 'darwin')
+      throw Error(label('Local AI chat is only available on macOS.'));
     const clients = await aiDiscussion.list();
     if (!clients.length)
-      throw Error('未找到可用的本机 AI 应用，请安装 ChatGPT、Claude 或 Gemini。');
+      throw Error(label('No local AI app found. Install ChatGPT, Claude, or Gemini.'));
     const client = await new Promise((resolve) => {
       let selected = null;
       const menu = Menu.buildFromTemplate(
@@ -193,7 +197,7 @@ export function registerAnnotationIPC({
       menu.popup({ window: target, callback: () => resolve(selected) });
     });
     if (!client) return { cancelled: true };
-    return aiDiscussion.open(client, text);
+    return aiDiscussion.open(client, text, label);
   });
   handle('clipboard:write-text', async (event, text) => {
     trustedWindow(event);

@@ -378,13 +378,19 @@ else {
             }
             if (error?.code !== 'REVISION_CONFLICT' || smoke || ciLaunchCheck || waitForRelease)
               throw error;
+            const locale = resolveUILanguage(
+              preferences.load().uiLanguage || 'en',
+              app.getPreferredSystemLanguages()[0] || app.getLocale(),
+            );
+            const label = (text) => menuLabel(text, locale);
             const dialogOptions = {
               type: 'warning',
               title: 'PDFMathReader',
-              message: 'The document changed while it was locked.',
-              detail:
+              message: label('The document changed while it was locked.'),
+              detail: label(
                 'Open anyway to use the current PDF and refresh this Mac’s saved document lock.',
-              buttons: ['Open anyway', 'Cancel'],
+              ),
+              buttons: [label('Open anyway'), label('Cancel')],
               defaultId: 1,
               cancelId: 1,
               noLink: true,

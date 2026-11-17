@@ -93,7 +93,7 @@ test('short Claude text opens a prefilled deep link after rechecking installatio
 test('open refuses an uninstalled client after its availability check', async () => {
   const { service, events } = makeService({ installed: [] });
 
-  await assert.rejects(service.open('Gemini', 'Question'), /未找到本机 Gemini/);
+  await assert.rejects(service.open('Gemini', 'Question'), /Gemini was not found/);
   assert.deepEqual(runEvents(events), [
     {
       kind: 'runFile',

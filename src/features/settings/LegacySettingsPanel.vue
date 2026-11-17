@@ -94,6 +94,24 @@ const accentColor = defineModel('accentColor');
 const reduceMotion = defineModel('reduceMotion');
 const reduceTransparency = defineModel('reduceTransparency');
 const reducePadding = defineModel('reducePadding');
+const newSettingsLabels = {
+  en: 'New settings',
+  'zh-CN': '新版设置',
+  'zh-TW': '新版設定',
+  ja: '新しい設定',
+  ko: '새 설정',
+  fr: 'Nouveaux réglages',
+  es: 'Nueva configuración',
+  de: 'Neue Einstellungen',
+  pt: 'Novas definições',
+  ru: 'Новые настройки',
+  ar: 'الإعدادات الجديدة',
+  arz: 'إعدادات جديدة',
+  hi: 'नई सेटिंग्स',
+  bn: 'নতুন সেটিংস',
+  ur: 'نئی ترتیبات',
+  pcm: 'New settings',
+};
 </script>
 
 <template>
@@ -107,7 +125,7 @@ const reducePadding = defineModel('reducePadding');
       <div class="settings-heading">
         <h2>{{ t('settings.title') }}</h2>
         <AppButton @click="legacySettings = false">{{
-          uiLanguage === 'zh-CN' ? '新版设置' : 'New settings'
+          newSettingsLabels[uiLanguage] || newSettingsLabels.en
         }}</AppButton
         ><AppButton
           :aria-label="t('settings.close')"

@@ -4,6 +4,8 @@ import { t, uiLanguage } from '../../i18n/index.mjs';
 import { annotationSections, annotationChapters } from '../annotations/annotation-browser.mjs';
 import { platform, AppSegmentedControl, AppSegment } from '../../ui/controls.mjs';
 import { tocGenerationLabel } from './toc-generation-labels.mjs';
+import { menuLabel } from '../../../shared/i18n/menu.mjs';
+import { ANNOTATION_MENU_LABELS } from '../../../shared/i18n/annotation-menu-labels.mjs';
 const props = defineProps({
   mode: String,
   outline: Array,
@@ -200,10 +202,13 @@ async function annotationAction(name, id, point) {
         window.previewClipboard?.writeText ||
         navigator.clipboard.writeText.bind(navigator.clipboard)
       )(text);
-      emit('notice', { text: '已复制', ...point });
+      emit('notice', { text: t('copy.copied'), ...point });
     }
   } catch (error) {
-    emit('notice', { text: '无法完成操作：' + error.message, ...point });
+    emit('notice', {
+      text: t('annotations.operationFailed', { error: error.message }),
+      ...point,
+    });
   }
 }
 async function annotationContextMenu(item, event) {
@@ -213,7 +218,10 @@ async function annotationContextMenu(item, event) {
       const action = await window.previewAnnotations.contextMenu(item.kind, 'sidebar');
       if (action) await annotationAction(action, item.id, point);
     } catch (error) {
-      emit('notice', { text: '无法打开菜单：' + error.message, ...point });
+      emit('notice', {
+        text: t('annotations.openMenuFailed', { error: error.message }),
+        ...point,
+      });
     }
   } else {
     annotationMenu.value = { id: item.id, ...point };
@@ -265,13 +273,13 @@ watch(
           role="menuitem"
           @click="annotationAction('复制', annotationMenu.id, annotationMenu)"
         >
-          Copy
+          {{ menuLabel(ANNOTATION_MENU_LABELS['复制'], uiLanguage) }}
         </button>
         <button
           role="menuitem"
           @click="annotationAction('删除', annotationMenu.id, annotationMenu)"
         >
-          Delete
+          {{ menuLabel(ANNOTATION_MENU_LABELS['删除'], uiLanguage) }}
         </button>
       </div>
     </div>

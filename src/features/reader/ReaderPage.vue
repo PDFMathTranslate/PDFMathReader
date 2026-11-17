@@ -20,6 +20,7 @@ import PageTranslationStatus from '../translation/PageTranslationStatus.vue';
 import { paragraphDisplayText } from '../../../shared/translation/spacing.mjs';
 import { topicParagraphBoxes } from '../translation/topic-sentences.mjs';
 import { cropIsActive, normalizeCrop } from '../../../shared/reader/crop-geometry.mjs';
+import { t } from '../../i18n/index.mjs';
 const props = defineProps({
   page: Object,
   crop: { type: Object, default: () => ({ x: 0, y: 0 }) },
@@ -404,9 +405,9 @@ function fit(el, b) {
           :style="blockStyle(b)"
           :aria-label="
             b.math
-              ? `Toggle paragraph: ${b.translated ? b.translation : b.text}`
+              ? t('reader.toggleParagraph', { text: b.translated ? b.translation : b.text })
               : b.translation
-                ? `Toggle paragraph: ${b.translated ? b.translation : b.text}`
+                ? t('reader.toggleParagraph', { text: b.translated ? b.translation : b.text })
                 : b.text
           "
           @pointerenter="emit('hover', b)"
@@ -458,8 +459,20 @@ function fit(el, b) {
           :key="button.id"
           class="paragraph-quick-link"
           :data-link-side="button.side"
-          :aria-label="button.side === 'origin' ? '返回搜索结果' : '返回原文段落'"
-          :title="button.side === 'origin' ? '返回搜索结果' : '返回原文段落'"
+          :aria-label="
+            t(
+              button.side === 'origin'
+                ? 'reader.returnToSearchResult'
+                : 'reader.returnToOriginalParagraph',
+            )
+          "
+          :title="
+            t(
+              button.side === 'origin'
+                ? 'reader.returnToSearchResult'
+                : 'reader.returnToOriginalParagraph',
+            )
+          "
           :style="quickLinkStyle(button, index)"
           @click.stop="emit('quick-link', button)"
         >
