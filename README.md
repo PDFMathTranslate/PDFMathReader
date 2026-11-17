@@ -49,13 +49,13 @@ See [PDFMathReader-iOS](https://github.com/PDFMathTranslate/PDFMathReader-iOS) f
 
 | Date       | Feature                                                                                                                                                            | Contributor                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| 2026-11-17 | [complete interface translations in all languages](https://github.com/PDFMathTranslate/PDFMathReader/commit/a8ed1d855b2afd8f37a1ba610d494ce41b8c656d)              | [@reycn](https://github.com/reycn) |
 | 2026-11-17 | [localize the crop dialog in all interface languages](https://github.com/PDFMathTranslate/PDFMathReader/commit/211197bb546f5b9c6ee9fdec7e080a2841c6a3af)           | [@reycn](https://github.com/reycn) |
 | 2026-11-16 | [show translations over the original text on overlapping pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/85806e9f373f35d42994a845613ad72178b428d6) | [@reycn](https://github.com/reycn) |
 | 2026-11-11 | [option to skip translating reference sections](https://github.com/PDFMathTranslate/PDFMathReader/commit/a71b05dfb198ffb24fe736c14b5349c4b10a0577)                 | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [delete, undo and cross-document paste for gallery pages](https://github.com/PDFMathTranslate/PDFMathReader/commit/e89280989baae4fda29141012bc466c341f9d831)       | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [sort, copy and paste pages in gallery mode](https://github.com/PDFMathTranslate/PDFMathReader/commit/b07e41c93405ecfaeb08e7709e75c23f8271812b)                    | [@reycn](https://github.com/reycn) |
 | 2026-11-10 | [speed up ultra fast translation](https://github.com/PDFMathTranslate/PDFMathReader/commit/567de99b8dfe5cd490fb148a766c8f1d31e178e8)                               | [@reycn](https://github.com/reycn) |
-| 2026-11-06 | [improve reader navigation cropping and cache details](https://github.com/PDFMathTranslate/PDFMathReader/commit/4ed276f8a5443d95afd7960cf0ab96aa4288ca55)          | [@reycn](https://github.com/reycn) |
 
 ## Quick start
 
