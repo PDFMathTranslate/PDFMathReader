@@ -1286,15 +1286,25 @@ export async function createCompanionDocumentStore({
       }
       if (documentState.lock.deviceID !== 'desktop' || documentState.lock.sessionID !== sessionID)
         fail('The document session belongs to another device.', 'SESSION_NOT_OWNER', 409);
-      const entry = await resolve(id);
-      await recoverPending(id, entry, documentState);
-      const source = await readSource(entry, limit);
+      // A document that left Recents or was moved away still has to release its
+      // lock, or the desktop window holding it could never close.
+      let entry;
+      let source;
+      try {
+        entry = await resolve(id);
+        await recoverPending(id, entry, documentState);
+        source = await readSource(entry, limit);
+      } catch (error) {
+        if (!['UNKNOWN_DOCUMENT', 'DOCUMENT_UNAVAILABLE'].includes(error?.code)) throw error;
+      }
       const previous = clone(documentState);
       // Desktop annotations and page edits are written by the existing native
       // services. Record their final source revision before releasing the lock.
-      documentState.revision = source.sha256;
-      const readingState = desktopReadingState(entry.view);
-      if (readingState) documentState.readingState = readingState;
+      if (source) {
+        documentState.revision = source.sha256;
+        const readingState = desktopReadingState(entry.view);
+        if (readingState) documentState.readingState = readingState;
+      }
       documentState.lock = undefined;
       rememberReleased(documentState, sessionID);
       try {
@@ -1303,7 +1313,7 @@ export async function createCompanionDocumentStore({
         restoreDocumentState(documentState, previous);
         throw error;
       }
-      return { released: true, revision: source.sha256 };
+      return { released: true, ...(source ? { revision: source.sha256 } : {}) };
     });
   }
 

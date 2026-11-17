@@ -266,6 +266,23 @@ test('desktop ownership blocks paired sessions and releases explicitly', async (
   }
 });
 
+test('a desktop lock releases after its document leaves Recents', async () => {
+  const fixtureState = await fixture();
+  try {
+    const store = await fixtureState.makeStore();
+    await store.claimDesktop('desktop-document', 'desktop-session-1', 'This Mac');
+    await writeFile(fixtureState.recentsPath, '[]');
+    const released = await store.releaseDesktop('desktop-document', 'desktop-session-1');
+    assert.equal(released.released, true);
+    assert.equal(
+      JSON.parse(await readFile(fixtureState.statePath, 'utf8')).documents['desktop-document'].lock,
+      undefined,
+    );
+  } finally {
+    await rm(fixtureState.directory, { recursive: true, force: true });
+  }
+});
+
 test('iOS-local imports are authenticated, create-only, and idempotent', async () => {
   const fixtureState = await fixture();
   try {

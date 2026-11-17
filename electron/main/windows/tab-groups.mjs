@@ -77,6 +77,15 @@ export function createTabGroups({ registry, isTabMode, backgroundRenderSmoke = f
     }
     previous.hide();
   };
+  // Overlapping selections each wait for a paint; whichever settles last must
+  // still leave exactly one visible member, so hide every stale tab here.
+  // isVisible() is false for occluded windows on macOS, and a stale tab is
+  // always occluded by the active one, so it cannot decide what to hide.
+  const hideInactive = (group) => {
+    if (backgroundRenderSmoke) return;
+    for (const member of group.windows)
+      if (member !== group.active && !member.isDestroyed()) hideBehind(member);
+  };
   // Present the new tab exactly where the old one stood, then hide the old one
   // only after the new renderer has painted so switching never flashes blank.
   const reveal = async (target, previous, group, focus) => {
@@ -99,9 +108,14 @@ export function createTabGroups({ registry, isTabMode, backgroundRenderSmoke = f
       if (target.isDestroyed()) return;
       target.setOpacity(1);
     }
-    if (group.active !== target) return;
+    if (group.active !== target) {
+      // Leave the cleanup to the newer selection while it is still fading in.
+      if (group.active?.getOpacity?.() === 1) hideInactive(group);
+      return;
+    }
     if (focus) target.focus();
     if (replacing) hideBehind(previous);
+    hideInactive(group);
   };
   const select = async (target, { focus = true } = {}) => {
     const group = groupOf.get(target);
@@ -200,15 +214,8 @@ export function createTabGroups({ registry, isTabMode, backgroundRenderSmoke = f
       detach(other);
       group.windows.push(other);
       groupOf.set(other, group);
-      if (!backgroundRenderSmoke && other.isVisible()) {
-        if (other.isFullScreen()) {
-          other.once('leave-full-screen', () => {
-            if (!other.isDestroyed() && groupOf.get(other)?.active !== other) other.hide();
-          });
-          other.setFullScreen(false);
-        } else other.hide();
-      }
     }
+    hideInactive(group);
     broadcast(group);
   };
   const reorder = (target, index) => {
