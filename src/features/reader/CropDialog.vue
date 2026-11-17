@@ -322,6 +322,10 @@ canvas {
   background: transparent;
   touch-action: none;
 }
+.crop-handle:focus,
+.crop-handle:focus-visible {
+  outline: none;
+}
 .crop-handle.left,
 .crop-handle.right {
   width: 24px;
@@ -366,8 +370,7 @@ canvas {
   height: 7px;
 }
 .crop-handle:focus-visible span {
-  outline: 2px solid #1683ff;
-  outline-offset: 2px;
+  background: #1683ff;
 }
 footer,
 .crop-actions {
