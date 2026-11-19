@@ -332,7 +332,12 @@ function addManagedAnnotation(page, annotation, context) {
   return context.register(dict);
 }
 
-export async function embedAnnotations(bytes, annotations, nativeRefs = []) {
+export async function embedAnnotations(
+  bytes,
+  annotations,
+  nativeRefs = [],
+  { skipEncrypted = false } = {},
+) {
   if (
     !Array.isArray(nativeRefs) ||
     nativeRefs.some((ref) => typeof ref !== 'string' || !/^\d+ \d+ R$/.test(ref))
@@ -341,7 +346,11 @@ export async function embedAnnotations(bytes, annotations, nativeRefs = []) {
   const input = asBytes(bytes);
   const normalized = validateAnnotations(annotations);
   await loadPDFEditing();
-  const pdf = await PDFDocument.load(input, { updateMetadata: false });
+  const pdf = await PDFDocument.load(input, {
+    updateMetadata: false,
+    ignoreEncryption: skipEncrypted,
+  });
+  if (pdf.isEncrypted) return null;
   return embedAnnotationDocument(pdf, normalized, nativeRefs, input);
 }
 
@@ -484,9 +493,14 @@ export async function createAnnotationStore(root) {
     sourceBytes ??= source.bytes;
     sourceBytes ??= await readIfPresent(cachePath(key));
     if (sourceBytes) {
-      const rewritten = await embedAnnotations(sourceBytes, annotations, nativeRefs);
-      await durableWrite(cachePath(key), rewritten);
-      if (sourcePathReadable) await durableWrite(source.path, rewritten);
+      // Keep annotations in the sidecar when the source cannot be rewritten.
+      const rewritten = await embedAnnotations(sourceBytes, annotations, nativeRefs, {
+        skipEncrypted: !editedBytes,
+      });
+      if (rewritten) {
+        await durableWrite(cachePath(key), rewritten);
+        if (sourcePathReadable) await durableWrite(source.path, rewritten);
+      }
     }
     const record = {
       version: 1,

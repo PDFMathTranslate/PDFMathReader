@@ -102,10 +102,12 @@ function bounds(points, g) {
   return right > x && bottom > y ? { x, y, width: right - x, height: bottom - y } : null;
 }
 export async function importPDFAnnotations(bytes, { prepare = false } = {}) {
-  const pdf = await PDFDocument.load(bytes, { updateMetadata: false }),
+  const pdf = await PDFDocument.load(bytes, { updateMetadata: false, ignoreEncryption: true }),
     annotations = [],
-    nativeRefs = [],
-    quickLinks = transferQuickLinks(pdf);
+    nativeRefs = [];
+  // PDF.js can render owner-protected files from their original bytes.
+  if (pdf.isEncrypted) return { annotations, nativeRefs, ...(prepare ? { bytes } : {}) };
+  const quickLinks = transferQuickLinks(pdf);
   for (const [index, page] of pdf.getPages().entries()) {
     const array = page.node.Annots();
     if (!array) continue;

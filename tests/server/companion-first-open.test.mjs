@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -40,5 +41,37 @@ test('publishes a newly prepared recent before the first companion desktop claim
     assert.equal(claimed.sessionID, 'desktop-session-1');
   } finally {
     await rm(fixtureState.directory, { recursive: true, force: true });
+  }
+});
+
+test('desktop can claim, resume, and release an owner-protected PDF', async () => {
+  const { directory, pdfPath, recentsPath, statePath } = await fixture();
+  try {
+    const bytes = await readFile(new URL('../fixtures/owner-protected.pdf', import.meta.url));
+    await writeFile(pdfPath, bytes);
+    const revision = createHash('sha256').update(bytes).digest('hex');
+    const recents = await createRecents(recentsPath);
+    const { id } = recents.prepare(pdfPath);
+    await recents.persistPrepared(id);
+    const store = await createCompanionDocumentStore({ recentsPath, statePath });
+
+    assert.deepEqual(await store.claimDesktop(id, 'first-session'), {
+      claimed: true,
+      resumed: false,
+      sessionID: 'first-session',
+      revision,
+    });
+    assert.deepEqual(await store.claimDesktop(id, 'reopened-session'), {
+      claimed: true,
+      resumed: true,
+      sessionID: 'reopened-session',
+      revision,
+    });
+    assert.deepEqual(await store.releaseDesktop(id, 'reopened-session'), {
+      released: true,
+      revision,
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

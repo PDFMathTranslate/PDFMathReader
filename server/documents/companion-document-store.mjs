@@ -503,15 +503,20 @@ async function atomicBytes(path, bytes, mode = 0o600) {
   }
 }
 
-async function parsePDF(bytes, maxDocumentBytes) {
+async function parsePDF(bytes, maxDocumentBytes, { allowEncrypted = false } = {}) {
   if (!bytes.length || bytes.length > maxDocumentBytes || !isPDFBytes(bytes))
     fail('The document is not a readable PDF.', 'INVALID_DOCUMENT', 400);
   let pdf;
   try {
-    pdf = await PDFDocument.load(bytes, { updateMetadata: false });
+    pdf = await PDFDocument.load(bytes, {
+      updateMetadata: false,
+      ignoreEncryption: allowEncrypted,
+    });
   } catch {
     fail('The document is not a readable PDF.', 'INVALID_DOCUMENT', 400);
   }
+  // Desktop locks only need the source revision. PDF.js decides whether it can open the file.
+  if (pdf.isEncrypted) return { sha256: digest(bytes) };
   const pageCount = pdf.getPageCount();
   if (!pageCount) fail('The document has no pages.', 'INVALID_DOCUMENT', 400);
   return { pageCount, sha256: digest(bytes) };
@@ -543,7 +548,7 @@ async function readRecentEntries(recentsPath) {
   });
 }
 
-async function readSource(entry, maxDocumentBytes) {
+async function readSource(entry, maxDocumentBytes, options) {
   let bytes;
   let sourceStat;
   try {
@@ -554,7 +559,7 @@ async function readSource(entry, maxDocumentBytes) {
       fail('The document is no longer available.', 'DOCUMENT_UNAVAILABLE', 404);
     throw error;
   }
-  const parsed = await parsePDF(bytes, maxDocumentBytes);
+  const parsed = await parsePDF(bytes, maxDocumentBytes, options);
   return { ...parsed, bytes, mode: sourceStat.mode & 0o777 };
 }
 
@@ -1000,7 +1005,7 @@ export async function createCompanionDocumentStore({
           fail('The document is already open on another device.', 'DOCUMENT_LOCKED', 409, {
             deviceName: documentState.lock.deviceName,
           });
-        const source = await readSource(entry, limit);
+        const source = await readSource(entry, limit, { allowEncrypted: true });
         if (
           documentState.revision &&
           documentState.revision !== source.sha256 &&
@@ -1028,7 +1033,7 @@ export async function createCompanionDocumentStore({
       // A clean desktop close records the session as released. Reusing this
       // local session is safe because only the single Electron instance owns
       // the desktop endpoint, and it also makes a lost close response retryable.
-      const source = await readSource(entry, limit);
+      const source = await readSource(entry, limit, { allowEncrypted: true });
       const previous = clone(documentState);
       if (documentState.releasedSessions?.includes(sessionID))
         documentState.releasedSessions = documentState.releasedSessions.filter(
@@ -1293,7 +1298,7 @@ export async function createCompanionDocumentStore({
       try {
         entry = await resolve(id);
         await recoverPending(id, entry, documentState);
-        source = await readSource(entry, limit);
+        source = await readSource(entry, limit, { allowEncrypted: true });
       } catch (error) {
         if (!['UNKNOWN_DOCUMENT', 'DOCUMENT_UNAVAILABLE'].includes(error?.code)) throw error;
       }

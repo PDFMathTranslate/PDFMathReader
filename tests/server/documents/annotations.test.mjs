@@ -85,6 +85,30 @@ function fixtureAnnotations() {
   ];
 }
 
+test('owner-protected PDFs pass through preparation and keep annotations in the sidecar', async () => {
+  const { importPDFAnnotations } =
+    await import('../../../electron/main/services/annotation-import.mjs');
+  const bytes = await readFile(new URL('../../fixtures/owner-protected.pdf', import.meta.url));
+  const root = await mkdtemp(join(tmpdir(), 'annotation-owner-protected-'));
+  const sourcePath = join(root, 'original.pdf');
+  try {
+    await writeFile(sourcePath, bytes);
+    const source = { path: sourcePath, reliable: true };
+    const store = await createAnnotationStore(join(root, 'sidecar'));
+    const annotations = fixtureAnnotations().slice(0, 1);
+    assert.deepEqual(await importPDFAnnotations(bytes, { prepare: true }), {
+      annotations: [],
+      nativeRefs: [],
+      bytes,
+    });
+    await store.save({ key: 'owner-protected', annotations }, source);
+    assert.deepEqual(await store.load('owner-protected'), annotations);
+    assert.deepEqual(await readFile(sourcePath), bytes);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('annotation store round-trips metadata, embeds standard annotations, rewrites only managed entries, and preserves external entries', async () => {
   const root = await mkdtemp(join(tmpdir(), 'annotation-store-')),
     sourcePath = join(root, 'fixture.pdf');
