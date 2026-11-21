@@ -46,7 +46,7 @@ export function registerAnnotationIPC({
         locale,
       ),
       buttons: [menuLabel('Cancel', locale), menuLabel('Delete', locale)],
-      defaultId: 0,
+      defaultId: kind === 'highlight' ? 1 : 0,
       cancelId: 0,
       noLink: true,
     });
