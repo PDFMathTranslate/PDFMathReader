@@ -364,14 +364,16 @@ export function createCanvasRendering({
     frame.pdfBionicKey = bionicKey;
     const transform = [dpr, 0, 0, dpr, -geometry.x * dpr, -geometry.y * dpr],
       skip = removal?.render?.operationsFilter;
-    let covered = 0;
     // pdf.js asks about each operator right before running it, in order: the cover is
     // painted there, between the page's scan and the translation drawn over it.
+    const pendingCovers = cover && new Map(cover.plan);
     const operationsFilter = cover
       ? (index) => {
-          if (covered < cover.at.length && index >= cover.at[covered]) {
-            covered++;
-            cover.paint(frame.getContext('2d'), scale, transform);
+          const rects = pendingCovers.get(index);
+          if (rects) {
+            pendingCovers.delete(index);
+            if (!skip || skip(index - 1))
+              cover.paint(frame.getContext('2d'), rects, scale, transform);
           }
           return skip ? skip(index) : true;
         }

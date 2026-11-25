@@ -1,53 +1,99 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  coverIndexes,
-  coverRects,
+  coverImages,
+  coverPlan,
   paperColor,
   createTranslationCover,
 } from '../../src/features/reader/translation-cover.mjs';
 import { ref } from 'vue';
 
-const OPS = { paintImageXObject: 85, beginText: 31, showText: 44, beginMarkedContent: 69 };
-const list = (fnArray, argsArray = []) => ({ fnArray, argsArray });
+const loadRuntime = () => import('pdfjs-dist/legacy/build/pdf.mjs');
+const viewport = { transform: [1, 0, 0, -1, 0, 100] };
+const list = (OPS, ops) => ({
+  fnArray: ops.map(([name]) => OPS[name]),
+  argsArray: ops.map(([, ...args]) => args),
+});
+const paragraph = {
+  text: 'original',
+  translation: 'translated',
+  sourceBox: { x: 5, y: 5, width: 80, height: 20 },
+};
 
-test('a page without images has nothing to cover', () => {
-  assert.deepEqual(coverIndexes(list([31, 44, 31, 44]), OPS), []);
+test('a late figure does not cover translation that was already painted above it', async () => {
+  const runtime = await loadRuntime();
+  const ops = [
+    ['beginText'],
+    ['showText'],
+    ['endText'],
+    ['save'],
+    ['transform', 100, 0, 0, 40, 0, 0],
+    ['paintImageXObject'],
+    ['restore'],
+    ['beginText'],
+    ['showText'],
+  ];
+  const images = coverImages(list(runtime.OPS, ops), runtime, viewport);
+  assert.deepEqual(images, [{ index: 5, bounds: [0, 60, 100, 100] }]);
+  assert.equal(coverPlan(images, [paragraph]).size, 0);
 });
 
-test('the cover goes before the first text object after the last image', () => {
-  // OCR text, scan, figure, then the appended translation.
-  assert.deepEqual(coverIndexes(list([31, 44, 85, 31, 44, 85, 31, 44, 31]), OPS), [6]);
+test('a scan is covered before its translated text even when a figure comes later', async () => {
+  const runtime = await loadRuntime();
+  const ops = [
+    ['save'],
+    ['transform', 100, 0, 0, 100, 0, 0],
+    ['paintImageXObject'],
+    ['restore'],
+    ['beginText'],
+    ['showText'],
+    ['endText'],
+    ['save'],
+    ['transform', 100, 0, 0, 40, 0, 0],
+    ['paintInlineImageXObject'],
+    ['restore'],
+    ['beginText'],
+    ['showText'],
+  ];
+  const images = coverImages(list(runtime.OPS, ops), runtime, viewport);
+  assert.deepEqual([...coverPlan(images, [paragraph]).keys()], [3]);
 });
 
-test('each band of a compacted page gets its own cover', () => {
-  const band = (n) => [{ name: 'CompactBand' + n }];
-  const ops = [69, 85, 31, 44, 69, 85, 31, 44];
-  const args = [band(0), null, null, null, band(1), null, null, null];
-  assert.deepEqual(coverIndexes(list(ops, args), OPS), [2, 6]);
-});
-
-test('other marked content does not split the page', () => {
-  const ops = [69, 85, 31, 69, 31];
-  const args = [[{ name: 'Artifact' }], null, null, [{ name: 'P' }], null];
-  assert.deepEqual(coverIndexes(list(ops, args), OPS), [2]);
-});
-
-test('covers span the source and translated boxes and skip unchanged paragraphs', () => {
-  const rects = coverRects([
-    {
-      text: 'a',
-      translation: 'b',
-      fontSize: 10,
-      sourceBox: { x: 10, y: 20, width: 100, height: 30 },
-      translatedBox: { x: 5, y: 25, width: 90, height: 40 },
-    },
-    { text: 'same', translation: 'same', sourceBox: { x: 0, y: 0, width: 9, height: 9 } },
-    { text: 'c', translation: '', sourceBox: { x: 0, y: 0, width: 9, height: 9 } },
+test('each embedded band uses its own image placement on compacted pages', async () => {
+  const runtime = await loadRuntime();
+  const band = (offset) => [
+    ['paintFormXObjectBegin', [1, 0, 0, 1, 0, offset]],
+    ['transform', 100, 0, 0, 35, 0, 0],
+    ['paintImageXObject'],
+    ['paintFormXObjectEnd'],
+    ['showText'],
+  ];
+  const images = coverImages(list(runtime.OPS, [...band(65), ...band(15)]), runtime, viewport);
+  assert.deepEqual(images, [
+    { index: 2, bounds: [0, 0, 100, 35] },
+    { index: 7, bounds: [0, 50, 100, 85] },
   ]);
+  const lower = { ...paragraph, sourceBox: { ...paragraph.sourceBox, y: 55 } };
+  assert.deepEqual([...coverPlan(images, [paragraph, lower]).keys()], [3, 8]);
+});
+
+test('covers span source and translated boxes inside the scan and skip unchanged paragraphs', () => {
+  const rects = coverPlan(
+    [{ index: 0, bounds: [8, 0, 200, 100] }],
+    [
+      {
+        ...paragraph,
+        fontSize: 10,
+        sourceBox: { x: 10, y: 20, width: 100, height: 30 },
+        translatedBox: { x: 5, y: 25, width: 90, height: 40 },
+      },
+      { ...paragraph, translation: paragraph.text },
+      { ...paragraph, translation: '' },
+    ],
+  ).get(1);
   assert.equal(rects.length, 1);
   const [r] = rects;
-  assert.ok(Math.abs(r.x - (5 - 2.8)) < 1e-9);
+  assert.equal(r.x, 8);
   assert.ok(Math.abs(r.y - (20 - 2.8)) < 1e-9);
   assert.ok(Math.abs(r.x + r.width - (110 + 2.8)) < 1e-9);
   assert.ok(Math.abs(r.y + r.height - (65 + 2.8)) < 1e-9);
@@ -72,18 +118,27 @@ test('the paper colour ignores dark text pixels around a paragraph', () => {
 });
 
 test('render options exist only while enabled and for pages with a scan', async () => {
+  const { OPS } = await loadRuntime();
   const preferences = { coverOriginalText: ref(false) };
-  const cover = createTranslationCover({
-    preferences,
-    loadRuntime: async () => ({ OPS }),
+  const cover = createTranslationCover({ preferences, loadRuntime });
+  const makePage = (ops) => ({
+    getViewport: () => viewport,
+    getOperatorList: async () => list(OPS, ops),
   });
-  const page = { getOperatorList: async () => list([85, 31, 44]) },
-    plain = { getOperatorList: async () => list([31, 44]) },
-    blocks = [{ text: 'a', translation: 'b', sourceBox: { x: 0, y: 0, width: 10, height: 10 } }];
+  const page = makePage([
+      ['transform', 100, 0, 0, 100, 0, 0],
+      ['paintImageXObject'],
+      ['beginText'],
+      ['showText'],
+    ]),
+    plain = makePage([['beginText'], ['showText']]),
+    rasterOnly = makePage([['transform', 100, 0, 0, 100, 0, 0], ['paintImageXObject']]),
+    blocks = [paragraph];
   assert.equal(await cover.renderOptions(page, blocks), null);
   preferences.coverOriginalText.value = true;
   const options = await cover.renderOptions(page, blocks);
-  assert.deepEqual(options.at, [1]);
-  assert.equal(options.rects.length, 1);
+  assert.deepEqual([...options.plan.keys()], [2]);
+  assert.equal(options.plan.get(2).length, 1);
   assert.equal(await cover.renderOptions(plain, blocks), null);
+  assert.equal(await cover.renderOptions(rasterOnly, blocks), null);
 });

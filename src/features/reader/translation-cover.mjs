@@ -1,55 +1,80 @@
 import { watch } from 'vue';
 
-// Operators that paint raster content: the scan behind an image document, or a figure.
-const IMAGE_OPS = [
-  'paintImageXObject',
-  'paintInlineImageXObject',
-  'paintImageMaskXObject',
-  'paintImageMaskXObjectGroup',
-  'paintInlineImageXObjectGroup',
-  'paintImageXObjectRepeat',
-  'paintImageMaskXObjectRepeat',
-  'paintSolidColorImageMask',
-];
+// Allow for a small difference between the OCR box and the scan's edges.
+const SOURCE_IMAGE_OVERLAP = 0.8;
 // Brightness rank of the colour picked around a paragraph: text pixels in the ring are
 // darker than the paper, so a light rank lands on the paper itself.
 const PAPER_RANK = 0.75;
 // Longest side of the reduced copy the paper colour is read from.
 const SAMPLE_SIDE = 512;
 
-// A PDF kernel keeps the page's own content, the scan included, and appends the
-// translation after it. The cover goes in right before the first text object that
-// follows the last image; a page without images has no original text left to hide.
-// A page compacted around its paragraph gaps draws the whole page once per band, each
-// clipped to its band, so every band gets its own cover.
-export function coverIndexes(list, OPS) {
-  const images = new Set(IMAGE_OPS.map((name) => OPS[name]).filter(Number.isInteger));
-  const ops = list?.fnArray || [],
-    args = list?.argsArray || [];
-  const band = (i) => {
-    if (ops[i] !== OPS.beginMarkedContent) return false;
-    const tag = args[i]?.[0];
-    return String(tag?.name ?? tag ?? '').startsWith('CompactBand');
+// Track image placement in page coordinates. Compacted pages embed one shifted,
+// clipped copy of the page per band, with a separate transform for each copy.
+export function coverImages({ fnArray, argsArray }, { OPS, Util }, viewport) {
+  const images = [],
+    stack = [],
+    lastText = fnArray.lastIndexOf(OPS.showText);
+  let matrix = viewport.transform;
+  const record = (index, placement) => {
+    const bounds = [Infinity, Infinity, -Infinity, -Infinity];
+    const transform = placement ? Util.transform(matrix, placement) : matrix;
+    Util.axialAlignedBoundingBox([0, 0, 1, 1], transform, bounds);
+    images.push({ index, bounds });
   };
-  const starts = [0];
-  for (let i = 1; i < ops.length; i++) if (band(i)) starts.push(i);
-  const indexes = [];
-  starts.forEach((start, n) => {
-    const end = starts[n + 1] ?? ops.length;
-    let last = -1;
-    for (let i = start; i < end; i++) if (images.has(ops[i])) last = i;
-    if (last < 0) return;
-    for (let i = last + 1; i < end; i++) if (ops[i] === OPS.beginText) return void indexes.push(i);
-  });
-  return indexes;
+  const recordRepeated = (index, scaleX, skewX, skewY, scaleY, positions) => {
+    for (let i = 0; i < positions.length; i += 2)
+      record(index, [scaleX, skewX, skewY, scaleY, positions[i], positions[i + 1]]);
+  };
+  for (let i = 0; i < lastText; i++) {
+    const args = argsArray[i];
+    switch (fnArray[i]) {
+      case OPS.save:
+        stack.push(matrix);
+        break;
+      case OPS.paintFormXObjectBegin:
+        stack.push(matrix);
+        if (args?.[0]) matrix = Util.transform(matrix, args[0]);
+        break;
+      case OPS.restore:
+      case OPS.paintFormXObjectEnd:
+        matrix = stack.pop() ?? viewport.transform;
+        break;
+      case OPS.transform:
+        matrix = Util.transform(matrix, args);
+        break;
+      case OPS.paintImageXObject:
+      case OPS.paintInlineImageXObject:
+      case OPS.paintImageMaskXObject:
+        record(i);
+        break;
+      case OPS.paintImageXObjectRepeat: {
+        const [, scaleX, scaleY, positions] = args;
+        recordRepeated(i, scaleX, 0, 0, scaleY, positions);
+        break;
+      }
+      case OPS.paintImageMaskXObjectRepeat:
+        recordRepeated(i, ...args.slice(1));
+        break;
+      case OPS.paintInlineImageXObjectGroup:
+        for (const image of args[1]) record(i, image.transform);
+        break;
+      case OPS.paintImageMaskXObjectGroup:
+        for (const image of args[0]) record(i, image.transform);
+        break;
+    }
+  }
+  return images;
 }
 
 const usable = (box) =>
-  box && [box.x, box.y, box.width, box.height].every(Number.isFinite) && box.width > 0;
+  box &&
+  [box.x, box.y, box.width, box.height].every(Number.isFinite) &&
+  box.width > 0 &&
+  box.height > 0;
 
 // Page-space rectangles covering each translated paragraph where it was and where its
 // translation is drawn. Unchanged paragraphs may not be drawn again, so they stay.
-export function coverRects(blocks) {
+function coverRects(blocks) {
   const rects = [];
   for (const block of blocks || []) {
     if (!block?.translation || block.translation === block.text) continue;
@@ -59,10 +84,40 @@ export function coverRects(blocks) {
     const left = Math.min(...boxes.map((b) => b.x)) - pad,
       top = Math.min(...boxes.map((b) => b.y)) - pad,
       right = Math.max(...boxes.map((b) => b.x + b.width)) + pad,
-      bottom = Math.max(...boxes.map((b) => b.y + Math.max(b.height, 0))) + pad;
-    rects.push({ x: left, y: top, width: right - left, height: bottom - top });
+      bottom = Math.max(...boxes.map((b) => b.y + b.height)) + pad;
+    rects.push({ source: boxes[0], bounds: [left, top, right, bottom] });
   }
   return rects;
+}
+
+// Place paper under a paragraph just after the image that contains its original
+// text. A figure later in the stream must not cover text already painted elsewhere.
+export function coverPlan(images, blocks) {
+  const rects = coverRects(blocks),
+    plan = new Map();
+  for (const { index, bounds: image } of images) {
+    for (const { source, bounds } of rects) {
+      const { x, y, width, height } = source;
+      const overlapWidth = Math.min(x + width, image[2]) - Math.max(x, image[0]),
+        overlapHeight = Math.min(y + height, image[3]) - Math.max(y, image[1]);
+      if (
+        overlapWidth <= 0 ||
+        overlapHeight <= 0 ||
+        overlapWidth * overlapHeight < SOURCE_IMAGE_OVERLAP * width * height
+      )
+        continue;
+      const left = Math.max(bounds[0], image[0]),
+        top = Math.max(bounds[1], image[1]),
+        right = Math.min(bounds[2], image[2]),
+        bottom = Math.min(bounds[3], image[3]);
+      // operationsFilter runs before the indexed operator. The next operator
+      // still has the scan's graphics state and any paragraph band clip.
+      const afterImage = index + 1;
+      if (!plan.has(afterImage)) plan.set(afterImage, []);
+      plan.get(afterImage).push({ x: left, y: top, width: right - left, height: bottom - top });
+    }
+  }
+  return plan;
 }
 
 // The paper colour around a rectangle of RGBA pixels, as a CSS colour.
@@ -146,32 +201,29 @@ export function paintCover(context, rects, scale, transform) {
 // as on scanned or OCR pages where that text is part of the page image. Applied when
 // pages are drawn; the translated file is never changed.
 export function createTranslationCover({ preferences, loadRuntime, onToggle }) {
-  const indexes = new WeakMap();
+  const placements = new WeakMap();
   const enabled = () => !!preferences.coverOriginalText?.value;
 
-  function indexFor(page) {
-    if (!indexes.has(page))
-      indexes.set(
+  function imagesFor(page) {
+    if (!placements.has(page))
+      placements.set(
         page,
         Promise.all([loadRuntime(), page.getOperatorList()])
-          .then(([{ OPS }, list]) => coverIndexes(list, OPS))
+          .then(([runtime, list]) => coverImages(list, runtime, page.getViewport({ scale: 1 })))
           .catch(() => []),
       );
-    return indexes.get(page);
+    return placements.get(page);
   }
 
   // What to paint on a translated page, or null when it has nothing to hide.
   async function renderOptions(page, blocks) {
-    if (!enabled()) return null;
-    const rects = coverRects(blocks);
-    if (!rects.length) return null;
-    const at = await indexFor(page);
-    if (!at.length || !enabled()) return null;
+    if (!enabled() || !blocks?.some((b) => b?.translation && b.translation !== b.text)) return null;
+    const plan = coverPlan(await imagesFor(page), blocks);
+    if (!plan.size || !enabled()) return null;
     return {
-      key: `cover${at.join(',')}:${rects.length}`,
-      at,
-      rects,
-      paint: (context, scale, transform) => paintCover(context, rects, scale, transform),
+      key: `cover${JSON.stringify([...plan])}`,
+      plan,
+      paint: paintCover,
     };
   }
 
